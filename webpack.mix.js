@@ -16,7 +16,7 @@ mix.alias({
 });
 
 mix
-    .js('resources/js/App.js', 'public/js/App.js')
+    .js('resources/js/app.js', 'public/js/App.js')
     .css('resources/js/assets/App.css', 'public/css/App.css')
     .vue()
     .version()
