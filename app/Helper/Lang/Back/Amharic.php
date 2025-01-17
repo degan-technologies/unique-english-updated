@@ -19,7 +19,7 @@ class Amharic extends Lang {
 
     public static function translations() {
         return [
-            static::$key => ['lang' => static::$name, 'icon' => static::$icon, static::Lang()]
+            static::$key => ['name' => static::$name, 'icon' => static::$icon, 'lang' => static::Lang()]
         ];
     }
 }

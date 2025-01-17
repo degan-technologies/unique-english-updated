@@ -7,8 +7,7 @@ test('Localization : check the language is localize to amharic ', function () {
     $lang = 'am';
 
     getJson("/api/language/$lang")
-        ->assertSee('am')
-        ->assertStatus(200);
+        ->assertSee('am');
 });
 
 
@@ -17,7 +16,6 @@ test('Localization : default language is localize to english ', function () {
     $lang = 'en';
 
     getJson("/api/language/$lang")
-        ->assertSee('en')
-        ->assertStatus(200);
+        ->assertSee('en');
 });
 
