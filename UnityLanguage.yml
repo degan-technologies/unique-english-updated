@@ -182,6 +182,7 @@ Transaction
   -order_book_id [one of them must avilable [enrollment_id, vertual_class_enrollment_id, v]]
   -user_id,
 
+#un tracked
 Notification
   -id
   -user_id (sender)
