@@ -9,7 +9,18 @@ import Header from "@/components/Layout/Header.vue";
 import Footer from "@/components/Layout/Footer.vue";
 import AboutUs from "@/pages/common/AboutUs.vue";
 import CourseCard from "@/components/Course/CourseCard.vue";
-
+import Login from '@/components/Auth/LoginForm.vue';
+   import SignUp from '@/components/Auth/RegisterForm.vue';
+   import MFAForm from '@/components/Auth/MultiFactorAuthForm.vue';
+   import ContactUs from './pages/common/Contact Us Page.vue';
+   import ForgotPasswordForm from './components/Auth/ForgotPasswordForm.vue';
+   import FAQPage from './pages/common/FAQ Page.vue';
+   import PrivacyPolicy from './pages/common/Privacy Policy Page.vue';
+   import TermsOfService from './pages/common/Terms of Service Page.vue';
+  import AccountSettings from './components/Profile/ProfileForm.vue';
+   import NotificationList from './components/Notification/NotificationList.vue';
+   import ToastNotification from './components/Notification/ToastNotification.vue';
+   import AlertNotificationWithSample from './components/Notification/AlertComponent.vue';
 const appStore = useAppStore();
 const { isLoggedIn, authUser } = storeToRefs(appStore);
 
@@ -78,9 +89,23 @@ const courses = [
             <div class="flex-grow p-4 mt-6">
                 <template v-if="isLoggedIn">
                     <Body />
+                    
                 </template>
                 <template v-else>
                     <AboutUs />
+                    <Login />
+                    <signUp/>
+            <ForgotPasswordForm/>
+            <MFAForm/>
+            <ContactUs/>
+            <FAQPage/>
+            <PrivacyPolicy/>
+            <TermsOfService/>
+            <ReusableButton/>
+            <NotificationList/>
+            <ToastNotification/>
+            <AlertNotificationWithSample/>
+            <AccountSettings/>
                 </template>
             </div>
         </div>
