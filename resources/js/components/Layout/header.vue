@@ -1,6 +1,6 @@
 <template>
     <header
-        class="bg-green-700 text-white shadow-md fixed top-0 left-0 w-full z-10 transition-transform duration-300 ease-in-out"
+        class="bg-green-600 text-white shadow-md fixed top-0 left-0 w-full z-10 transition-transform duration-300 ease-in-out"
         :class="{
             'translate-y-0': isMenuVisible,
             '-translate-y-full': !isMenuVisible,
