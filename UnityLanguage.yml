@@ -22,12 +22,11 @@ Course
   -id
   -course_name [english language commiunication], required
   -overview
-  -description 
   -tag [#grammer, commiunication, vocabulary ...]
   -skill_level (beginner, intermediate, advanced, fullpackage)
   -price 
   -discount
-  -hour
+  -credit_hour
   -user_id,
 
 CourseContent
@@ -35,6 +34,7 @@ CourseContent
   -course_id
   -squence (step1, step2, step3)
   -title 
+  -description 
   -content_type,  [video, pdf, image ...]
   -content_url, 
   -temnail_url (image)
@@ -44,17 +44,24 @@ CourseContent
   -isDownloadable
   -user_id,
 
-Quize 
+QmetaData
   -id
   -course_id
+
   -course_content_id, nullable
-  -title, nullable (it may be the title of lesson)
   -instraction, nullable  (either instraction or course_content_id)
+  $table->morphs('tests');
+
+  -title, nullable (it may be the title of lesson)
+  -question_type [true/false, choice, short answer]
+
+Quize 
+  -q_meta_data_id
   -question_type [true/false, choice, short answer]
   -question 
   -choice, {a, b, c, d}, nullable
-  -answere
-  -order
+  -answer
+  -squence
   -user_id,
 
 Books 
@@ -69,28 +76,41 @@ Books
   -discount
   -tag [skill, knowlwdge, innovation, communication]
   -language
-  -format (audio, pdf ...)
-  -temnail_url (image)
+  -file_format (audio, pdf ...)
+  -cover_page_url (image)
   -file_url (audio, pdf ..)
   -isDownloadable
   -user_id,
 
+OrderedBook
+  -id
+  -book_id
+  -enrolled_at
+  -user_id,
+
+VertualClassEnrollment
+  -id,
+  -instractor_id
+  -price_plan (monthly, 3 month, 6 month)
+  -enrolled_at
+  -end_date (get from  price_plan)
+  -remaining_date
+  -user_id,
+
 LiveSession
   -id
-  -instractor_id
   -title
   -description
   -start_time
   -end_time
   -stream_url
   -status (scheduled, live, completd, cancelled)
-  -max_participants
+  -max_participants( use VertualClassEnrollment foregin key)
   -user_id,
 
 Participant
   -id
   -live_session_id
-  -user_id
   -joined_at 
   -status (registerd, joined, left)
   -user_id,
@@ -110,25 +130,10 @@ Enrollment
   -enrolled_at
   -user_id,
 
-VertualClassEnrollment
-  -id,
-  -instractor_id
-  -price_plan (monthly, 3 month, 6 month)
-  -enrolled_at
-  -end_date (get from  price_plan)
-  -remaining_date
-  -user_id,
-
 Result 
   -id
-  -content_id
+  -quize_id
   -result
-  -user_id,
-
-OrderedBook
-  -id
-  -book_id
-  -enrolled_at
   -user_id,
 
 Achivment
@@ -145,14 +150,12 @@ FeedBack
   -course_id
   -instractor_id
   -rate (intger, no stars)
-  -message
+  -comment
   -user_id
-  -user_id,
 
 #system admin
 Certification
   -id
-  -user_id
   -course_id
   -vertual_class_id
   -user_id,
@@ -171,15 +174,18 @@ Visitor  => fetch, create
 
 Transaction 
   -id
-  -user_id
   -amount
   -transaction_type [credit, debit]
   -status [pending, completed, failed]
   -payment_method [paypal, stripe, bank]
   -transaction_id
+  -customer_id
+
   -enrollment_id, nullable
   -vertual_class_enrollment_id, nullable
   -order_book_id [one of them must avilable [enrollment_id, vertual_class_enrollment_id, v]]
+  -$table->morphs('enrolments');
+
   -user_id,
 
 #un tracked
