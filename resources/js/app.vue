@@ -12,6 +12,7 @@ import CourseCard from "@/components/Course/CourseCard.vue";
 import LiveSession from "./components/Course/LiveSession.vue";
 import CourseDetail from "./components/Course/CourseDetail.vue";
 import VideoPlayer from "./components/Course/VideoPlayer.vue";
+import Quize from "./components/Course/Quize.vue";
 const appStore = useAppStore();
 const { isLoggedIn, authUser } = storeToRefs(appStore);
 
@@ -24,7 +25,6 @@ onMounted(() => {
     <div class="w-screen min-h-screen flex flex-col bg-gray-50">
         <!-- Header Section -->
         <Header />
-
         <!-- Course Card Section with proper spacing -->
         <section class="flex-grow p-6 mt-8">
             <CourseCard />
@@ -38,6 +38,7 @@ onMounted(() => {
             <VideoPlayer />
         </div>
         <div class="bg-gray-50"><LiveSession /></div>
+        <div class="bg-gray-50"><Quize /></div>
         <!-- Main Content Section -->
         <div class="flex-grow flex">
             <div class="flex-grow p-4 mt-6">
