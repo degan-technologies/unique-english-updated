@@ -1,217 +1,275 @@
 <template>
-    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-2xl font-bold text-gray-800">{{ className }}</h2>
-            <span
-                :class="classStatusClass"
-                class="text-sm font-semibold px-4 py-1 rounded-full"
+    <div class="max-w-6xl mx-auto bg-gray-100 p-6 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">
+            Class Scheduling System with Weekly View and Live Session
+        </h1>
+
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-xl font-bold mb-4">Schedule a Class</h2>
+
+            <label
+                for="studentName"
+                class="block text-gray-700 font-semibold mb-2"
+                >Student Name:</label
             >
-                {{ classStatus }}
-            </span>
+            <input
+                type="text"
+                v-model="newClass.studentName"
+                class="w-full mb-2 p-2 border rounded"
+                placeholder="Enter your name"
+            />
+            <span v-if="errors.studentName" class="text-red-500 text-sm">{{
+                errors.studentName
+            }}</span>
+
+            <label
+                for="scheduleDay"
+                class="block text-gray-700 font-semibold mb-2"
+                >Select a Day:</label
+            >
+            <select
+                v-model="newClass.day"
+                class="w-full mb-2 p-2 border rounded"
+            >
+                <option value="" disabled>Select a day</option>
+                <option v-for="day in weekDays" :key="day" :value="day">
+                    {{ day }}
+                </option>
+            </select>
+            <span v-if="errors.day" class="text-red-500 text-sm">{{
+                errors.day
+            }}</span>
+
+            <label
+                for="scheduleTime"
+                class="block text-gray-700 font-semibold mb-2"
+                >Select a Time:</label
+            >
+            <select
+                v-model="newClass.time"
+                class="w-full mb-2 p-2 border rounded"
+            >
+                <option value="" disabled>Select a time</option>
+                <option
+                    v-for="slot in availableSlots"
+                    :key="slot"
+                    :value="slot"
+                >
+                    {{ slot }}
+                </option>
+            </select>
+            <span v-if="errors.time" class="text-red-500 text-sm">{{
+                errors.time
+            }}</span>
+
+            <div class="text-center mt-4">
+                <i
+                    class="fas fa-calendar-check text-blue-500 text-2xl cursor-pointer hover:text-blue-700"
+                    @click="scheduleClass"
+                ></i>
+            </div>
         </div>
 
-        <p class="text-gray-600 mb-4">
-            <strong>Instructor:</strong> {{ instructorName }}
-        </p>
-        <p class="text-gray-600 mb-4">
-            <strong>Schedule:</strong> {{ schedule }}
-        </p>
+        <div class="bg-white p-6 rounded-lg shadow mb-6">
+            <h2 class="text-xl font-bold mb-4">Weekly Schedule</h2>
 
-        <!-- Join/Leave Button -->
-        <div class="mt-6 text-center">
-            <button
-                @click="toggleJoin"
-                :class="joinButtonClass"
-                class="px-6 py-2 text-white rounded-lg transition duration-200"
-            >
-                {{ joinButtonText }}
-            </button>
+            <div v-if="groupedClasses.length === 0" class="text-gray-500">
+                No classes scheduled this week.
+            </div>
+
+            <div v-for="group in groupedClasses" :key="group.day" class="mb-6">
+                <h3 class="text-lg font-bold text-gray-700">{{ group.day }}</h3>
+                <div class="bg-gray-50 p-4 rounded-lg shadow">
+                    <div
+                        v-for="(classItem, index) in group.classes"
+                        :key="index"
+                        class="relative mt-2"
+                    >
+                        <h4 class="font-bold">{{ classItem.studentName }}</h4>
+                        <p class="text-gray-600">{{ classItem.time }}</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <i
+                                class="fas fa-edit text-yellow-500 text-xl cursor-pointer hover:text-yellow-700"
+                                @click="editClass(classItem.index)"
+                            ></i>
+                            <i
+                                class="fas fa-trash text-red-500 text-xl cursor-pointer hover:text-red-700"
+                                @click="deleteClass(classItem.index)"
+                            ></i>
+                            <i
+                                class="fas fa-video text-blue-500 text-xl cursor-pointer hover:text-blue-700"
+                                v-if="classItem.status === 'Upcoming'"
+                                @click="startLiveSession(classItem.index)"
+                            ></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Jitsi Video Call Embed -->
-        <div v-if="isJoined" class="mt-8">
-            <div id="jitsi-video" class="w-full h-96"></div>
+        <div v-if="currentSession" class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-xl font-bold mb-4">
+                Live Session: {{ currentSession.studentName }} at
+                {{ currentSession.time }}
+            </h2>
+            <div id="jitsi-video" class="w-full h-96 bg-gray-200"></div>
+            <div class="mt-4 text-center">
+                <button
+                    @click="endLiveSession"
+                    class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg"
+                >
+                    End Session
+                </button>
+            </div>
         </div>
-
-        <!-- Controls for camera, screen share, and mute -->
-        <div v-if="isJoined" class="mt-4 text-center flex justify-between">
-            <button
-                @click="toggleCamera"
-                class="bg-blue-500 hover:bg-blue-600 px-4 py-2 text-white rounded-lg"
-            >
-                {{ cameraButtonText }}
-            </button>
-            <button
-                @click="toggleMic"
-                class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 text-white rounded-lg"
-            >
-                {{ micButtonText }}
-            </button>
-            <button
-                @click="toggleScreenShare"
-                class="bg-green-500 hover:bg-green-600 px-4 py-2 text-white rounded-lg"
-            >
-                Screen Share
-            </button>
-        </div>
-
-        <!-- Copy Link Button -->
-        <div v-if="isJoined" class="mt-4 text-center">
-            <button
-                @click="copyLink"
-                class="bg-green-500 hover:bg-green-600 px-6 py-2 text-white rounded-lg"
-            >
-                Copy Class Link
-            </button>
-            <p v-if="linkCopied" class="text-sm text-green-600 mt-2">
-                Link copied to clipboard!
-            </p>
+        <div
+            v-if="sessionFinishedMessage"
+            class="mt-4 text-center text-red-600 font-bold"
+        >
+            {{ sessionFinishedMessage }}
         </div>
     </div>
 </template>
 
 <script>
 export default {
-    name: "LiveClassSession",
+    name: "ClassSchedulingSystem",
     data() {
         return {
-            isJoined: false, // Whether the user has joined the class
-            linkCopied: false, // To track if the link has been copied
-            className: "Advanced Vue.js Development", // Class name
-            instructorName: "John Doe", // Instructor's name
-            schedule: "Every Monday at 3:00 PM", // Schedule time
-            classStatus: "Upcoming", // Class status (can be "Live", "Upcoming", or "Completed")
-            classLink: "https://example.com/class-link", // The live class URL link
-            jitsiAPI: null, // Reference to Jitsi API
-            cameraEnabled: true, // Whether the camera is enabled
-            micEnabled: true, // Whether the mic is enabled
-            screenSharing: false, // Whether the screen sharing is enabled
+            newClass: {
+                studentName: "",
+                time: "",
+                day: "",
+            },
+            errors: {
+                studentName: "",
+                time: "",
+                day: "",
+            },
+            scheduledClasses: [],
+            currentSession: null,
+            jitsiAPI: null,
+            sessionFinishedMessage: "",
+            weekDays: ["Monday", "Tuesday", "Thursday", "Friday"],
+            timeSlots: [
+                "9:00 AM - 10:00 AM",
+                "10:00 AM - 11:00 AM",
+                "11:00 AM - 12:00 PM",
+                "1:00 PM - 2:00 PM",
+                "2:00 PM - 3:00 PM",
+                "3:00 PM - 4:00 PM",
+            ],
         };
     },
     computed: {
-        classStatusClass() {
-            switch (this.classStatus) {
-                case "Live":
-                    return "bg-green-500 text-white";
-                case "Upcoming":
-                    return "bg-blue-500 text-white";
-                case "Completed":
-                    return "bg-gray-500 text-white";
-                default:
-                    return "bg-gray-300 text-white";
-            }
+        availableSlots() {
+            const reservedSlots = this.scheduledClasses.map(
+                (classItem) => classItem.time
+            );
+            return this.timeSlots.filter(
+                (slot) => !reservedSlots.includes(slot)
+            );
         },
-        joinButtonClass() {
-            return this.isJoined
-                ? "bg-red-500 hover:bg-red-600"
-                : "bg-blue-500 hover:bg-blue-600";
-        },
-        joinButtonText() {
-            return this.isJoined ? "Leave Class" : "Join Class";
-        },
-        cameraButtonText() {
-            return this.cameraEnabled ? "Turn off Camera" : "Turn on Camera";
-        },
-        micButtonText() {
-            return this.micEnabled ? "Mute" : "Unmute";
+        groupedClasses() {
+            return this.weekDays.map((day) => ({
+                day,
+                classes: this.scheduledClasses
+                    .filter((classItem) => classItem.day === day)
+                    .map((classItem, index) => ({ ...classItem, index })),
+            }));
         },
     },
     methods: {
-        toggleJoin() {
-            this.isJoined = !this.isJoined;
-            this.classStatus = this.isJoined ? "Live" : "Upcoming";
+        validateInputs() {
+            this.errors.studentName = "";
+            this.errors.time = "";
+            this.errors.day = "";
 
-            if (this.isJoined) {
-                this.startJitsiSession();
-            } else {
-                this.endJitsiSession();
+            if (
+                !this.newClass.studentName ||
+                this.newClass.studentName.length < 2
+            ) {
+                this.errors.studentName =
+                    "Please enter a valid name (at least 2 characters).";
+            }
+            if (!this.newClass.day) {
+                this.errors.day = "Please select a valid day.";
+            }
+            if (!this.newClass.time) {
+                this.errors.time = "Please select a valid time slot.";
+            }
+            return (
+                !this.errors.studentName &&
+                !this.errors.time &&
+                !this.errors.day
+            );
+        },
+        scheduleClass() {
+            if (this.validateInputs()) {
+                this.scheduledClasses.push({
+                    ...this.newClass,
+                    status: "Upcoming",
+                });
+                this.newClass = { studentName: "", time: "", day: "" };
+                this.saveClassesToLocalStorage();
             }
         },
-        startJitsiSession() {
-            // Use Vue's nextTick to ensure the DOM is fully rendered
+        editClass(index) {
+            this.scheduledClasses[index].isEditing = true;
+        },
+        deleteClass(index) {
+            this.scheduledClasses.splice(index, 1);
+            this.saveClassesToLocalStorage();
+        },
+        startLiveSession(index) {
+            const classItem = this.scheduledClasses[index];
+            if (classItem.status !== "Upcoming") return;
+
+            this.currentSession = classItem;
+            this.scheduledClasses[index].status = "Live";
+            this.saveClassesToLocalStorage();
+
             this.$nextTick(() => {
-                const domain = "meet.jit.si"; // Using the public Jitsi server
+                const domain = "meet.jit.si";
                 const options = {
-                    roomName: "LiveClassSessionRoom", // Unique room name
+                    roomName: `LiveClass_${Date.now()}`,
                     width: "100%",
                     height: "100%",
-                    parentNode: document.querySelector("#jitsi-video"), // Ensure the element exists
-                    configOverwrite: {
-                        startWithAudioMuted: false,
-                        startWithVideoMuted: false, // Start with video enabled
-                    },
-                    interfaceConfigOverwrite: {
-                        filmStripOnly: false,
-                        SHOW_JITSI_WATERMARK: false,
-                        SHOW_WATERMARK_FOR_GUESTS: false,
-                    },
+                    parentNode: document.querySelector("#jitsi-video"),
                 };
-
-                // Ensure the element exists before creating the Jitsi iframe
-                const jitsiElement = document.querySelector("#jitsi-video");
-                if (jitsiElement) {
-                    this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
-                    // Enable the camera by default when joining
-                    this.jitsiAPI.executeCommand("toggleVideo");
-                    this.cameraEnabled = true;
-                } else {
-                    console.error("Jitsi video container element not found!");
-                }
+                this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
             });
         },
-        endJitsiSession() {
+        endLiveSession() {
             if (this.jitsiAPI) {
-                this.jitsiAPI.dispose(); // Disposes of the Jitsi instance
+                this.jitsiAPI.dispose();
                 this.jitsiAPI = null;
             }
+            this.currentSession = null;
+            this.sessionFinishedMessage = "Session finished.";
+            setTimeout(() => {
+                this.sessionFinishedMessage = "";
+            }, 5000);
         },
-        toggleCamera() {
-            if (this.jitsiAPI) {
-                if (this.cameraEnabled) {
-                    this.jitsiAPI.executeCommand("toggleVideo"); // Turn off the camera
-                } else {
-                    this.jitsiAPI.executeCommand("toggleVideo"); // Turn on the camera
-                }
-                this.cameraEnabled = !this.cameraEnabled;
+        saveClassesToLocalStorage() {
+            localStorage.setItem(
+                "scheduledClasses",
+                JSON.stringify(this.scheduledClasses)
+            );
+        },
+        loadClassesFromLocalStorage() {
+            const classes = localStorage.getItem("scheduledClasses");
+            if (classes) {
+                this.scheduledClasses = JSON.parse(classes);
             }
         },
-        toggleMic() {
-            if (this.jitsiAPI) {
-                if (this.micEnabled) {
-                    this.jitsiAPI.executeCommand("toggleAudio"); // Mute the mic
-                } else {
-                    this.jitsiAPI.executeCommand("toggleAudio"); // Unmute the mic
-                }
-                this.micEnabled = !this.micEnabled;
-            }
-        },
-        toggleScreenShare() {
-            if (this.jitsiAPI) {
-                if (this.screenSharing) {
-                    this.jitsiAPI.executeCommand("stopSharing"); // Stop screen sharing
-                } else {
-                    this.jitsiAPI.executeCommand("startSharing"); // Start screen sharing
-                }
-                this.screenSharing = !this.screenSharing;
-            }
-        },
-        copyLink() {
-            navigator.clipboard
-                .writeText(this.classLink)
-                .then(() => {
-                    this.linkCopied = true;
-                    setTimeout(() => {
-                        this.linkCopied = false;
-                    }, 2000);
-                })
-                .catch((err) => {
-                    console.error("Failed to copy: ", err);
-                });
-        },
+    },
+    mounted() {
+        this.loadClassesFromLocalStorage();
     },
 };
 </script>
 
 <style scoped>
-/* You can add custom styles here if needed */
+/* Add custom styles here */
 </style>
