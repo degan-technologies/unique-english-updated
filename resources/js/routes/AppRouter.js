@@ -1,11 +1,16 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
-import Home from '@/components/Home.vue';
+import StudentHome from '@/pages/Student/StudentHome.vue';
+import InstructorHome from '@/pages/Instructor/InstructorHome.vue';
 
 const appRouter = createRouter({
     history: createWebHashHistory('/'),
     routes: [
-        { path: '/', name: 'home', component: Home },
+        //student page
+        { path: '/', name: 'student', component: StudentHome },
+
+        //instructor page
+        { path: '/instructor', name: 'instructor', component: InstructorHome },
         ]
 })
 

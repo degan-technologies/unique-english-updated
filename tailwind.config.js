@@ -12,9 +12,11 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                kanit: ['Kanit', 'sans-serif'],
+                noto: ['Noto Sans SC', 'sans-serif'], 
+                roboto: ['Roboto', 'sans-serif'],
             },
-        },
+    },
     },
     plugins: [],
 };

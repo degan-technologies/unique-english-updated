@@ -48,7 +48,6 @@ export const useAppStore = defineStore('useAppStore', () => {
             .get('/api/current')
             .then(response => {
                 authUser.value = response.data; 
-                projects.value = authUser.value.projects; 
             })
             .catch(error => changeLoginStatus(false))
     }
