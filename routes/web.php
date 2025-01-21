@@ -5,12 +5,10 @@ use App\Helper\Lang\Back\English;
 use App\Http\Controllers\Auth\AuthController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', fn() => view('welcome'));
+Route::get('/login', fn() => view('welcome'))->name('login');
 
-Route::get('/login', [AuthController::class, 'login'])->name('login');
-
+Route::post('/login', [AuthController::class, 'login']);
 Route::get('/language/{lang}', function ($lang) {
     return $lang == 'am' ? Amharic::translations() : English::translations();
 });

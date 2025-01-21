@@ -16,6 +16,6 @@
 
 <template>
     <div v-if="authUser">
-        <RouterView />
+       <RouterView/>
     </div>
 </template>

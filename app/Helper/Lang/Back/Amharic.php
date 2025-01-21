@@ -14,12 +14,11 @@ class Amharic extends Lang {
         return [
             'name' => 'ስም',
             'age' => 'እድሜ',
+            'login' => 'ይግቡ'
         ];
     }
 
     public static function translations() {
-        return [
-            static::$key => ['name' => static::$name, 'icon' => static::$icon, 'lang' => static::Lang()]
-        ];
+        return ['key' => static::$key, 'name' => static::$name, 'icon' => static::$icon, 'lang' => static::Lang()];
     }
 }
