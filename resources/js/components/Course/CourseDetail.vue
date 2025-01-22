@@ -1,12 +1,10 @@
 <template>
     <div
-        class="course-details-container p-6 max-w-screen-xl mx-auto bg-white rounded-lg shadow-lg"
+        class="course-details-container p-6 max-w-screen-xl mx-auto bg-white rounded-lg shadow-lg h-screen overflow-x-hidden overflow-y-auto"
     >
-        <!-- Flex container to align two cards side by side -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
-            <!-- Left Card: Course Content (Increased Width, Scrollable at Page Level) -->
-            <div class="course-content-card bg-white rounded-lg shadow-lg">
-                <!-- Title and Author -->
+        <div class="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative">
+            <!-- Left Card: Course Content -->
+            <div class="bg-white rounded-lg shadow-lg pb-12">
                 <div class="text-center mb-6">
                     <h1 class="text-3xl font-bold">
                         The Art of Filmmaking: Mastering Storytelling and
@@ -15,81 +13,209 @@
                     <p class="text-lg text-gray-700 mt-2">
                         A course by <strong>Robel Birhanu</strong>
                     </p>
+                </div>
+                <div class="overflow-hidden max-w-full h-auto rounded-lg my-6">
+                    <img
+                        src="/images/course-1.jpg"
+                        alt="Course Image"
+                        class="w-full h-auto rounded-lg object-cover transform hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
+                    />
+                </div>
+                <div class="text-center mb-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-semibold">
+                            What You Will Learn
+                        </h2>
+                        <!-- Global Progress Circle -->
 
-                    <!-- Image with new styles -->
-                    <div class="image-container my-6">
-                        <img
-                            src="/images/course-1.jpg"
-                            alt="Course Image"
-                            class="course-image rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-                        />
+                        <!-- Global Progress Circle -->
+                        <div class="relative">
+                            <div
+                                class="w-16 h-16 rounded-full flex items-center justify-center"
+                                :style="{
+                                    background: `conic-gradient(
+                green ${calculateGlobalProgress()}%, 
+                red ${calculateGlobalProgress()}% 100%
+            )`,
+                                }"
+                            >
+                                <span class="text-lg font-bold text-white">
+                                    {{ calculateGlobalProgress() }}%
+                                </span>
+                            </div>
+                            <p class="text-center text-sm mt-2 text-gray-700">
+                                Progress:
+                                {{ calculateGlobalProgress() }}%
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- About the Course Section -->
-                <div class="mb-8">
-                    <h2 class="text-xl font-semibold">About the Course</h2>
-                    <p class="text-gray-700 mt-4">
-                        Welcome to my course! I’m Robel Birhanu, and in this
-                        course, we’ll explore the fundamentals of filmmaking,
-                        including story development, pre-production, directing,
-                        camera techniques, and editing with Adobe Premiere Pro.
-                    </p>
-                </div>
-
-                <!-- "What You Will Learn" Section -->
                 <div>
-                    <h2 class="text-xl font-semibold mb-4">
-                        What You Will Learn
-                    </h2>
                     <div
-                        v-for="(module, index) in modules"
-                        :key="index"
+                        v-for="(module, moduleIndex) in modules"
+                        :key="moduleIndex"
                         class="mb-6"
                     >
                         <div class="flex justify-between items-center">
-                            <!-- Module as a button -->
                             <button
-                                @click="toggleLesson(index)"
-                                class="text-blue-500 hover:text-blue-700 text-xl w-full text-left py-4 px-4 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition duration-300"
+                                @click="toggleLesson(moduleIndex)"
+                                class="text-blue-500 hover:text-blue-700 text-xl w-full text-left py-4 px-4 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
                             >
                                 <span class="font-semibold">{{
                                     module.title
                                 }}</span>
                                 <i
                                     :class="[
-                                        {
-                                            'transform rotate-180':
-                                                module.showLessons,
-                                        },
-                                        'ml-2',
+                                        { 'rotate-180': module.showLessons },
+                                        'transition-transform duration-300',
                                     ]"
+                                    >&#x25BC;</i
                                 >
-                                    &#x25BC;
-                                </i>
                             </button>
                         </div>
 
-                        <!-- Show lessons when toggled -->
                         <div v-if="module.showLessons" class="ml-4 mt-2">
-                            <ul>
+                            <ul class="list-none pl-0">
                                 <li
-                                    v-for="(lesson, idx) in module.lessons"
-                                    :key="idx"
-                                    class="text-gray-700 flex items-center"
+                                    v-for="(
+                                        lesson, lessonIndex
+                                    ) in module.lessons"
+                                    :key="lessonIndex"
+                                    class="text-gray-700 flex items-center my-1"
                                 >
-                                    <span class="mr-2">▶️</span>
+                                    <input
+                                        type="checkbox"
+                                        :checked="
+                                            module.completedLessons.includes(
+                                                lessonIndex
+                                            )
+                                        "
+                                        @change="
+                                            toggleLessonCompletion(
+                                                moduleIndex,
+                                                lessonIndex
+                                            )
+                                        "
+                                        class="mr-2"
+                                    />
                                     {{ lesson }}
                                 </li>
                             </ul>
+
+                            <!-- Start Quiz Button -->
+                            <div
+                                class="mt-8"
+                                v-if="
+                                    module.completedLessons.length ===
+                                    module.lessons.length
+                                "
+                            >
+                                <button
+                                    @click="startQuiz(moduleIndex)"
+                                    class="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
+                                >
+                                    Start Quiz
+                                </button>
+                            </div>
+
+                            <!-- Quiz Section -->
+                            <div v-if="module.quizStarted">
+                                <h2 class="text-2xl font-bold mb-4">
+                                    Quiz for {{ module.title }}
+                                </h2>
+                                <div class="mb-6">
+                                    <p class="text-lg font-semibold mb-4">
+                                        {{
+                                            module.quiz[
+                                                currentQuestion[moduleIndex]
+                                            ].text
+                                        }}
+                                    </p>
+                                    <div class="flex flex-col gap-2">
+                                        <label
+                                            v-for="(option, optIdx) in module
+                                                .quiz[
+                                                currentQuestion[moduleIndex]
+                                            ].options"
+                                            :key="optIdx"
+                                            class="flex items-center gap-2"
+                                        >
+                                            <input
+                                                type="radio"
+                                                :name="
+                                                    moduleIndex +
+                                                    '-question' +
+                                                    currentQuestion[moduleIndex]
+                                                "
+                                                :value="option"
+                                                v-model="
+                                                    module.quiz[
+                                                        currentQuestion[
+                                                            moduleIndex
+                                                        ]
+                                                    ].selected
+                                                "
+                                                class="form-radio text-blue-500"
+                                            />
+                                            {{ option }}
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Prev and Next Buttons -->
+                                <div class="flex justify-between">
+                                    <button
+                                        v-if="currentQuestion[moduleIndex] > 0"
+                                        @click="prevQuestion(moduleIndex)"
+                                        class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                                    >
+                                        Prev
+                                    </button>
+                                    <button
+                                        v-if="
+                                            currentQuestion[moduleIndex] <
+                                            module.quiz.length - 1
+                                        "
+                                        @click="nextQuestion(moduleIndex)"
+                                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                    <button
+                                        v-else
+                                        @click="submitQuiz(moduleIndex)"
+                                        class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                                    >
+                                        Submit
+                                    </button>
+                                </div>
+                                <!-- Display Result -->
+                                <div
+                                    v-if="quizSubmitted[moduleIndex]"
+                                    class="mt-4"
+                                >
+                                    <p class="text-xl font-semibold">
+                                        Your Score:
+                                        {{ calculateScore(moduleIndex) }}
+                                        %
+                                    </p>
+                                    <button
+                                        v-if="calculateScore(moduleIndex) < 75"
+                                        @click="retakeQuiz(moduleIndex)"
+                                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors mt-4"
+                                    >
+                                        Retake Quiz
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Card: Course Details (Decreased Width, Positioned at the End) -->
+            <!-- Right Card: Course Details -->
             <div
-                class="course-details-card bg-gray-100 p-6 rounded-lg shadow-lg"
+                class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit"
             >
                 <button
                     class="bg-green-500 text-white px-6 py-2 rounded-full mb-4 hover:bg-green-600 transition-colors w-full"
@@ -97,35 +223,35 @@
                     Enroll Now
                 </button>
                 <h2 class="text-xl font-semibold mb-4">Course Details</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-4">
                     <div>
-                        <i class="fas fa-user-graduate text-blue-500 mr-2"></i
-                        ><strong>Level:</strong> Beginners
+                        <i class="fas fa-user-graduate text-blue-500 mr-2"></i>
+                        <strong>Level:</strong> Beginners
                     </div>
                     <div>
-                        <i class="fas fa-language text-green-500 mr-2"></i
-                        ><strong>Language:</strong> Amharic
+                        <i class="fas fa-language text-green-500 mr-2"></i>
+                        <strong>Language:</strong> Amharic
                     </div>
                     <div>
-                        <i class="fas fa-clock text-yellow-500 mr-2"></i
-                        ><strong>Duration:</strong> 5:02
+                        <i class="fas fa-clock text-yellow-500 mr-2"></i>
+                        <strong>Duration:</strong> 5:02
                     </div>
                     <div>
-                        <i class="fas fa-tasks text-red-500 mr-2"></i
-                        ><strong>Activities:</strong> 30
+                        <i class="fas fa-tasks text-red-500 mr-2"></i>
+                        <strong>Activities:</strong> 30
                     </div>
                     <div>
                         <i class="fas fa-tv text-purple-500 mr-2"></i>
                         <strong>Access on:</strong> Mobile, Desktop, and TV
                     </div>
                     <div>
-                        <i class="fas fa-users text-indigo-500 mr-2"></i
-                        ><strong>Lifetime access to the community</strong>
+                        <i class="fas fa-users text-indigo-500 mr-2"></i>
+                        <strong>Lifetime access to the community</strong>
                     </div>
-                    <div>
-                        <i class="fas fa-certificate text-teal-500 mr-2"></i
-                        ><strong>Certificate of completion</strong>
-                    </div>
+                    <a href="#" class="text-blue-500 hover:underline">
+                        <i class="fas fa-certificate text-teal-500 mr-2"></i>
+                        <strong>Certificate of completion</strong>
+                    </a>
                 </div>
             </div>
         </div>
@@ -135,7 +261,7 @@
 <script setup>
 import { ref } from "vue";
 
-// Demo data for modules with lessons
+// Modules with lessons and quizzes
 const modules = ref([
     {
         title: "Module 1: Introduction to Filmmaking",
@@ -145,150 +271,132 @@ const modules = ref([
             "Lesson 2: History of Filmmaking",
             "Lesson 3: Filmmaking Techniques",
         ],
-    },
-    {
-        title: "Module 2: Pre-production and Planning",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Scriptwriting",
-            "Lesson 2: Storyboarding",
-            "Lesson 3: Budgeting and Planning",
+        completedLessons: [],
+        quizStarted: false,
+        quiz: [
+            {
+                text: "What is the primary goal of filmmaking?",
+                options: ["To entertain", "To make money", "Both of these"],
+                correct: "Both of these",
+                selected: null,
+            },
+            {
+                text: "Which of these is a filmmaking technique?",
+                options: ["Camera angles", "Color grading", "Both of these"],
+                correct: "Both of these",
+                selected: null,
+            },
         ],
     },
     {
-        title: "Module 3: Directing and Working with Actors",
+        title: "Module 2: Adobe Premiere Pro Basics",
         showLessons: false,
         lessons: [
-            "Lesson 1: Directing Techniques",
-            "Lesson 2: Actor Communication",
-            "Lesson 3: Casting",
+            "Lesson 1: Introduction to Adobe Premiere Pro",
+            "Lesson 2: Working with the Timeline",
+            "Lesson 3: Editing Basics",
         ],
-    },
-    {
-        title: "Module 4: Camera Techniques and Cinematography",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Camera Angles",
-            "Lesson 2: Lighting for Filmmaking",
-            "Lesson 3: Cinematography Techniques",
-        ],
-    },
-    {
-        title: "Module 5: Editing Fundamentals with Adobe Premiere Pro",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Introduction to Premiere Pro",
-            "Lesson 2: Basic Editing Tools",
-            "Lesson 3: Color Correction",
-        ],
-    },
-    {
-        title: "Module 6: Color Grading, Exporting, and Distributing Your Video",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Introduction to Color Grading",
-            "Lesson 2: Exporting Your Video",
-            "Lesson 3: Distributing Your Content",
+        completedLessons: [],
+        quizStarted: false,
+        quiz: [
+            {
+                text: "What is Adobe Premiere Pro?",
+                options: [
+                    "A photo editing tool",
+                    "A video editing tool",
+                    "None of these",
+                ],
+                correct: "A video editing tool",
+                selected: null,
+            },
+            {
+                text: "Which panel is used for timeline editing?",
+                options: ["Timeline Panel", "Effects Panel", "Both of these"],
+                correct: "Timeline Panel",
+                selected: null,
+            },
         ],
     },
 ]);
 
-// Toggle lessons visibility
-const toggleLesson = (index) => {
-    modules.value[index].showLessons = !modules.value[index].showLessons;
+// Reactive state for quizzes
+const currentQuestion = ref([]);
+const quizSubmitted = ref([]);
+
+modules.value.forEach(() => {
+    currentQuestion.value.push(0);
+    quizSubmitted.value.push(false);
+});
+
+// Function to toggle lessons
+const toggleLesson = (moduleIndex) => {
+    modules.value[moduleIndex].showLessons =
+        !modules.value[moduleIndex].showLessons;
+};
+
+// Function to toggle lesson completion
+const toggleLessonCompletion = (moduleIndex, lessonIndex) => {
+    const module = modules.value[moduleIndex];
+    if (module.completedLessons.includes(lessonIndex)) {
+        module.completedLessons = module.completedLessons.filter(
+            (idx) => idx !== lessonIndex
+        );
+    } else {
+        module.completedLessons.push(lessonIndex);
+    }
+};
+
+// Function to start quiz
+const startQuiz = (moduleIndex) => {
+    modules.value[moduleIndex].quizStarted = true;
+};
+
+// Functions to navigate quiz questions
+const nextQuestion = (moduleIndex) => {
+    currentQuestion.value[moduleIndex]++;
+};
+const prevQuestion = (moduleIndex) => {
+    currentQuestion.value[moduleIndex]--;
+};
+
+// Function to submit quiz
+const submitQuiz = (moduleIndex) => {
+    quizSubmitted.value[moduleIndex] = true;
+};
+
+// Function to calculate score
+const calculateScore = (moduleIndex) => {
+    const quiz = modules.value[moduleIndex].quiz;
+    const correctAnswers = quiz.filter((q) => q.selected === q.correct).length;
+    return Math.round((correctAnswers / quiz.length) * 100);
+};
+
+// Function to retake quiz
+const retakeQuiz = (moduleIndex) => {
+    const module = modules.value[moduleIndex];
+    module.quiz.forEach((q) => (q.selected = null));
+    currentQuestion.value[moduleIndex] = 0;
+    quizSubmitted.value[moduleIndex] = false;
+};
+
+// Function to calculate global progress
+const calculateGlobalProgress = () => {
+    const totalLessons = modules.value.reduce(
+        (sum, module) => sum + module.lessons.length,
+        0
+    );
+    const completedLessons = modules.value.reduce(
+        (sum, module) => sum + module.completedLessons.length,
+        0
+    );
+    return Math.round((completedLessons / totalLessons) * 100);
 };
 </script>
 
 <style scoped>
-/* Custom Styles */
-.course-details-container {
-    max-width: 100%;
-    margin: 0 auto;
-    overflow-x: hidden; /* Hide horizontal scrollbar */
-    overflow-y: auto; /* Ensure page content scrolls vertically */
-    height: 100vh; /* Ensure full height */
-}
-
-button {
-    cursor: pointer;
-    text-decoration: none; /* Remove underline from buttons */
-}
-
-button:hover {
-    text-decoration: none; /* Remove underline on hover */
-}
-
-ul {
-    list-style-type: none;
-    padding-left: 0;
-}
-
-li {
-    margin: 5px 0;
-}
-
-.course-content-card {
-    background-color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding-bottom: 50px;
-}
-
-.course-details-card {
-    background-color: #f7fafc;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    width: 320px; /* Right card width */
-    position: sticky; /* Sticky on larger screens */
-    top: 0;
-    height: fit-content;
-    padding: 1.5rem;
-    margin-top: 0; /* Prevent unnecessary spacing */
-}
-
-.grid {
-    display: grid;
-    gap: 2rem;
-}
-
-@media (min-width: 1024px) {
-    .grid-cols-1 {
-        grid-template-columns: 1fr;
-    }
-    .md\:grid-cols-2 {
-        grid-template-columns: 2fr 1fr; /* Left side bigger than right */
-    }
-}
-
-@media (max-width: 1023px) {
-    .course-details-card {
-        position: relative; /* Allow right card to scroll on mobile */
-        width: 100%; /* Full width on mobile */
-    }
-}
-
-/* Dropdown icon rotation */
-button i {
-    font-size: 16px;
-    transition: transform 0.3s ease;
-}
-
-/* New CSS for Image Styling */
-.image-container {
-    overflow: hidden;
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-}
-
-.course-image {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-    object-fit: cover;
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease;
-}
-
-.course-image:hover {
-    transform: scale(1.05); /* Slight zoom effect on hover */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+.progress-circle {
+    background-color: #f3f4f6;
+    border: 4px solid #3b82f6;
+    color: #2563eb;
 }
 </style>

@@ -4,7 +4,7 @@
         <div v-if="quizStarted === false" class="text-center">
             <button
                 @click="startQuiz"
-                class="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                class="w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
             >
                 Start Quiz
             </button>
@@ -21,7 +21,7 @@
                 "
                 class="mb-4"
             >
-                <h3 class="text-xl font-semibold">
+                <h3 class="text-xl font-semibold mb-4">
                     {{ questions[currentQuestionIndex].question }}
                 </h3>
 
@@ -30,32 +30,33 @@
                         currentQuestionIndex
                     ].answers"
                     :key="answerIndex"
+                    class="mb-2"
                 >
-                    <label class="block">
+                    <label class="block text-gray-700">
                         <input
                             type="radio"
                             :name="'question' + currentQuestionIndex"
                             :value="answer"
                             v-model="userAnswers[currentQuestionIndex]"
-                            class="mr-2"
+                            class="mr-2 rounded-full border-gray-300 text-blue-600 focus:ring focus:ring-blue-300"
                         />
                         {{ answer }}
                     </label>
                 </div>
 
                 <!-- Navigation buttons -->
-                <div class="flex justify-between mt-4">
+                <div class="flex justify-between mt-6">
                     <button
                         v-if="currentQuestionIndex > 0"
                         @click="prevQuestion"
-                        class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                     >
                         Previous
                     </button>
                     <button
                         v-if="currentQuestionIndex < questions.length - 1"
                         @click="nextQuestion"
-                        class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        class="py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                     >
                         Next
                     </button>
@@ -72,7 +73,7 @@
             >
                 <button
                     @click="calculateResult"
-                    class="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    class="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                     Finish Quiz
                 </button>
@@ -80,13 +81,21 @@
 
             <!-- Show Result and Missed Questions -->
             <div v-if="result !== null" class="mt-6">
-                <h3 class="text-2xl font-semibold">
+                <h3 class="text-2xl font-semibold mb-4">
                     You scored {{ result }} / {{ questions.length }}
                 </h3>
-                <p class="text-lg">Great job! Here are the missed questions:</p>
+                <p class="text-lg text-gray-700">
+                    Great job! Here are the missed questions:
+                </p>
                 <ul class="list-disc ml-4 mt-2">
-                    <li v-for="(missed, index) in missedQuestions" :key="index">
-                        <strong>{{ missed.question }}</strong
+                    <li
+                        v-for="(missed, index) in missedQuestions"
+                        :key="index"
+                        class="mb-2"
+                    >
+                        <strong class="text-gray-800">{{
+                            missed.question
+                        }}</strong
                         >: Your answer:
                         <span class="text-red-500">{{
                             missed.userAnswer
@@ -176,17 +185,5 @@ const calculateResult = () => {
 </script>
 
 <style scoped>
-/* Tailwind CSS will handle most of the styling. */
-button {
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #2563eb;
-}
-
-h1,
-h3 {
-    font-family: "Arial", sans-serif;
-}
+/* Tailwind CSS handles all styling. */
 </style>
