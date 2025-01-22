@@ -4,9 +4,9 @@ import { storeToRefs } from "pinia";
 import { useAppStore } from "@/store/useAppStore";
 
 const appStore = useAppStore();
-const { isLoggedIn,logoImage, authUser } = storeToRefs(appStore);
+const { isLoggedIn, logoImage, authUser } = storeToRefs(appStore);
 
-import Login from '@/components/Auth/Login.vue';
+import Login from "@/components/Auth/Login.vue";
 import Body from "@/components/Body.vue";
 
 onMounted(() => {

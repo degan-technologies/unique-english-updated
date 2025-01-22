@@ -79,6 +79,78 @@
             </button>
         </div>
     </div>
+    <div
+        class="mt-10 w-full lg:w-4/5 mx-auto bg-white bg-opacity-95 p-6 rounded-lg shadow-lg"
+    >
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+            Q&A Section
+        </h2>
+
+        <!-- Ask a Question -->
+        <div class="mb-8">
+            <input
+                v-model="newQuestion"
+                type="text"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 mb-4 transition duration-300"
+                placeholder="Ask a question..."
+            />
+            <button
+                @click="addQuestion"
+                class="bg-green-500 text-white px-6 py-3 rounded-lg shadow hover:bg-green-600 transition duration-300 w-full lg:w-auto"
+            >
+                Submit Question
+            </button>
+        </div>
+
+        <!-- List Questions and Answers -->
+        <div
+            v-for="(qa, index) in questions"
+            :key="index"
+            class="mb-6 border-b border-gray-200 pb-4"
+        >
+            <!-- Display Question -->
+            <p class="text-lg font-semibold text-gray-800">
+                {{ qa.question }}
+            </p>
+
+            <!-- List of Answers -->
+            <div class="ml-4 mt-3">
+                <p
+                    v-for="(answer, aIndex) in qa.answers"
+                    :key="aIndex"
+                    class="text-gray-700 bg-gray-100 p-2 rounded-md mb-2"
+                >
+                    - {{ answer }}
+                </p>
+            </div>
+
+            <!-- Reply Section -->
+            <div class="mt-3">
+                <button
+                    @click="toggleReplyField(index)"
+                    class="text-blue-500 underline hover:text-blue-700 transition duration-300"
+                >
+                    Reply
+                </button>
+
+                <!-- Reply Input -->
+                <div v-if="qa.showReplyField" class="mt-3">
+                    <input
+                        v-model="qa.newAnswer"
+                        type="text"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mb-3 transition duration-300"
+                        placeholder="Write your answer..."
+                    />
+                    <button
+                        @click="addAnswer(index)"
+                        class="bg-blue-500 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-600 transition duration-300 w-full lg:w-auto"
+                    >
+                        Submit Answer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -186,6 +258,37 @@ const toggleFullscreen = () => {
     } else {
         video.value.requestFullscreen();
     }
+};
+
+// Q&A Section state
+const questions = ref([]);
+const newQuestion = ref("");
+
+// Add a new question
+const addQuestion = () => {
+    if (newQuestion.value.trim() === "") return;
+    questions.value.push({
+        question: newQuestion.value.trim(),
+        answers: [],
+        newAnswer: "",
+        showReplyField: false,
+    });
+    newQuestion.value = "";
+};
+
+// Toggle reply field visibility
+const toggleReplyField = (index) => {
+    questions.value[index].showReplyField =
+        !questions.value[index].showReplyField;
+};
+
+// Add an answer to a question
+const addAnswer = (index) => {
+    const qa = questions.value[index];
+    if (qa.newAnswer.trim() === "") return;
+    qa.answers.push(qa.newAnswer.trim());
+    qa.newAnswer = "";
+    qa.showReplyField = false;
 };
 </script>
 

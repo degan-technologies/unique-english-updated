@@ -15,6 +15,7 @@ class ErrorLangEnglish extends Lang {
             'email_required' => 'Email is required',
             'invalid_email' => 'Invalid email provided',
             'enter_your_password' => 'Please enter you password',
+            'invalid_credentials' => 'Invalid credentials provided',
         ];
     }
 
