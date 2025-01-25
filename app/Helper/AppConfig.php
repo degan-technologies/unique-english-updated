@@ -3,6 +3,9 @@ namespace App\Helper;
 
 define('MALE', 1);
 define('FEMALE', 2);
+define('GENDER',[
+    MALE, FEMALE
+]);
 
 define('SYSTEM_ADMIN', 1);
 define('INSTRUCTOR', 2);
