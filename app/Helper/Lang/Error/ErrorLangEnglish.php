@@ -18,10 +18,25 @@ class ErrorLangEnglish extends Lang {
             'enter_your_password' => 'Please enter you password',
             'invalid_credentials' => 'Invalid credentials',
 
+            'user_successfully_registered' => 'User successfully registered',
             'course_successfully_added' => 'Course succefully added',
             'course_successfully_updated' => 'Course succefully updated',
             'course_successfully_deleted' => 'Course is trash succefully',
             'course_not_found' => 'Course could not be found',
+
+            'registration' => [
+                'email.required' => 'Email is required',
+                'invalid.email' => 'Invalid email provided',
+                'invalid.unique' => 'Email already exist',
+                'password.required' => 'Please enter you password',
+                'password.min' => 'Password contain atleast four characters',
+
+                'first_name.required' => 'Name is required',
+                'first_name.not_regex' => 'Name must have valid characters',
+                'first_name.alpha_das' => 'Name must have alphabetic  characters',
+                'middle_name.not_regex' => 'Name must have valid characters',
+                'middle_name.alpha_das' => 'Name must have alphabetic  characters',
+            ],
 
             'courses' => [
                 'course_name.required' => 'Course name is required ',

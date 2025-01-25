@@ -42,7 +42,7 @@ class CourseController extends Controller {
         /**
          * @var App\Models\User $user
          */
-
+        
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();

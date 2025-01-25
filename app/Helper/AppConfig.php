@@ -6,7 +6,7 @@ define('FEMALE', 2);
 
 define('SYSTEM_ADMIN', 1);
 define('INSTRUCTOR', 2);
-define('STUDENT', 2);
+define('STUDENT', 3);
 
 define('AMAHARIC', 'am');
 define('ENGLISH', 'en');
