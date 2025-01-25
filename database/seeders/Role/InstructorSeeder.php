@@ -15,7 +15,7 @@ class InstructorSeeder extends Seeder {
      */
     public function run(): void {
         $instructors = [
-            ['first_name' => 'Instructor', 'email' => 'Instructor', 'gender' => MALE, 'role' => INSTRUCTOR],
+            ['first_name' => 'Instructor', 'email' => 'instructor', 'gender' => MALE, 'role' => INSTRUCTOR],
         ];
 
         $systemAdmin = User::query()

@@ -15,13 +15,13 @@ return new class extends Migration {
 
             $table->string('course_name');
             $table->longText('overview')->nullable();
-            $table->string('skill_level');
+            $table->unsignedInteger('skill_level')->nullable();
 
-            $table->unsignedBigInteger('price');
+            $table->unsignedBigInteger('price')->nullable();
             $table->unsignedBigInteger('discount')->nullable();
-            $table->integer('credit_hour');
+            $table->integer('credit_hour')->nullable();
 
-            $table->json('tag');
+            $table->json('tag')->default('{}');
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
             
             $table->timestamps();

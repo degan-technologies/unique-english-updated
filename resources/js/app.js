@@ -3,7 +3,7 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 
 import appRouter from "@/routes/AppRouter.js";
-import App from "./App.vue";
+import App from "@/App.vue";
 
 const app = createApp(App);
 

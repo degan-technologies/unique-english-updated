@@ -4,8 +4,8 @@
     const name = ref('');
 
 </script>
+
 <template>
-    
     <div>
         student page
         {{ name }}

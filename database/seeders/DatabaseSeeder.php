@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Course\courseSeeder;
 use Database\Seeders\Role\InstructorSeeder;
 use Database\Seeders\Role\StudentSeeder;
 use Database\Seeders\Role\SystemAdminSeeder;
@@ -17,6 +18,8 @@ class DatabaseSeeder extends Seeder {
             SystemAdminSeeder::class,
             InstructorSeeder::class,
             StudentSeeder::class,
+
+            CourseSeeder::class,
         ]);
     }
 }

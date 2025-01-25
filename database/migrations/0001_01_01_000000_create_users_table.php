@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('first_name');
             $table->string('middle_name');
             $table->string('last_name')->nullable();
-            $table->string('user_name');
+            $table->string('user_name')->nullable()->unique();
             $table->string('full_name')->storedAs("CONCAT(`first_name`, ' ', `middle_name`, ' ', `last_name`)");
 
             $table->string('phone')->nullable();

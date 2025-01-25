@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Helper\Lang\Back\Amharic;
 use App\Helper\Lang\Error\ErrorLangAmharic;
 use App\Helper\Lang\Error\ErrorLangEnglish;
 use Illuminate\Http\Request;
@@ -19,9 +18,9 @@ class LangService {
      * Retrieve the language array based on the given key.
      *
      * @param string $key this key is translation key example ['name' => 'Name"]
-     * @return string
+     * @return mixed
      */
-    public function getLang(string $key): string {
+    public function getLang(string $key): mixed {
 
         $lang = $this->request;
         
