@@ -19,7 +19,7 @@
     <title>{{ "Unique English" }}</title>
 </head>
 
-<body class="font-Kanit">
+<body class="font-Kanit overflow-hidden">
     <div id="app"></div>
     <script type="module" src="{{ mix('js/App.js') }}"></script>
 </body>
