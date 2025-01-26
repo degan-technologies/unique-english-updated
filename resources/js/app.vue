@@ -15,8 +15,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="flex-grow flex">
-        <div class="flex-grow p-4 mt-6">
+    <div class="">
+        <div class="overflow-hidden">
             <template v-if="isLoggedIn">
                 <Body />
             </template>

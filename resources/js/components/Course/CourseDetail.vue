@@ -27,16 +27,18 @@
                             What You Will Learn
                         </h2>
                         <!-- Global Progress Circle -->
-
-                        <!-- Global Progress Circle -->
                         <div class="relative">
                             <div
                                 class="w-16 h-16 rounded-full flex items-center justify-center"
+                                role="progressbar"
+                                :aria-valuenow="calculateGlobalProgress()"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
                                 :style="{
                                     background: `conic-gradient(
-                green ${calculateGlobalProgress()}%, 
-                red ${calculateGlobalProgress()}% 100%
-            )`,
+                                        green ${calculateGlobalProgress()}%, 
+                                        red ${calculateGlobalProgress()}% 100%
+                                    )`,
                                 }"
                             >
                                 <span class="text-lg font-bold text-white">
@@ -50,7 +52,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div>
                     <div
                         v-for="(module, moduleIndex) in modules"
@@ -67,11 +68,14 @@
                                 }}</span>
                                 <i
                                     :class="[
-                                        { 'rotate-180': module.showLessons },
-                                        'transition-transform duration-300',
+                                        {
+                                            'rotate-180': module.showLessons,
+                                        },
                                     ]"
-                                    >&#x25BC;</i
+                                    class="transition-transform duration-300"
                                 >
+                                    &#x25BC;
+                                </i>
                             </button>
                         </div>
 
@@ -124,71 +128,91 @@
                                 <h2 class="text-2xl font-bold mb-4">
                                     Quiz for {{ module.title }}
                                 </h2>
-                                <div class="mb-6">
-                                    <p class="text-lg font-semibold mb-4">
-                                        {{
-                                            module.quiz[
-                                                currentQuestion[moduleIndex]
-                                            ].text
-                                        }}
-                                    </p>
-                                    <div class="flex flex-col gap-2">
-                                        <label
-                                            v-for="(option, optIdx) in module
-                                                .quiz[
-                                                currentQuestion[moduleIndex]
-                                            ].options"
-                                            :key="optIdx"
-                                            class="flex items-center gap-2"
-                                        >
-                                            <input
-                                                type="radio"
-                                                :name="
-                                                    moduleIndex +
-                                                    '-question' +
+
+                                <div v-if="!quizSubmitted[moduleIndex]">
+                                    <div class="mb-6">
+                                        <p class="text-lg font-semibold mb-4">
+                                            Question
+                                            {{
+                                                currentQuestion[moduleIndex] + 1
+                                            }}
+                                            of
+                                            {{ module.quiz.length }}
+                                        </p>
+                                        <p class="text-gray-500">
+                                            {{
+                                                module.quiz[
                                                     currentQuestion[moduleIndex]
-                                                "
-                                                :value="option"
-                                                v-model="
-                                                    module.quiz[
+                                                ].text
+                                            }}
+                                        </p>
+                                        <div class="flex flex-col gap-2 mt-2">
+                                            <label
+                                                v-for="(
+                                                    option, optIdx
+                                                ) in module.quiz[
+                                                    currentQuestion[moduleIndex]
+                                                ].options"
+                                                :key="optIdx"
+                                                class="flex items-center gap-2"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    :name="
+                                                        moduleIndex +
+                                                        '-question-' +
                                                         currentQuestion[
                                                             moduleIndex
                                                         ]
-                                                    ].selected
-                                                "
-                                                class="form-radio text-blue-500"
-                                            />
-                                            {{ option }}
-                                        </label>
+                                                    "
+                                                    :value="option"
+                                                    v-model="
+                                                        module.quiz[
+                                                            currentQuestion[
+                                                                moduleIndex
+                                                            ]
+                                                        ].selected
+                                                    "
+                                                    class="form-radio text-blue-500"
+                                                />
+                                                {{ option }}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Prev and Next Buttons -->
+                                    <div
+                                        class="flex justify-between items-center"
+                                    >
+                                        <button
+                                            v-if="
+                                                currentQuestion[moduleIndex] > 0
+                                            "
+                                            @click="prevQuestion(moduleIndex)"
+                                            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                                        >
+                                            Prev
+                                        </button>
+                                        <button
+                                            v-if="
+                                                currentQuestion[moduleIndex] <
+                                                module.quiz.length - 1
+                                            "
+                                            @click="nextQuestion(moduleIndex)"
+                                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors ml-auto"
+                                        >
+                                            Next
+                                        </button>
+                                        <button
+                                            v-else
+                                            @click="submitQuiz(moduleIndex)"
+                                            class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors ml-auto"
+                                        >
+                                            Submit
+                                        </button>
                                     </div>
                                 </div>
-                                <!-- Prev and Next Buttons -->
-                                <div class="flex justify-between">
-                                    <button
-                                        v-if="currentQuestion[moduleIndex] > 0"
-                                        @click="prevQuestion(moduleIndex)"
-                                        class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                                    >
-                                        Prev
-                                    </button>
-                                    <button
-                                        v-if="
-                                            currentQuestion[moduleIndex] <
-                                            module.quiz.length - 1
-                                        "
-                                        @click="nextQuestion(moduleIndex)"
-                                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                    >
-                                        Next
-                                    </button>
-                                    <button
-                                        v-else
-                                        @click="submitQuiz(moduleIndex)"
-                                        class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                                    >
-                                        Submit
-                                    </button>
-                                </div>
+
                                 <!-- Display Result -->
                                 <div
                                     v-if="quizSubmitted[moduleIndex]"
@@ -257,7 +281,6 @@
         </div>
     </div>
 </template>
-
 <script setup>
 import { ref } from "vue";
 
@@ -278,125 +301,203 @@ const modules = ref([
                 text: "What is the primary goal of filmmaking?",
                 options: ["To entertain", "To make money", "Both of these"],
                 correct: "Both of these",
-                selected: null,
+                selected: "",
             },
             {
-                text: "Which of these is a filmmaking technique?",
-                options: ["Camera angles", "Color grading", "Both of these"],
-                correct: "Both of these",
-                selected: null,
+                text: "Who invented the first motion picture?",
+                options: ["Thomas Edison", "George Eastman", "Louis Le Prince"],
+                correct: "Louis Le Prince",
+                selected: "",
             },
         ],
     },
     {
-        title: "Module 2: Adobe Premiere Pro Basics",
+        title: "Module 2: Camera Techniques",
         showLessons: false,
         lessons: [
-            "Lesson 1: Introduction to Adobe Premiere Pro",
-            "Lesson 2: Working with the Timeline",
-            "Lesson 3: Editing Basics",
+            "Lesson 1: Camera Angles",
+            "Lesson 2: Camera Movements",
+            "Lesson 3: Lighting Techniques",
         ],
         completedLessons: [],
         quizStarted: false,
         quiz: [
             {
-                text: "What is Adobe Premiere Pro?",
+                text: "What is the purpose of a close-up shot?",
                 options: [
-                    "A photo editing tool",
-                    "A video editing tool",
-                    "None of these",
+                    "To show emotion",
+                    "To show context",
+                    "To show action",
                 ],
-                correct: "A video editing tool",
-                selected: null,
+                correct: "To show emotion",
+                selected: "",
             },
             {
-                text: "Which panel is used for timeline editing?",
-                options: ["Timeline Panel", "Effects Panel", "Both of these"],
-                correct: "Timeline Panel",
-                selected: null,
+                text: "What is the term for the steady movement of the camera?",
+                options: ["Tilt", "Dolly", "Zoom"],
+                correct: "Dolly",
+                selected: "",
+            },
+        ],
+    },
+    {
+        title: "Module 3: Audio and Sound Design",
+        showLessons: false,
+        lessons: [
+            "Lesson 1: Importance of Sound",
+            "Lesson 2: Microphone Types",
+            "Lesson 3: Sound Editing Techniques",
+        ],
+        completedLessons: [],
+        quizStarted: false,
+        quiz: [
+            {
+                text: "Which microphone is best for recording interviews?",
+                options: ["Lavalier", "Shotgun", "Condenser"],
+                correct: "Lavalier",
+                selected: "",
+            },
+            {
+                text: "What is Foley sound?",
+                options: [
+                    "Sound created in post-production",
+                    "Live recorded sound on set",
+                    "Digital sound effects",
+                ],
+                correct: "Sound created in post-production",
+                selected: "",
+            },
+        ],
+    },
+    {
+        title: "Module 4: Video Editing with Adobe Premiere Pro",
+        showLessons: false,
+        lessons: [
+            "Lesson 1: Introduction to Adobe Premiere Pro",
+            "Lesson 2: Basic Editing Tools",
+            "Lesson 3: Advanced Editing Techniques",
+        ],
+        completedLessons: [],
+        quizStarted: false,
+        quiz: [
+            {
+                text: "What does the 'cut' tool do in Premiere Pro?",
+                options: ["Splits clips", "Applies effects", "Renders video"],
+                correct: "Splits clips",
+                selected: "",
+            },
+            {
+                text: "Which format is best for exporting videos for YouTube?",
+                options: ["MP4", "MOV", "AVI"],
+                correct: "MP4",
+                selected: "",
             },
         ],
     },
 ]);
 
-// Reactive state for quizzes
-const currentQuestion = ref([]);
-const quizSubmitted = ref([]);
+// Track current question index for each module
+const currentQuestion = ref(Array(modules.value.length).fill(0));
 
-modules.value.forEach(() => {
-    currentQuestion.value.push(0);
-    quizSubmitted.value.push(false);
-});
+// Track quiz submission status for each module
+const quizSubmitted = ref(Array(modules.value.length).fill(false));
 
-// Function to toggle lessons
+// Toggle lessons visibility for a specific module
 const toggleLesson = (moduleIndex) => {
     modules.value[moduleIndex].showLessons =
         !modules.value[moduleIndex].showLessons;
 };
 
-// Function to toggle lesson completion
+// Toggle lesson completion for a specific module
 const toggleLessonCompletion = (moduleIndex, lessonIndex) => {
-    const module = modules.value[moduleIndex];
-    if (module.completedLessons.includes(lessonIndex)) {
-        module.completedLessons = module.completedLessons.filter(
-            (idx) => idx !== lessonIndex
-        );
+    const completedLessons = modules.value[moduleIndex].completedLessons;
+    const lesson = lessonIndex;
+    if (completedLessons.includes(lesson)) {
+        completedLessons.splice(completedLessons.indexOf(lesson), 1);
     } else {
-        module.completedLessons.push(lessonIndex);
+        completedLessons.push(lesson);
     }
 };
 
-// Function to start quiz
+// Start quiz for a specific module
 const startQuiz = (moduleIndex) => {
     modules.value[moduleIndex].quizStarted = true;
+    currentQuestion.value[moduleIndex] = 0; // Reset question index
 };
 
-// Functions to navigate quiz questions
+// Next question for a specific module
 const nextQuestion = (moduleIndex) => {
-    currentQuestion.value[moduleIndex]++;
-};
-const prevQuestion = (moduleIndex) => {
-    currentQuestion.value[moduleIndex]--;
+    if (
+        currentQuestion.value[moduleIndex] <
+        modules.value[moduleIndex].quiz.length - 1
+    ) {
+        currentQuestion.value[moduleIndex]++;
+    }
 };
 
-// Function to submit quiz
+// Previous question for a specific module
+const prevQuestion = (moduleIndex) => {
+    if (currentQuestion.value[moduleIndex] > 0) {
+        currentQuestion.value[moduleIndex]--;
+    }
+};
+
+// Submit quiz for a specific module
 const submitQuiz = (moduleIndex) => {
     quizSubmitted.value[moduleIndex] = true;
 };
 
-// Function to calculate score
+// Calculate score for a specific module
 const calculateScore = (moduleIndex) => {
     const quiz = modules.value[moduleIndex].quiz;
-    const correctAnswers = quiz.filter((q) => q.selected === q.correct).length;
+    const correctAnswers = quiz.filter(
+        (question) => question.selected === question.correct
+    ).length;
     return Math.round((correctAnswers / quiz.length) * 100);
 };
 
-// Function to retake quiz
+// Retake quiz for a specific module
 const retakeQuiz = (moduleIndex) => {
-    const module = modules.value[moduleIndex];
-    module.quiz.forEach((q) => (q.selected = null));
-    currentQuestion.value[moduleIndex] = 0;
+    modules.value[moduleIndex].quiz.forEach((question) => {
+        question.selected = "";
+    });
     quizSubmitted.value[moduleIndex] = false;
+    currentQuestion.value[moduleIndex] = 0;
+    modules.value[moduleIndex].quizStarted = false;
 };
 
-// Function to calculate global progress
+// Calculate global progress percentage
 const calculateGlobalProgress = () => {
-    const totalLessons = modules.value.reduce(
-        (sum, module) => sum + module.lessons.length,
-        0
-    );
-    const completedLessons = modules.value.reduce(
-        (sum, module) => sum + module.completedLessons.length,
-        0
-    );
+    let totalLessons = 0;
+    let completedLessons = 0;
+    modules.value.forEach((module) => {
+        totalLessons += module.lessons.length;
+        completedLessons += module.completedLessons.length;
+    });
     return Math.round((completedLessons / totalLessons) * 100);
 };
 </script>
 
 <style scoped>
-.progress-circle {
-    background-color: #f3f4f6;
-    border: 4px solid #3b82f6;
-    color: #2563eb;
+.course-details-container {
+    max-height: calc(100vh - 48px);
+}
+
+.bg-green-500:hover,
+.bg-blue-500:hover,
+.bg-gray-500:hover {
+    transition: background-color 0.3s ease;
+}
+
+.bg-green-500 {
+    background-color: #38a169;
+}
+
+.bg-blue-500 {
+    background-color: #3182ce;
+}
+
+.bg-gray-500 {
+    background-color: #6b7280;
 }
 </style>

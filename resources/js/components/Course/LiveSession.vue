@@ -126,9 +126,8 @@
                                                     'Upcoming',
                                             }"
                                             class="font-semibold"
+                                            >{{ classItem.status }}</span
                                         >
-                                            {{ classItem.status }}
-                                        </span>
                                     </p>
 
                                     <div class="flex items-center gap-2 mt-2">
@@ -284,16 +283,25 @@ export default {
             this.scheduledClasses[index].status = "Live";
             this.saveClassesToLocalStorage();
 
-            this.$nextTick(() => {
-                const domain = "meet.jit.si";
-                const options = {
-                    roomName: `LiveClass_${Date.now()}`,
-                    width: "100%",
-                    height: "100%",
-                    parentNode: document.querySelector("#jitsi-video"),
-                };
-                this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
-            });
+            // Load Jitsi API dynamically if not already loaded
+            if (!window.JitsiMeetExternalAPI) {
+                const script = document.createElement("script");
+                script.src = "https://meet.jit.si/external_api.js";
+                script.onload = this.initializeJitsi;
+                document.body.appendChild(script);
+            } else {
+                this.initializeJitsi();
+            }
+        },
+        initializeJitsi() {
+            const domain = "meet.jit.si";
+            const options = {
+                roomName: `LiveClass_${Date.now()}`,
+                width: "100%",
+                height: "100%",
+                parentNode: document.querySelector("#jitsi-video"),
+            };
+            this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
         },
         endLiveSession() {
             if (this.jitsiAPI) {

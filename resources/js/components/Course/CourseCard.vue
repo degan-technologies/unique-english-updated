@@ -2,6 +2,7 @@
     <div class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
         <!-- Popular Courses Title -->
         <h1 class="text-2xl font-bold mb-6 text-center">Popular Courses</h1>
+
         <!-- Typing Animation -->
         <div class="text-center mb-4">
             <h1
@@ -11,12 +12,13 @@
                 <span class="cursor">|</span>
             </h1>
         </div>
+
         <!-- Responsive grid layout -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <div
                 v-for="course in courses"
                 :key="course.id"
-                class="relative p-4 bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 cursor-pointer"
+                class="relative p-4 bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 cursor-pointer flex flex-col"
             >
                 <!-- Image with Play Button -->
                 <div class="relative group">
@@ -51,7 +53,7 @@
                 </div>
 
                 <!-- Course Info -->
-                <div class="p-4 flex flex-col">
+                <div class="flex-1 p-4">
                     <h2 class="text-lg font-bold mb-2">{{ course.title }}</h2>
                     <p class="text-sm text-gray-600">By: {{ course.author }}</p>
                     <div class="flex items-center mt-2">
@@ -65,9 +67,12 @@
                     >
                         ${{ course.price.toFixed(2) }}
                     </div>
-                    <!-- Buy Now Button -->
+                </div>
+
+                <!-- Buy Now Button -->
+                <div class="p-4 pt-0 mt-auto flex justify-center">
                     <button
-                        class="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 focus:outline-none transition-colors"
+                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 focus:outline-none transition-colors w-full"
                     >
                         Buy Now
                     </button>
