@@ -21,16 +21,21 @@ class ErrorLangEnglish extends Lang {
 
             'user_successfully_registered' => 'User successfully registered',
             'user_successfully_deleted' => 'User successfully deleted',
+            
+            'profile_successfully_updated' => 'Profile succefully updated',
+            'incorrect_old_password' => 'incorrect old password',
+            'password_changed' => 'password succefully changed',
+            'registration_failed' => 'Registration faild occure occurred',
 
             'course_successfully_added' => 'Course succefully added',
             'course_successfully_updated' => 'Course succefully updated',
             'course_successfully_deleted' => 'Course is trash succefully',
             'course_not_found' => 'Course could not be found',
 
-            'profile_successfully_updated' => 'Profile succefully updated',
-            'incorrect_old_password' => 'incorrect old password',
-            'password_changed' => 'password succefully changed',
-            'registration_failed' => 'Registration faild occure occurred',
+            'course_content_successfully_added' => 'Course content succefully added',
+            'course_content_successfully_updated' => 'Course content succefully updated',
+            'course_content_successfully_deleted' => 'Course content is trash succefully',
+            'course_content_not_found' => 'Course content could not be found',
 
             'registration' => [
                 'email.required' => 'Email is required',
@@ -69,6 +74,19 @@ class ErrorLangEnglish extends Lang {
                 'discount.numeric' => 'please insert number only',
                 'credit_hour.numeric' => 'please insert number only',
             ],
+
+            'courseContent' => [
+                'title.required' => 'Title For Content is required ',
+                'title.not_regex' => 'Title must be descriptive',
+                'title.min' => 'Title must have minmum four characters',
+                'description.min' => 'Description must have minmum ten characters',
+                'content_type.in' => 'Please add required content type',
+                'content_url.file' => 'Upload your file',
+                'thumbnail_url.image' => 'Upload you thumbnail image',
+                'hour.date_format' => 'Please choose hour',
+                'status.in' => 'Do you want to publish',
+                'note.min' => 'Note must have minmum ten characters',
+            ]
         ];
     }
 

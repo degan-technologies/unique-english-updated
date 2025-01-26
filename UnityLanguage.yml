@@ -32,13 +32,13 @@ Course
 CourseContent
   -id
   -course_id
-  -squence (step1, step2, step3)
+  -sequence (step1, step2, step3)
   -title 
   -description 
   -content_type,  [video, pdf, image ...]
   -content_url, 
-  -temnail_url (image)
-  -duration
+  -thumbnail_url (image)
+  -hour
   -status (draft, published, archived)
   -note
   -isDownloadable

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
 use App\Models\Course\Course;
+use App\Models\Course\CourseContent;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
@@ -53,12 +54,12 @@ class User extends Authenticatable {
         ];
     }
 
-    public function courses() { return $this->hasMany(Course::class); }
     public function student() { return $this->hasOne(Student::class); }
     public function instructor() { return $this->hasOne(Instructor::class); }
     public function systemAdmin() { return $this->hasOne(SystemAdmin::class); }
 
-
+    public function courses() { return $this->hasMany(Course::class); }
+    public function courseContents() { return $this->hasMany(CourseContent::class); }
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){

@@ -15,17 +15,17 @@ return new class extends Migration
             $table->string('slug')->unique();
 
             $table->string('title');
-            $table->integer('squence');
+            $table->integer('sequence');
             $table->longText('description')->nullable();
 
-            $table->integer('content_type');
-            $table->string('content_url')->unique();
-            $table->string('temnail_url')->unique();
+            $table->integer('content_type')->nullable();
+            $table->string('content_url')->unique()->nullable();
+            $table->string('thumbnail_url')->unique()->nullable();
 
-            $table->integer('duration');
-            $table->string('status');
+            $table->time('hour')->nullable();
+            $table->integer('status')->nullable();
             $table->text('note')->nullable();
-            $table->boolean('isDownloadable');
+            $table->boolean('isDownloadable')->default(false);
 
             $table->unsignedTinyInteger('download_status')->storedAs("IF(`isDownloadable` IS NULL, 1, NULL)");
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");

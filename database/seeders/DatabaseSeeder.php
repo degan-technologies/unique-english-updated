@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Course\CourseContent;
 use Database\Seeders\Course\courseSeeder;
 use Database\Seeders\Role\InstructorSeeder;
 use Database\Seeders\Role\StudentSeeder;
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder {
             StudentSeeder::class,
 
             CourseSeeder::class,
+            CourseContent::class,
         ]);
     }
 }

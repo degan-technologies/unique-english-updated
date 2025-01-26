@@ -47,6 +47,8 @@ class CourseController extends Controller {
             ->whereSystemAdminOrInstructor()
             ->first();
 
+        if(!$user) return;
+        
         $validationRules = [
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'overview' => 'min:10',
@@ -54,7 +56,7 @@ class CourseController extends Controller {
             'skill_level' => 'numeric',
             'price' => 'numeric',
             'discount' => 'numeric',
-            'credit_hour' => 'numeric'
+            'credit_hour' => 'numeric',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -105,6 +107,8 @@ class CourseController extends Controller {
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
+
+        if (!$user) return;
 
         $course = Course::query()
             ->where('user_id', $user->id)
@@ -158,6 +162,8 @@ class CourseController extends Controller {
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
+            
+        if (!$user) return;
 
         $course = Course::query()
             ->where('user_id', $user->id)
