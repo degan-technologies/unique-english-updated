@@ -14,11 +14,12 @@ class English extends Lang {
         return [
             'name' => 'Name',
             'age' => 'Age',
-            'login' => 'Login'
         ];
     }
 
     public static function translations() {
-        return ['key' => static::$key, 'name' => static::$name, 'icon' => static::$icon, 'lang' => static::Lang()];
+        return [
+            static::$key => ['name' => static::$name, 'icon' => static::$icon,'lang' => static::Lang()]
+        ];
     }
 }
