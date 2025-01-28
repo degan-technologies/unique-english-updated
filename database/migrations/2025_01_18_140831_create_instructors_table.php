@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('instructors', function (Blueprint $table) {
             $table->id();
+            $table->unsignedInteger('state');
             $table->json('permission')->default("{}");
             $table->unsignedTinyInteger('is_active')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
             $table->softDeletes();

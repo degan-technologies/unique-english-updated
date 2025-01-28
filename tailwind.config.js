@@ -12,9 +12,7 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                kanit: ["Kanit", "sans-serif"],
-                noto: ["Noto Sans SC", "sans-serif"],
-                roboto: ["Roboto", "sans-serif"],
+                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
         },
     },

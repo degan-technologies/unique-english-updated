@@ -7,27 +7,28 @@ use Exception;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
-class SystemAdminSeeder extends Seeder {
+class SecondaryAdminSeeder extends Seeder {
     use UserSeederTrait;
     /**
      * Run the database seeds.
      */
     public function run(): void {
-        $sysAdmins = [
-            ['first_name' => 'System Admin', 'email' => 'admin', 'gender' => MALE, 'role' => SYSTEM_ADMIN],
+        $secondaryAdmins = [
+            ['first_name' => 'Secondary Admin', 'email' => 'secondaryadmin', 'gender' => FEMALE, 'role' => SECONDARY_ADMIN],
         ];
 
         try {
             DB::beginTransaction();
 
-            foreach ($sysAdmins as $sysAdmin) {
-                $user = $this->createUser($sysAdmin);
+
+            foreach ($secondaryAdmins as $secondaryAdmin) {
+                $user = $this->createUser($secondaryAdmin);
             }
 
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
-            echo "Unable to seed system admins";
+            echo "Unable to seed secondary admins: " . $e->getMessage();
         }
     }
 }
