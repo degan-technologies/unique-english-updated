@@ -9,6 +9,11 @@ use App\Models\Course\CourseContent;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
+// use Illuminate\Contracts\Auth\MustVerifyEmail
+use App\Models\Live\LiveSession;
+use App\Models\Live\Participant;
+use App\Models\Live\LiveResource;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -59,7 +64,11 @@ class User extends Authenticatable {
     public function systemAdmin() { return $this->hasOne(SystemAdmin::class); }
 
     public function courses() { return $this->hasMany(Course::class); }
+    public function liveSessions() { return $this->hasMany(LiveSession::class);}
+    public function participants() { return $this->hasMany(Participant::class);}
+    public function liveResources() { return $this->hasMany(LiveResource::class);} 
     public function courseContents() { return $this->hasMany(CourseContent::class); }
+
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){
@@ -74,4 +83,7 @@ class User extends Authenticatable {
                     ->orWhere(fn($subQuery) => $subQuery->has('instructor'));
             });
     }
+
+
 }
+
