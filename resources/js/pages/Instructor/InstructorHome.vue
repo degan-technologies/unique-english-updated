@@ -1,5 +1,13 @@
+<script setup >
+import AvatarUpload from '../../components/Profile/AvatarUpload.vue';
+
+
+</script>
+
 <template>
-    <div>
-        instractor page
-    </div>
+ 
+    <AvatarUpload/>
+   
+
+
 </template>

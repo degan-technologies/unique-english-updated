@@ -36,7 +36,6 @@ class UserController extends Controller {
      * @return mixed
      */
     public function store(Request $request) {
-
         $validationRules = [
             'email' => 'required|email|unique:users',
             'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
@@ -64,8 +63,8 @@ class UserController extends Controller {
             $user->middle_name = $request->middle_name;
             $user->password = Hash::make($request->password);
             $user->role = STUDENT;
-            $user->save();
             $user->created_at = Carbon::now();
+            $user->save();
 
             $student = new Student();
             $student->user_id = $user->id;
@@ -175,14 +174,15 @@ class UserController extends Controller {
 
         $validationRules = [
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'first_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'last_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'phone' => [ 'unique:users,phone,' . $user->id, 'regex:/[0-9]', 'size:13'],
+            'first_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
+            'middle_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
+            'last_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
+            'phone' => [ 'unique:users,phone,' . $user->id, 'regex:/[0-9]/', 'size:13'],
             'profile' => 'image',
             'bg_image' => 'image',
             'gender' => [Rule::in(GENDER)],
         ];
+        
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
         if (!$validator->passes()) {

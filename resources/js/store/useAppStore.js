@@ -7,8 +7,10 @@ export const useAppStore = defineStore('useAppStore', () => {
     const authUser = ref(null);
     const frontLang = ref({});
     const logoImage = ref("/images/logo.png");
+    const facebook = ref("/socialMediaIcons/face.png");
     const lang = ref('en');
-
+    const google = ref("/socialMediaIcons/google.png");
+    
     const authToken = useLocalStorage('authToken', '');
     const loggedIn = useLocalStorage('loggedin', false);
 
@@ -52,6 +54,11 @@ export const useAppStore = defineStore('useAppStore', () => {
             .catch(error => changeLoginStatus(false))
     }
 
+    function logout(){
+        authToken.value = '';
+        loggedIn.value = false;
+    }
+
     return {
         logoImage,
         isLoggedIn,
@@ -67,5 +74,10 @@ export const useAppStore = defineStore('useAppStore', () => {
         lang,
         frontLang,
         fetchFrontLanguages,
+
+        facebook,
+        google,
+
+        logout,
     };
 });
