@@ -1,11 +1,10 @@
 <?php
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Live\ParticipantController;
-use App\Http\Controllers\Live\LiveSessionController;
-use App\Http\Controllers\Live\LiveResourceController;
-use App\Http\Controllers\Live\VertualClassEnrollmentController;
+use App\Http\Controllers\Course\CourseContentController;
+use App\Http\Controllers\Course\CourseController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -22,10 +21,6 @@ Route::middleware('auth:api')
 Route::middleware('auth:api')
     ->group(function () {
         Route::get('/current', [AuthController::class, 'currentUser']);
-        Route::resource('live-sessions', LiveSessionController::class);
-        Route::resource('live-resources', LiveResourceController::class);
-        Route::resource('participants', ParticipantController::class);
-        Route::resource('virtual-class-enrollments', VertualClassEnrollmentController::class);
     });
 
 Route::middleware('auth:api')

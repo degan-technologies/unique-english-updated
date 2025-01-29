@@ -29,7 +29,6 @@ return new class extends Migration
             $table->string('bg_image')->nullable()->unique();
 
             $table->integer('role');
-            $table->json('permission')->default('{}');
             
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
