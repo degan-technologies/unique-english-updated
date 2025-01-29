@@ -18,6 +18,8 @@ define('GENDER', [
 define('SYSTEM_ADMIN', 1);
 define('INSTRUCTOR', 2);
 define('STUDENT', 3);
+define('SECONDARY_ADMIN', 2);
+
 
 define('AMAHARIC', 'am');
 define('ENGLISH', 'en');
@@ -37,3 +39,19 @@ define('ARCHIVED', 3);
 define('COURSE_STATUS', [
     PUBLISHED, DRAFT, ARCHIVED
 ]);
+
+define('REGISTERED', 1);
+define('JOINED', 2);
+define('LEFT', 3);
+
+define('SCHEDULED', 1);
+define('LIVE', 2);
+define('COMPLETED', 3);
+define('CANCELLED', 4);
+define('LiVESESSION_STATUS',[SCHEDULED,LIVE,COMPLETED,CANCELLED]);
+
+define('REGISTERED', 1);
+define('JOINED', 2);
+define('LEFT', 3);
+define('PARTICIPANT_STATUS', [REGISTERED, JOINED, LEFT]);
+
