@@ -17,6 +17,7 @@ Route::middleware('auth:api')
         Route::delete('/delete-instructor/{id}', [UserController::class, 'destroy']);
         Route::post('/update-profile', [UserController::class, 'profileUpdate']);
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 
 Route::middleware('auth:api')

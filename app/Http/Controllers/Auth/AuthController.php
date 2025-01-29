@@ -67,6 +67,7 @@ class AuthController extends Controller {
         ]);
     }
 
+    
     /**
      * Return the current user information
      * based on the given Resource
