@@ -6,32 +6,37 @@
 
         <div class="max-w-6xl mx-auto p-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Schedule a Class Section -->
+                <!-- Schedule or Edit a Class Section -->
                 <div class="bg-white p-6 rounded-lg shadow">
-                    <h2 class="text-xl font-bold mb-4">Schedule a Class</h2>
+                    <h2 class="text-xl font-bold mb-4">
+                        {{ isEditing ? "Edit Class" : "Schedule a Class" }}
+                    </h2>
 
                     <label
                         for="studentName"
                         class="block text-gray-700 font-semibold mb-2"
-                        >Student Name:</label
                     >
+                        Student Name:
+                    </label>
                     <input
                         type="text"
                         v-model="newClass.studentName"
                         class="w-full mb-2 p-2 border rounded"
-                        placeholder="Enter your name"
+                        placeholder="Enter student name"
                     />
                     <span
                         v-if="errors.studentName"
                         class="text-red-500 text-sm"
-                        >{{ errors.studentName }}</span
                     >
+                        {{ errors.studentName }}
+                    </span>
 
                     <label
                         for="scheduleDay"
                         class="block text-gray-700 font-semibold mb-2"
-                        >Select a Day:</label
                     >
+                        Select a Day:
+                    </label>
                     <select
                         v-model="newClass.day"
                         class="w-full mb-2 p-2 border rounded"
@@ -41,15 +46,16 @@
                             {{ day }}
                         </option>
                     </select>
-                    <span v-if="errors.day" class="text-red-500 text-sm">{{
-                        errors.day
-                    }}</span>
+                    <span v-if="errors.day" class="text-red-500 text-sm">
+                        {{ errors.day }}
+                    </span>
 
                     <label
                         for="scheduleTime"
                         class="block text-gray-700 font-semibold mb-2"
-                        >Select a Time:</label
                     >
+                        Select a Time:
+                    </label>
                     <select
                         v-model="newClass.time"
                         class="w-full mb-2 p-2 border rounded"
@@ -63,15 +69,17 @@
                             {{ slot }}
                         </option>
                     </select>
-                    <span v-if="errors.time" class="text-red-500 text-sm">{{
-                        errors.time
-                    }}</span>
+                    <span v-if="errors.time" class="text-red-500 text-sm">
+                        {{ errors.time }}
+                    </span>
 
                     <div class="text-center mt-4">
-                        <i
-                            class="fas fa-calendar-check text-blue-500 text-2xl cursor-pointer hover:text-blue-700"
-                            @click="scheduleClass"
-                        ></i>
+                        <button
+                            @click="isEditing ? saveEdit() : scheduleClass()"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                        >
+                            {{ isEditing ? "Save Changes" : "Schedule Class" }}
+                        </button>
                     </div>
                 </div>
 
@@ -111,35 +119,34 @@
                                         {{ classItem.time }}
                                     </p>
 
-                                    <!-- Status Display -->
                                     <p class="mt-2">
                                         <span
                                             :class="{
                                                 'text-green-500':
-                                                    classItem.status ===
-                                                    'Ongoing',
+                                                    classItem.status === 'Live',
                                                 'text-gray-500':
                                                     classItem.status ===
-                                                    'Passed',
+                                                    'Finished',
                                                 'text-blue-500':
                                                     classItem.status ===
                                                     'Upcoming',
                                             }"
                                             class="font-semibold"
-                                            >{{ classItem.status }}</span
                                         >
+                                            {{ classItem.status }}
+                                        </span>
                                     </p>
 
                                     <div class="flex items-center gap-2 mt-2">
-                                        <i
-                                            class="fas fa-edit text-yellow-500 text-xl cursor-pointer hover:text-yellow-700"
-                                            @click="editClass(classItem.index)"
-                                        ></i>
                                         <i
                                             class="fas fa-trash text-red-500 text-xl cursor-pointer hover:text-red-700"
                                             @click="
                                                 deleteClass(classItem.index)
                                             "
+                                        ></i>
+                                        <i
+                                            class="fas fa-edit text-yellow-500 text-xl cursor-pointer hover:text-yellow-700"
+                                            @click="editClass(classItem.index)"
                                         ></i>
                                         <i
                                             class="fas fa-video text-blue-500 text-xl cursor-pointer hover:text-blue-700"
@@ -176,12 +183,6 @@
                 </button>
             </div>
         </div>
-        <div
-            v-if="sessionFinishedMessage"
-            class="mt-4 text-center text-red-600 font-bold"
-        >
-            {{ sessionFinishedMessage }}
-        </div>
     </div>
 </template>
 
@@ -190,20 +191,13 @@ export default {
     name: "ClassSchedulingSystem",
     data() {
         return {
-            newClass: {
-                studentName: "",
-                time: "",
-                day: "",
-            },
-            errors: {
-                studentName: "",
-                time: "",
-                day: "",
-            },
+            newClass: { studentName: "", day: "", time: "" },
+            errors: { studentName: "", day: "", time: "" },
             scheduledClasses: [],
             currentSession: null,
             jitsiAPI: null,
-            sessionFinishedMessage: "",
+            isEditing: false,
+            editIndex: null,
             weekDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
             timeSlots: [
                 "9:00 AM - 10:00 AM",
@@ -217,9 +211,9 @@ export default {
     },
     computed: {
         availableSlots() {
-            const reservedSlots = this.scheduledClasses.map(
-                (classItem) => classItem.time
-            );
+            const reservedSlots = this.scheduledClasses
+                .filter((_, index) => index !== this.editIndex)
+                .map((classItem) => classItem.time);
             return this.timeSlots.filter(
                 (slot) => !reservedSlots.includes(slot)
             );
@@ -235,28 +229,17 @@ export default {
     },
     methods: {
         validateInputs() {
-            this.errors.studentName = "";
-            this.errors.time = "";
-            this.errors.day = "";
-
+            this.errors = { studentName: "", day: "", time: "" };
             if (
                 !this.newClass.studentName ||
                 this.newClass.studentName.length < 2
             ) {
-                this.errors.studentName =
-                    "Please enter a valid name (at least 2 characters).";
+                this.errors.studentName = "Please enter a valid name.";
             }
-            if (!this.newClass.day) {
-                this.errors.day = "Please select a valid day.";
-            }
-            if (!this.newClass.time) {
-                this.errors.time = "Please select a valid time slot.";
-            }
-            return (
-                !this.errors.studentName &&
-                !this.errors.time &&
-                !this.errors.day
-            );
+            if (!this.newClass.day) this.errors.day = "Please select a day.";
+            if (!this.newClass.time)
+                this.errors.time = "Please select a time slot.";
+            return !Object.values(this.errors).some((error) => error);
         },
         scheduleClass() {
             if (this.validateInputs()) {
@@ -264,26 +247,38 @@ export default {
                     ...this.newClass,
                     status: "Upcoming",
                 });
-                this.newClass = { studentName: "", time: "", day: "" };
-                this.saveClassesToLocalStorage();
+                this.newClass = { studentName: "", day: "", time: "" };
+                this.saveToLocalStorage();
             }
-        },
-        editClass(index) {
-            this.scheduledClasses[index].isEditing = true;
         },
         deleteClass(index) {
             this.scheduledClasses.splice(index, 1);
-            this.saveClassesToLocalStorage();
+            this.saveToLocalStorage();
+        },
+        editClass(index) {
+            const classItem = this.scheduledClasses[index];
+            this.newClass = { ...classItem };
+            this.isEditing = true;
+            this.editIndex = index;
+        },
+        saveEdit() {
+            if (this.validateInputs()) {
+                this.$set(this.scheduledClasses, this.editIndex, {
+                    ...this.newClass,
+                    status: "Upcoming",
+                });
+                this.newClass = { studentName: "", day: "", time: "" };
+                this.isEditing = false;
+                this.editIndex = null;
+                this.saveToLocalStorage();
+            }
         },
         startLiveSession(index) {
             const classItem = this.scheduledClasses[index];
-            if (classItem.status !== "Upcoming") return;
-
             this.currentSession = classItem;
             this.scheduledClasses[index].status = "Live";
-            this.saveClassesToLocalStorage();
+            this.saveToLocalStorage();
 
-            // Load Jitsi API dynamically if not already loaded
             if (!window.JitsiMeetExternalAPI) {
                 const script = document.createElement("script");
                 script.src = "https://meet.jit.si/external_api.js";
@@ -297,8 +292,6 @@ export default {
             const domain = "meet.jit.si";
             const options = {
                 roomName: `LiveClass_${Date.now()}`,
-                width: "100%",
-                height: "100%",
                 parentNode: document.querySelector("#jitsi-video"),
             };
             this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
@@ -309,26 +302,26 @@ export default {
                 this.jitsiAPI = null;
             }
             this.currentSession = null;
-            this.sessionFinishedMessage = "Session finished.";
-            setTimeout(() => {
-                this.sessionFinishedMessage = "";
-            }, 5000);
+            this.scheduledClasses = this.scheduledClasses.filter(
+                (item) => item.status !== "Live"
+            );
+            this.saveToLocalStorage();
         },
-        saveClassesToLocalStorage() {
+        saveToLocalStorage() {
             localStorage.setItem(
                 "scheduledClasses",
                 JSON.stringify(this.scheduledClasses)
             );
         },
-        loadClassesFromLocalStorage() {
-            const classes = localStorage.getItem("scheduledClasses");
-            if (classes) {
-                this.scheduledClasses = JSON.parse(classes);
-            }
+        loadFromLocalStorage() {
+            const classes = JSON.parse(
+                localStorage.getItem("scheduledClasses")
+            );
+            if (classes) this.scheduledClasses = classes;
         },
     },
     mounted() {
-        this.loadClassesFromLocalStorage();
+        this.loadFromLocalStorage();
     },
 };
 </script>

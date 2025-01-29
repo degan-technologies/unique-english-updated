@@ -187,3 +187,48 @@ const calculateResult = () => {
 <style scoped>
 /* Tailwind CSS handles all styling. */
 </style>
+
+
+     <div class="flex items-center relative group">
+                        <button
+                            @click="toggleMute"
+                            class="text-white text-sm transition duration-300"
+                            aria-label="Mute/Unmute"
+                        >
+                            <i
+                                :class="
+                                    isMuted
+                                        ? 'fas fa-volume-mute'
+                                        : 'fas fa-volume-up'
+                                "
+                            ></i>
+                        </button>
+                        <div class="ml-2 hidden sm:block items-center">
+                            <input
+                                type="range"
+                                :value="volume"
+                                @input="changeVolume"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                class="range-slider w-3/4"
+                                aria-label="Volume Control"
+                            />
+                        </div>
+                    </div>
+                    <div class="flex-1 items-center">
+                        <input
+                            type="range"
+                            :value="progress"
+                            @input="handleSeekInput"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            class="range-slider w-3/4"
+                            aria-label="Seek Video"
+                        />
+                    </div>
+                    <div class="text-white text-sm whitespace-nowrap">
+                        <span>{{ currentTime }}</span> /
+                        <span>{{ totalTime }}</span>
+                    </div>

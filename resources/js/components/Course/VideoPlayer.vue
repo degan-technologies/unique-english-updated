@@ -1,134 +1,205 @@
 <template>
-    <div class="max-w-full mx-auto my-8 p-4 h-full">
-        <!-- Video Player Container -->
-        <div
-            class="relative w-full max-w-4xl mx-auto bg-black rounded-lg overflow-hidden shadow-lg border-4 border-lime-700"
-            @mousemove="resetControlsTimeout"
-            @mouseleave="startControlsHideTimer"
-            @mouseenter="resetControlsTimeout"
-            @click="togglePlayPause"
-        >
-            <!-- Video element -->
-            <video
-                ref="video"
-                class="w-full h-[80vh] sm:h-[70vh] object-cover"
-                :src="selectedQuality"
-                @timeupdate="updateProgress"
-                @loadedmetadata="updateTotalTime"
-                @ended="handleVideoEnd"
-                @play="handlePlay"
-                @pause="handlePause"
-            ></video>
-
-            <!-- Controls Section -->
+    <div class="h-full flex flex-col sm:flex-row gap-4 px-4">
+        <!-- Video Player Section -->
+        <div class="flex-1 flex flex-col gap-4">
             <div
-                v-show="showControls"
-                class="absolute bottom-0 left-0 right-0 p-3 flex flex-wrap items-center justify-between bg-lime-700 bg-opacity-1 transition-opacity duration-300 z-20 gap-4"
-                @click.stop
+                class="relative bg-black rounded-lg overflow-hidden shadow-lg border-4 border-lime-700"
+                @mousemove="resetControlsTimeout"
+                @mouseleave="startControlsHideTimer"
+                @mouseenter="resetControlsTimeout"
+                @click="togglePlayPause"
             >
-                <!-- Play/Pause -->
-                <button
-                    @click="togglePlayPause"
-                    class="text-white text-sm transition duration-300 flex items-center"
-                    aria-label="Play/Pause"
-                >
-                    <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
-                </button>
+                <video
+                    ref="video"
+                    class="w-full h-full object-cover"
+                    :src="selectedQuality"
+                    @timeupdate="updateProgress"
+                    @loadedmetadata="updateTotalTime"
+                    @ended="handleVideoEnd"
+                    @play="handlePlay"
+                    @pause="handlePause"
+                ></video>
 
-                <!-- Volume -->
-                <div class="flex items-center relative group">
+                <div
+                    v-show="showControls"
+                    class="absolute bottom-0 left-0 right-0 p-3 flex flex-wrap justify-evenly items-center bg-lime-700 bg-opacity-1 transition-opacity duration-300 z-20 gap-4"
+                    @click.stop
+                >
+                    <!-- Play/Pause Button -->
                     <button
-                        @click="toggleMute"
-                        class="text-white text-sm transition duration-300"
-                        aria-label="Mute/Unmute"
+                        @click="togglePlayPause"
+                        class="text-white text-sm transition duration-300 flex items-center"
+                        aria-label="Play/Pause"
                     >
                         <i
-                            :class="
-                                isMuted
-                                    ? 'fas fa-volume-mute'
-                                    : 'fas fa-volume-up'
-                            "
+                            :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"
                         ></i>
                     </button>
-                    <!-- Volume Slider -->
-                    <div class="ml-2 hidden sm:block">
+
+                    <div class="flex items-center relative group">
+                        <!-- Volume Icon (Always Visible) -->
+                        <button
+                            @click="toggleMute"
+                            class="text-white text-sm transition duration-300 p-2"
+                            aria-label="Mute/Unmute"
+                        >
+                            <i
+                                :class="
+                                    isMuted
+                                        ? 'fas fa-volume-mute'
+                                        : 'fas fa-volume-up'
+                                "
+                            ></i>
+                        </button>
+
+                        <!-- Volume Slider (Hidden on Mobile, Appears on Hover for PC) -->
+                        <div
+                            class="absolute bottom-full left-1/2 mb-2 w-16 hidden group-hover:block md:group-hover:block"
+                        >
+                            <!-- Volume Percentage Display -->
+                            <div
+                                class="absolute bottom-full left-1/2 transform -translate-x-1/2 text-xs text-black mb-1"
+                            >
+                                {{ Math.round(volume * 100) }}%
+                            </div>
+
+                            <input
+                                type="range"
+                                :value="volume"
+                                @input="changeVolume"
+                                min="0"
+                                max="1"
+                                step="0.01"
+                                class="range-slider w-4 h-32 transform -translate-x-1/2 rotate-90 scale-y-[1] py-2"
+                                aria-label="Volume Control"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Seek Bar -->
+                    <div class="flex-1 items-center w-1/3">
                         <input
                             type="range"
-                            :value="volume"
-                            @input="changeVolume"
+                            :value="progress"
+                            @input="handleSeekInput"
                             min="0"
-                            max="1"
-                            step="0.1"
-                            class="range-slider w-3/4"
-                            aria-label="Volume Control"
+                            max="100"
+                            step="0.01"
+                            class="range-slider w-full"
+                            aria-label="Seek Video"
                         />
                     </div>
+
+                    <!-- Time Display -->
+                    <div class="text-white text-sm whitespace-nowrap">
+                        <span>{{ currentTime }}</span> /
+                        <span>{{ totalTime }}</span>
+                    </div>
+
+                    <!-- Quality Selector -->
+                    <select
+                        v-model="selectedQuality"
+                        @change="updateVideoQuality"
+                        class="text-white text-sm transition duration-300 bg-lime-700 border-none p-1 rounded"
+                    >
+                        <option value="/video/Mehari.mp4">1080p</option>
+                        <option value="/video/Mehari-720p.mp4">720p</option>
+                        <option value="/video/Mehari-480p.mp4">480p</option>
+                        <option value="Auto">Auto</option>
+                    </select>
+
+                    <!-- Playback Rate Selector -->
+                    <select
+                        v-model="playbackRate"
+                        @change="changePlaybackRate"
+                        class="text-white text-sm transition duration-300 bg-lime-700 border-none p-1 rounded hidden sm:block"
+                    >
+                        <option disabled value="default">1x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="1.0">1x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="2.0">2x</option>
+                    </select>
+
+                    <!-- Fullscreen Button -->
+                    <button
+                        @click="toggleFullscreen"
+                        class="text-white text-sm transition duration-300 flex items-center"
+                        aria-label="Fullscreen"
+                    >
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-white rounded-lg shadow-md w-full">
+                <div
+                    class="flex justify-start rounded-lg p-2 shadow-md space-x-4"
+                >
+                    <button
+                        @click="setActiveTab('qa')"
+                        class="tab-button text-black px-4 py-2 rounded-lg text-lg font-semibold"
+                        :class="{
+                            'bg-lime-800 text-white': activeTab === 'qa',
+                            'hover:bg-lime-500': activeTab !== 'qa',
+                        }"
+                    >
+                        <i class="fas fa-question"></i> Q&A
+                    </button>
+                    <button
+                        @click="setActiveTab('editor')"
+                        class="tab-button text-black px-4 py-2 rounded-lg text-lg font-semibold"
+                        :class="{
+                            'bg-lime-800 text-white': activeTab === 'editor',
+                            'hover:bg-lime-500': activeTab !== 'editor',
+                        }"
+                    >
+                        <i class="fas fa-pen"></i> Note
+                    </button>
+                    <button
+                        @click="setActiveTab('reviews')"
+                        class="tab-button text-black px-4 py-2 rounded-lg text-lg font-semibold"
+                        :class="{
+                            'bg-lime-800 text-white': activeTab === 'reviews',
+                            'hover:bg-lime-500': activeTab !== 'reviews',
+                        }"
+                    >
+                        <i class="fas fa-star"></i> Reviews
+                    </button>
                 </div>
 
-                <!-- Seek Bar -->
-                <div class="flex-1">
-                    <input
-                        type="range"
-                        :value="progress"
-                        @input="handleSeekInput"
-                        min="0"
-                        max="100"
-                        step="0.01"
-                        class="range-slider w-3/4"
-                        aria-label="Seek Video"
-                    />
+                <!-- Tab Content -->
+                <div v-if="activeTab === 'qa'" class="pt-4">
+                    <QA />
                 </div>
-
-                <!-- Time Display -->
-                <div class="text-white text-sm whitespace-nowrap">
-                    <span>{{ currentTime }}</span> /
-                    <span>{{ totalTime }}</span>
+                <div v-if="activeTab === 'editor'" class="mt-4">
+                    <TextEditor />
                 </div>
-
-                <!-- Quality Selector -->
-                <select
-                    v-model="selectedQuality"
-                    @change="updateVideoQuality"
-                    class="text-white text-sm transition duration-300 bg-lime-700 border-none p-1 rounded"
-                >
-                    <option value="/video/Mehari.mp4">1080p</option>
-                    <option value="/video/Mehari-720p.mp4">720p</option>
-                    <option value="/video/Mehari-480p.mp4">480p</option>
-                    <option value="Auto">Auto</option>
-                </select>
-
-                <!-- Playback Rate -->
-                <select
-                    v-model="playbackRate"
-                    @change="changePlaybackRate"
-                    class="text-white text-sm transition duration-300 bg-lime-700 border-none p-1 rounded hidden sm:block"
-                >
-                    <option disabled value="default">1x</option>
-                    <option value="0.5">0.5x</option>
-                    <option value="1.0">1x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2.0">2x</option>
-                </select>
-
-                <!-- Fullscreen -->
-                <button
-                    @click="toggleFullscreen"
-                    class="text-white text-sm transition duration-300 flex items-center"
-                    aria-label="Fullscreen"
-                >
-                    <i class="fas fa-expand"></i>
-                </button>
+                <div v-if="activeTab === 'reviews'" class="mt-4">
+                    <ReviewList />
+                </div>
             </div>
         </div>
+
+        <!-- Course List Section (now on the right side) -->
+        <div
+            class="w-full sm:w-1/3 bg-gray-100 rounded-lg shadow-lg p-4 flex-shrink-0"
+        >
+            <CourseList />
+        </div>
     </div>
-
-    <!-- Q&A Section -->
-    <QA />
 </template>
-
 <script setup>
-import QA from "./QA.vue";
 import { ref, onMounted } from "vue";
+import QA from "./QA.vue";
+import TextEditor from "../Layout/TextEditor.vue";
+import CourseList from "./CourseList.vue";
+import ReviewList from "./ReviewList.vue";
+
+const activeTab = ref(null); // Default to Q&A tab
+const setActiveTab = (tab) => {
+    activeTab.value = tab;
+};
 
 const video = ref(null);
 const isPlaying = ref(false);
@@ -194,11 +265,13 @@ const startControlsHideTimer = () => {
 const handlePlay = () => {
     isPlaying.value = true;
     resetControlsTimeout();
+    updateProgress();
 };
 
 const handlePause = () => {
     isPlaying.value = false;
     showControls.value = true;
+    updateProgress();
 };
 
 const changeVolume = (event) => {
@@ -237,6 +310,10 @@ const updateVideoQuality = () => {
 onMounted(() => {
     video.value.volume = volume.value;
     video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
+    if (video.value) {
+        video.value.addEventListener("timeupdate", updateProgress);
+    }
+    updateTotalTime();
 });
 </script>
 
@@ -267,5 +344,91 @@ onMounted(() => {
     background: #f4f3f3;
     border-radius: 50%;
     cursor: pointer;
+}
+
+.tab-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    text-align: center;
+    transition: background-color 0.3s, transform 0.2s;
+    border-radius: 0.375rem;
+}
+
+.tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.tab-button:focus {
+    outline: none;
+}
+
+.tab-button.bg-lime-800 {
+    background-color: #4caf50;
+}
+
+.tab-button.text-lime-300 {
+    color: #b5e48c;
+}
+
+.tab-button.active {
+    background-color: #4caf50;
+    color: white;
+}
+
+button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+button:focus {
+    outline: none;
+}
+
+.flex-1 {
+    display: flex;
+    flex-direction: column;
+}
+
+.sm\:flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.gap-4 {
+    gap: 1rem;
+}
+
+.px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.h-full {
+    height: 100%;
+}
+
+.sm\:w-1\/3 {
+    width: 33.333333%;
+}
+
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+/* Responsive Layout: Switch Video Player and Course List */
+@media (max-width: 640px) {
+    .sm\:flex-row {
+        flex-direction: column-reverse;
+    }
+
+    .sm\:w-1\/3 {
+        width: 100%;
+    }
 }
 </style>

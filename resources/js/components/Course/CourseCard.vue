@@ -1,12 +1,14 @@
 <template>
     <div class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
         <!-- Popular Courses Title -->
-        <h1 class="text-2xl font-bold mb-6 text-center">Popular Courses</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center text-lime-700">
+            Popular Courses
+        </h1>
 
         <!-- Typing Animation -->
         <div class="text-center mb-4">
             <h1
-                class="typing-text text-xl sm:text-2xl font-semibold text-blue-600"
+                class="typing-text text-xl sm:text-2xl font-semibold text-lime-700"
             >
                 {{ displayedText }}
                 <span class="cursor">|</span>
@@ -32,7 +34,7 @@
                         class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                     >
                         <button
-                            class="bg-white rounded-full p-3 shadow-md text-blue-500 hover:text-blue-700"
+                            class="bg-white rounded-full p-3 shadow-md text-lime-700 hover:text-lime-800"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -54,7 +56,9 @@
 
                 <!-- Course Info -->
                 <div class="flex-1 p-4">
-                    <h2 class="text-lg font-bold mb-2">{{ course.title }}</h2>
+                    <h2 class="text-lg font-bold mb-2 text-lime-700">
+                        {{ course.title }}
+                    </h2>
                     <p class="text-sm text-gray-600">By: {{ course.author }}</p>
                     <div class="flex items-center mt-2">
                         <span class="text-yellow-500">&#9733;</span>
@@ -63,7 +67,7 @@
                         }}</span>
                     </div>
                     <div
-                        class="mt-4 text-lg font-semibold text-blue-500 text-right"
+                        class="mt-4 text-lg font-semibold text-lime-700 text-right"
                     >
                         ${{ course.price.toFixed(2) }}
                     </div>
@@ -72,7 +76,7 @@
                 <!-- Buy Now Button -->
                 <div class="p-4 pt-0 mt-auto flex justify-center">
                     <button
-                        class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 focus:outline-none transition-colors w-full"
+                        class="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-800 focus:outline-none transition-colors w-full"
                     >
                         Buy Now
                     </button>
@@ -171,7 +175,7 @@ const courses = [
 .cursor {
     display: inline-block;
     width: 2px;
-    background-color: black;
+    background-color: limegreen;
     animation: blink 0.7s infinite;
 }
 

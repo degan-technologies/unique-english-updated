@@ -8,8 +8,8 @@ import LiveSession from "@/components/Course/LiveSession.vue";
 import VideoPlayer from "@/components/Course/VideoPlayer.vue";
 import Footer from "@/components/Layout/Footer.vue";
 import AboutUs from "@/pages/common/AboutUs.vue";
-import Error from "../../components/Layout/Error.vue";
-import Spinner from "../../components/Layout/Spinner.vue";
+import LiveStreaming from "../../components/Course/LiveStreaming.vue";
+import Exam from "../../components/Course/Exam.vue";
 </script>
 
 <template>
@@ -46,11 +46,15 @@ import Spinner from "../../components/Layout/Spinner.vue";
             <div class="w-full">
                 <AboutUs />
             </div>
-            <div>
-                <Spinner />
+
+            <!-- Live Streaming Section -->
+            <div class="w-full mb-5">
+                <LiveStreaming />
             </div>
-            <div>
-                <Error />
+
+            <!-- Exam Section -->
+            <div class="w-full">
+                <Exam />
             </div>
             <!-- Footer Section -->
             <div class="w-full bg-gray-900 text-white">

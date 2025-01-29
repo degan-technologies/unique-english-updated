@@ -40,8 +40,7 @@
                 :aria-expanded="isMenuOpen"
                 aria-label="Toggle navigation menu"
             >
-                <span v-if="!isMenuOpen">☰</span>
-                <span v-else>✖</span>
+                <i :class="isMenuOpen ? 'fas fa-times' : 'fas fa-bars'"></i>
             </button>
         </nav>
 
@@ -49,7 +48,7 @@
         <transition name="mobile-menu">
             <div
                 v-if="isMenuOpen"
-                class="md:hidden bg-lime-800 text-white shadow-lg"
+                class="md:hidden bg-lime-600 text-white shadow-lg"
             >
                 <ul class="flex flex-col items-center gap-4 py-4">
                     <li>
