@@ -1,12 +1,7 @@
 <template>
     <div
-        class="mt-10 w-full lg:w-4/5 mx-auto bg-white bg-opacity-95 p-6 rounded-lg shadow-lg"
+        class="mt-2 w-full lg:w-full mx-auto bg-white bg-opacity-95 p-4 rounded-lg shadow-lg"
     >
-        <!-- Title -->
-        <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">
-            Q&A Section
-        </h2>
-
         <!-- Ask a Question -->
         <div class="mb-8">
             <input

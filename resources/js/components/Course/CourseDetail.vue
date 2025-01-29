@@ -14,63 +14,52 @@
                         A course by <strong>Robel Birhanu</strong>
                     </p>
                 </div>
-                <div class="overflow-hidden max-w-full h-auto rounded-lg my-6">
+
+                <div
+                    class="overflow-hidden max-w-full h-auto rounded-lg my-6 relative cursor-pointer"
+                >
                     <img
                         src="/images/course-1.jpg"
                         alt="Course Image"
-                        class="w-full h-auto rounded-lg object-cover transform hover:scale-105 transition-transform duration-300 shadow-lg hover:shadow-xl"
+                        class="w-full h-auto rounded-lg object-cover transform transition-transform duration-300 shadow-lg hover:shadow-xl"
                     />
+                    <div
+                        class="absolute inset-0 flex items-center justify-center"
+                    >
+                        <div
+                            class="p-4 bg-lime-500 rounded-full animate-breathe flex items-center justify-center"
+                        >
+                            <i
+                                class="fas fa-play-circle text-white text-6xl"
+                            ></i>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="text-center mb-6">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-center">
                         <h2 class="text-xl font-semibold">
                             What You Will Learn
                         </h2>
-                        <!-- Global Progress Circle -->
-                        <div class="relative">
-                            <div
-                                class="w-16 h-16 rounded-full flex items-center justify-center"
-                                role="progressbar"
-                                :aria-valuenow="calculateGlobalProgress()"
-                                aria-valuemin="0"
-                                aria-valuemax="100"
-                                :style="{
-                                    background: `conic-gradient(
-                                        green ${calculateGlobalProgress()}%, 
-                                        red ${calculateGlobalProgress()}% 100%
-                                    )`,
-                                }"
-                            >
-                                <span class="text-lg font-bold text-white">
-                                    {{ calculateGlobalProgress() }}%
-                                </span>
-                            </div>
-                            <p class="text-center text-sm mt-2 text-gray-700">
-                                Progress:
-                                {{ calculateGlobalProgress() }}%
-                            </p>
-                        </div>
                     </div>
                 </div>
                 <div>
                     <div
                         v-for="(module, moduleIndex) in modules"
                         :key="moduleIndex"
-                        class="mb-6"
+                        class="mb-3 px-2"
                     >
                         <div class="flex justify-between items-center">
                             <button
                                 @click="toggleLesson(moduleIndex)"
-                                class="text-blue-500 hover:text-blue-700 text-xl w-full text-left py-4 px-4 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
+                                class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
                             >
                                 <span class="font-semibold">{{
                                     module.title
                                 }}</span>
                                 <i
                                     :class="[
-                                        {
-                                            'rotate-180': module.showLessons,
-                                        },
+                                        { 'rotate-180': module.showLessons },
                                     ]"
                                     class="transition-transform duration-300"
                                 >
@@ -102,6 +91,7 @@
                                             )
                                         "
                                         class="mr-2"
+                                        disabled
                                     />
                                     {{ lesson }}
                                 </li>
@@ -136,8 +126,7 @@
                                             {{
                                                 currentQuestion[moduleIndex] + 1
                                             }}
-                                            of
-                                            {{ module.quiz.length }}
+                                            of {{ module.quiz.length }}
                                         </p>
                                         <p class="text-gray-500">
                                             {{
@@ -220,8 +209,7 @@
                                 >
                                     <p class="text-xl font-semibold">
                                         Your Score:
-                                        {{ calculateScore(moduleIndex) }}
-                                        %
+                                        {{ calculateScore(moduleIndex) }} %
                                     </p>
                                     <button
                                         v-if="calculateScore(moduleIndex) < 75"
@@ -239,7 +227,7 @@
 
             <!-- Right Card: Course Details -->
             <div
-                class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit"
+                class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center"
             >
                 <button
                     class="bg-green-500 text-white px-6 py-2 rounded-full mb-4 hover:bg-green-600 transition-colors w-full"
@@ -395,6 +383,8 @@ const modules = ref([
         ],
     },
 ]);
+// Track the currently expanded module
+const expandedModuleIndex = ref(null);
 
 // Track current question index for each module
 const currentQuestion = ref(Array(modules.value.length).fill(0));
@@ -404,8 +394,22 @@ const quizSubmitted = ref(Array(modules.value.length).fill(false));
 
 // Toggle lessons visibility for a specific module
 const toggleLesson = (moduleIndex) => {
+    // Close previously expanded module
+    if (
+        expandedModuleIndex.value !== null &&
+        expandedModuleIndex.value !== moduleIndex
+    ) {
+        modules.value[expandedModuleIndex.value].showLessons = false;
+    }
+
+    // Toggle the current module's lessons visibility
     modules.value[moduleIndex].showLessons =
         !modules.value[moduleIndex].showLessons;
+
+    // Update the expanded module index
+    expandedModuleIndex.value = modules.value[moduleIndex].showLessons
+        ? moduleIndex
+        : null;
 };
 
 // Toggle lesson completion for a specific module
@@ -465,17 +469,6 @@ const retakeQuiz = (moduleIndex) => {
     currentQuestion.value[moduleIndex] = 0;
     modules.value[moduleIndex].quizStarted = false;
 };
-
-// Calculate global progress percentage
-const calculateGlobalProgress = () => {
-    let totalLessons = 0;
-    let completedLessons = 0;
-    modules.value.forEach((module) => {
-        totalLessons += module.lessons.length;
-        completedLessons += module.completedLessons.length;
-    });
-    return Math.round((completedLessons / totalLessons) * 100);
-};
 </script>
 
 <style scoped>
@@ -499,5 +492,29 @@ const calculateGlobalProgress = () => {
 
 .bg-gray-500 {
     background-color: #6b7280;
+}
+@keyframes breathe {
+    0% {
+        transform: scale(1);
+        color: #ffffff;
+        opacity: 1;
+        box-shadow: 0 0 15px rgba(132, 204, 22, 0.6); /* lime-500 shadow */
+    }
+    50% {
+        transform: scale(1.1);
+        color: #ffffff;
+        opacity: 1;
+        box-shadow: 0 0 25px rgba(101, 163, 13, 0.7); /* lime-600 shadow */
+    }
+    100% {
+        transform: scale(1);
+        color: #ffffff;
+        opacity: 0.4;
+        box-shadow: 0 0 35px rgba(77, 124, 15, 0.4); /* lime-700 shadow */
+    }
+}
+
+.animate-breathe {
+    animation: breathe 2s infinite;
 }
 </style>
