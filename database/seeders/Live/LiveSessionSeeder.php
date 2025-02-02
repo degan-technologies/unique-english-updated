@@ -16,17 +16,20 @@ class LiveSessionSeeder extends Seeder
      */
     public function run()
     {
-        $instructor = User::where('role', 'instructor')->first(); 
+        $instructor = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first(); 
 
         if ($instructor) {
             $sessions = [
                 [
+
                     'slug' => Str::uuid(),
                     'title' => 'Advanced English Grammar: The Subjunctive Mood',
                     'start_time' => now()->addDays(1)->setTime(14, 0), // Next day at 2 PM
                     'end_time' => now()->addDays(1)->setTime(16, 0),   // Ends at 4 PM
                     'description' => 'A deep dive into the complexities of the subjunctive mood in English grammar.',
-                    'instructor_id' => $instructor->id,
+                    'user_id' => $instructor->id,
                     'status' => 'live',
                     'max_participants' => 50,
                     'stream_url' => 'https://example.com/stream/advanced-english-grammar',
@@ -37,7 +40,7 @@ class LiveSessionSeeder extends Seeder
                     'start_time' => now()->addDays(2)->setTime(10, 0), // Day after tomorrow at 10 AM
                     'end_time' => now()->addDays(2)->setTime(12, 0),   // Ends at 12 PM
                     'description' => 'Perfect your English pronunciation with tips from native speakers.',
-                    'instructor_id' => $instructor->id,
+                    'user_id' => $instructor->id,
                     'status' => 'live',
                     'max_participants' => 100,
                     'stream_url' => 'https://example.com/stream/english-pronunciation-mastery',
@@ -48,7 +51,7 @@ class LiveSessionSeeder extends Seeder
                     'start_time' => now()->addDays(3)->setTime(9, 0), 
                     'end_time' => now()->addDays(3)->setTime(11, 0),  
                     'description' => 'Learn how to communicate professionally in English for business settings.',
-                    'instructor_id' => $instructor->id,
+                    'user_id' => $instructor->id,
                     'status' => 'live',
                     'max_participants' => 75,
                     'stream_url' => 'https://example.com/stream/english-for-business-communication',

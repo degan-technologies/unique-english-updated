@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
-
+use App\Models\Course\Course;
 use App\Models\User;
-use Database\Seeders\Role\SecondaryAdminSeeder;
+use Database\Seeders\Course\CourseContentSeeder;
+use Database\Seeders\Course\CourseModuleSeeder;
+use Database\Seeders\Course\CourseSeeder;
+use Database\Seeders\Course\EnrollmentSeeder;
 use Database\Seeders\Role\SystemAdminSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -22,12 +25,16 @@ class DatabaseSeeder extends Seeder {
     public function run(): void {
         $this->call([
             SystemAdminSeeder::class,
-
-            SecondaryAdminSeeder::class,
             InstructorSeeder::class,
             StudentSeeder::class,
-            LiveResourceSeeder::class,
+
+            CourseSeeder::class,
+            CourseModuleSeeder::class,
+            CourseContentSeeder::class,
+            EnrollmentSeeder::class,
+
             LiveSessionSeeder::class,
+            LiveResourceSeeder::class,
             ParticipantSeeder::class,
             VirtualClassEnrollmentSeeder::class,
         ]);

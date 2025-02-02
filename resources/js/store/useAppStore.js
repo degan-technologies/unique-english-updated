@@ -19,7 +19,7 @@ export const useAppStore = defineStore('useAppStore', () => {
     const lastName = computed(() => authUser.value?.last_name);
 
     const isLoggedIn = computed(() => loggedIn.value == true && authToken.value != '');
-    
+        
     // set authToken
     function setAuthToken(token) {
         authToken.value = token;

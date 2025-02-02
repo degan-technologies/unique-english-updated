@@ -21,6 +21,8 @@ return new class extends Migration {
             $table->unsignedBigInteger('discount')->nullable();
             $table->integer('credit_hour')->nullable();
 
+            $table->string('thumbnail_url')->unique()->nullable();
+            $table->string('language')->nullable();
             $table->json('tag')->default('{}');
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
             

@@ -2,10 +2,14 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Course\CourseContentController;
+use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Live\ParticipantController;
 use App\Http\Controllers\Live\LiveSessionController;
 use App\Http\Controllers\Live\LiveResourceController;
-use App\Http\Controllers\Live\VertualClassEnrollmentController;
+use App\Http\Controllers\Live\VirtualClassEnrollmentController;
+use App\Http\Controllers\Transaction\TransactionController;
+use App\Http\Controllers\UserController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -26,7 +30,7 @@ Route::middleware('auth:api')
         Route::resource('live-sessions', LiveSessionController::class);
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
-        Route::resource('virtual-class-enrollments', VertualClassEnrollmentController::class);
+        Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
     });
 
 Route::middleware('auth:api')
@@ -35,3 +39,5 @@ Route::middleware('auth:api')
         Route::resource('/course', CourseController::class);
         Route::resource('/content', CourseContentController::class);
     });
+
+Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment'])->middleware('auth:api');

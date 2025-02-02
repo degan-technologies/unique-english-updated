@@ -16,17 +16,25 @@ return new class extends Migration
             $table->string('slug')->unique();
 
             $table->unsignedBigInteger('amount');
-            $table->string('transaction_type');
-            $table->string('status');
-            $table->string('payment_method');
-            $table->string('transaction_id')->unique();
-            $table->morphs('enrollments');
+            $table->string('transaction_type')->nullable();
+            $table->string('status')->nullable();
+            $table->string('payment_method')->nullable();
+            $table->string('product_type');
 
+            $table->string('tx_ref');
+            $table->string('payment_url')->nullable();
+
+            $table->time('enrolled_at');
             $table->timestamps();
             $table->softDeletes();
 
+
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('customer_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+
+            $table->foreignId('course_id')->nullable()->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('book_id')->nullable()->constrained('books')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('live_id')->nullable()->constrained('lives')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

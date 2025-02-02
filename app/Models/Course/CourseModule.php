@@ -5,14 +5,13 @@ namespace App\Models\Course;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
-class CourseContent extends Model {
-    
+class CourseModule extends Model {
     protected $fillable = [
-        'slug', 'course_id','sequence', 'title', 'description',
-        'content_type', 'content_url', 'thumbnail_url',
-        'hour', 'status', 'note', 'isDownloadable', 'user_id'
+       'title', 'sequence', 'description',
+       'user_id', 'course_id',
     ];
 
     public function user() { return $this->belongsTo(User::class); }
     public function course() { return $this->belongsTo(Course::class); }
+    public function courseContents() { return $this->hasMany(CourseContent::class); }
 }

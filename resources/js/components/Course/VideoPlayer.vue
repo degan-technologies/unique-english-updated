@@ -1,9 +1,136 @@
+<script setup>
+    import { ref, onMounted } from "vue";
+    import QA from "./QA.vue";
+    import TextEditor from "../Layout/TextEditor.vue";
+    import CourseList from "./CourseList.vue";
+    import ReviewList from "./ReviewList.vue";
+
+    const activeTab = ref('qa'); // Default to Q&A tab
+    const setActiveTab = (tab) => {
+        activeTab.value = tab;
+    };
+
+    const video = ref(null);
+    const isPlaying = ref(false);
+    const showControls = ref(true);
+    const progress = ref(0);
+    const currentTime = ref("0:00");
+    const totalTime = ref("0:00");
+    const volume = ref(1);
+    const isMuted = ref(false);
+    const playbackRate = ref("default"); // Default placeholder
+    const selectedQuality = ref("/video/Mehari.mp4");
+
+    let hideControlsTimeout = null;
+
+    const togglePlayPause = () => {
+        if (!video.value) return;
+        if (video.value.paused) {
+            video.value.play();
+            isPlaying.value = true;
+        } else {
+            video.value.pause();
+            isPlaying.value = false;
+        }
+    };
+
+    const handleSeekInput = (event) => {
+        if (!video.value) return;
+        const seekTime = (event.target.value / 100) * video.value.duration;
+        video.value.currentTime = seekTime;
+        progress.value = (seekTime / video.value.duration) * 100;
+        currentTime.value = formatTime(seekTime);
+    };
+
+    const updateProgress = () => {
+        if (!video.value) return;
+        progress.value = (video.value.currentTime / video.value.duration) * 100;
+        currentTime.value = formatTime(video.value.currentTime);
+    };
+
+    const updateTotalTime = () => {
+        if (!video.value) return;
+        totalTime.value = formatTime(video.value.duration || 0);
+    };
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+    };
+
+    const resetControlsTimeout = () => {
+        showControls.value = true;
+        if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
+        startControlsHideTimer();
+    };
+
+    const startControlsHideTimer = () => {
+        hideControlsTimeout = setTimeout(() => {
+            if (isPlaying.value) showControls.value = false;
+        }, 3000);
+    };
+
+    const handlePlay = () => {
+        isPlaying.value = true;
+        resetControlsTimeout();
+        updateProgress();
+    };
+
+    const handlePause = () => {
+        isPlaying.value = false;
+        showControls.value = true;
+        updateProgress();
+    };
+
+    const changeVolume = (event) => {
+        if (!video.value) return;
+        volume.value = event.target.value;
+        video.value.volume = volume.value;
+    };
+
+    const toggleMute = () => {
+        if (!video.value) return;
+        video.value.muted = !video.value.muted;
+        isMuted.value = video.value.muted;
+    };
+
+    const changePlaybackRate = () => {
+        if (!video.value || playbackRate.value === "default") return;
+        video.value.playbackRate = playbackRate.value;
+    };
+
+    const toggleFullscreen = () => {
+        if (!video.value) return;
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            video.value.requestFullscreen();
+        }
+    };
+
+    const updateVideoQuality = () => {
+        if (!video.value) return;
+        video.value.src = selectedQuality.value;
+        video.value.load();
+        video.value.play();
+    };
+
+    onMounted(() => {
+        video.value.volume = volume.value;
+        video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
+        if (video.value) {
+            video.value.addEventListener("timeupdate", updateProgress);
+        }
+        updateTotalTime();
+    });
+</script>
+
 <template>
-    <div class="h-full flex flex-col sm:flex-row gap-4 px-4">
-        <!-- Video Player Section -->
+    <div class=" flex flex-col sm:flex-row my-24 mx-8">
         <div class="flex-1 flex flex-col gap-4">
             <div
-                class="relative bg-black rounded-lg overflow-hidden shadow-lg border-4 border-lime-700"
+                class="relative bg-black rounded-lg overflow-hidden border-2 border-lime-700"
                 @mousemove="resetControlsTimeout"
                 @mouseleave="startControlsHideTimer"
                 @mouseenter="resetControlsTimeout"
@@ -132,10 +259,10 @@
                 </div>
             </div>
 
-            <div class="flex-1 bg-white rounded-lg shadow-md w-full">
+            <div class="flex-1 w-full">
+                <p class="py-4 font-bold text-xl text-blue-500">Lesson 1: Introduction to Adobe Premiere Pro</p>
                 <div
-                    class="flex justify-start rounded-lg p-2 shadow-md space-x-4"
-                >
+                    class="flex justify-start mt-8 border-b-2 border-gray-200 pb-4  gap-4" >
                     <button
                         @click="setActiveTab('qa')"
                         class="tab-button text-black px-4 py-2 rounded-lg text-lg font-semibold"
@@ -182,253 +309,124 @@
         </div>
 
         <!-- Course List Section (now on the right side) -->
-        <div
-            class="w-full sm:w-1/3 bg-gray-100 rounded-lg shadow-lg p-4 flex-shrink-0"
-        >
+        <div class="w-full sm:w-1/3 bg-gray-100 rounded-lg shadow-lg p-4 flex-shrink-0">
             <CourseList />
         </div>
     </div>
 </template>
-<script setup>
-import { ref, onMounted } from "vue";
-import QA from "./QA.vue";
-import TextEditor from "../Layout/TextEditor.vue";
-import CourseList from "./CourseList.vue";
-import ReviewList from "./ReviewList.vue";
-
-const activeTab = ref(null); // Default to Q&A tab
-const setActiveTab = (tab) => {
-    activeTab.value = tab;
-};
-
-const video = ref(null);
-const isPlaying = ref(false);
-const showControls = ref(true);
-const progress = ref(0);
-const currentTime = ref("0:00");
-const totalTime = ref("0:00");
-const volume = ref(1);
-const isMuted = ref(false);
-const playbackRate = ref("default"); // Default placeholder
-const selectedQuality = ref("/video/Mehari.mp4");
-
-let hideControlsTimeout = null;
-
-const togglePlayPause = () => {
-    if (!video.value) return;
-    if (video.value.paused) {
-        video.value.play();
-        isPlaying.value = true;
-    } else {
-        video.value.pause();
-        isPlaying.value = false;
-    }
-};
-
-const handleSeekInput = (event) => {
-    if (!video.value) return;
-    const seekTime = (event.target.value / 100) * video.value.duration;
-    video.value.currentTime = seekTime;
-    progress.value = (seekTime / video.value.duration) * 100;
-    currentTime.value = formatTime(seekTime);
-};
-
-const updateProgress = () => {
-    if (!video.value) return;
-    progress.value = (video.value.currentTime / video.value.duration) * 100;
-    currentTime.value = formatTime(video.value.currentTime);
-};
-
-const updateTotalTime = () => {
-    if (!video.value) return;
-    totalTime.value = formatTime(video.value.duration || 0);
-};
-
-const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-};
-
-const resetControlsTimeout = () => {
-    showControls.value = true;
-    if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
-    startControlsHideTimer();
-};
-
-const startControlsHideTimer = () => {
-    hideControlsTimeout = setTimeout(() => {
-        if (isPlaying.value) showControls.value = false;
-    }, 3000);
-};
-
-const handlePlay = () => {
-    isPlaying.value = true;
-    resetControlsTimeout();
-    updateProgress();
-};
-
-const handlePause = () => {
-    isPlaying.value = false;
-    showControls.value = true;
-    updateProgress();
-};
-
-const changeVolume = (event) => {
-    if (!video.value) return;
-    volume.value = event.target.value;
-    video.value.volume = volume.value;
-};
-
-const toggleMute = () => {
-    if (!video.value) return;
-    video.value.muted = !video.value.muted;
-    isMuted.value = video.value.muted;
-};
-
-const changePlaybackRate = () => {
-    if (!video.value || playbackRate.value === "default") return;
-    video.value.playbackRate = playbackRate.value;
-};
-
-const toggleFullscreen = () => {
-    if (!video.value) return;
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    } else {
-        video.value.requestFullscreen();
-    }
-};
-
-const updateVideoQuality = () => {
-    if (!video.value) return;
-    video.value.src = selectedQuality.value;
-    video.value.load();
-    video.value.play();
-};
-
-onMounted(() => {
-    video.value.volume = volume.value;
-    video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
-    if (video.value) {
-        video.value.addEventListener("timeupdate", updateProgress);
-    }
-    updateTotalTime();
-});
-</script>
 
 <style scoped>
-.range-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 4px;
-    background: #ffffff;
-    border-radius: 4px;
-    outline: none;
-}
+    .range-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        background: #ffffff;
+        border-radius: 4px;
+        outline: none;
+    }
 
-.range-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 10px;
-    height: 10px;
-    background: #f4f3f3;
-    border-radius: 50%;
-    cursor: pointer;
-}
+    .range-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 10px;
+        height: 10px;
+        background: #f4f3f3;
+        border-radius: 50%;
+        cursor: pointer;
+    }
 
-.range-slider::-moz-range-thumb {
-    width: 10px;
-    height: 10px;
-    background: #f4f3f3;
-    border-radius: 50%;
-    cursor: pointer;
-}
+    .range-slider::-moz-range-thumb {
+        width: 10px;
+        height: 10px;
+        background: #f4f3f3;
+        border-radius: 50%;
+        cursor: pointer;
+    }
 
-.tab-button {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-    text-align: center;
-    transition: background-color 0.3s, transform 0.2s;
-    border-radius: 0.375rem;
-}
+    .tab-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        text-align: center;
+        transition: background-color 0.3s, transform 0.2s;
+        border-radius: 0.375rem;
+    }
 
-.tab-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: scale(1.05);
-}
+    .tab-button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+    }
 
-.tab-button:focus {
-    outline: none;
-}
+    .tab-button:focus {
+        outline: none;
+    }
 
-.tab-button.bg-lime-800 {
-    background-color: #4caf50;
-}
+    .tab-button.bg-lime-800 {
+        background-color: #4caf50;
+    }
 
-.tab-button.text-lime-300 {
-    color: #b5e48c;
-}
+    .tab-button.text-lime-300 {
+        color: #b5e48c;
+    }
 
-.tab-button.active {
-    background-color: #4caf50;
-    color: white;
-}
+    .tab-button.active {
+        background-color: #4caf50;
+        color: white;
+    }
 
-button {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-}
+    button {
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+    }
 
-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
+    button:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
 
-button:focus {
-    outline: none;
-}
+    button:focus {
+        outline: none;
+    }
 
-.flex-1 {
-    display: flex;
-    flex-direction: column;
-}
+    .flex-1 {
+        display: flex;
+        flex-direction: column;
+    }
 
-.sm\:flex-row {
-    display: flex;
-    flex-direction: row;
-}
-
-.gap-4 {
-    gap: 1rem;
-}
-
-.px-4 {
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-
-.h-full {
-    height: 100%;
-}
-
-.sm\:w-1\/3 {
-    width: 33.333333%;
-}
-
-.flex-shrink-0 {
-    flex-shrink: 0;
-}
-
-/* Responsive Layout: Switch Video Player and Course List */
-@media (max-width: 640px) {
     .sm\:flex-row {
-        flex-direction: column-reverse;
+        display: flex;
+        flex-direction: row;
+    }
+
+    .gap-4 {
+        gap: 1rem;
+    }
+
+    .px-4 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .h-full {
+        height: 100%;
     }
 
     .sm\:w-1\/3 {
-        width: 100%;
+        width: 33.333333%;
     }
-}
+
+    .flex-shrink-0 {
+        flex-shrink: 0;
+    }
+
+    /* Responsive Layout: Switch Video Player and Course List */
+    @media (max-width: 640px) {
+        .sm\:flex-row {
+            flex-direction: column-reverse;
+        }
+
+        .sm\:w-1\/3 {
+            width: 100%;
+        }
+    }
 </style>

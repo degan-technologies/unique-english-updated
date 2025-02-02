@@ -35,6 +35,7 @@ return new class extends Migration
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_module_id')->constrained('course_modules')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

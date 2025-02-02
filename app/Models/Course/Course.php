@@ -2,6 +2,7 @@
 
 namespace App\Models\Course;
 
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,4 +15,7 @@ class Course extends Model {
     ];
     
     public function user() {return $this->belongsTo(User::class);}
+    public function courseModules() { return $this->hasMany(CourseModule::class); }
+    public function courseContents() { return $this->hasMany(CourseContent::class); }
+    public function transactions() { return $this->hasMany(Transaction::class); }
 }

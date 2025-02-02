@@ -27,11 +27,18 @@ Course
   -price 
   -discount
   -credit_hour
+  -thumbnail_url new
   -user_id,
+
+CourseModul
+  -course_id,
+  -title
+  -discription
 
 CourseContent
   -id
   -course_id
+  -course_module_id
   -sequence (step1, step2, step3)
   -title 
   -description 
@@ -87,6 +94,13 @@ OrderedBook
   -book_id
   -enrolled_at
   -user_id,
+
+Live
+  -type
+  -duration
+  -price
+  -discount
+  -user_id
 
 VertualClassEnrollment
   -id,

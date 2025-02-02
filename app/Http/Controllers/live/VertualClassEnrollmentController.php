@@ -6,12 +6,13 @@ use Illuminate\Http\Request;
 use App\Services\LangService;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use App\Models\VirtualClassEnrollment;
+use App\Models\Live\VirtualClassEnrollment;
+use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Live\VirtualClassEnrollmentResource;
 
-class VirtualClassEnrollmentController extends Controller
-{
+class VirtualClassEnrollmentController extends Controller {
     protected $langService;
 
     public function __construct(LangService $langService)

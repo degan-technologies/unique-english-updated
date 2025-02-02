@@ -4,28 +4,27 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
-    public function up(): void {
-        Schema::create('live_sessions', function (Blueprint $table) {
+    public function up(): void
+    {
+        Schema::create('course_modules', function (Blueprint $table) {
             $table->id();
-            $table->string('slug')->unique();
 
             $table->string('title');
-            $table->longText('description');
-            $table->timestamp('start_time');
-            $table->timestamp('end_time');
-            $table->string('stream_url')->unique();
-            $table->integer('max_participants');
+            $table->integer('sequence');
+            $table->longText('description')->nullable();
 
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
 
-            $table->timestamps();
             $table->softDeletes();
+            $table->timestamps();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 
@@ -34,6 +33,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('live_sessions');
+        Schema::dropIfExists('course_moduls');
     }
 };

@@ -9,7 +9,7 @@ return new class extends Migration {
      * Run the migrations.
      */
     public function up(): void {
-        Schema::create('vertual_class_enrollments', function (Blueprint $table) {
+        Schema::create('virtual_class_enrollments', function (Blueprint $table) {
             $table->id();
             $table->string('slug')->unique();
 
@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->softDeletes();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('instractor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('instructor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

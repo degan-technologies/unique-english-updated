@@ -1,3 +1,14 @@
+<script>
+    export default {
+        name: "LiveSessionLanding",
+        methods: {
+            joinSession() {
+                alert("Redirecting to the live session...");
+            },
+        },
+    };
+</script>
+
 <template>
     <div
         class="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800"
@@ -136,17 +147,6 @@
         </div>
     </div>
 </template>
-
-<script>
-export default {
-    name: "LiveSessionLanding",
-    methods: {
-        joinSession() {
-            alert("Redirecting to the live session...");
-        },
-    },
-};
-</script>
 
 <style scoped>
 /* No additional custom CSS required as Tailwind manages the animations and styles */

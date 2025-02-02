@@ -2,11 +2,11 @@
 
 namespace App\Http\Resources\Live;
 
+use App\Http\Resources\userResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class VertualClassEnrollmentResource extends JsonResource
-{
+class VirtualClassEnrollmentResource extends JsonResource {
     /**
      * Transform the resource into an array.
      *
@@ -20,7 +20,7 @@ class VertualClassEnrollmentResource extends JsonResource
             'end_date' => $this->end_date,
             'price_plan' => $this->price_plan,
             'enrolled_at' => $this->enrolled_at,
-            'user' => new UserResource($this->user),
+            'user' => new userResource($this->user),
             'remaining_date' => $this->remaining_date,
             'instructor' => new UserResource($this->instructor),
         ];

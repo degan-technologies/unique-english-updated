@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
+use App\Models\Course\CourseModule;
+use App\Models\Course\Enrollment;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
@@ -13,7 +15,7 @@ use App\Models\Role\SystemAdmin;
 use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
-
+use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -68,6 +70,10 @@ class User extends Authenticatable {
     public function participants() { return $this->hasMany(Participant::class);}
     public function liveResources() { return $this->hasMany(LiveResource::class);} 
     public function courseContents() { return $this->hasMany(CourseContent::class); }
+    public function courseModules() { return $this->hasMany(CourseModule::class); }
+    public function transaction() { return $this->hasMany(Transaction::class); }
+    public function enrollments() { return $this->hasMany(Enrollment::class); }
+
 
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {

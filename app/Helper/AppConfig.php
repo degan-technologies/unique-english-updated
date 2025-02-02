@@ -3,10 +3,10 @@ namespace App\Helper;
 
 define('DB_CONNECTION', 'mysql');
 define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
+define('DB_PORT', '3307');
 define('DB_DATABASE', 'unique');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '1234');
+define('DB_PASSWORD', 'qlarapass');
 
 define('MALE', 1);
 define('FEMALE', 2);
@@ -40,18 +40,50 @@ define('COURSE_STATUS', [
     PUBLISHED, DRAFT, ARCHIVED
 ]);
 
-define('REGISTERED', 1);
-define('JOINED', 2);
-define('LEFT', 3);
-
 define('SCHEDULED', 1);
 define('LIVE', 2);
 define('COMPLETED', 3);
 define('CANCELLED', 4);
-define('LiVESESSION_STATUS',[SCHEDULED,LIVE,COMPLETED,CANCELLED]);
+define('LiVESESSION_STATUS',[
+    SCHEDULED,LIVE,COMPLETED,CANCELLED
+]);
 
 define('REGISTERED', 1);
 define('JOINED', 2);
 define('LEFT', 3);
-define('PARTICIPANT_STATUS', [REGISTERED, JOINED, LEFT]);
+define('PARTICIPANT_STATUS', [
+    REGISTERED, JOINED, LEFT
+]);
 
+define('BOOK', 'book');
+define('COURSE', 'course');
+define('LIVE_CLASS', 'live');
+define('ORDER_TYPES',[
+    BOOK, COURSE, LIVE_CLASS,
+]);
+
+define('DEBIT', 'debit');
+define('CREDIT', 'credit');
+define('TRANSACTION_TYPES',[
+    DEBIT, CREDIT
+]);
+
+define('PAYPAL', 'payPal');
+define('STRIPE', 'stripe');
+define('CHAPA', 'chapa');
+define('BANK', 'bank');
+define('TELEBIRR', 'teleBirr');
+define('CASH', 'cash');
+
+define('TRANSACTION_METHODS', [
+    PAYPAL, STRIPE, CHAPA, BANK, TELEBIRR, CASH,
+]);
+
+define('BIGINNER', 1);
+define('INTERMIDIATE', 2);
+define('ADVANCE', 3);
+define('FULL_PACKAGE', 4);
+
+define('SKILL_LEVEL', [
+    BIGINNER, INTERMIDIATE, ADVANCE, FULL_PACKAGE
+]);

@@ -22,7 +22,6 @@ class ParticipantSeeder extends Seeder
 
         if (!$liveSession) {
             $liveSession = LiveSession::create([
-                'slug' => Str::uuid(),
                 'status' => 'live',
                 'title' => 'English Tutorial Live Session',
                 'start_time' => now()->addHours(2),
@@ -44,7 +43,6 @@ class ParticipantSeeder extends Seeder
 
         foreach ($participants as $data) {
             Participant::create([
-                'slug' => Str::uuid(),
                 'joined_at' => $data['joined_at'],
                 'status' => $data['status'],
                 'live_session_id' => $liveSession->id,

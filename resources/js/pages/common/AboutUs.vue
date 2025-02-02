@@ -1,3 +1,15 @@
+
+<script setup>
+    import { ref } from "vue";
+
+    // State for expandable text
+    const isExpanded = ref(false);
+
+    const toggleExpanded = () => {
+        isExpanded.value = !isExpanded.value;
+    };
+</script>
+
 <template>
     <section class="bg-gray-50 py-12 px-4">
         <div
@@ -67,18 +79,3 @@
         </div>
     </section>
 </template>
-
-<script setup>
-import { ref } from "vue";
-
-// State for expandable text
-const isExpanded = ref(false);
-
-const toggleExpanded = () => {
-    isExpanded.value = !isExpanded.value;
-};
-</script>
-
-<style scoped>
-/* Optional: Add any custom styles if needed */
-</style>
