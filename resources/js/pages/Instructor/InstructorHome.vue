@@ -1,13 +1,9 @@
-<script setup >
-import AvatarUpload from '../../components/Profile/AvatarUpload.vue';
-
-
+<script setup>
+import AdminLayout from "../../components/Layout/AdminLayout.vue";
+import Dashboard from "../../components/Layout/Dashboard.vue";
 </script>
-
 <template>
- 
-    <AvatarUpload/>
-   
-
-
+    <AdminLayout>
+        <Dashboard />
+    </AdminLayout>
 </template>
