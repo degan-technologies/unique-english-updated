@@ -1,414 +1,71 @@
+<script setup>
+    import { ref } from "vue";
+
+    const collapsModuleId = ref(1);
+
+    const props = defineProps({
+        selectedCourse:Object,
+    })
+
+    const emit = defineEmits(['openedLesson'])
+
+    function toggleModuleLesson(id) {
+        if(collapsModuleId.value == id){
+            return collapsModuleId.value = null;
+        }
+        collapsModuleId.value = id;
+    };
+
+    function openLesson(moduleId, contentId) {
+        emit('openedLesson', moduleId, contentId);
+    }
+</script>
+
 <template>
-    <!-- Left Card: Course Content -->
-    <div class="bg-white rounded-lg shadow-lg pb-12">
-        <div class="text-center mb-3">
-            <div class="flex items-center justify-center">
-                <!-- Global Progress Circle -->
-                <div class="relative mt-2">
-                    <div
-                        class="w-16 h-16 rounded-full flex items-center justify-center"
-                        role="progressbar"
-                        :aria-valuenow="calculateGlobalProgress()"
-                        aria-valuemin="0"
-                        aria-valuemax="100"
-                        :style="{
-                            background: `conic-gradient(
-                                        green ${calculateGlobalProgress()}%, 
-                                        red ${calculateGlobalProgress()}% 100%
-                                    )`,
-                        }"
-                    >
-                        <span class="text-lg font-bold text-white">
-                            {{ calculateGlobalProgress() }}%
-                        </span>
-                    </div>
-                    <p class="text-center text-sm mt-2 text-gray-700">
-                        Progress:
-                        {{ calculateGlobalProgress() }}%
-                    </p>
-                </div>
-            </div>
+    <div class="bg-white p-4 py-8 rounded-b-lg ">
+         <div class="border-b mb-2  border-lime-700 text-lime-600">
+            <h2 class="text-2xl leading-9 py-4 font-semibold"> Course Lesson </h2>
         </div>
-        <div>
-            <div
-                v-for="(module, moduleIndex) in modules"
-                :key="moduleIndex"
-                class="mb-3 px-2"
-            >
-                <div class="flex justify-between items-center">
-                    <button
-                        @click="toggleLesson(moduleIndex)"
-                        class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
-                    >
-                        <span class="font-semibold">{{ module.title }}</span>
-                        <i
-                            :class="[
-                                {
-                                    'rotate-180': module.showLessons,
-                                },
-                            ]"
-                            class="transition-transform duration-300"
-                        >
-                            &#x25BC;
-                        </i>
-                    </button>
-                </div>
+        <div
+            v-for="(courseModule, courseModuleIndex) in selectedCourse?.courseModules"
+            :key="courseModuleIndex"
+            class="mb-3 px-2" >
+            <div class="flex justify-between items-center">
+                <button
+                    @click="toggleModuleLesson(courseModule.id)"
+                    class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300" >
+                    <span class="font-semibold text-lg">{{
+                        courseModule.title
+                    }}</span>
+                    <i
+                        :class="[
+                            { 'rotate-90': collapsModuleId == courseModule.id },
+                        ]"
+                        class="fa-solid fa-angle-right text-xl transition-transform duration-300" > </i>
+                </button>
+            </div>
 
-                <div v-if="module.showLessons" class="ml-4 mt-2">
-                    <ul class="list-none pl-0">
-                        <li
-                            v-for="(lesson, lessonIndex) in module.lessons"
-                            :key="lessonIndex"
-                            class="text-gray-700 flex items-center my-1"
-                        >
-                            <input
-                                type="checkbox"
-                                :checked="
-                                    module.completedLessons.includes(
-                                        lessonIndex
-                                    )
-                                "
-                                @change="
-                                    toggleLessonCompletion(
-                                        moduleIndex,
-                                        lessonIndex
-                                    )
-                                "
-                                class="mr-2"
-                            />
-                            {{ lesson }}
-                        </li>
-                    </ul>
-
-                    <!-- Start Quiz Button -->
-                    <div
-                        class="mt-8"
-                        v-if="
-                            module.completedLessons.length ===
-                            module.lessons.length
-                        "
-                    >
-                        <button
-                            @click="startQuiz(moduleIndex)"
-                            class="bg-green-500 text-white px-6 py-2 rounded-full hover:bg-green-600 transition-colors"
-                        >
-                            Start Quiz
-                        </button>
-                    </div>
-
-                    <!-- Quiz Section -->
-                    <div v-if="module.quizStarted">
-                        <h2 class="text-2xl font-bold mb-4">
-                            Quiz for {{ module.title }}
-                        </h2>
-
-                        <div v-if="!quizSubmitted[moduleIndex]">
-                            <div class="mb-6">
-                                <p class="text-lg font-semibold mb-4">
-                                    Question
-                                    {{ currentQuestion[moduleIndex] + 1 }}
-                                    of
-                                    {{ module.quiz.length }}
-                                </p>
-                                <p class="text-gray-500">
-                                    {{
-                                        module.quiz[
-                                            currentQuestion[moduleIndex]
-                                        ].text
-                                    }}
-                                </p>
-                                <div class="flex flex-col gap-2 mt-2">
-                                    <label
-                                        v-for="(option, optIdx) in module.quiz[
-                                            currentQuestion[moduleIndex]
-                                        ].options"
-                                        :key="optIdx"
-                                        class="flex items-center gap-2"
-                                    >
-                                        <input
-                                            type="radio"
-                                            :name="
-                                                moduleIndex +
-                                                '-question-' +
-                                                currentQuestion[moduleIndex]
-                                            "
-                                            :value="option"
-                                            v-model="
-                                                module.quiz[
-                                                    currentQuestion[moduleIndex]
-                                                ].selected
-                                            "
-                                            class="form-radio text-blue-500"
-                                        />
-                                        {{ option }}
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Prev and Next Buttons -->
-                            <div class="flex justify-between items-center">
-                                <button
-                                    v-if="currentQuestion[moduleIndex] > 0"
-                                    @click="prevQuestion(moduleIndex)"
-                                    class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-                                >
-                                    Prev
-                                </button>
-                                <button
-                                    v-if="
-                                        currentQuestion[moduleIndex] <
-                                        module.quiz.length - 1
-                                    "
-                                    @click="nextQuestion(moduleIndex)"
-                                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors ml-auto"
-                                >
-                                    Next
-                                </button>
-                                <button
-                                    v-else
-                                    @click="submitQuiz(moduleIndex)"
-                                    class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors ml-auto"
-                                >
-                                    Submit
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Display Result -->
-                        <div v-if="quizSubmitted[moduleIndex]" class="mt-4">
-                            <p class="text-xl font-semibold">
-                                Your Score:
-                                {{ calculateScore(moduleIndex) }}
-                                %
-                            </p>
-                            <button
-                                v-if="calculateScore(moduleIndex) < 75"
-                                @click="retakeQuiz(moduleIndex)"
-                                class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors mt-4"
-                            >
-                                Retake Quiz
-                            </button>
-                        </div>
-                    </div>
-                </div>
+            <div v-if="collapsModuleId == courseModule.id" class="ml-4 mt-2">
+                <ul class="list-none pl-0">
+                    <li
+                        v-for="( courseContent, courseContentIndex ) in courseModule.courseContents"
+                        :key="courseContentIndex"
+                        @click="openLesson(courseModule.id, courseContent.id )"
+                        class="text-gray-700 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1" >
+                        <i 
+                            :class="{
+                                'fa-circle-play':courseContent.content_type == 1,
+                                'fa-file-lines':courseContent.content_type == 2,
+                                'fa-image':courseContent.content_type == 3,
+                            }"
+                            class="fa-solid px-8 text-lg w-5 h-5"></i>
+                        {{ courseContent.title }}
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
 </template>
-
-<script setup>
-import { ref } from "vue";
-
-// Modules with lessons and quizzes
-const modules = ref([
-    {
-        title: "Module 1: Introduction to Filmmaking",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: What is Filmmaking?",
-            "Lesson 2: History of Filmmaking",
-            "Lesson 3: Filmmaking Techniques",
-        ],
-        completedLessons: [],
-        quizStarted: false,
-        quiz: [
-            {
-                text: "What is the primary goal of filmmaking?",
-                options: ["To entertain", "To make money", "Both of these"],
-                correct: "Both of these",
-                selected: "",
-            },
-            {
-                text: "Who invented the first motion picture?",
-                options: ["Thomas Edison", "George Eastman", "Louis Le Prince"],
-                correct: "Louis Le Prince",
-                selected: "",
-            },
-        ],
-    },
-    {
-        title: "Module 2: Camera Techniques",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Camera Angles",
-            "Lesson 2: Camera Movements",
-            "Lesson 3: Lighting Techniques",
-        ],
-        completedLessons: [],
-        quizStarted: false,
-        quiz: [
-            {
-                text: "What is the purpose of a close-up shot?",
-                options: [
-                    "To show emotion",
-                    "To show context",
-                    "To show action",
-                ],
-                correct: "To show emotion",
-                selected: "",
-            },
-            {
-                text: "What is the term for the steady movement of the camera?",
-                options: ["Tilt", "Dolly", "Zoom"],
-                correct: "Dolly",
-                selected: "",
-            },
-        ],
-    },
-    {
-        title: "Module 3: Audio and Sound Design",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Importance of Sound",
-            "Lesson 2: Microphone Types",
-            "Lesson 3: Sound Editing Techniques",
-        ],
-        completedLessons: [],
-        quizStarted: false,
-        quiz: [
-            {
-                text: "Which microphone is best for recording interviews?",
-                options: ["Lavalier", "Shotgun", "Condenser"],
-                correct: "Lavalier",
-                selected: "",
-            },
-            {
-                text: "What is Foley sound?",
-                options: [
-                    "Sound created in post-production",
-                    "Live recorded sound on set",
-                    "Digital sound effects",
-                ],
-                correct: "Sound created in post-production",
-                selected: "",
-            },
-        ],
-    },
-    {
-        title: "Module 4: Video Editing with Adobe Premiere Pro",
-        showLessons: false,
-        lessons: [
-            "Lesson 1: Introduction to Adobe Premiere Pro",
-            "Lesson 2: Basic Editing Tools",
-            "Lesson 3: Advanced Editing Techniques",
-        ],
-        completedLessons: [],
-        quizStarted: false,
-        quiz: [
-            {
-                text: "What does the 'cut' tool do in Premiere Pro?",
-                options: ["Splits clips", "Applies effects", "Renders video"],
-                correct: "Splits clips",
-                selected: "",
-            },
-            {
-                text: "Which format is best for exporting videos for YouTube?",
-                options: ["MP4", "MOV", "AVI"],
-                correct: "MP4",
-                selected: "",
-            },
-        ],
-    },
-]);
-
-// Track the currently expanded module
-const expandedModuleIndex = ref(null);
-
-// Toggle lessons visibility for a specific module
-const toggleLesson = (moduleIndex) => {
-    // Close previously expanded module
-    if (
-        expandedModuleIndex.value !== null &&
-        expandedModuleIndex.value !== moduleIndex
-    ) {
-        modules.value[expandedModuleIndex.value].showLessons = false;
-    }
-
-    // Toggle the current module's lessons visibility
-    modules.value[moduleIndex].showLessons =
-        !modules.value[moduleIndex].showLessons;
-
-    // Update the expanded module index
-    expandedModuleIndex.value = modules.value[moduleIndex].showLessons
-        ? moduleIndex
-        : null;
-};
-
-// Track current question index for each module
-const currentQuestion = ref(Array(modules.value.length).fill(0));
-
-// Track quiz submission status for each module
-const quizSubmitted = ref(Array(modules.value.length).fill(false));
-
-// Toggle lesson completion for a specific module
-const toggleLessonCompletion = (moduleIndex, lessonIndex) => {
-    const completedLessons = modules.value[moduleIndex].completedLessons;
-    const lesson = lessonIndex;
-    if (completedLessons.includes(lesson)) {
-        completedLessons.splice(completedLessons.indexOf(lesson), 1);
-    } else {
-        completedLessons.push(lesson);
-    }
-};
-
-// Start quiz for a specific module
-const startQuiz = (moduleIndex) => {
-    modules.value[moduleIndex].quizStarted = true;
-    currentQuestion.value[moduleIndex] = 0; // Reset question index
-};
-
-// Next question for a specific module
-const nextQuestion = (moduleIndex) => {
-    if (
-        currentQuestion.value[moduleIndex] <
-        modules.value[moduleIndex].quiz.length - 1
-    ) {
-        currentQuestion.value[moduleIndex]++;
-    }
-};
-
-// Previous question for a specific module
-const prevQuestion = (moduleIndex) => {
-    if (currentQuestion.value[moduleIndex] > 0) {
-        currentQuestion.value[moduleIndex]--;
-    }
-};
-
-// Submit quiz for a specific module
-const submitQuiz = (moduleIndex) => {
-    quizSubmitted.value[moduleIndex] = true;
-};
-
-// Calculate score for a specific module
-const calculateScore = (moduleIndex) => {
-    const quiz = modules.value[moduleIndex].quiz;
-    const correctAnswers = quiz.filter(
-        (question) => question.selected === question.correct
-    ).length;
-    return Math.round((correctAnswers / quiz.length) * 100);
-};
-
-// Retake quiz for a specific module
-const retakeQuiz = (moduleIndex) => {
-    modules.value[moduleIndex].quiz.forEach((question) => {
-        question.selected = "";
-    });
-    quizSubmitted.value[moduleIndex] = false;
-    currentQuestion.value[moduleIndex] = 0;
-    modules.value[moduleIndex].quizStarted = false;
-};
-
-// Calculate global progress percentage
-const calculateGlobalProgress = () => {
-    let totalLessons = 0;
-    let completedLessons = 0;
-    modules.value.forEach((module) => {
-        totalLessons += module.lessons.length;
-        completedLessons += module.completedLessons.length;
-    });
-    return Math.round((completedLessons / totalLessons) * 100);
-};
-</script>
 
 <style scoped>
 .course-details-container {

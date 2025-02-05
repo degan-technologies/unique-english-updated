@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,7 +25,8 @@ class userResource extends JsonResource {
             'phone' => $this->phone,
             'profile' => $this->profile,
             'bg_image' => $this->bg_image,
-            'role' => $this->role
+            'role' => $this->role,
+            'myCourse' => TransactionResource::collection($this->transaction)
         ];
     }
 }

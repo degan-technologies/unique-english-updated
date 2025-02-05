@@ -9,7 +9,7 @@
     const cartStore = useCartStore();
     const studentStore = UseStudentStore();
     
-    const { courses, selectedCourseSlug, } = storeToRefs(studentStore);
+    const { courseDetailTab, videoPlayerTab, courses, selectedCourseSlug, } = storeToRefs(studentStore);
     const {items, itemCount, image} = storeToRefs(cartStore);
 
     const route = useRoute();
@@ -64,7 +64,7 @@
         router.push({
             name: 'student',
             query: {
-                tab:'course',
+                tab:courseDetailTab.value,
                 slug: slug
             }
         });

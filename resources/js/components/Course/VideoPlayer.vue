@@ -1,9 +1,24 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import QA from "./QA.vue";
-import TextEditor from "../Layout/TextEditor.vue";
-import CourseList from "./CourseList.vue";
-import ReviewList from "./ReviewList.vue";
+    import { storeToRefs } from "pinia";
+    import { onMounted, ref, watch, watchEffect } from "vue";
+
+    import { UseStudentStore } from "@/store/UseStudentStore";
+    import { useRoute } from "vue-router";
+
+    import QA from "./QA.vue";
+    import TextEditor from "../Layout/TextEditor.vue";
+    import CourseList from "./CourseList.vue";
+    import ReviewList from "./ReviewList.vue";
+
+    const studentStore = UseStudentStore();
+    const { courses, selectedCourseSlug} = storeToRefs(studentStore);
+
+    const route = useRoute();
+    const selectedCourse = ref(null);
+    const selectedModule = ref(null)
+    const selectedLesson = ref(null)
+
+    selectedCourseSlug.value = route.query.slug;
 
 const activeTab = ref("qa"); // Default to Q&A tab
 const setActiveTab = (tab) => {
@@ -109,25 +124,46 @@ const toggleFullscreen = () => {
     }
 };
 
-const updateVideoQuality = () => {
-    if (!video.value) return;
-    video.value.src = selectedQuality.value;
-    video.value.load();
-    video.value.play();
-};
+    const updateVideoQuality = () => {
+        if (!video.value) return;
+        video.value.src = selectedQuality.value;
+        video.value.load();
+        video.value.play();
+    };
 
-onMounted(() => {
-    video.value.volume = volume.value;
-    video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
-    if (video.value) {
-        video.value.addEventListener("timeupdate", updateProgress);
+    function openedLesson(moduleId, contentId) {
+        selectedModule.value = selectedCourse?.value.courseModules.find(courseModule => courseModule.id == moduleId);
+        selectedLesson.value = selectedModule?.value.courseContents.find(courseContent => courseContent.id == contentId);
     }
-    updateTotalTime();
-});
+
+    onMounted(() => {
+        video.value.volume = volume.value;
+        video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
+        if (video.value) {
+            video.value.addEventListener("timeupdate", updateProgress);
+        }
+        updateTotalTime();
+        studentStore.fetchCourses();
+
+        watchEffect(()=>{
+        if(!courses.value) return;
+        selectedCourse.value = courses.value.find(item => item?.slug == selectedCourseSlug.value);
+        selectedModule.value = selectedCourse?.value.courseModules.find(courseModule => true);
+        selectedLesson.value = selectedModule?.value.courseContents.find(courseContent =>true);
+    })
+
+    watch(
+        ()=> route.query.slug,
+        ()=> {
+           selectedCourseSlug.value = route.query.slug;
+           selectedCourse.value = courses.value.find(course => course.slug = selectedCourseSlug.value);           
+        },
+    )
+    });
 </script>
 
 <template>
-    <div class="flex flex-col sm:flex-row my-24 mx-8">
+    <div  v-if="selectedCourseSlug" class=" grid w-[90%]  mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative mt-24 bg-slate-50">
         <div class="flex-1 flex flex-col gap-4">
             <div
                 class="relative bg-black rounded-lg overflow-hidden border-2 border-lime-700"
@@ -259,10 +295,25 @@ onMounted(() => {
                 </div>
             </div>
 
-            <div class="flex-1 w-full">
-                <p class="py-4 font-bold text-xl text-blue-500">
-                    Lesson 1: Introduction to Adobe Premiere Pro
-                </p>
+            <div class="bg-white p-4 py-8 rounded-b-lg">
+               <div class="flex justify-between">
+                <div class="flex flex-col">
+                    <p class="text-lg text-gray-600 py-2">{{ selectedLesson?.title }}</p>
+                    <p class="text-2xl text-blue-600">{{ selectedModule?.title }}</p>
+                </div>
+
+                <!-- Global Progress Circle -->
+                <div class="relative mt-2">
+                    <div
+                        class="w-16 h-16 bg-sky-700 rounded-full flex items-center justify-center"
+                        role="progressbar"
+                        aria-valuemin="0"
+                        aria-valuemax="100" >
+                        <span class="text-lg font-bold text-white"> 0 % </span>
+                    </div>
+                    <p class="text-center text-sm mt-2 text-gray-700"> Progress: 0 % </p>
+                </div>
+               </div>
                 <div
                     class="flex justify-start mt-8 border-b-2 border-gray-200 pb-4 gap-4"
                 >
@@ -312,140 +363,13 @@ onMounted(() => {
         </div>
 
         <!-- Course List Section (now on the right side) -->
-        <div
-            class="w-full sm:w-1/3 bg-gray-100 rounded-lg shadow-lg p-4 flex-shrink-0"
-        >
-            <CourseList />
+        <div class="">
+            <CourseList 
+                :selectedCourse="selectedCourse"
+                @openedLesson="openedLesson"/>
         </div>
     </div>
 </template>
-<script setup>
-import { ref, onMounted } from "vue";
-import QA from "./QA.vue";
-import TextEditor from "../Layout/TextEditor.vue";
-import CourseList from "./CourseList.vue";
-import ReviewList from "./ReviewList.vue";
-
-const activeTab = ref("qa"); // Default to Q&A tab
-const setActiveTab = (tab) => {
-    activeTab.value = tab;
-};
-
-const video = ref(null);
-const isPlaying = ref(false);
-const showControls = ref(true);
-const progress = ref(0);
-const currentTime = ref("0:00");
-const totalTime = ref("0:00");
-const volume = ref(1);
-const isMuted = ref(false);
-const playbackRate = ref("default"); // Default placeholder
-const selectedQuality = ref("/video/Mehari.mp4");
-
-let hideControlsTimeout = null;
-
-const togglePlayPause = () => {
-    if (!video.value) return;
-    if (video.value.paused) {
-        video.value.play();
-        isPlaying.value = true;
-    } else {
-        video.value.pause();
-        isPlaying.value = false;
-    }
-};
-
-const handleSeekInput = (event) => {
-    if (!video.value) return;
-    const seekTime = (event.target.value / 100) * video.value.duration;
-    video.value.currentTime = seekTime;
-    progress.value = (seekTime / video.value.duration) * 100;
-    currentTime.value = formatTime(seekTime);
-};
-
-const updateProgress = () => {
-    if (!video.value) return;
-    progress.value = (video.value.currentTime / video.value.duration) * 100;
-    currentTime.value = formatTime(video.value.currentTime);
-};
-
-const updateTotalTime = () => {
-    if (!video.value) return;
-    totalTime.value = formatTime(video.value.duration || 0);
-};
-
-const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-};
-
-const resetControlsTimeout = () => {
-    showControls.value = true;
-    if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
-    startControlsHideTimer();
-};
-
-const startControlsHideTimer = () => {
-    hideControlsTimeout = setTimeout(() => {
-        if (isPlaying.value) showControls.value = false;
-    }, 3000);
-};
-
-const handlePlay = () => {
-    isPlaying.value = true;
-    resetControlsTimeout();
-    updateProgress();
-};
-
-const handlePause = () => {
-    isPlaying.value = false;
-    showControls.value = true;
-    updateProgress();
-};
-
-const changeVolume = (event) => {
-    if (!video.value) return;
-    volume.value = event.target.value;
-    video.value.volume = volume.value;
-};
-
-const toggleMute = () => {
-    if (!video.value) return;
-    video.value.muted = !video.value.muted;
-    isMuted.value = video.value.muted;
-};
-
-const changePlaybackRate = () => {
-    if (!video.value || playbackRate.value === "default") return;
-    video.value.playbackRate = playbackRate.value;
-};
-
-const toggleFullscreen = () => {
-    if (!video.value) return;
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    } else {
-        video.value.requestFullscreen();
-    }
-};
-
-const updateVideoQuality = () => {
-    if (!video.value) return;
-    video.value.src = selectedQuality.value;
-    video.value.load();
-    video.value.play();
-};
-
-onMounted(() => {
-    video.value.volume = volume.value;
-    video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
-    if (video.value) {
-        video.value.addEventListener("timeupdate", updateProgress);
-    }
-    updateTotalTime();
-});
-</script>
 
 <style scoped>
 .range-slider {

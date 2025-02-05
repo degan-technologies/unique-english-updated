@@ -1,23 +1,23 @@
 <script setup>
-import Axios from "axios";
-import { storeToRefs } from "pinia";
-import { onMounted, ref, watch, watchEffect } from "vue";
+    import Axios from "axios";
+    import { storeToRefs } from "pinia";
+    import { onMounted, ref, watch, watchEffect } from "vue";
+    import { useRoute, useRouter } from "vue-router";
 
-import { UseStudentStore } from "@/store/UseStudentStore";
-import { useRoute, useRouter } from "vue-router";
+    import { UseStudentStore } from "@/store/UseStudentStore";
 
-const studentStore = UseStudentStore();
-const { courses, selectedCourseSlug } = storeToRefs(studentStore);
+    const studentStore = UseStudentStore();
+    
+    const {  videoPlayerTab, courses, selectedCourseSlug, } = storeToRefs(studentStore);
 
 const route = useRoute();
 const router = useRouter();
 
-const checkoutUrl = ref(null);
-
-const selectedCourse = ref(null);
-const collapsModuleId = ref(null);
-
-selectedCourseSlug.value = route.query.slug;
+    const checkoutUrl = ref(null);
+    const selectedCourse = ref(null);
+    const collapsModuleId = ref(null);
+    
+    selectedCourseSlug.value = route.query.slug;
 
 function toggleModuleLesson(id) {
     if (collapsModuleId.value == id) {
@@ -34,24 +34,33 @@ function enrollCourse(item) {
         },
     ];
 
-    Axios.post("/api/initiate-payment", { cartItems: selectedItem })
-        .then((res) => {
-            checkoutUrl.value = res.data.checkout_url;
-            window.open(checkoutUrl.value, "_blank");
-        })
-        .catch((error) => {});
-}
+        Axios
+            .post('/api/initiate-payment',{cartItems:selectedItem} )
+            .then(res=>{
+                checkoutUrl.value = res.data.checkout_url;
+                window.open(checkoutUrl.value, "_blank");
+            })
+            .catch(error => {});
 
-onMounted(async () => {
-    studentStore.fetchCourses();
-});
+    }
 
-watchEffect(() => {
-    if (!courses.value.length) return;
-    selectedCourse.value = courses.value.find(
-        (item) => item?.slug == selectedCourseSlug.value
-    );
-});
+    
+     function changeTabTemporaryFunction(slug) {
+        router.push({
+            name: 'student',
+            query: {
+                tab:videoPlayerTab.value,
+                slug: slug
+            }
+        });
+
+        selectedCourseSlug.value = slug;
+    }
+
+    onMounted(async ()=>{
+        await studentStore.fetchCourses();
+        selectedCourse.value = courses.value.find(item => item?.slug == selectedCourseSlug.value);
+    });
 
 watch(
     () => route.query.slug,
@@ -194,10 +203,9 @@ watch(
                 class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center"
             >
                 <button
-                    @click="enrollCourse(selectedCourse)"
-                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full"
-                >
-                    Enroll Now
+                    @click="changeTabTemporaryFunction(selectedCourse.slug)"
+                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full" >
+                    continue
                 </button>
                 <h2 class="text-xl leading-9 font-semibold mb-4">
                     Course Details
