@@ -3,7 +3,9 @@
         <div
             class="w-full max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-2xl"
         >
-            <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">
+            <h1
+                class="text-4xl font-bold text-center mb-8 text-gray-800 animate__animated animate__fadeIn"
+            >
                 English Level Test
             </h1>
 
@@ -63,7 +65,7 @@
             <!-- Result Section -->
             <div v-else class="text-center space-y-6">
                 <h2
-                    class="text-3xl font-bold text-gray-800 animate-fade-in"
+                    class="text-3xl font-bold text-gray-800 animate__animated animate__fadeIn animate__delay-1s"
                     :class="score >= 12 ? 'text-green-500' : 'text-blue-500'"
                 >
                     {{ resultMessage }}
@@ -78,10 +80,19 @@
                 </p>
                 <p
                     v-if="score >= 12"
-                    class="text-xl text-green-600 font-semibold"
+                    class="text-xl text-green-600 font-semibold animate__animated animate__pulse animate__infinite"
                 >
                     🎉 Congratulations! Keep up the great work! 🎉
                 </p>
+
+                <div class="mt-6">
+                    <button
+                        @click="goHome"
+                        class="px-6 py-3 bg-lime-700 text-white rounded-lg hover:bg-lime-800 transition-all"
+                    >
+                        Back to Home
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -235,19 +246,97 @@ const resultMessage = computed(() => {
     if (score.value >= 8) return "Good Effort!";
     return "Keep Practicing!";
 });
+
+// Go Home
+const goHome = () => {
+    window.location.href = "/"; // Replace with your home URL or logic to reset the test.
+};
 </script>
 
 <style scoped>
-.animate-fade-in {
-    animation: fadeIn 1.5s ease-in-out;
+@import url("https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css");
+
+.range-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #ffffff;
+    border-radius: 4px;
+    outline: none;
 }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+.range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    background: #f4f3f3;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.range-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: #f4f3f3;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.text-green-600 {
+    color: #38a169;
+}
+
+.text-blue-500 {
+    color: #3b82f6;
+}
+
+.bg-lime-700 {
+    background-color: #4caf50;
+}
+
+.bg-lime-800 {
+    background-color: #388e3c;
+}
+
+.bg-lime-100 {
+    background-color: #dcedc8;
+}
+
+.bg-green-500 {
+    background-color: #34d399;
+}
+
+.bg-lime-500 {
+    background-color: #84cc16;
+}
+
+.bg-lime-600 {
+    background-color: #65a30d;
+}
+
+.bg-gray-500 {
+    background-color: #6b7280;
+}
+
+.bg-gray-600 {
+    background-color: #4b5563;
+}
+
+.text-gray-700 {
+    color: #4b5563;
+}
+
+.text-gray-600 {
+    color: #6b7280;
+}
+
+.text-gray-800 {
+    color: #1f2937;
+}
+
+.text-white {
+    color: white;
 }
 </style>

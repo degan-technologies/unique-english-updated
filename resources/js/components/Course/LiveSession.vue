@@ -185,145 +185,135 @@
         </div>
     </div>
 </template>
+<script setup>
+import { ref, computed, onMounted } from "vue";
 
-<script>
-export default {
-    name: "ClassSchedulingSystem",
-    data() {
-        return {
-            newClass: { studentName: "", day: "", time: "" },
-            errors: { studentName: "", day: "", time: "" },
-            scheduledClasses: [],
-            currentSession: null,
-            jitsiAPI: null,
-            isEditing: false,
-            editIndex: null,
-            weekDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-            timeSlots: [
-                "9:00 AM - 10:00 AM",
-                "10:00 AM - 11:00 AM",
-                "11:00 AM - 12:00 PM",
-                "1:00 PM - 2:00 PM",
-                "2:00 PM - 3:00 PM",
-                "3:00 PM - 4:00 PM",
-            ],
-        };
-    },
-    computed: {
-        availableSlots() {
-            const reservedSlots = this.scheduledClasses
-                .filter((_, index) => index !== this.editIndex)
-                .map((classItem) => classItem.time);
-            return this.timeSlots.filter(
-                (slot) => !reservedSlots.includes(slot)
-            );
-        },
-        groupedClasses() {
-            return this.weekDays.map((day) => ({
-                day,
-                classes: this.scheduledClasses
-                    .filter((classItem) => classItem.day === day)
-                    .map((classItem, index) => ({ ...classItem, index })),
-            }));
-        },
-    },
-    methods: {
-        validateInputs() {
-            this.errors = { studentName: "", day: "", time: "" };
-            if (
-                !this.newClass.studentName ||
-                this.newClass.studentName.length < 2
-            ) {
-                this.errors.studentName = "Please enter a valid name.";
-            }
-            if (!this.newClass.day) this.errors.day = "Please select a day.";
-            if (!this.newClass.time)
-                this.errors.time = "Please select a time slot.";
-            return !Object.values(this.errors).some((error) => error);
-        },
-        scheduleClass() {
-            if (this.validateInputs()) {
-                this.scheduledClasses.push({
-                    ...this.newClass,
-                    status: "Upcoming",
-                });
-                this.newClass = { studentName: "", day: "", time: "" };
-                this.saveToLocalStorage();
-            }
-        },
-        deleteClass(index) {
-            this.scheduledClasses.splice(index, 1);
-            this.saveToLocalStorage();
-        },
-        editClass(index) {
-            const classItem = this.scheduledClasses[index];
-            this.newClass = { ...classItem };
-            this.isEditing = true;
-            this.editIndex = index;
-        },
-        saveEdit() {
-            if (this.validateInputs()) {
-                this.$set(this.scheduledClasses, this.editIndex, {
-                    ...this.newClass,
-                    status: "Upcoming",
-                });
-                this.newClass = { studentName: "", day: "", time: "" };
-                this.isEditing = false;
-                this.editIndex = null;
-                this.saveToLocalStorage();
-            }
-        },
-        startLiveSession(index) {
-            const classItem = this.scheduledClasses[index];
-            this.currentSession = classItem;
-            this.scheduledClasses[index].status = "Live";
-            this.saveToLocalStorage();
+const newClass = ref({ studentName: "", day: "", time: "" });
+const errors = ref({ studentName: "", day: "", time: "" });
+const scheduledClasses = ref([]);
+const currentSession = ref(null);
+const jitsiAPI = ref(null);
+const isEditing = ref(false);
+const editIndex = ref(null);
+const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const timeSlots = [
+    "9:00 AM - 10:00 AM",
+    "10:00 AM - 11:00 AM",
+    "11:00 AM - 12:00 PM",
+    "1:00 PM - 2:00 PM",
+    "2:00 PM - 3:00 PM",
+    "3:00 PM - 4:00 PM",
+];
 
-            if (!window.JitsiMeetExternalAPI) {
-                const script = document.createElement("script");
-                script.src = "https://meet.jit.si/external_api.js";
-                script.onload = this.initializeJitsi;
-                document.body.appendChild(script);
-            } else {
-                this.initializeJitsi();
-            }
-        },
-        initializeJitsi() {
-            const domain = "meet.jit.si";
-            const options = {
-                roomName: `LiveClass_${Date.now()}`,
-                parentNode: document.querySelector("#jitsi-video"),
-            };
-            this.jitsiAPI = new JitsiMeetExternalAPI(domain, options);
-        },
-        endLiveSession() {
-            if (this.jitsiAPI) {
-                this.jitsiAPI.dispose();
-                this.jitsiAPI = null;
-            }
-            this.currentSession = null;
-            this.scheduledClasses = this.scheduledClasses.filter(
-                (item) => item.status !== "Live"
-            );
-            this.saveToLocalStorage();
-        },
-        saveToLocalStorage() {
-            localStorage.setItem(
-                "scheduledClasses",
-                JSON.stringify(this.scheduledClasses)
-            );
-        },
-        loadFromLocalStorage() {
-            const classes = JSON.parse(
-                localStorage.getItem("scheduledClasses")
-            );
-            if (classes) this.scheduledClasses = classes;
-        },
-    },
-    mounted() {
-        this.loadFromLocalStorage();
-    },
+const availableSlots = computed(() => {
+    const reservedSlots = scheduledClasses.value
+        .filter((_, index) => index !== editIndex.value)
+        .map((classItem) => classItem.time);
+    return timeSlots.filter((slot) => !reservedSlots.includes(slot));
+});
+
+const groupedClasses = computed(() => {
+    return weekDays.map((day) => ({
+        day,
+        classes: scheduledClasses.value
+            .filter((classItem) => classItem.day === day)
+            .map((classItem, index) => ({ ...classItem, index })),
+    }));
+});
+
+const validateInputs = () => {
+    errors.value = { studentName: "", day: "", time: "" };
+    if (!newClass.value.studentName || newClass.value.studentName.length < 2) {
+        errors.value.studentName = "Please enter a valid name.";
+    }
+    if (!newClass.value.day) errors.value.day = "Please select a day.";
+    if (!newClass.value.time) errors.value.time = "Please select a time slot.";
+    return !Object.values(errors.value).some((error) => error);
 };
+
+const scheduleClass = () => {
+    if (validateInputs()) {
+        scheduledClasses.value.push({ ...newClass.value, status: "Upcoming" });
+        newClass.value = { studentName: "", day: "", time: "" };
+        saveToLocalStorage();
+    }
+};
+
+const deleteClass = (index) => {
+    scheduledClasses.value.splice(index, 1);
+    saveToLocalStorage();
+};
+
+const editClass = (index) => {
+    newClass.value = { ...scheduledClasses.value[index] };
+    isEditing.value = true;
+    editIndex.value = index;
+};
+
+const saveEdit = () => {
+    if (validateInputs()) {
+        scheduledClasses.value[editIndex.value] = {
+            ...newClass.value,
+            status: "Upcoming",
+        };
+        newClass.value = { studentName: "", day: "", time: "" };
+        isEditing.value = false;
+        editIndex.value = null;
+        saveToLocalStorage();
+    }
+};
+
+const startLiveSession = (index) => {
+    currentSession.value = scheduledClasses.value[index];
+    scheduledClasses.value[index].status = "Live";
+    saveToLocalStorage();
+
+    if (!window.JitsiMeetExternalAPI) {
+        const script = document.createElement("script");
+        script.src = "https://meet.jit.si/external_api.js";
+        script.onload = initializeJitsi;
+        document.body.appendChild(script);
+    } else {
+        initializeJitsi();
+    }
+};
+
+const initializeJitsi = () => {
+    const domain = "meet.jit.si";
+    const options = {
+        roomName: `LiveClass_${Date.now()}`,
+        parentNode: document.querySelector("#jitsi-video"),
+    };
+    jitsiAPI.value = new JitsiMeetExternalAPI(domain, options);
+};
+
+const endLiveSession = () => {
+    if (jitsiAPI.value) {
+        jitsiAPI.value.dispose();
+        jitsiAPI.value = null;
+    }
+    currentSession.value = null;
+    scheduledClasses.value = scheduledClasses.value.filter(
+        (item) => item.status !== "Live"
+    );
+    saveToLocalStorage();
+};
+
+const saveToLocalStorage = () => {
+    localStorage.setItem(
+        "scheduledClasses",
+        JSON.stringify(scheduledClasses.value)
+    );
+};
+
+const loadFromLocalStorage = () => {
+    const classes = JSON.parse(localStorage.getItem("scheduledClasses"));
+    if (classes) scheduledClasses.value = classes;
+};
+
+onMounted(() => {
+    loadFromLocalStorage();
+});
 </script>
 
 <style scoped>

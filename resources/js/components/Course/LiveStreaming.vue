@@ -1,12 +1,12 @@
 <script>
-    export default {
-        name: "LiveSessionLanding",
-        methods: {
-            joinSession() {
-                alert("Redirecting to the live session...");
-            },
+export default {
+    name: "LiveSessionLanding",
+    methods: {
+        joinSession() {
+            alert("Redirecting to the live session...");
         },
-    };
+    },
+};
 </script>
 
 <template>
@@ -15,9 +15,9 @@
     >
         <!-- Header Section -->
         <header class="text-center mb-8 md:mb-12 px-4">
-            <h1 class="text-3xl md:text-5xl font-bold mb-4 text-lime-700">
+            <h2 class="text-2xl md:text-4xl font-bold mb-4 text-lime-700">
                 Join Our Live Video Session
-            </h1>
+            </h2>
             <p class="text-base md:text-xl text-gray-600">
                 Experience real-time learning, discussions, and collaboration
                 from the comfort of your home.
@@ -147,6 +147,14 @@
         </div>
     </div>
 </template>
+
+<script setup>
+import { ref } from "vue";
+
+const joinSession = () => {
+    alert("Redirecting to the live session...");
+};
+</script>
 
 <style scoped>
 /* No additional custom CSS required as Tailwind manages the animations and styles */

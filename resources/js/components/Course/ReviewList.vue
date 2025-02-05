@@ -21,7 +21,7 @@
                         class="fas fa-star absolute top-0 left-0 text-gray-300"
                     ></i>
 
-                    <!-- Half or Full Fill -->
+                    <!-- Filled Star -->
                     <i
                         class="fas fa-star absolute top-0 left-0 text-yellow-400"
                         :style="{
@@ -37,6 +37,9 @@
             <p class="mt-2 text-center text-gray-600">
                 Your Rating: <span class="font-semibold">{{ rating }}</span> / 5
             </p>
+            <p v-if="ratingError" class="text-red-500 text-sm text-center">
+                {{ ratingError }}
+            </p>
         </div>
 
         <!-- Comment Section -->
@@ -50,31 +53,74 @@
                     class="bg-gray-100 p-4 rounded-lg flex space-x-4 items-center"
                 >
                     <!-- User Icon -->
-                    <div class="text-gray-500">
-                        <i class="fas fa-user-circle text-3xl"></i>
+                    <div class="text-gray-500 flex items-center space-x-2">
+                        <font-awesome-icon
+                            icon="user-circle"
+                            class="text-3xl"
+                        />
+                        <span class="text-gray-700 font-semibold">user123</span>
                     </div>
-                    <!-- Comment Content -->
+
+                    <!-- Editable Comment -->
                     <div class="flex-grow">
-                        <p class="text-gray-800">{{ comment.text }}</p>
+                        <p v-if="!comment.editing" class="text-gray-800">
+                            {{ comment.text }}
+                        </p>
+                        <div v-else>
+                            <input
+                                v-model="comment.editedText"
+                                class="w-full p-2 border rounded-lg"
+                            />
+                            <p
+                                v-if="comment.editError"
+                                class="text-red-500 text-sm"
+                            >
+                                {{ comment.editError }}
+                            </p>
+                        </div>
                     </div>
-                    <!-- Like and Dislike Buttons -->
+
+                    <!-- Action Buttons -->
                     <div class="flex items-center space-x-4">
+                        <!-- Like & Dislike -->
                         <button
                             @click="likeComment(index)"
                             class="text-green-500 hover:text-green-700 transition text-lg"
                         >
-                            <i class="fas fa-thumbs-up"></i>
+                            <font-awesome-icon icon="thumbs-up" />
                         </button>
                         <span class="text-gray-600">{{ comment.likes }}</span>
                         <button
                             @click="dislikeComment(index)"
                             class="text-red-500 hover:text-red-700 transition text-lg"
                         >
-                            <i class="fas fa-thumbs-down"></i>
+                            <font-awesome-icon icon="thumbs-down" />
                         </button>
                         <span class="text-gray-600">{{
                             comment.dislikes
                         }}</span>
+
+                        <!-- Edit & Delete -->
+                        <button
+                            v-if="!comment.editing"
+                            @click="editComment(index)"
+                            class="text-blue-500 hover:text-blue-700 transition text-lg"
+                        >
+                            <font-awesome-icon icon="edit" />
+                        </button>
+                        <button
+                            v-if="comment.editing"
+                            @click="saveEdit(index)"
+                            class="text-green-500 hover:text-green-700 transition text-lg"
+                        >
+                            <font-awesome-icon icon="check-circle" />
+                        </button>
+                        <button
+                            @click="deleteComment(index)"
+                            class="text-red-500 hover:text-red-700 transition text-lg"
+                        >
+                            <font-awesome-icon icon="trash-alt" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -83,7 +129,7 @@
             <div v-if="comments.length > maxVisibleComments" class="mt-4">
                 <button
                     @click="toggleShowMore"
-                    class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition"
+                    class="bg-lime-500 text-white px-6 py-2 rounded-lg hover:bg-lime-600 transition"
                 >
                     {{ showAll ? "Show Less" : "See More" }}
                 </button>
@@ -104,80 +150,116 @@
                     Post
                 </button>
             </div>
+            <p v-if="commentError" class="text-red-500 text-sm mt-2">
+                {{ commentError }}
+            </p>
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faStar,
+    faThumbsUp,
+    faThumbsDown,
+    faEdit,
+    faTrashAlt,
+    faCheckCircle,
+    faUserCircle,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+// Add FontAwesome Icons
+library.add(
+    faStar,
+    faThumbsUp,
+    faThumbsDown,
+    faEdit,
+    faTrashAlt,
+    faCheckCircle,
+    faUserCircle
+);
 
 // Rating Data
 const rating = ref(0);
 const hoverRating = ref(0);
+const ratingError = ref("");
 
 // Set Rating
 const setRating = (event, star) => {
-    const clickX = event.offsetX;
-    const width = event.target.offsetWidth;
-    const isHalf = clickX < width / 2; // Check if clicked on the left (half)
-    rating.value = isHalf ? star - 0.5 : star;
+    rating.value = star;
+    ratingError.value = ""; // Clear error when user selects rating
 };
 
 // Handle Hover
 const handleHover = (event, star) => {
-    const hoverX = event.offsetX;
-    const width = event.target.offsetWidth;
-    const isHalf = hoverX < width / 2; // Check hover position
-    hoverRating.value = isHalf ? star - 0.5 : star;
+    hoverRating.value = star;
 };
 
 // Determine if Star is Full
-const isStarFull = (star) => {
-    return star <= Math.floor(hoverRating.value || rating.value);
-};
+const isStarFull = (star) =>
+    star <= Math.floor(hoverRating.value || rating.value);
 
 // Determine if Star is Half
-const isStarHalf = (star) => {
-    return hoverRating.value
+const isStarHalf = (star) =>
+    hoverRating.value
         ? star - 0.5 === hoverRating.value
         : star - 0.5 === rating.value;
-};
 
 // Comment Data
 const comments = ref([]);
 const newComment = ref("");
-
-// Max Comments to Show Initially
+const commentError = ref("");
 const maxVisibleComments = 1;
 const showAll = ref(false);
 
-// Computed Property for Visible Comments
-const visibleComments = computed(() => {
-    return showAll.value
-        ? comments.value
-        : comments.value.slice(0, maxVisibleComments);
-});
+const visibleComments = computed(() =>
+    showAll.value ? comments.value : comments.value.slice(0, maxVisibleComments)
+);
 
-// Add New Comment
+// Add New Comment with Validation
 const addComment = () => {
-    if (newComment.value.trim() !== "") {
-        comments.value.push({ text: newComment.value, likes: 0, dislikes: 0 });
-        newComment.value = "";
+    if (newComment.value.trim().length < 3) {
+        commentError.value = "Comment must be at least 3 characters.";
+        return;
     }
+    if (rating.value === 0) {
+        ratingError.value = "Please give a rating before posting a comment.";
+        return;
+    }
+    comments.value.push({
+        text: newComment.value,
+        editedText: newComment.value,
+        likes: 0,
+        dislikes: 0,
+        editing: false,
+        editError: "",
+    });
+    newComment.value = "";
+    commentError.value = "";
 };
 
-// Like a Comment
-const likeComment = (index) => {
-    comments.value[index].likes += 1;
+// Edit & Delete Comments
+const editComment = (index) => (comments.value[index].editing = true);
+const saveEdit = (index) => {
+    if (comments.value[index].editedText.trim().length < 3) {
+        comments.value[index].editError =
+            "Edited comment must be at least 3 characters.";
+        return;
+    }
+    comments.value[index].text = comments.value[index].editedText;
+    comments.value[index].editing = false;
+    comments.value[index].editError = "";
 };
+const deleteComment = (index) =>
+    confirm("Delete this comment?") && comments.value.splice(index, 1);
 
-// Dislike a Comment
-const dislikeComment = (index) => {
-    comments.value[index].dislikes += 1;
-};
+// Like/Dislike
+const likeComment = (index) => comments.value[index].likes++;
+const dislikeComment = (index) => comments.value[index].dislikes++;
 
-// Toggle "See More" and "Show Less"
-const toggleShowMore = () => {
-    showAll.value = !showAll.value;
-};
+// Toggle Show More
+const toggleShowMore = () => (showAll.value = !showAll.value);
 </script>
