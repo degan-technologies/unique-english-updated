@@ -18,7 +18,7 @@
     const checkoutUrl = ref(null);
 
     const {items, itemCount, image, totalPrice} = storeToRefs(cartStore);
-    const { courses} = storeToRefs(studentStore);
+    const { courses, selectedCourseSlug, landingPageTab} = storeToRefs(studentStore);
 
     const isMenuOpen = ref(false);
     const isMenuVisible = ref(true);
@@ -50,7 +50,12 @@
     function changeTab() {
         router.push({
             name: 'student',
+            query: {
+                tab:landingPageTab.value,
+            }
         });
+
+        selectedCourseSlug.value = null;
     }
    
 </script>
@@ -61,8 +66,7 @@
         :class="{
             'translate-y-0': isMenuVisible,
             '-translate-y-full': !isMenuVisible,
-        }"
-    >
+        }" >
         <nav class="container mx-auto flex items-center justify-between p-4">
             <a href="/" class="flex items-center gap-2">
                 <img

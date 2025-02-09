@@ -4,7 +4,6 @@
     <div
       :class="{
         'hidden md:block xl:w-64': !sidebarCollapsed, /* Expanded on large screens */
-        'hidden md:block xl:w-16': sidebarCollapsed, /* Collapsed on large screens */
         'hidden sm:block md:w-16': sidebarCollapsed, /* Always collapsed on medium screens */
         'block sm:hidden w-full absolute top-0 left-0 h-full z-50': isMobileSidebarOpen /* Mobile */
       }"

@@ -1,12 +1,27 @@
-<script>
-export default {
-    name: "LiveSessionLanding",
-    methods: {
-        joinSession() {
-            alert("Redirecting to the live session...");
-        },
-    },
-};
+<script setup>
+    import { ref } from "vue";
+    import { storeToRefs } from "pinia";
+    
+    import { useRoute, useRouter } from "vue-router";
+
+    import { UseStudentStore } from "@/store/UseStudentStore";
+
+    const studentStore = UseStudentStore();
+    
+    const {liveSchedulTab } = storeToRefs(studentStore);
+
+    const route = useRoute();
+    const router = useRouter()
+
+    function changeTab() {
+        console.log('fkldlkfjkjdfjdkf');
+        router.push({
+            name: 'student',
+            query: {
+                tab:liveSchedulTab.value,
+            }
+        });
+    }
 </script>
 
 <template>
@@ -59,7 +74,7 @@ export default {
                         Price: 12,000 Birr/Month
                     </p>
                     <button
-                        @click="joinSession"
+                        @click="changeTab"
                         class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
                     >
                         Join Now
@@ -98,7 +113,7 @@ export default {
                         Price: 8,000 Birr/Month
                     </p>
                     <button
-                        @click="joinSession"
+                        @click="changeTab"
                         class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
                     >
                         Join Now
@@ -137,7 +152,7 @@ export default {
                         Price: 15,000 Birr/Month
                     </p>
                     <button
-                        @click="joinSession"
+                        @click="changeTab()"
                         class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
                     >
                         Join Now
@@ -147,14 +162,6 @@ export default {
         </div>
     </div>
 </template>
-
-<script setup>
-import { ref } from "vue";
-
-const joinSession = () => {
-    alert("Redirecting to the live session...");
-};
-</script>
 
 <style scoped>
 /* No additional custom CSS required as Tailwind manages the animations and styles */

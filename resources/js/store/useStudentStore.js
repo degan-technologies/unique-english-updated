@@ -6,9 +6,15 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
     const landingPageTab = ref();
     const courseDetailTab = ref('courseDetail');
     const videoPlayerTab = ref('mylesson');
+    const bookOverviewTab = ref('bookOverview');
+    const bookReadingTab = ref('bookReading');
+    const liveSchedulTab = ref('liveSchedul');
     
     const courses = ref(null);
     const selectedCourseSlug = ref(null); 
+
+    const books = ref(null);
+    const selectedbookslug = ref(null);
 
    async function fetchCourses() {
        await Axios
@@ -16,13 +22,26 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
             .then(res => courses.value = res.data.data)
     }
 
+    async function fetchBooks() {
+       await Axios
+            .get('/api/books/books')
+            .then(res => books.value = res.data.data)
+    }
+
     return {
         landingPageTab,
         courseDetailTab,
         videoPlayerTab,
+        bookOverviewTab,
+        bookReadingTab,
+        liveSchedulTab,
 
         courses,
         fetchCourses,
         selectedCourseSlug,
+
+        books,
+        fetchBooks,
+        selectedbookslug,
     }
 });

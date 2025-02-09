@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 flex flex-col md:flex-row gap-6">
+    <div class="p-6 flex flex-col md:flex-row mt-24 gap-6">
         <!-- Schedule Section (Fixed height) -->
         <div class="flex-[0.7]">
             <h1 class="text-2xl font-bold mb-4">

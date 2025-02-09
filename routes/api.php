@@ -2,6 +2,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Book\BookController;
+use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Live\ParticipantController;
@@ -38,6 +40,13 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::resource('/course', CourseController::class);
         Route::resource('/content', CourseContentController::class);
+    });
+
+Route::middleware('auth:api')
+    ->prefix('books')
+    ->group(function(){
+        Route::resource('/books', BookController::class);
+        Route::resource('/order-books', orderdController::class);
     });
 
 Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment'])->middleware('auth:api');

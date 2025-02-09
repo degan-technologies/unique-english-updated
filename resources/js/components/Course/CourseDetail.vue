@@ -10,8 +10,8 @@
     
     const {  videoPlayerTab, courses, selectedCourseSlug, } = storeToRefs(studentStore);
 
-const route = useRoute();
-const router = useRouter();
+    const route = useRoute();
+    const router = useRouter();
 
     const checkoutUrl = ref(null);
     const selectedCourse = ref(null);
@@ -19,12 +19,12 @@ const router = useRouter();
     
     selectedCourseSlug.value = route.query.slug;
 
-function toggleModuleLesson(id) {
-    if (collapsModuleId.value == id) {
-        return (collapsModuleId.value = null);
+    function toggleModuleLesson(id) {
+        if (collapsModuleId.value == id) {
+            return (collapsModuleId.value = null);
+        }
+        collapsModuleId.value = id;
     }
-    collapsModuleId.value = id;
-}
 
 function enrollCourse(item) {
     let selectedItem = [

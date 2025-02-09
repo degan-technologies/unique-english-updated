@@ -67,6 +67,19 @@ class ErrorLangEnglish extends Lang {
             'VirtualClassEnrollment_deleted_successfully' => 'VertualClassEnrollment is trash succefully',
             'Unauthorized_to_Create_VirtualClassEnrollment' => 'Unauthorized to Create VirtualClassEnrollment.',
 
+            'book_created_successfully' => 'book created successfully',
+            'book_updated_successfully' => 'book updated successfully',
+            'book_deleted_successfully' => 'book deleted successfully',
+            'book_not_found' => 'book could not found',
+
+            'ordered_book_deleted' => 'ordered book deleted successfully',
+            'ordered_created_successfully' => 'oredered created succesfully',
+
+            'feedback_created_successfully' => 'Feedback created successfully',
+            'feedback_updated_successfully' => 'Feedback updated successfully',
+            'feedback_deleted_successfully' => 'Feedback deleted successfully',
+            'feedback_not_found' => 'Feedback not found',
+
             'registration' => [
                 'email.required' => 'Email is required',
                 'invalid.email' => 'Invalid email provided',
@@ -163,7 +176,60 @@ class ErrorLangEnglish extends Lang {
                 'orders.*.type.in' => 'Please choose your order',
                 'orders.*.slug.required' => 'Order unique id is required',
                 'orders.*.slug.string' => 'Order should be valid',
-            ]
+            ],
+
+            'books' => [
+                'title.required' => 'The title is required.',
+                'price.required' => 'The price is required.',
+                'title.string' => 'The title must be a string.',
+                'auther.required' => 'The author is required.',
+                'auther.string' => 'The author must be a string.',
+                'eddition.required' => 'The edition is required.',
+                'price.integer' => 'The price must be an integer.',
+                'language.required' => 'The language is required.',
+                'file_url.required' => 'The file URL is required.',
+                'file_url.unique' => 'The file URL must be unique.',
+                'file_url.url' => 'The file URL must be a valid URL.',
+                'tag.min' => 'Tag must have minmum three characters',
+                'language.string' => 'The language must be a string.',
+                'title.max' => 'The title cannot exceed 255 characters.',
+                'page.number_required' => 'The page number is required.',
+                'publish_date.required' => 'The publish date is required.',
+                'eddition.integer' => 'The edition must be an integer.',
+                'discount.integer' => 'The discount must be an integer.',
+                'description.required' => 'The description is required.',
+                'auther.max' => 'The author cannot exceed 255 characters.',
+                'description.string' => 'The description must be a string.',
+                'file_format.required' => 'The file format is required.',
+                'file_format.string' => 'The file format must be a string.',
+                'cover_page_url.required' => 'The cover page URL is required.',
+                'page.number_integer' => 'The page number must be an integer.',
+                'cover_page_url.unique' => 'The cover page URL must be unique.',
+                'not_deleted.required' => 'The not_deleted field is required.',
+                'publish_date.date' => 'The publish date must be a valid date.',
+                'cover_page_url.url' => 'The cover page URL must be a valid URL.',
+                'not_deleted.boolean' => 'The not_deleted field must be a boolean.',
+                'is_downloadable.required' => 'The isDownloadable field is required.',
+                'is_downloadable.boolean' => 'The isDownloadable field must be a boolean.',
+            ],
+
+            'ordereds' => [
+                'enrolled_at.date' > 'The enrolled_at is Date',
+                'enrolled_at.required' => 'The enrolled_at  is required.',
+            ],
+
+            'feedbacks' => [
+                'rate.required' => 'The rate is required.',
+                'rate.integer' => 'The rate must be an integer.',
+                'rate.between' => 'The rate must be between 1 and 5.',
+                'comment.required' => 'The comment is required.',
+                'comment.string' => 'The comment must be a string.',
+                'comment.max' => 'The comment cannot exceed 1000 characters.',
+                'course_id.required' => 'The course ID is required.',
+                'course_id.exists' => 'The selected course does not exist.',
+                'favorite.boolean' => 'The favorite field must be a boolean.',
+            ],
+
             
         ];
         

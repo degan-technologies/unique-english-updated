@@ -1,3 +1,49 @@
+<script setup>
+    import { storeToRefs } from "pinia";
+    import { ref, onMounted } from "vue";
+    import { useRoute, useRouter } from "vue-router";
+
+    import { useCartStore } from "@/store/useCartStore";
+    import { UseStudentStore } from "@/store/UseStudentStore";
+
+    const cartStore = useCartStore();
+    const studentStore = UseStudentStore();
+    
+    const { books, bookOverviewTab, selectedBook, } = storeToRefs(studentStore);
+    const {items, itemCount, image} = storeToRefs(cartStore);
+
+    const route = useRoute();
+    const router = useRouter()
+
+    function addItems(item){
+      let  selectedItem = {
+            type:'course',
+            slug:item.slug,
+            price: item.price,
+            name:item.course_name,
+            image:item.thumbnail_url
+        };
+        cartStore.addToCart(selectedItem);
+    }
+
+    function changeTab(slug) {
+        router.push({
+            name: 'student',
+            query: {
+                tab:bookOverviewTab.value,
+                slug: slug
+            }
+        });
+
+        selectedCourseSlug.value = slug;
+    }
+
+     onMounted(() => {
+        studentStore.fetchBooks();
+    });
+   
+</script>
+
 <template>
     <div class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen">
         <!-- Popular Books Title -->
@@ -10,12 +56,11 @@
             <div
                 v-for="book in books"
                 :key="book.id"
-                class="relative p-4 bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 cursor-pointer flex flex-col"
-            >
+                class="relative p-4 bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 hover:scale-105 cursor-pointer flex flex-col" >
                 <!-- Image with Play Button -->
                 <div class="relative group">
                     <img
-                        :src="book.image"
+                        :src="book.cover_page_url"
                         :alt="book.title"
                         class="w-full h-40 object-cover rounded-t-lg"
                     />
@@ -42,9 +87,9 @@
 
                 <!-- Buy Now Button -->
                 <div class="p-4 pt-0 mt-auto flex justify-center">
-                    <button
-                        class="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-800 focus:outline-none transition-colors w-full"
-                    >
+                    <button 
+                    @click="changeTab(book.slug)"
+                        class="bg-lime-700 text-white px-4 py-2 rounded hover:bg-lime-800 focus:outline-none transition-colors w-full" >
                         Buy Now
                     </button>
                 </div>
@@ -52,85 +97,6 @@
         </div>
     </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from "vue";
-
-// Typing animation
-const words = ["Fiction", "Science", "Fantasy", "Mystery"];
-const displayedText = ref("");
-const typingSpeed = 150; // Speed of typing in ms
-const erasingSpeed = 100; // Speed of erasing in ms
-const delayBetweenWords = 2000; // Delay before erasing starts in ms
-let wordIndex = 0;
-let charIndex = 0;
-let isErasing = false;
-
-const type = () => {
-    if (!isErasing) {
-        if (charIndex < words[wordIndex].length) {
-            displayedText.value += words[wordIndex][charIndex];
-            charIndex++;
-            setTimeout(type, typingSpeed);
-        } else {
-            setTimeout(() => {
-                isErasing = true;
-                type();
-            }, delayBetweenWords);
-        }
-    } else {
-        if (charIndex > 0) {
-            displayedText.value = displayedText.value.slice(0, -1);
-            charIndex--;
-            setTimeout(type, erasingSpeed);
-        } else {
-            isErasing = false;
-            wordIndex = (wordIndex + 1) % words.length;
-            setTimeout(type, typingSpeed);
-        }
-    }
-};
-
-onMounted(() => {
-    type();
-});
-
-// Book data
-const books = [
-    {
-        id: 1,
-        image: "/images/book-1.webp",
-        title: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        rating: 4.7,
-        price: 15.99,
-    },
-    {
-        id: 2,
-        image: "/images/book-2.jpeg",
-        title: "1984",
-        author: "George Orwell",
-        rating: 4.8,
-        price: 18.99,
-    },
-    {
-        id: 3,
-        image: "/images/book-3.jpeg",
-        title: "To Kill a Mockingbird",
-        author: "Harper Lee",
-        rating: 4.9,
-        price: 14.99,
-    },
-    {
-        id: 4,
-        image: "/images/book-4.jpg",
-        title: "The Catcher in the Rye",
-        author: "J.D. Salinger",
-        rating: 4.6,
-        price: 17.99,
-    },
-];
-</script>
 
 <style scoped>
 /* Typing text styles */

@@ -1,21 +1,9 @@
 <script setup>
-import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+    import { storeToRefs } from "pinia";
+    import { onMounted, ref, watch } from "vue";
+    import { useRoute, useRouter } from "vue-router";
 
-import { UseStudentStore } from "@/store/UseStudentStore";
-
-    const studentStore = UseStudentStore();
-    
-    const {courseDetailTab, videoPlayerTab} = storeToRefs(studentStore);
-
-    const route = useRoute();
-    const router = useRouter()
-    const currentTab = ref({
-        tab:route.query.tab, 
-        slug:route.query.slug
-    })
-
+    import { UseStudentStore } from "@/store/UseStudentStore";
 
     import Hero from "@/components/Layout/Hero.vue";
     import Header from "@/components/Layout/Header.vue";
@@ -25,16 +13,33 @@ import { UseStudentStore } from "@/store/UseStudentStore";
     import Footer from "@/components/Layout/Footer.vue";
     import AboutUs from "@/pages/common/AboutUs.vue";
     import LiveStreamingVue from "@/components/Course/LiveStreaming.vue";
+    import Book from "@/components/Course/Book.vue";
+    import BookDetails from "@/components/Course/BookDetails.vue";
+    import Pdf from "@/components/Course/Pdf.vue";
+    import Schedule  from "@/components/Course/Schedule.vue";
+    import liveSession   from "@/components/Course/liveSession.vue";
 
-watch(
-    () => route.query.tab,
-    () => {
-        currentTab.value = {
-            tab: route?.query.tab,
-            slug: route?.query.slug,
-        };
-    }
-);
+
+    const studentStore = UseStudentStore();
+
+    const { liveSchedulTab, landingPageTab, courseDetailTab, videoPlayerTab, bookOverviewTab, bookReadingTab } = storeToRefs(studentStore);
+
+    const route = useRoute();
+    const router = useRouter()
+    const currentTab = ref({
+        tab:route.query.tab, 
+        slug:route.query.slug
+    })
+
+    watch(
+        () => route.query.tab,
+        () => {
+            currentTab.value = {
+                tab: route?.query.tab,
+                slug: route?.query.slug,
+            };
+        }
+    );
 </script>
 
 <template>
@@ -50,13 +55,24 @@ watch(
                     </div>
                 </div>
 
-                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug">
+                <div v-if="currentTab.tab == videoPlayerTab && currentTab.slug">
                     <VideoPlayer />
                 </div>
-                <div v-else>
+                <div v-if="currentTab.tab == bookOverviewTab && currentTab.slug">
+                    <BookDetails />
+                </div>
+                <div v-if="currentTab.tab == bookReadingTab && currentTab.slug">
+                    <Pdf pdfUrl="/images/req.pdf"/>
+                </div>
+                <div v-if="currentTab.tab == liveSchedulTab">
+                    <Schedule/>
+                    <liveSession/>
+                </div>
+                <div v-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10"/>
                     <CourseCard @mousemove="togglehover" />
                     <LiveStreamingVue />
+                    <Book/>
                     <AboutUs />
                 </div>
 

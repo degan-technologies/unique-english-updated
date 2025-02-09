@@ -214,8 +214,6 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import AddCourse from '@/components/Course/AddCourse.vue';
-import AddBook from '@/components/Course/AddBook.vue';
 
 export default {
   name: 'CourseBookManagement',

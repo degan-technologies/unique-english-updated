@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Models\Book\Book;
+use App\Models\Book\OrderedBook;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
@@ -72,6 +74,9 @@ class User extends Authenticatable {
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function transaction() { return $this->hasMany(Transaction::class); }
+
+    public function books() { return $this->hasMany(Book::class); } 
+    public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
 
 
 
