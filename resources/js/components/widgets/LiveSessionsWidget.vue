@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-lg shadow p-4 max-w-4xl mx-auto">
+  <div class="bg-white rounded-lg shadow p-4 w-full mx-auto">
     <!-- Header with Icon -->
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center space-x-2">
