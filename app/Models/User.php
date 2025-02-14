@@ -17,6 +17,12 @@ use App\Models\Role\SystemAdmin;
 use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
+
+use App\Models\Quize\Quize;
+use App\Models\Quize\Result;
+use App\Models\Quize\QASection;
+use App\Models\Quize\QMetaData;
+
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -74,7 +80,12 @@ class User extends Authenticatable {
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function transaction() { return $this->hasMany(Transaction::class); }
-
+    
+    public function quizzes() { return $this->hasMany(Quiz::class);}
+    public function results() { return $this->hasMany(Result::class);}
+    public function qaSections() { return $this->hasMany(QASection::class); }
+    public function quizMetaData() { return $this->hasMany(QMetaData::class); }
+    
     public function books() { return $this->hasMany(Book::class); } 
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
 
