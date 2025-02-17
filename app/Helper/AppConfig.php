@@ -3,7 +3,7 @@ namespace App\Helper;
 
 define('DB_CONNECTION', 'mysql');
 define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3307');
+define('DB_PORT', '3306');
 define('DB_DATABASE', 'unique');
 define('DB_USERNAME', 'root');
 define('DB_PASSWORD', 'qlarapass');
@@ -74,6 +74,15 @@ define('CHAPA', 'chapa');
 define('BANK', 'bank');
 define('TELEBIRR', 'teleBirr');
 define('CASH', 'cash');
+
+
+define('TRUE_FALSE', 'true_false');
+define('CHOICE', 'choice');
+define('SHORT_ANSWER', 'short_answer');
+define('QUESTION_TYPES',[
+    TRUE_FALSE, CHOICE,SHORT_ANSWER
+]);
+
 
 define('TRANSACTION_METHODS', [
     PAYPAL, STRIPE, CHAPA, BANK, TELEBIRR, CASH,

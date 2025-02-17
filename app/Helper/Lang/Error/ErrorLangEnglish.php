@@ -19,7 +19,7 @@ class ErrorLangEnglish extends Lang {
             'enter_your_password' => 'Please enter you password',
             'invalid_credentials' => 'Invalid credentials',
             'unAuthorized' => 'unAuthorized',
-
+            'user_not_found'=>'user could not be found'
             'user_successfully_registered' => 'User successfully registered',
             'user_successfully_deleted' => 'User successfully deleted',
             
@@ -46,6 +46,7 @@ class ErrorLangEnglish extends Lang {
             'order_not_found' => 'Order could not be found',
 
             'enter_your_password' => 'Please enter your password',
+            'unauthorized' => 'Unauthorized',
 
             'resource_not_found' => 'resource could not be found',
             'resource_created_successfully' => 'resource created succefully',
@@ -79,6 +80,29 @@ class ErrorLangEnglish extends Lang {
             'feedback_updated_successfully' => 'Feedback updated successfully',
             'feedback_deleted_successfully' => 'Feedback deleted successfully',
             'feedback_not_found' => 'Feedback not found',
+
+            'quiz_not_found' => 'quiz could not be found',
+            'quiz_created_successfully' => 'quiz created succefully',
+            'quiz_updated_successfully' => 'quiz succefully updated',
+            'quiz_deleted_successfully' => 'quiz is trash succefully',
+
+            'result_not_found' => 'result could not be found',
+            'result_created_successfully' => 'result created succefully',
+            'result_updated_successfully' => 'result succefully updated',
+            'result_deleted_successfully' => 'result is trash succefully',
+
+            'q_meta_data_not_found' => 'q_meta_data could not be found',
+            'q_meta_data_created_successfully' => 'q_meta_data created succefully',
+            'q_meta_data_updated_successfully' => 'q_meta_data succefully updated',
+            'q_meta_data_deleted_successfully' => 'q_meta_data is trash succefully',
+
+            'qa_section_not_found'=>'qa_section could not be found'
+            'qa_section_created_successfully'=>'qa_section created succesfully'
+            'qa_section_updated_successfully'=>'qa_section updated succesfully'
+            'qa_section_deleted_successfully'=>'qa_section deleted succesfully'
+    
+
+
 
             'registration' => [
                 'email.required' => 'Email is required',
@@ -157,7 +181,7 @@ class ErrorLangEnglish extends Lang {
                 'joined_at_required' => 'The joined at field is required.',
                 'joined_at_date' => 'The joined at field must be a valid date.',
             ],
-                    
+                
             'VertualClassEnrollment' => [
                 'end_date_required' => 'End date is required',
                 'price_plan_required' => 'Price plan is required',
@@ -165,6 +189,36 @@ class ErrorLangEnglish extends Lang {
                 'remaining_date_required' => 'Remaining date is required',
                 'remaining_date_min' => 'Remaining date must be at least 1 day',
                 'end_date_after_enrolled' => 'End date must be after the enrolled date',
+            ],
+
+            'Quize' => [
+                'answer_array' => 'The answer must be an array.',
+                'choice_array' => 'The choice must be an array.',
+                'answer_required' => 'The answer field is required.',
+                'question_string' => 'The question must be a string.',
+                'question_required' => 'The question field is required.',
+                'question_type_in' => 'The selected question type is invalid.',
+                'q_meta_data_id_exists' => 'The selected metadata is invalid.',
+                'question_type_required' => 'The question type field is required.',
+            ],
+
+            'Result' => [
+               'result_required' => 'The result field is required.',
+               'result_integer' => 'The result must be an integer.',
+                ],
+
+            'QASection'=>[
+                'question_required'=> 'The question answer field is required.',
+                'question_string' => 'The result must be an string.',
+                
+                ],
+
+            'QMetaData' => [
+                'title_max' => 'The title may not be greater than 255 characters.',
+                'instraction_string' => 'The instruction must be a string.',
+                'question_type_required' => 'The question type field is required.',
+                'question_type_string' => 'The question type must be a string.',
+                'question_type_in' => 'The selected question type is invalid.',
             ],
 
             'transactions' => [
