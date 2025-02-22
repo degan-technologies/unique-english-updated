@@ -16,7 +16,8 @@ class CourseContentResource extends JsonResource {
         return [
             'id' => $this->id,
             'slug' => $this->slug,
-            'course_id' => $this->course_id,
+            'module_id' => $this->course_module_id,
+            'course_id' => $this->course_id,          
             'title' => $this->title,
             'description' => $this->description,
             'content_type' => $this->content_type,
@@ -24,7 +25,6 @@ class CourseContentResource extends JsonResource {
             'status' => $this->status,
             'sequence' => $this->sequence,
             'note' => $this->note,
-
             'content_url' => $this->content_url
                 ? Storage::disk('public')->url($this->content_url)
                 : 'no-content_url.png',
@@ -33,4 +33,5 @@ class CourseContentResource extends JsonResource {
                 : 'no-thumbnail_url.png',
         ];
     }
+    
 }

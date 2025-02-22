@@ -11,12 +11,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Book extends Model {
    
     use HasFactory, SoftDeletes;
+    protected $table = 'books'; // If your table name is 'books'
+
 
     protected $fillable = [
         'slug', 'title', 'auther', 'page_number', 'publish_date',
         'eddition', 'price', 'discount', 'description', 'language',
         'file_format', 'cover_page_url', 'file_url', 'tag',
-        'isDownloadable', 'not_deleted', 'download_status', 'user_id',
+        'isDownloadable', 'download_status', 'user_id',
     ];
 
     protected $casts = [

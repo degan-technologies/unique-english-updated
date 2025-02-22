@@ -29,6 +29,7 @@ class BookController extends Controller
         $resources = Book::with(['user'])
             ->where('user_id', Auth::id())
             ->paginate(10);
+
         $pagination = $resources->toArray();
         unset($pagination['data']);
 
@@ -43,9 +44,11 @@ class BookController extends Controller
      */
     public function store(Request $request)
     {
-        $user = User::query()
+        $canStoreBook = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
+
+            $user = Auth::user();
 
         $validationRules = [
             'tag' => 'min:3',
@@ -53,19 +56,20 @@ class BookController extends Controller
             'language' => 'required|string',
             'discount' => 'nullable|integer',
             'eddition' => 'required|integer',
-            'not_deleted' => 'required|boolean',
-            'publish_date' => 'required|date',
+            'publish_date' => 'required',
             'description' => 'required|string',
             'file_format' => 'required|string',
             'page_number' => 'required|integer',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            'isDownloadable' => 'required|boolean',
-            'file_url' => 'required|url|unique:book,file_url',
-            'cover_page_url' => 'required|url|unique:book,cover_page_url',
+            // 'isDownloadable' => 'required|boolean',
+            'file_url' => 'image' ,
+            'cover_page_url' => 'image',
+
+           
         ];
 
-        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('book'));
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
             return response()->json([
@@ -73,8 +77,15 @@ class BookController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $boks = $user->book()->create([
+        $imagePath = null;
+        if($request->hasFile('file_url')) {
+            $imagePath = $request->file('file_url')->store('/books/images', 'public');
+        }
+        $imagesPath = null;
+        if($request->hasFile('cover_page_url')) {
+            $imagesPath = $request->file('cover_page_url')->store('/books/images', 'public');
+        }
+        $boks = $user->books()->create([
             'slug' => Str::uuid(),
             'title' => $request->title,
             'price' => $request->price,
@@ -83,12 +94,14 @@ class BookController extends Controller
             'discount' => $request->discount,
             'language' => $request->language,
             'file_format' => $request->file_format,
-            'page_number' => $request->page_number,
-            'not_deleted' => $request->not_deleted,
+            'publish_date' => $request->publish_date,
+            'page_number' =>$request->page_number,
+            // 'not_deleted' => 1,
             'description' => $request->description,
             'tag' => json_encode($request->tag),
-            'cover_page_url' => $request->cover_page_url,
-            'isDownloadable' => $request->isDownloadable,
+            'file_url' => $imagePath,
+            'cover_page_url' => $imagesPath,
+            'isDownloadable' => false,
 
         ]);
 
@@ -109,43 +122,37 @@ class BookController extends Controller
         ]);
     }
 
-
     public function update(Request $request, $id)
     {
-
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
-
-        $book = Book::query()
-            ->where('user_id', $user->id)
-            ->findOrFail($id);
-
+    
+        $book = Book::query()->findOrFail($id);
+    
         if (!$book) {
             return response()->json([
                 'message' => $this->langService->getLang('book_not_found'),
             ], 404);
         }
-
-
+    
         $validationRules = [
             'tag' => 'min:3',
             'price' => 'required|integer',
             'language' => 'required|string',
             'discount' => 'nullable|integer',
             'eddition' => 'required|integer',
-            'not_deleted' => 'required|boolean',
-            'publish_date' => 'required|date',
+            'publish_date' => 'required',
             'description' => 'required|string',
             'file_format' => 'required|string',
             'page_number' => 'required|integer',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            'isDownloadable' => 'required|boolean',
-            'file_url' => 'required|url|unique:book,file_url',
-            'cover_page_url' => 'required|url|unique:book,cover_page_url',
+            // 'isDownloadable' => 'required|boolean',
+            'file_url' => 'image',
+            'cover_page_url' => 'image',
         ];
-
+    
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
@@ -154,16 +161,27 @@ class BookController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $book->update($validator->validated());
-
+    
+        // Get validated data
+        $data = $validator->validated();
+    
+        // Check if new file for file_url is provided
+        if ($request->hasFile('file_url')) {
+            $data['file_url'] = $request->file('file_url')->store('/books/images', 'public');
+        }
+        // Check if new file for cover_page_url is provided
+        if ($request->hasFile('cover_page_url')) {
+            $data['cover_page_url'] = $request->file('cover_page_url')->store('/books/images', 'public');
+        }
+    
+        $book->update($data);
+    
         return response()->json([
             'message' => $this->langService->getLang('book_updated_successfully'),
             'data' => new BookResource($book),
         ]);
     }
-
-
+    
     public function destroy(string $id)
     {
 
@@ -173,7 +191,7 @@ class BookController extends Controller
             ->first();
 
         $book = Book::query()
-            ->where('user_id', $user->id)
+            // ->where('user_id', $user->id)
             ->findOrFail($id);
 
         if (!$book) {

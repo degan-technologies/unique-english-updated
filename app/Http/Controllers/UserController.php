@@ -144,6 +144,61 @@ class UserController extends Controller {
         ]);
     }
 
+    public function addStudent(Request $request) {
+        $canAddinstructor = User::query()
+            ->has('systemAdmin')
+            ->findOrFail(Auth::id());
+
+
+        $validationRules = [
+            'email' => 'required|email|unique:users',
+            'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'password' => 'required|min:4'
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+                $user = new User();
+                $user->user_id = $canAddinstructor->id;
+                $user->slug = Str::uuid();
+                $user->email = $request->email;
+                $user->first_name = $request->first_name;
+                $user->middle_name = $request->middle_name;
+                $user->password = Hash::make($request->password);
+                $user->role = STUDENT;
+                $user->save();
+                $user->created_at = Carbon::now();
+
+                $instructor = new Instructor();
+                $instructor->user_id = $user->id;
+                $instructor->save();
+
+            DB::commit();
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $this->langService->getLang('registration_failed'),
+            ], 500);
+        }
+        return response()->json([
+            'message' => $this->langService->getLang('user_successfully_registered'),
+            'data' => new UserResource($user),
+        ]);
+    }
+
+
     /**
      * Delete a user
      * 

@@ -74,57 +74,77 @@
         };
         </script>
 
-        <template>
-        <div>
-                <h2 class="text-xl font-bold mb-5">{{frontLang.lang.changePassword}}</h2>
-            <form @submit.prevent="changePassword">
-            <div v-if="errorMessage" class="text-red-500 mb-5">
-                {{ errorMessage }}
-            </div>
-            <div v-if="successMessage" class="text-green-500 mb-5">
-                {{ successMessage }}
-            </div>
-            <div class="mb-5">
-                <label for="current-password" class="font-bold">{{frontLang.lang.currentPassword}} *</label>
-                <input
-                v-model="passwords.oldPassword"
-                type="password"
-                id="current-password"
-                placeholder="Enter current password"
-                required
-                class="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                />
-            </div>
-            <div class="flex gap-5 mb-5">
-                <div class="flex-1">
-                <label for="new-password" class="font-bold">{{frontLang.lang.newPassword}} *</label>
-                <input
-                    v-model="passwords.newPassword"
-                    type="password"
-                    id="new-password"
-                    placeholder="Enter new password"
-                    required
-                    class="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                />
-                </div>
-                <div class="flex-1">
-                <label for="confirm-password" class="font-bold">{{frontLang.lang.confirmPassword}} *</label>
-                <input
-                    v-model="passwords.confirmPassword"
-                    type="password"
-                    id="confirm-password"
-                    placeholder="Re-enter new password"
-                    required
-                    class="border border-gray-300 rounded-lg px-4 py-2 w-full"
-                />
-                </div>
-            </div>
-            <button type="submit" class="bg-blue-500 text-white rounded-lg px-4 py-2">
-                {{frontLang.lang.updatePassword}}
-            </button>
-            </form>
+<template>
+    <div class=" max-w-3xl h-auto flex items-center justify-center p-4">
+      <div class=" bg-white rounded-lg p-6 space-y-6">
+        <!-- Header -->
+        <h2 class="text-xl font-bold text-center text-lime-700">
+          {{ frontLang.lang.changePassword }}
+        </h2>
+  
+        <!-- Alert Messages -->
+        <div v-if="errorMessage" class="px-4 py-2 bg-red-100 text-red-700 rounded-lg">
+          {{ errorMessage }}
         </div>
-        </template>
+        <div v-if="successMessage" class="px-4 py-2 bg-green-100 text-green-700 rounded-lg">
+          {{ successMessage }}
+        </div>
+  
+        <!-- Change Password Form -->
+        <form @submit.prevent="changePassword" class="space-y-6">
+          <div>
+            <label for="current-password" class="block font-semibold text-gray-700 mb-1">
+              {{ frontLang.lang.currentPassword }} <span class="text-red-500">*</span>
+            </label>
+            <input
+              v-model="passwords.oldPassword"
+              type="password"
+              id="current-password"
+              placeholder="Enter current password"
+              required
+              class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+            />
+          </div>
+  
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label for="new-password" class="block font-semibold text-gray-700 mb-1">
+                {{ frontLang.lang.newPassword }} <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="passwords.newPassword"
+                type="password"
+                id="new-password"
+                placeholder="Enter new password"
+                required
+                class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+              />
+            </div>
+            <div class="flex-1">
+              <label for="confirm-password" class="block font-semibold text-gray-700 mb-1">
+                {{ frontLang.lang.confirmPassword }} <span class="text-red-500">*</span>
+              </label>
+              <input
+                v-model="passwords.confirmPassword"
+                type="password"
+                id="confirm-password"
+                placeholder="Re-enter new password"
+                required
+                class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+              />
+            </div>
+          </div>
+  
+          <button
+            type="submit"
+            class="w-full bg-lime-700 text-white py-3 rounded-lg hover:bg-lime-800 transition flex justify-center"
+          >
+            {{ frontLang.lang.updatePassword }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </template>
 
 <style scoped>
 /* Add scoped styles for change password */

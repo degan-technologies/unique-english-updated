@@ -11,7 +11,7 @@ class Course extends Model {
     protected $fillable = [
         'slug','course_name', 'overview', 'tag',
         'skill_level', 'price', 'discount',
-        'credit_hour', 'user_id',
+        'credit_hour', 'user_id','thumbnail_url',
     ];
     
     public function user() {return $this->belongsTo(User::class);}

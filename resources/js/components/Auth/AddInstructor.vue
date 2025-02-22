@@ -1,5 +1,5 @@
                 <script>
-                import axios from "axios";
+                import Axios from "axios";
                 import { ref } from "vue";
 
                 export default {
@@ -24,45 +24,42 @@
                     }, 2000);
                 };
 
-                const validateForm = () => {
-                    errors.value = {}; // Reset errors
+                // const validateForm = () => {
+                //     errors.value = {}; // Reset errors
 
-                    if (!form.value.first_name.trim()) {
-                    errors.value.first_name = "First name is required";
-                    } else if (!/^[a-zA-Z0-9_-]+$/.test(form.value.first_name)) {
-                    errors.value.first_name = "Invalid characters in first name";
-                    }
+                //     if (!form.value.first_name.trim()) {
+                //     errors.value.first_name = "First name is required";
+                //     } else if (!/^[a-zA-Z0-9_-]+$/.test(form.value.first_name)) {
+                //     errors.value.first_name = "Invalid characters in first name";
+                //     }
 
-                    if (form.value.middle_name && !/^[a-zA-Z0-9_-]+$/.test(form.value.middle_name)) {
-                    errors.value.middle_name = "Invalid characters in middle name";
-                    }
+                //     if (form.value.middle_name && !/^[a-zA-Z0-9_-]+$/.test(form.value.middle_name)) {
+                //     errors.value.middle_name = "Invalid characters in middle name";
+                //     }
 
-                    if (!form.value.email.trim()) {
-                    errors.value.email = "Email is required";
-                    } else if (!/\S+@\S+\.\S+/.test(form.value.email)) {
-                    errors.value.email = "Invalid email format";
-                    }
+                //     if (!form.value.email.trim()) {
+                //     errors.value.email = "Email is required";
+                //     } else if (!/\S+@\S+\.\S+/.test(form.value.email)) {
+                //     errors.value.email = "Invalid email format";
+                //     }
 
-                    if (!form.value.password.trim()) {
-                    errors.value.password = "Password is required";
-                    } else if (form.value.password.length < 4) {
-                    errors.value.password = "Password must be at least 4 characters";
-                    }
+                //     if (!form.value.password.trim()) {
+                //     errors.value.password = "Password is required";
+                //     } else if (form.value.password.length < 4) {
+                //     errors.value.password = "Password must be at least 4 characters";
+                //     }
 
-                    return Object.keys(errors.value).length === 0;
-                };
+                //     return Object.keys(errors.value).length === 0;
+                // };
 
                 const submitForm = async () => {
-                    if (!validateForm()) {
-                    return;
-                    }
-
+                  
                     loading.value = true;
                     message.value = "";
                     errorMessage.value = "";
 
                     try {
-                    const response = await axios.post("/api/add-instructor", form.value);
+                    const response = await Axios.post("/api/add-instructor", form.value);
                     message.value = response.data.message;
                     clearMessages(); // Clear message after 2000ms
                     form.value = { first_name: "", middle_name: "", email: "", password: "" }; // Reset form
@@ -94,6 +91,7 @@
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">First Name</label>
                         <input
+                        required
                         type="text"
                         v-model="form.first_name"
                         class="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -105,6 +103,7 @@
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">Middle Name</label>
                         <input
+                        required
                         type="text"
                         v-model="form.middle_name"
                         class="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -116,6 +115,7 @@
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">Email</label>
                         <input
+                        required
                         type="email"
                         v-model="form.email"
                         class="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -127,6 +127,7 @@
                     <div>
                         <label class="block text-gray-700 font-semibold mb-1">Password</label>
                         <input
+                        required
                         type="password"
                         v-model="form.password"
                         class="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
