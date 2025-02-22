@@ -4,9 +4,14 @@
 
   import { useThemeStore } from '@/store/theme';
   import { useSidebarStore } from '@/store/useSidebarStore';
+  import appRouter from "../../routes/AppRouter";
+  import { useAppStore } from "@/store/useAppStore";
+
 
   const sidebarStore = useSidebarStore();
-  const { sideBarOpen } = storeToRefs(sidebarStore);
+  const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
+  const appStore = useAppStore(); // Use Pinia store inside setup
+  const { authUser, frontLang } = storeToRefs(appStore); // Destructure reactive properties, including frontLang
 
   const searchOpen = ref(false);
   const dropDownOpen = ref(false);
@@ -17,6 +22,47 @@
   const toggleSidebar = () => {
     sidebarStore.toggleSidebar();
   }
+
+  const openProfile = () => selectedContent.value = 'profile';
+
+
+
+  
+  const logout = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                console.error("No auth token found. Logging out locally.");
+                appStore.logout();
+                localStorage.removeItem('authToken');
+                appRouter.navigate('/login');
+                return;
+                }
+
+                await Axios.post('/api/logout', {}, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                });
+
+                console.log("Logout successful.");
+                appStore.logout(); // Clear app state
+                localStorage.removeItem('authToken');
+                this.$router.push('/login');
+            } catch (error) {
+                console.error("Logout failed:", error);
+
+                // Handle 401 error or general failure
+                if (error.response && error.response.status === 401) {
+                console.warn("Token invalid or expired. Clearing local state.");
+                }
+
+                // Clear local storage and app state regardless
+                appStore.logout();
+                localStorage.removeItem('authToken');
+                this.$appRouter.push('/login');
+            }
+            };
 </script>
 
 <template>
@@ -128,7 +174,9 @@
             <!-- Profile Picture with Dropdown -->
             <div class="relative">
                 <img
-                src="https://a7sas.net/wp-content/uploads/2019/07/4060.jpeg"
+                v-if="authUser.profile"
+                :src="authUser.profile"
+                alt="Background Image"
                 class="w-12 h-12 rounded-full shadow-lg cursor-pointer"
                 @click="dropDownOpen = !dropDownOpen"
                 title="Profile"
@@ -138,27 +186,21 @@
                 v-if="dropDownOpen"
                 class="absolute top-14 right-0 bg-white  border border-gray-200  shadow-xl text-gray-700  rounded-lg w-48 transition-all duration-300"
                 >
-                <a
-                    href="#"
+                <div
+                @click="openProfile"
                     class="block px-4 py-2 hover:bg-gray-200 "
                     title="Account"
                 >
                     Account
-                </a>
-                <a
-                    href="#"
+            </div>
+                <div
                     class="block px-4 py-2 hover:bg-gray-200 "
                     title="Settings"
                 >
                     Settings
-                </a>
-                <a
-                    href="#"
-                    class="block px-4 py-2 hover:bg-gray-200 "
-                    title="Logout"
-                >
-                    Logout
-                </a>
+            </div>
+                <div  @click="logout" class="block px-4 py-2 hover:bg-gray-200 " title="Logout"> Logout </div>
+
                 </div>
             </div>
             </div>

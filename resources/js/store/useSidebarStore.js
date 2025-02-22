@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
     const sidebarCollapsed = ref(false);
+    const selectedContent = ref('dashboard');
 
     function loadSidebarState() {
         sideBarOpen.value =
@@ -46,5 +47,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         toggleSidebar,
         closeSidebarOnMobile,
         toggleCollapse,
+
+        selectedContent,
     };
 });

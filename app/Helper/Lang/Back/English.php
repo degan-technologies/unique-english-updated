@@ -62,6 +62,16 @@ class English extends Lang {
             'FAQPage' => 'FAQ Page',
             'PrivacyPolicy' => 'Privacy Policy',
             'TermsOfService' => 'Terms Of Service',
+
+            'register_student' => 'Register Student',
+
+            'course_modules' => 'Course Modules',
+            // You can also add other keys as needed, e.g.:
+            'module_successfully_added' => 'Module successfully added.',
+            'module_successfully_updated' => 'Module successfully updated.',
+            'module_successfully_deleted' => 'Module successfully deleted.',
+            'module_not_found' => 'Module not found.',
+            'unauthorized_action' => 'Unauthorized action.',
         ];
     }
 

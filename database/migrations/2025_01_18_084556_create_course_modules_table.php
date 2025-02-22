@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('course_modules', function (Blueprint $table) {
             $table->id();
-
+            $table->string('slug')->unique();
             $table->string('title');
             $table->integer('sequence');
             $table->longText('description')->nullable();

@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller {
 
@@ -28,7 +30,8 @@ class CourseController extends Controller {
      * Display a listing of the resource.
      */
     public function index() {
-        $courses = Course::all();
+        $courses = Course::with('CourseModules')
+            ->get();
 
         return response() -> json([
             'data' => CourseResource::collection($courses)
@@ -53,10 +56,11 @@ class CourseController extends Controller {
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'overview' => 'min:10',
             'tag' => 'min:3',
-            'skill_level' => 'numeric',
+            'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
+            'thumbnail_url' => 'image'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -69,7 +73,10 @@ class CourseController extends Controller {
                 'errors' => $validator->errors()
             ], 422);
         }
-
+        $imagePath = null;
+        if($request->hasFile('thumbnail_url')) {
+            $imagePath = $request->file('thumbnail_url')->store('/course/images', 'public');
+        }
         $course = $user->courses()->create([
             'slug' => Str::uuid(),
             'course_name' => $request->course_name,
@@ -78,7 +85,8 @@ class CourseController extends Controller {
             'skill_level' => $request->skill_level,
             'price' => $request->price,
             'discount' => $request->discount,
-            'credit_hour' => $request->credit_hour
+            'credit_hour' => $request->credit_hour,
+            'thumbnail_url' => $imagePath
         ]);
 
         return response()->json([
@@ -90,15 +98,25 @@ class CourseController extends Controller {
     /**
      * Display the specified resource.
      */
-    public function show(string $id) {
-        $course = Course::query()
-            ->where('user_id', Auth::user()->id)
+    public function show(string $id)
+    {
+        // Fetch the course by its ID and ensure it belongs to the authenticated user
+        $course = Course::with('courseModules')
+        
+            ->where('id', $id)
+           // Use Auth::id() instead of Auth::user()->id
             ->first();
-
+    
+        // If the course is not found, return a 404 response
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+    
         return response()->json([
-            'data' => new  CourseResource($course)
+            'data' => new CourseResource($course)
         ]);
     }
+    
 
     /**
      * Update the specified resource in storage.
@@ -111,7 +129,7 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            ->where('user_id', $user->id)
+            // ->where('user_id', $user->id)
             ->findOrFail($id);
 
         if(!$course) {
@@ -127,7 +145,8 @@ class CourseController extends Controller {
             'skill_level' => 'numeric',
             'price' => 'numeric',
             'discount' => 'numeric',
-            'credit_hour' => 'numeric'
+            'credit_hour' => 'numeric',
+            'thumbnail_url' => 'image'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -141,13 +160,28 @@ class CourseController extends Controller {
             ], 422);
         }
 
-        $course->update($validator->validated());
+        $data = $validator->validated();
+    
+        // Process file uploads:
+    
+            // Process file uploads
+    if ($request->hasFile('thumbnail_url')) {
+        // Delete the old image if exists
+        if ($course->thumbnail_url) {
+            Storage::disk('public')->delete($course->thumbnail_url);
+        }
+        $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course/images', 'public');
+    }
+    
+
+    $course->update($data);
 
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_updated'),
             'data' => new CourseResource($course),
         ]);
     }
+    
     
 
     /**
@@ -166,7 +200,7 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            ->where('user_id', $user->id)
+          
             ->findOrFail($id);
 
         if (!$course) {
@@ -181,4 +215,5 @@ class CourseController extends Controller {
             'message' => $this->langService->getLang('course_successfully_deleted'),
         ]);
     }
+    
 }

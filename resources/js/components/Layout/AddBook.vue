@@ -11,20 +11,12 @@ const newBook = ref({
   publish_date: "",
   description: "",
   language: "",
-  page_number:"",
-  file_format: "pdf", // default is pdf
-  cover_page_url: null,
-  file_url: null,
+  file_format: "",
+  cover_page_url: "",
+  file_url: "",
   tag: "",
-  // isDownloadable: 0,
+  isDownloadable: false,
 });
-
-const onFileChange = (field, event) => {
-  const file = event.target.files[0];
-  if (file) {
-    newBook.value[field] = file;
-  }
-};
 
 const loading = ref(false);
 const error = ref("");
@@ -40,31 +32,12 @@ const addBook = async () => {
     .split(",")
     .map((t) => t.trim())
     .filter((t) => t !== "");
-
-  // Create a FormData object and append all fields
-  const formData = new FormData();
-  formData.append("title", newBook.value.title);
-  formData.append("auther", newBook.value.auther);
-  formData.append("price", newBook.value.price);
-  formData.append("eddition", newBook.value.eddition);
-  formData.append("discount", newBook.value.discount);
-  formData.append("publish_date", newBook.value.publish_date);
-  formData.append("description", newBook.value.description);
-  formData.append("page_number", newBook.value.page_number);
-  formData.append("language", newBook.value.language);
-  formData.append("file_format", newBook.value.file_format);
-  if (newBook.value.cover_page_url) {
-    formData.append("cover_page_url", newBook.value.cover_page_url);
-  }
-  if (newBook.value.file_url) {
-    formData.append("file_url", newBook.value.file_url);
-  }
-  formData.append("tag", JSON.stringify(tagsArray));
-  // formData.append("isDownloadable", newBook.value.isDownloadable);
-
+  
+  const payload = { ...newBook.value, tag: JSON.stringify(tagsArray) };
+  
   try {
-    const response = await Axios.post("/api/books/books", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const response = await Axios.post("/api/books/books", payload, {
+      headers: { "Content-Type": "application/json" },
     });
     success.value = "Book added successfully!";
     // Reset form fields
@@ -77,10 +50,9 @@ const addBook = async () => {
       publish_date: "",
       description: "",
       language: "",
-      file_format: "pdf", // reset default to pdf
-      cover_page_url: null,
-      file_url: null,
-      page_number:"",
+      file_format: "",
+      cover_page_url: "",
+      file_url: "",
       tag: "",
       isDownloadable: false,
     };
@@ -93,7 +65,7 @@ const addBook = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
+  <div class="min-h-screen flex items-center justify-center">
     <div class="w-full max-w-3xl bg-white rounded-xl shadow-md overflow-hidden transform transition-all duration-300 hover:scale-105">
       <div class="p-4 md:p-6">
         <h2 class="text-2xl md:text-3xl font-bold text-center text-lime-700 mb-4">
@@ -195,40 +167,32 @@ const addBook = async () => {
                   required
                 />
               </div>
-
-              <div>
-              <label class="block text-gray-700 font-medium mb-1">Page Number</label>
-            <input v-model="newBook.page_number"
-               type="number"
-                placeholder="page_number"
-               class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
-              required /> </div>
-
               <div>
                 <label class="block text-gray-700 font-medium mb-1">File Format</label>
-                <select
-                  v-model="newBook.file_format"
-                  class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
-                  required
-                >
-                  <option value="pdf">PDF</option>
-                  <option value="word">Word</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-gray-700 font-medium mb-1">Upload Cover Page</label>
                 <input
-                  type="file"
-                  @change="onFileChange('cover_page_url', $event)"
+                  v-model="newBook.file_format"
+                  type="text"
+                  placeholder="e.g. PDF"
                   class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
                   required
                 />
               </div>
               <div>
-                <label class="block text-gray-700 font-medium mb-1">Upload File URL</label>
+                <label class="block text-gray-700 font-medium mb-1">Cover Page URL</label>
                 <input
-                  type="file"
-                  @change="onFileChange('file_url', $event)"
+                  v-model="newBook.cover_page_url"
+                  type="url"
+                  placeholder="https://example.com/cover.jpg"
+                  class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
+                  required
+                />
+              </div>
+              <div>
+                <label class="block text-gray-700 font-medium mb-1">File URL</label>
+                <input
+                  v-model="newBook.file_url"
+                  type="url"
+                  placeholder="https://example.com/file.pdf"
                   class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
                   required
                 />
@@ -242,7 +206,15 @@ const addBook = async () => {
                   class="w-full border border-gray-300 rounded p-2 focus:outline-none focus:ring-2 focus:ring-lime-500 transition"
                 />
               </div>
-              <!-- Downloadable checkbox commented out -->
+              <div class="flex items-center space-x-2">
+                <input
+                  v-model="newBook.isDownloadable"
+                  type="checkbox"
+                  id="downloadable"
+                  class="h-5 w-5 text-lime-600 focus:ring-lime-500"
+                />
+                <label for="downloadable" class="text-gray-700 font-medium">Downloadable</label>
+              </div>
             </div>
           </div>
           <div>

@@ -3,7 +3,6 @@
     import { ref } from "vue";
     import { storeToRefs } from "pinia";
     import { useAppStore } from "@/store/useAppStore";
-import AddInstructor from "./AddInstructor.vue";
 
     const appStore = useAppStore();
     const { frontLang, facebook, google } = storeToRefs(appStore);
@@ -58,7 +57,6 @@ import AddInstructor from "./AddInstructor.vue";
     </script>
 
     <template>
-        <AddInstructor />
     <div class="flex flex-col md:flex-row justify-center items-center min-h-screen bg-gray-100 p-4 md:space-x-4">
         <div class="flex flex-col md:flex-row md:items-stretch w-full max-w-4xl space-y-4 md:space-y-0">
         <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg w-full md:w-1/2 flex flex-col justify-center">

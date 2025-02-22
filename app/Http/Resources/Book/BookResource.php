@@ -5,6 +5,8 @@ namespace App\Http\Resources\Book;
 use App\Http\Resources\userResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
+
 
 class BookResource extends JsonResource {
     /**
@@ -22,7 +24,9 @@ class BookResource extends JsonResource {
             'title' => $this->title,
             'auther' => $this->auther,
             'language' => $this->language,
-            'file_url' => $this->file_url,
+            'file_url' => $this->file_url
+            ? Storage::disk('public')->url($this->file_url)
+            : 'no-file_url.png',
             'eddition' => $this->eddition,
             'discount' => $this->discount,
             'created_at' => $this->created_at,
@@ -32,7 +36,9 @@ class BookResource extends JsonResource {
             'page_number' => $this->page_number,
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
-            'cover_page_url' => $this->cover_page_url,
+            'cover_page_url' => $this->cover_page_url
+            ? Storage::disk('public')->url($this->cover_page_url)
+            : 'no-cover_page_url.png',
             'isDownloadable' => $this->isDownloadable,
             'download_status' => $this->download_status,
             'user' => new userResource($this->whenLoaded('user')),

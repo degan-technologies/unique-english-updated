@@ -32,7 +32,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Speaking skills improve through consistent practice and interaction.',
                     'sequence' => 1,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-1.jpg',
+                    'thumbnail_url' => '/course/course-1.jpg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -45,7 +45,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Understanding grammar is crucial for writing and speaking accurately.',
                     'sequence' => 2,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-2.jpg',
+                    'thumbnail_url' => '/course/course-2.jpg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -58,7 +58,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Proper pronunciation makes communication clearer and more effective.',
                     'sequence' => 3,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-3.webp',
+                    'thumbnail_url' => '/course/course-3.webp',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -71,7 +71,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Improving listening skills helps with understanding different accents.',
                     'sequence' => 4,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-4.jpeg',
+                    'thumbnail_url' => '/course/course-4.jpeg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -84,7 +84,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Writing well-structured content is key to academic and professional success.',
                     'sequence' => 5,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-5.jpg',
+                    'thumbnail_url' => '/course/course-5.jpg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -97,7 +97,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Practicing daily conversations enhances fluency.',
                     'sequence' => 6,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-6.jpg',
+                    'thumbnail_url' => '/course/course-6.jpg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -110,7 +110,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Building vocabulary is the foundation of language learning.',
                     'sequence' => 7,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-7.jpeg',
+                    'thumbnail_url' => '/course/course-7.jpeg',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -123,7 +123,7 @@ class CourseContentSeeder extends Seeder {
                     'note' => 'Understanding radicals helps in memorizing Chinese characters.',
                     'sequence' => 8,
                     'course_module_id' => $courseModule->id,
-                    'thumbnail_url' => '/images/course-8.webp',
+                    'thumbnail_url' => '/course/course-8.webp',
                 ]
             ];
 

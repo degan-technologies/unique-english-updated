@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Book\BookController;
 use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
+use App\Http\Controllers\Course\CourseModuleController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\Live\ParticipantController;
 use App\Http\Controllers\Live\LiveSessionController;
@@ -20,6 +21,7 @@ Route::post('/registration', [UserController::class, 'store']);
 Route::middleware('auth:api')
     ->group(function () {
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
+        Route::post('/add-student', [UserController::class, 'addStudent']);
         Route::delete('/delete-instructor/{id}', [UserController::class, 'destroy']);
         Route::post('/update-profile', [UserController::class, 'profileUpdate']);
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
@@ -40,6 +42,7 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::resource('/course', CourseController::class);
         Route::resource('/content', CourseContentController::class);
+        Route::resource('/module', CourseModuleController::class);
     });
 
 Route::middleware('auth:api')
