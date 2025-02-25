@@ -19,7 +19,7 @@ trait UserSeederTrait{
         $user->email = $info['email'] . "@degan.com";
         $user->password = Hash::make('Degan@123456');
         $user->role = $info['role'];
-        $user->phone = '09' . mt_rand(11111111, 99999999);
+        $user->phone = $info['phone'];
         $user->email_verified_at = date("Y-m-d H:i:s");
 
         $user->user_id = $createdBy;

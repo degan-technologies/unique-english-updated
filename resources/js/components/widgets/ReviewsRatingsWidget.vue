@@ -1,3 +1,63 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import axios from 'axios';
+
+const reviews = ref([]);
+const selectedRating = ref(null);
+const selectedReview = ref(null);
+
+// Fetch reviews from the API endpoint
+const fetchReviews = async () => {
+  await axios
+        .get('/api/feedbacks')
+        .then((response) => {
+          reviews.value = response.data.data;
+        });
+};
+
+// Toggle rating filter
+const filterByRating = (rating) => {
+  selectedRating.value = selectedRating.value === rating ? null : rating;
+};
+
+// Compute filtered reviews based on selected rating
+const filteredReviews = computed(() => {
+  return selectedRating.value 
+    ? reviews.value.filter(review => review.rating === selectedRating.value)
+    : reviews.value;
+});
+
+// Calculate rating percentage for the distribution chart
+const getRatingPercentage = (star) => {
+  if (reviews.value.length === 0) {
+    return 0;
+  }
+  const count = reviews.value.filter(review => review.rating === star).length;
+  return (count / reviews.value.length) * 100;
+};
+
+// Open the review details modal
+const openReviewDetails = (review) => {
+  selectedReview.value = review;
+};
+
+// Format timestamp into a readable date
+const formatTime = (isoString) => {
+  return new Date(isoString).toLocaleDateString();
+};
+
+// Auto-refresh reviews every 15 seconds
+let intervalId = null;
+onMounted(() => {
+  fetchReviews();
+  intervalId = setInterval(fetchReviews, 15000);
+});
+
+onUnmounted(() => {
+  clearInterval(intervalId);
+});
+</script>
+
 <template>
   <div class="bg-white rounded-lg shadow p-4 w-full mx-auto">
     <!-- Header -->
@@ -6,7 +66,7 @@
         <i class="fas fa-star text-lime-700"></i>
         <h3 class="text-lg font-bold">Recent Reviews & Ratings</h3>
       </div>
-      <button @click="fetchReviews" class="text-gray-500 hover:text-gray-800">
+      <button @click="fetchReviews" class="text-gray-500 hover:text-gray-800" aria-label="Refresh Reviews">
         <i class="fas fa-sync-alt"></i>
       </button>
     </div>
@@ -24,7 +84,7 @@
     </div>
 
     <!-- Reviews List -->
-    <div class="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+    <div class="space-y-3 max-h-80 overflow-y-auto  scrollbar">
       <transition-group name="fade" tag="div">
         <div 
           v-for="review in filteredReviews" 
@@ -32,12 +92,12 @@
           class="p-4 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer transition-all"
           @click="openReviewDetails(review)">
           <div class="flex justify-between items-center">
-            <h4 class="text-md font-semibold">{{ review.name }}</h4>
+            <h4 class="text-md font-semibold">{{ review.user.first_name }}</h4>
             <span class="text-sm text-gray-500">{{ formatTime(review.timestamp) }}</span>
           </div>
           <div class="flex items-center mt-1 space-x-1">
-            <span v-for="star in review.rating" :key="star" class="text-lime-700">★</span>
-            <span v-for="star in 5 - review.rating" :key="'empty' + star" class="text-gray-300">★</span>
+            <span v-for="n in review.rating" :key="'full' + n" class="text-lime-700">★</span>
+            <span v-for="n in (5 - review.rating)" :key="'empty' + n" class="text-gray-300">★</span>
           </div>
           <p class="text-sm text-gray-600 truncate">{{ review.comment }}</p>
         </div>
@@ -64,18 +124,18 @@
     </div>
 
     <!-- Review Details Modal -->
-    <Teleport to="body">
+    <teleport to="body">
       <div v-if="selectedReview" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4">
         <div class="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
           <div class="flex justify-between items-center mb-3">
             <h4 class="text-lg font-semibold">{{ selectedReview.name }}</h4>
-            <button @click="selectedReview = null" class="text-gray-500 hover:text-gray-800">
+            <button @click="selectedReview = null" class="text-gray-500 hover:text-gray-800" aria-label="Close Modal">
               <i class="fas fa-times"></i>
             </button>
           </div>
           <div class="flex items-center space-x-1">
-            <span v-for="star in selectedReview.rating" :key="'full' + star" class="text-lime-700">★</span>
-            <span v-for="star in 5 - selectedReview.rating" :key="'empty' + star" class="text-gray-300">★</span>
+            <span v-for="n in selectedReview.rating" :key="'modal-full' + n" class="text-lime-700">★</span>
+            <span v-for="n in (5 - selectedReview.rating)" :key="'modal-empty' + n" class="text-gray-300">★</span>
           </div>
           <p class="mt-2">{{ selectedReview.comment }}</p>
           <div class="text-right mt-4">
@@ -86,71 +146,14 @@
           </div>
         </div>
       </div>
-    </Teleport>
+    </teleport>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue';
 
-// Sample Data (Replace with API Call)
-const reviews = ref([
-  { id: 1, name: "Alice Johnson", rating: 5, comment: "Fantastic course! Highly recommend!", timestamp: "2024-02-01T14:00:00Z" },
-  { id: 2, name: "Bob Smith", rating: 4, comment: "Very informative but a bit fast-paced.", timestamp: "2024-01-31T16:30:00Z" },
-  { id: 3, name: "Charlie Adams", rating: 3, comment: "Average experience, needs more examples.", timestamp: "2024-01-30T12:15:00Z" }
-]);
-
-const selectedRating = ref(null);
-const selectedReview = ref(null);
-
-// Fetch Reviews (Simulated API Call)
-const fetchReviews = () => {
-  // Simulate data refresh (Replace with API call)
-  reviews.value.push({
-    id: reviews.value.length + 1,
-    name: "New User",
-    rating: Math.floor(Math.random() * 5) + 1,
-    comment: "Random review for testing.",
-    timestamp: new Date().toISOString()
-  });
-};
-
-// Filter Reviews by Rating
-const filterByRating = (rating) => {
-  selectedRating.value = selectedRating.value === rating ? null : rating;
-};
-
-// Filtered Reviews Computed Property
-const filteredReviews = computed(() => {
-  return selectedRating.value 
-    ? reviews.value.filter(review => review.rating === selectedRating.value)
-    : reviews.value;
-});
-
-// Get Rating Percentage for Chart
-const getRatingPercentage = (star) => {
-  const count = reviews.value.filter(review => review.rating === star).length;
-  return (count / reviews.value.length) * 100 || 5; // Ensure a minimum height for visibility
-};
-
-// Open Review Details Modal
-const openReviewDetails = (review) => {
-  selectedReview.value = review;
-};
-
-// Format Time
-const formatTime = (isoString) => {
-  return new Date(isoString).toLocaleDateString();
-};
-
-// Auto-refresh every 15 seconds
-onMounted(() => {
-  setInterval(fetchReviews, 15000);
-});
-</script>
 
 <style scoped>
-/* Fade animation */
+/* Fade animation for review items */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.5s;
 }

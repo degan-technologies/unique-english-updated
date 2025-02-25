@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
 use App\Models\Book\Book;
 use App\Models\Book\OrderedBook;
 use App\Models\Course\Course;
@@ -13,7 +11,6 @@ use App\Models\Course\Enrollment;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
-// use Illuminate\Contracts\Auth\MustVerifyEmail
 use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
@@ -31,8 +28,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+
 class User extends Authenticatable {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
 
     /**
@@ -41,10 +38,22 @@ class User extends Authenticatable {
      * @var list<string>
      */
     protected $fillable = [
-        'slug', 'gender', 'email', 'password',
-        'first_name', 'middle_name', 'last_name',
-        'user_name', 'full_name', 'phone',
-        'profile', 'bg_image', 'role',
+        'slug', 
+        'gender', 
+        'email', 
+        'password',
+        'temp_password', 
+        'first_name', 
+        'middle_name', 
+        'last_name',
+        'user_name', 
+        'full_name', 
+        'phone',
+        'profile', 
+        'bg_image', 
+        'role',
+        'user_banned_at',
+        'progress',
     ];
 
     /**
@@ -55,6 +64,8 @@ class User extends Authenticatable {
     protected $hidden = [
         'password',
         'remember_token',
+        // We are not adding temp_password here because you want it visible
+        // until the instructor updates their password.
     ];
 
     /**
@@ -66,6 +77,7 @@ class User extends Authenticatable {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'progress' => 'integer',
         ];
     }
 
@@ -89,8 +101,6 @@ class User extends Authenticatable {
     public function books() { return $this->hasMany(Book::class); } 
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
 
-
-
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){
             $userId = Auth::id();
@@ -104,7 +114,4 @@ class User extends Authenticatable {
                     ->orWhere(fn($subQuery) => $subQuery->has('instructor'));
             });
     }
-
-
 }
-

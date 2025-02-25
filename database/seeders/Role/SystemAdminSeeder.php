@@ -14,7 +14,7 @@ class SystemAdminSeeder extends Seeder {
      */
     public function run(): void {
         $sysAdmins = [
-            ['first_name' => 'System Admin', 'email' => 'admin', 'gender' => MALE, 'role' => SYSTEM_ADMIN],
+            ['first_name' => 'System Admin', 'email' => 'admin', 'gender' => MALE, 'phone'=>'0917423298', 'role' => SYSTEM_ADMIN],
         ];
 
         try {

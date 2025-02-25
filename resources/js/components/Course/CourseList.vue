@@ -2,6 +2,7 @@
     import { ref } from "vue";
 
     const collapsModuleId = ref(1);
+    console.log('sdkjfksdhfj');
 
     const props = defineProps({
         selectedCourse:Object,
@@ -15,7 +16,6 @@
         }
         collapsModuleId.value = id;
     };
-
     function openLesson(moduleId, contentId) {
         emit('openedLesson', moduleId, contentId);
     }
@@ -48,7 +48,7 @@
             <div v-if="collapsModuleId == courseModule.id" class="ml-4 mt-2">
                 <ul class="list-none pl-0">
                     <li
-                        v-for="( courseContent, courseContentIndex ) in courseModule.courseContents"
+                        v-for="( courseContent, courseContentIndex ) in courseModule?.courseContents"
                         :key="courseContentIndex"
                         @click="openLesson(courseModule.id, courseContent.id )"
                         class="text-gray-700 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1" >

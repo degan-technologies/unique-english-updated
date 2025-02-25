@@ -19,7 +19,7 @@ class ErrorLangEnglish extends Lang {
             'enter_your_password' => 'Please enter you password',
             'invalid_credentials' => 'Invalid credentials',
             'unAuthorized' => 'unAuthorized',
-            'user_not_found'=>'user could not be found'
+            'user_not_found'=>'user could not be found',
             'user_successfully_registered' => 'User successfully registered',
             'user_successfully_deleted' => 'User successfully deleted',
             
@@ -96,10 +96,10 @@ class ErrorLangEnglish extends Lang {
             'q_meta_data_updated_successfully' => 'q_meta_data succefully updated',
             'q_meta_data_deleted_successfully' => 'q_meta_data is trash succefully',
 
-            'qa_section_not_found'=>'qa_section could not be found'
-            'qa_section_created_successfully'=>'qa_section created succesfully'
-            'qa_section_updated_successfully'=>'qa_section updated succesfully'
-            'qa_section_deleted_successfully'=>'qa_section deleted succesfully'
+            'qa_section_not_found'=>'qa_section could not be found',
+            'qa_section_created_successfully'=>'qa_section created succesfully',
+            'qa_section_updated_successfully'=>'qa_section updated succesfully',
+            'qa_section_deleted_successfully'=>'qa_section deleted succesfully',
     
 
 
@@ -274,7 +274,7 @@ class ErrorLangEnglish extends Lang {
 
             'feedbacks' => [
                 'rate.required' => 'The rate is required.',
-                'rate.integer' => 'The rate must be an integer.',
+                'rate.numeric' => 'The rate must be an integer.',
                 'rate.between' => 'The rate must be between 1 and 5.',
                 'comment.required' => 'The comment is required.',
                 'comment.string' => 'The comment must be a string.',
@@ -282,6 +282,16 @@ class ErrorLangEnglish extends Lang {
                 'course_id.required' => 'The course ID is required.',
                 'course_id.exists' => 'The selected course does not exist.',
                 'favorite.boolean' => 'The favorite field must be a boolean.',
+                'issue_type.required' => 'The issue type is required.',
+                'issue_details.required' => 'The issue details is required minimum 10 characters',
+            ],
+
+            'messages' => [
+                'user_id.required' => 'The user ID is required.',
+                'user_id.exists' => 'The selected user does not exist.',
+                'message.required' => 'The message is required.',
+                'message.string' => 'The message must be a string.',
+                
             ],
 
             

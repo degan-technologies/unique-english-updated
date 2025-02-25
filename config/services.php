@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'afromessage' => [
+        'api_url'       => env('AFROMESSAGE_API_URL'),
+        'api_token'     => env('AFROMESSAGE_API_TOKEN'),
+        'identifier_id' => env('AFROMESSAGE_IDENTIFIER_ID'),
+        'sender_name'   => env('AFROMESSAGE_SENDER_NAME'),
+    ],
+
 ];

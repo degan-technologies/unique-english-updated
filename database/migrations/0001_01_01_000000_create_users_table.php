@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
 
+            $table->string('temp_password')->nullable();
+
             $table->string('first_name');
             $table->string('middle_name')->nullable();
             $table->string('last_name')->nullable();
@@ -29,7 +31,10 @@ return new class extends Migration
             $table->string('bg_image')->nullable()->unique();
 
             $table->integer('role');
+            $table->timestamp('user_banned_at')->nullable();
             
+            $table->integer('progress')->default(0); 
+
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
