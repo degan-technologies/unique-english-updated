@@ -5,9 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\userResource;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
+use App\Models\Role\SystemAdmin;
 use App\Services\LangService;
 use Carbon\Carbon;
 use Exception;
@@ -29,6 +30,66 @@ class UserController extends Controller {
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
+
+    public function index(Request $request)
+    {
+        // Start with all non-system-admin users who are not banned
+        $query = User::query()
+            ->where('role', '!=', SYSTEM_ADMIN)
+            ->whereNull('user_banned_at');
+    
+        // Search filter: looks in first_name, middle_name, email, or role
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('middle_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('role', 'like', "%{$search}%");
+            });
+        }
+    
+        // Role filter: exact match
+        if ($request->filled('role')) {
+            $query->where('role', $request->input('role'));
+        }
+    
+        // Status filter: exact match (if a 'status' field exists)
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+    
+        // Join date range filter using the created_at field as the join date
+        if ($request->filled('joinDateFrom')) {
+            $query->whereDate('created_at', '>=', $request->input('joinDateFrom'));
+        }
+        if ($request->filled('joinDateTo')) {
+            $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
+        }
+    
+        // Progress filter: for students only, using the related student table
+        if ($request->filled('progress')) {
+            $progress = $request->input('progress');
+            $query->where(function ($q) use ($progress) {
+                // For non-students, ignore the progress filter
+                $q->where('role', '!=', 'STUDENT_ROLE')
+                  // For students, use the student relation
+                  ->orWhereHas('student', function ($q2) use ($progress) {
+                      $q2->where('progress', '>=', $progress);
+                  });
+            });
+        }
+    
+        // Optional: if you want to paginate, you could do:
+        // $users = $query->paginate($request->input('perPage', 10));
+        $users = $query->get();
+    
+        return response()->json([
+             'data' => \App\Http\Resources\userResource::collection($users)
+        ]);
+    }
+    
+
 
     /**
      * Store a newly created resource in storage.
@@ -91,46 +152,56 @@ class UserController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function addInstructor(Request $request) {
+        // Ensure that the current user is allowed to add an instructor
         $canAddinstructor = User::query()
             ->has('systemAdmin')
             ->findOrFail(Auth::id());
-
-
+    
+        // Validation rules without a password field
         $validationRules = [
-            'email' => 'required|email|unique:users',
+            'email'      => 'required|email|unique:users',
             'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'password' => 'required|min:4'
+            'middle_name'=> ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
         ];
-
+    
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
-
+    
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
-
+    
             return response()->json([
                 'message' => $message,
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
-
+    
         try {
             DB::beginTransaction();
-                $user = new User();
-                $user->user_id = $canAddinstructor->id;
-                $user->slug = Str::uuid();
-                $user->email = $request->email;
-                $user->first_name = $request->first_name;
-                $user->middle_name = $request->middle_name;
-                $user->password = Hash::make($request->password);
-                $user->role = INSTRUCTOR;
-                $user->save();
-                $user->created_at = Carbon::now();
-
-                $instructor = new Instructor();
-                $instructor->user_id = $user->id;
-                $instructor->save();
-
+    
+            $user = new User();
+            $user->user_id    = $canAddinstructor->id;
+            $user->slug       = Str::uuid();
+            $user->email      = $request->email;
+            $user->first_name = $request->first_name;
+            $user->middle_name = $request->middle_name;
+            
+            // Generate a random password and hash it
+            $randomPassword = Str::random(8); // Adjust length as needed
+            $user->password = Hash::make($randomPassword);
+            
+            // Store the plain text password temporarily for display purposes.
+            // Make sure you have a 'temp_password' column in your 'users' table.
+            $user->temp_password = $randomPassword;
+            
+            // Default role is Instructor
+            $user->role = INSTRUCTOR;
+            $user->save();
+            $user->created_at = Carbon::now();
+    
+            $instructor = new Instructor();
+            $instructor->user_id = $user->id;
+            $instructor->save();
+    
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
@@ -207,11 +278,13 @@ class UserController extends Controller {
      */
     public function destroy($id) {
         $canDeleteUser = User::query()
-            ->has('systemAdmins')
+            ->has('systemAdmin')
             ->findOrFail(Auth::id());
 
         $user = User::findOrFail($id);
-        $user->delete(); 
+        $user->update([
+            'user_banned_at'=> Carbon::now(),
+        ]);
 
         return response()->json([
             'message' =>$this->langService->getLang('user_successfully_deleted')
@@ -321,4 +394,41 @@ class UserController extends Controller {
             'message' => $this->langService->getLang('password_changed')
         ]);
     }
+    
+/**
+ * Bulk delete users.
+ *
+ * @param \Illuminate\Http\Request $request
+ * @return \Illuminate\Http\Response
+ */
+public function bulkDelete(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'ids'   => 'required|array',
+        'ids.*' => 'exists:users,id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Invalid user IDs provided.',
+            'errors'  => $validator->errors()
+        ], 422);
+    }
+
+    $userIds = $request->ids;
+
+    // Update each selected user's 'user_banned_at' field to mark them as "deleted"
+    User::whereIn('id', $userIds)->update([
+        'user_banned_at' => Carbon::now()
+    ]);
+
+    return response()->json([
+        'message' => $this->langService->getLang('user_successfully_deleted')
+    ]);
+}
+
+
+
+
+
 }

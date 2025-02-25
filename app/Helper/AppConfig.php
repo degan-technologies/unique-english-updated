@@ -6,7 +6,7 @@ define('DB_HOST', '127.0.0.1');
 define('DB_PORT', '3306');
 define('DB_DATABASE', 'unique');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', 'qlarapass');
+define('DB_PASSWORD', '1234');
 
 define('MALE', 1);
 define('FEMALE', 2);
@@ -19,6 +19,9 @@ define('SYSTEM_ADMIN', 1);
 define('INSTRUCTOR', 2);
 define('STUDENT', 3);
 define('SECONDARY_ADMIN', 2);
+define('STUDENT_ROLE', 'student');
+define('INSTRUCTOR_ROLE', 'instructor');
+define('SYSTEM_ADMIN_ROLE', 'system_admin');
 
 
 define('AMAHARIC', 'am');

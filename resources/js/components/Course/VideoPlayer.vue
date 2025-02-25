@@ -145,12 +145,20 @@ const toggleFullscreen = () => {
         updateTotalTime();
         studentStore.fetchCourses();
 
-        watchEffect(()=>{
-        if(!courses.value) return;
-        selectedCourse.value = courses.value.find(item => item?.slug == selectedCourseSlug.value);
-        selectedModule.value = selectedCourse?.value.courseModules.find(courseModule => true);
-        selectedLesson.value = selectedModule?.value.courseContents.find(courseContent =>true);
-    })
+        watchEffect(() => {
+    if (!courses.value) return;
+    
+    selectedCourse.value = courses.value.find(item => item?.slug == selectedCourseSlug.value);
+    
+    if (!selectedCourse.value) return; // Ensure selectedCourse is found
+    
+    selectedModule.value = selectedCourse.value.courseModules?.find(courseModule => true);
+    
+    if (!selectedModule.value) return; // Ensure selectedModule is found
+    
+    selectedLesson.value = selectedModule.value.courseContents?.find(courseContent => true);
+});
+
 
     watch(
         ()=> route.query.slug,
@@ -160,6 +168,7 @@ const toggleFullscreen = () => {
         },
     )
     });
+
 </script>
 
 <template>
@@ -357,7 +366,10 @@ const toggleFullscreen = () => {
                     <TextEditor />
                 </div>
                 <div v-if="activeTab === 'reviews'" class="mt-4">
-                    <ReviewList />
+                    <ReviewList  
+                        :feedBacks= "selectedCourse?.feedBacks"
+                        :averageRating= "selectedCourse?.averageRating"
+                        :starDistribution= "selectedCourse?.starDistribution"/>
                 </div>
             </div>
         </div>
@@ -365,6 +377,7 @@ const toggleFullscreen = () => {
         <!-- Course List Section (now on the right side) -->
         <div class="">
             <CourseList 
+                v-if="selectedCourse"
                 :selectedCourse="selectedCourse"
                 @openedLesson="openedLesson"/>
         </div>

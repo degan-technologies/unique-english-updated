@@ -15,7 +15,7 @@ class StudentSeeder extends Seeder {
      */
     public function run(): void {
         $students = [
-            ['first_name' => 'Student', 'email' => 'Student', 'gender' => MALE,'role' => STUDENT],
+            ['first_name' => 'Student', 'email' => 'Student', 'gender' => MALE, 'phone'=>'0938048261', 'role' => STUDENT],
         ];
         $systemAdmin = User::query()
             ->has('systemAdmin')

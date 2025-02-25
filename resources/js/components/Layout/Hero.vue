@@ -41,7 +41,7 @@
                 class="flex justify-center lg:justify-end w-full lg:w-1/2 mt-8 lg:mt-0"
             >
                 <img
-                    src="/images/Learning.PNG"
+                    src="/images/Learning.png"
                     alt="E-learning Illustration"
                     class="rounded-lg shadow-lg max-w-full"
                 />

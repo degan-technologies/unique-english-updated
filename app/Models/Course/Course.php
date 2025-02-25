@@ -2,6 +2,7 @@
 
 namespace App\Models\Course;
 
+use App\Models\Comment\FeedBack;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -18,4 +19,5 @@ class Course extends Model {
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function transactions() { return $this->hasMany(Transaction::class); }
+    public function feedBacks() { return $this->hasMany(FeedBack::class); }
 }

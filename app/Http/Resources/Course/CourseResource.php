@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources\Course;
 
+use App\Http\Resources\Comment\FeedBackResource;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\userResource;
+use App\Models\Comment\FeedBack;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +16,7 @@ class CourseResource extends JsonResource {
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array {
+        $review = FeedBack::reviewRate($this->feedbacks);
         return [
             'id' => $this->id,
             'slug' => $this->slug,
@@ -32,6 +35,11 @@ class CourseResource extends JsonResource {
             : 'no-thumbnail_url.png',
             'courseModules' => CourseModuleResource::collection($this->courseModules),
             'courseContents' => $this->courseModules ? null : CourseContentResource::collection($this->courseContents),
+            'feedBacks' => $this->feedBacks ? FeedBackResource::collection($this->feedBacks) : null,
+
+            'averageRating'    => $review['averageRating'],
+            'starDistribution' => $review['starDistribution'],
+
         ];
     }
 
@@ -50,3 +58,5 @@ class CourseResource extends JsonResource {
         }
     }
 }
+
+

@@ -7,10 +7,12 @@ use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
 use App\Http\Controllers\Course\CourseController;
+use App\Http\Controllers\FeedBackController;
 use App\Http\Controllers\Live\ParticipantController;
 use App\Http\Controllers\Live\LiveSessionController;
 use App\Http\Controllers\Live\LiveResourceController;
 use App\Http\Controllers\Live\VirtualClassEnrollmentController;
+use App\Http\Controllers\Message\SMSController;
 use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\UserController;
 
@@ -26,6 +28,9 @@ Route::middleware('auth:api')
         Route::post('/update-profile', [UserController::class, 'profileUpdate']);
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
         Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::resource('/delete-instructor', UserController::class );
+        Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
     });
 
 Route::middleware('auth:api')
@@ -46,6 +51,28 @@ Route::middleware('auth:api')
     });
 
 Route::middleware('auth:api')
+    ->prefix('feedbacks')
+    ->group(function () {
+        // Standard resource endpoints
+        Route::get('/', [FeedBackController::class, 'index']);
+        Route::post('/', [FeedBackController::class, 'store']);
+        Route::get('{id}', [FeedBackController::class, 'show']);
+        Route::put('{id}', [FeedBackController::class, 'update']);
+        Route::delete('{id}', [FeedBackController::class, 'destroy']);
+
+        // Custom endpoints for additional feedback actions
+        Route::post('{id}/like', [FeedBackController::class, 'like']);
+        Route::post('{id}/dislike', [FeedBackController::class, 'dislike']);
+        Route::post('{id}/report', [FeedBackController::class, 'report']);
+    });
+
+    // SMS endpoints added here
+Route::middleware('auth:api')->group(function () {
+    Route::post('/send-sms', [SMSController::class, 'sendSMS']);
+    Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
+    });
+    
+Route::middleware('auth:api')
     ->prefix('books')
     ->group(function(){
         Route::resource('/books', BookController::class);
@@ -53,3 +80,4 @@ Route::middleware('auth:api')
     });
 
 Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment'])->middleware('auth:api');
+

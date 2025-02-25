@@ -17,6 +17,13 @@ return new class extends Migration
             $table->integer('rate');
             $table->text('comment');
 
+            // New columns for like/dislike and report functionality
+            $table->unsignedInteger('likes')->default(0);
+            $table->unsignedInteger('dislikes')->default(0);
+            $table->unsignedInteger('reports')->default(0);
+            $table->string('report_issue_type')->nullable();
+            $table->text('report_issue_details')->nullable();
+
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
 
             $table->timestamps();
