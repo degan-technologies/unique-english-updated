@@ -19,7 +19,7 @@ class CourseModuleResource extends JsonResource {
             'description' => $this->description,
             'slug' => $this->slug,
             'course_id' => $this->course_id,      
-            'courseContents' => CourseContentResource::collection($this->courseContents),
+            'courseContents' => CourseContentResource::collection($this->courseContents->sortBy('sequence')),
         ];
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class CourseController extends Controller {
 
@@ -30,14 +31,16 @@ class CourseController extends Controller {
      * Display a listing of the resource.
      */
     public function index() {
-        $courses = Course::with('CourseModules')
-            ->get();
+        $courses = Course::paginate(10);
+
+        $pagination = $courses->toArray();
+        unset($pagination['data']);
 
         return response() -> json([
+            'pagination' => $pagination,
             'data' => CourseResource::collection($courses)
         ]);
     }
-
     /**
      * Store a newly created resource in storage.
      */
@@ -137,7 +140,7 @@ class CourseController extends Controller {
                 'message' => $this->langService->getLang('course_not_found'),
             ], 404);
         }
-
+        
         $validationRules = [
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'overview' => 'min:10',
@@ -146,7 +149,7 @@ class CourseController extends Controller {
             'price' => 'numeric',
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
-            'thumbnail_url' => 'image'
+            'thumbnail_url' => 'sometimes|image'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -213,6 +216,31 @@ class CourseController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_deleted'),
+        ]);
+    }
+
+    public function search(Request $request) {
+        $courses = Course::query()
+            ->where('course_name', 'like', "%{$request->searchQuery}%")
+            ->where('user_id', Auth::id())
+            ->paginate($request->rowsPerPageOptions);
+
+        $stats = Course::query()
+            ->where('user_id', Auth::id())
+            ->selectRaw(
+                'COUNT(*) as total, SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END) as newToday',
+                [Carbon::now()->format('Y-m-d')]
+            )
+            ->first();
+
+        $pagination = $courses->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'newToday' => $stats->newToday,
+            'total' => $stats->total,
+            'pagination' => $pagination,
+            'data' => CourseResource::collection($courses)
         ]);
     }
     

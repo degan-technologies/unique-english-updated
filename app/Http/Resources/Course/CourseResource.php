@@ -24,6 +24,7 @@ class CourseResource extends JsonResource {
             'overview' => $this->overview,
             'tag' => $this->tag,
             'skill_level' =>$this->skillLevel($this->skill_level),
+            'skill_level_id' => $this->skill_level,
             'language' => $this->language,
             'price' => $this->price,
             'discount' => $this->discount,
@@ -33,13 +34,7 @@ class CourseResource extends JsonResource {
             'thumbnail_url' => $this->thumbnail_url
             ? Storage::disk('public')->url($this->thumbnail_url)
             : 'no-thumbnail_url.png',
-            'courseModules' => CourseModuleResource::collection($this->courseModules),
-            'courseContents' => $this->courseModules ? null : CourseContentResource::collection($this->courseContents),
-            'feedBacks' => $this->feedBacks ? FeedBackResource::collection($this->feedBacks) : null,
-
-            'averageRating'    => $review['averageRating'],
-            'starDistribution' => $review['starDistribution'],
-
+            'courseModules' => CourseModuleResource::collection($this->courseModules->sortBy('sequence')),
         ];
     }
 

@@ -107,7 +107,7 @@ class User extends Authenticatable {
         }
 
         return $query
-            ->where('user_id', $userId)
+            ->where('id', $userId)
             ->where(function ($query){
                 $query
                     ->orWhere(fn($subQuery) => $subQuery->has('systemAdmin'))

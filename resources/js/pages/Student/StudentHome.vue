@@ -12,12 +12,12 @@
     import VideoPlayer from "@/components/Course/VideoPlayer.vue";
     import Footer from "@/components/Layout/Footer.vue";
     import AboutUs from "@/pages/common/AboutUs.vue";
-    import LiveStreamingVue from "@/components/Course/LiveStreaming.vue";
-    import Book from "@/components/Course/Book.vue";
-    import BookDetails from "@/components/Course/BookDetails.vue";
-    import Pdf from "@/components/Course/Pdf.vue";
-    import Schedule  from "@/components/Course/Schedule.vue";
-    import liveSession   from "@/components/Course/liveSession.vue";
+    import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
+    import Book from "@/components/Book/Book.vue";
+    import BookDetails from "@/components/Book/BookDetails.vue";
+    import Pdf from "@/components/Book/Pdf.vue";
+    import Schedule  from "@/components/Live/Schedule.vue";
+    import liveSession   from "@/components/Live/liveSession.vue";
 
 
     const studentStore = UseStudentStore();

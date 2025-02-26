@@ -38,7 +38,6 @@ class CourseModuleController extends Controller
      * Store a newly created course module in storage.
      */
     public function store(Request $request) {
-        // Ensure user is an admin or instructor
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
@@ -49,15 +48,18 @@ class CourseModuleController extends Controller
             ], 403);
         }
 
-        // Validate request
+        $getSequence = CourseModule::query()
+                    ->where('course_id', $request->course_id)
+                    ->orderBy('sequence', 'desc')
+                    ->first();
+
         $validationRules = [
             'title' => 'required|string|min:3',
-            'sequence' => 'required|numeric',
-            'description' => 'nullable|string|min:10',
+            'description' => 'required|string|min:10',
             'course_id' => 'required|exists:courses,id',
         ];
 
-        $validator = Validator::make($request->all(), $validationRules,$this->langService->getLang('courses'));
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('modules'));
 
         if ($validator->fails()) {
             return response()->json([
@@ -66,11 +68,10 @@ class CourseModuleController extends Controller
             ], 422);
         }
 
-        // Create course module
         $courseModule = $user->courseModules()->create([
             'slug' => Str::uuid(),
             'title' => $request->title,
-            'sequence' => $request->sequence,
+            'sequence' =>$getSequence ? $getSequence->sequence + 1 : 1,
             'description' => $request->description,
             'course_id' => $request->course_id,
             'user_id' => $user->id,
@@ -85,7 +86,7 @@ class CourseModuleController extends Controller
     /**
      * Display the specified course module.
      */
-    public function show(int $id) {
+    public function show($id) {
         $courseModule = CourseModule::with('CourseContents')
             ->where('id', $id)
             ->first();
@@ -104,24 +105,21 @@ class CourseModuleController extends Controller
     /**
      * Update the specified course module in storage.
      */
-    public function update(Request $request, int $id)
-    {
-        // Ensure user is an admin or instructor
+    public function update(Request $request, $id) { // Ensure user is an admin or instructor
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
-    
+
         if (!$user) {
             return response()->json([
                 'message' => 'Unauthorized action.',
             ], 403);
         }
     
-        // Find the course module by ID
         $courseModule = CourseModule::query()
-            ->where('id', $id)
             ->where('user_id', $user->id)
-            ->first();
+            ->findOrFail($id);
+
     
         if (!$courseModule) {
             return response()->json([
@@ -129,15 +127,12 @@ class CourseModuleController extends Controller
             ], 404);
         }
     
-        // Define validation rules
         $validationRules = [
-            'title' => 'nullable|string|min:3',
-            'sequence' => 'nullable|numeric',
-            'description' => 'nullable|string|min:10',
-            'course_id' => 'nullable|exists:courses,id',
+            'title' => 'required|string|min:3',
+            'description' => 'required|string|min:10',
         ];
     
-        $validator = Validator::make($request->all(), $validationRules);
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('modules'));
     
         if ($validator->fails()) {
             return response()->json([
@@ -146,8 +141,10 @@ class CourseModuleController extends Controller
             ], 422);
         }
     
-        // Update the course module
-        $courseModule->update($validator->validated());
+        $courseModule->update([
+            'title' => $request->title,
+            'description' => $request->description,
+        ]);
     
         return response()->json([
             'message' => 'Course Module successfully updated.',
@@ -158,7 +155,7 @@ class CourseModuleController extends Controller
     /**
      * Remove the specified course module from storage.
      */
-    public function destroy(int $id)
+    public function destroy($id)
     {
         // Ensure user is an admin or instructor
         $user = User::query()
