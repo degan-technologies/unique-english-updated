@@ -294,6 +294,17 @@ class ErrorLangEnglish extends Lang {
                 
             ],
 
+            'modules' => [
+                'title.required' => 'The title is required.',
+                'title.string' => 'The title must be an string.',
+                'title.min' => 'The title must be greater than three.',
+                'description.required' => 'The description is required.',
+                'description.string' => 'The description must be an string.',
+                'description.min' => 'The description must be greater than ten.',
+                'course_id.required' => 'The course must be is required to add module.',
+                'course_id.exists' => 'The course does not exist.',
+            ]
+
             
         ];
         

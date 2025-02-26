@@ -104,7 +104,6 @@ class CourseContentController extends Controller {
             'hour' => $request->hour,
             'status' => $request->status,
             'sequence' => $sequence,
-            'note' => $request->note,
             'isDownloadable' => false,
         ]);
     
@@ -141,7 +140,6 @@ class CourseContentController extends Controller {
             'thumbnail_url' => 'image', // Same here.
             'hour' => 'date_format:H:i',
             'status' => [Rule::in(COURSE_STATUS)],
-            'note' => 'min:10',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));

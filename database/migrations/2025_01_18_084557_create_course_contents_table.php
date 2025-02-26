@@ -24,7 +24,6 @@ return new class extends Migration
 
             $table->time('hour')->nullable();
             $table->integer('status')->nullable();
-            $table->text('note')->nullable();
             $table->boolean('isDownloadable')->default(false);
 
             $table->unsignedTinyInteger('download_status')->storedAs("IF(`isDownloadable` IS NULL, 1, NULL)");

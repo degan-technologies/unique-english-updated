@@ -1,48 +1,52 @@
 <script setup>
     import { ref } from 'vue'
     import { storeToRefs } from 'pinia'
+    import { useRoute, useRouter } from "vue-router";
+
     import { useSidebarStore } from '@/store/useSidebarStore'
 
+    const router = useRouter();
     const emit = defineEmits(['selectContent'])
-
+    
     const sidebarStore = useSidebarStore()
-    const { sideBarOpen, sidebarCollapsed } = storeToRefs(sidebarStore)
-    const toggleSidebar = sidebarStore.toggleSidebar
+    const { sideBarOpen, sidebarCollapsed, selectedContent, profile,
+            dashboard, users, courses, payments, liveSssions,
+            messaging, } = storeToRefs(sidebarStore);
 
     const mainItems = [
         {
             label: 'Dashboard',
-            route: 'dashboard',
+            route: dashboard.value,
             description: 'Overview of revenue, users, courses, and system health.',
             icon: 'home'
         },
         {
             label: 'Users Management',
-            route: 'users',
+            route: users.value,
             description: 'Manage students, instructors, and admins.',
             icon: 'user-group'
         },
         {
             label: 'Course Management',
-            route: 'courses',
+            route: courses.value,
             description: 'Manage courses and books.',
             icon: 'book-open'
         },
         {
             label: 'Payments & Revenue',
-            route: 'payments',
+            route: payments.value,
             description: 'Transactions, earnings, payouts.',
             icon: 'dollar-sign'
         },
         {
             label: 'Live Sessions',
-            route: 'live-sessions',
+            route: liveSssions.value,
             description: 'Track, join, schedule live classes.',
             icon: 'video'
         },
         {
             label: 'Messaging & Notifications',
-            route: 'messaging',
+            route: messaging.value,
             description: 'Send & manage messages.',
             icon: 'envelope'
         },
@@ -60,39 +64,15 @@
         }
     ]
 
-    const courseItems = [
-        {
-            label: 'Add Course',
-            route: 'addcourse',
-            description: 'Approve, edit, delete courses.',
-            icon: 'square-plus'
-        },
-        {
-            label: 'View Course',
-            route: 'viewcourse',
-            description: 'Manage course details.',
-            icon: 'book-open'
-        }
-    ]
+    function selectContent(changeTab) {
+        router.push({
+            name: 'instructor',
+            query: {
+              currentTab:changeTab,
+            }
+        });
 
-    const miscItems = [
-        {
-            label: 'Notices',
-            route: 'notice',
-            description: 'Send and view notices.',
-            icon: 'bell'
-        },
-        {
-            label: 'Controls',
-            route: 'controls',
-            description: 'Manage system controls.',
-            icon: 'terminal'
-        }
-    ]
-
-    function selectContent(route) {
-        console.log('Selected route:', route)
-        emit('selectContent', route)
+        selectedContent.value = changeTab;
     }
 </script>
 
@@ -132,7 +112,7 @@
         
         <!-- Mobile Close Icon (only visible on mobile) -->
         <button 
-          @click="toggleSidebar()" 
+          @click="sidebarStore.toggleSidebar()" 
           class="text-lime-500 hover:text-lime-600 md:hidden transition-colors"
           title="Close Sidebar"
         >
@@ -149,48 +129,8 @@
             <li
               v-for="(item, index) in mainItems"
               :key="index"
-              @click="selectContent(item.route)"
+              @click="selectContent(item?.route)"
               class="flex items-center  space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-              :title="item.description" >
-              <i 
-                :class="{
-                  ['fa-' + item.icon]: true
-                }"
-                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-xl"></i>
-              <span v-if="!sidebarCollapsed" class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- COURSES Section -->
-        <div class="px-4 py-2">
-          <p v-if="!sidebarCollapsed" class="text-sm font-semibold mb-2 text-lime-600 animate-fadeIn">COURSES</p>
-          <ul>
-            <li
-              v-for="(item, index) in courseItems"
-              :key="index"
-              @click="selectContent(item.route)"
-              class="flex items-center gap-2 space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-              :title="item.description" >
-              <i 
-                :class="{
-                  ['fa-' + item.icon]: true
-                }"
-                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-xl"></i>
-              <span v-if="!sidebarCollapsed" class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- MISC Section -->
-        <div class="px-4 py-2">
-          <p v-if="!sidebarCollapsed" class="text-sm font-semibold mb-2 text-lime-600 animate-fadeIn">MISC</p>
-          <ul>
-            <li
-              v-for="(item, index) in miscItems"
-              :key="index"
-              @click="selectContent(item.route)"
-              class="flex items-center gap-2 space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
               :title="item.description" >
               <i 
                 :class="{
@@ -219,8 +159,6 @@
 
 <!-- Import Material Icons font and add custom animations -->
 <style>
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-
 @keyframes fadeIn {
   from {
     opacity: 0;

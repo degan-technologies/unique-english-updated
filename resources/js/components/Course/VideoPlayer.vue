@@ -5,10 +5,10 @@
     import { UseStudentStore } from "@/store/UseStudentStore";
     import { useRoute } from "vue-router";
 
-    import QA from "./QA.vue";
-    import TextEditor from "../Layout/TextEditor.vue";
-    import CourseList from "./CourseList.vue";
-    import ReviewList from "./ReviewList.vue";
+    import QA from "@/components/Exam/QA.vue";
+    import TextEditor from "@/components/Layout/TextEditor.vue";
+    import CourseList from "@/components/Course/CourseList.vue";
+    import ReviewList from "@/components/Course/ReviewList.vue";
 
     const studentStore = UseStudentStore();
     const { courses, selectedCourseSlug} = storeToRefs(studentStore);

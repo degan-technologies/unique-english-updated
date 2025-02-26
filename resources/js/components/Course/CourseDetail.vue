@@ -199,9 +199,7 @@ watch(
             </div>
 
             <!-- Right Card: Course Details -->
-            <div
-                class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center"
-            >
+            <div class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center" >
                 <button
                     @click="changeTabTemporaryFunction(selectedCourse.slug)"
                     class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full" >

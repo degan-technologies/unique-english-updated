@@ -4,7 +4,15 @@ import { defineStore } from "pinia";
 export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
     const sidebarCollapsed = ref(false);
-    const selectedContent = ref('dashboard');
+
+    const profile = ref('profile')
+    const dashboard = ref('dashboard')
+    const users = ref('users')
+    const courses = ref('courses')
+    const payments = ref('payments')
+    const liveSssions = ref('live-sessions')
+    const messaging = ref('messaging')
+    const selectedContent = ref(dashboard.value);
 
     function loadSidebarState() {
         sideBarOpen.value =
@@ -49,5 +57,12 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         toggleCollapse,
 
         selectedContent,
+        profile,
+        dashboard,
+        users,
+        courses,
+        payments,
+        liveSssions,
+        messaging,
     };
 });

@@ -46,6 +46,9 @@ Route::middleware('auth:api')
     ->prefix('courses')
     ->group(function () {
         Route::resource('/course', CourseController::class);
+        Route::post('/update/{id}', [CourseController::class, 'update']);
+        Route::post('/update-content/{id}', [CourseContentController::class, 'update']);
+        Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
     });
