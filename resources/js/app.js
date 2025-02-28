@@ -3,14 +3,13 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 
-import "vue3-toastify/dist/index.css";
-import Vue3Toasity from "vue3-toastify";
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 
-import "primeicons/primeicons.css"; 
-import "quill/dist/quill.snow.css"; 
+import "primeicons/primeicons.css";
+import "quill/dist/quill.snow.css";
 import "primevue/resources/primevue.min.css";
-import "primevue/resources/themes/saga-blue/theme.css"; 
-
+import "primevue/resources/themes/saga-blue/theme.css";
 
 // PrimeVue Styles
 import "primevue/resources/themes/saga-blue/theme.css"; // Theme of your choice
@@ -28,12 +27,13 @@ import appRouter from "@/routes/AppRouter.js";
 import App from "@/app.vue";
 const app = createApp(App);
 
-
 app.use(createPinia());
 app.use(appRouter);
 app.use(PrimeVue);
-app.use(Vue3Toasity, {
-    autoClose: 3000,
+app.use(Toast, {
+    // Optional: Add any plugin options here
+    timeout: 3000,
+    position: "top-right",
 });
 app.mount("#app");
 app.component("theme-switcher", ThemeSwitcher);

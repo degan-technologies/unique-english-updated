@@ -1,104 +1,145 @@
 <template>
-    <div class="max-w-4xl mx-auto p-6 md:p-8 bg-white rounded-lg shadow-md">
-        <h2
-            class="text-2xl md:text-3xl font-bold text-center text-lime-700 mb-6"
-        >
-            Add Subscription Plan
-        </h2>
-
+    <div
+        class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6"
+    >
         <!-- Add Plan Form -->
-        <form @submit.prevent="addPlan" class="grid grid-cols-1 gap-4">
-            <!-- Plan Name -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700"
-                    >Plan Name</label
-                >
-                <input
-                    v-model="planForm.name"
-                    type="text"
-                    placeholder="Enter plan name"
-                    class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                />
-                <p v-if="errors.name" class="text-red-600 text-sm mt-1">
-                    {{ errors.name }}
-                </p>
-            </div>
-
-            <!-- Price -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700"
-                    >Price (Birr)</label
-                >
-                <input
-                    v-model="planForm.price"
-                    type="number"
-                    placeholder="Enter price"
-                    class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                />
-                <p v-if="errors.price" class="text-red-600 text-sm mt-1">
-                    {{ errors.price }}
-                </p>
-            </div>
-
-            <!-- Duration -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700"
-                    >Duration</label
-                >
-                <select
-                    v-model="planForm.duration"
-                    class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                >
-                    <option value="">Select duration</option>
-                    <option value="1 Month">1 Month</option>
-                    <option value="3 Months">3 Months</option>
-                    <option value="6 Months">6 Months</option>
-                </select>
-                <p v-if="errors.duration" class="text-red-600 text-sm mt-1">
-                    {{ errors.duration }}
-                </p>
-            </div>
-
-            <!-- Add Button -->
-            <button
-                type="submit"
-                class="w-full bg-lime-700 hover:bg-lime-800 text-white font-medium px-4 py-3 rounded-lg shadow-lg transition-all duration-300"
+        <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-lg">
+            <h1
+                class="text-3xl font-extrabold text-lime-700 mb-6 text-center flex items-center justify-center gap-2"
             >
-                Add Plan
-            </button>
-        </form>
+                Add New Plan
+            </h1>
+
+            <form @submit.prevent="validateAndSubmit" class="space-y-4">
+                <!-- Name Field -->
+                <div>
+                    <label class="block text-gray-700 font-medium">Name</label>
+                    <input
+                        v-model="newPlan.name"
+                        type="text"
+                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
+                        placeholder="Enter plan name"
+                    />
+                    <p v-if="errors.name" class="text-red-600 text-sm mt-1">
+                        {{ errors.name }}
+                    </p>
+                </div>
+
+                <!-- Price Field -->
+                <div>
+                    <label class="block text-gray-700 font-medium">
+                        Price (in Birr)
+                    </label>
+                    <input
+                        v-model="newPlan.price"
+                        type="number"
+                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
+                        placeholder="Enter price"
+                    />
+                    <p v-if="errors.price" class="text-red-600 text-sm mt-1">
+                        {{ errors.price }}
+                    </p>
+                </div>
+
+                <!-- Duration Field -->
+                <div>
+                    <label class="block text-gray-700 font-medium">
+                        Duration (in months)
+                    </label>
+                    <input
+                        v-model="newPlan.duration"
+                        type="number"
+                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
+                        placeholder="Enter duration"
+                    />
+                    <p v-if="errors.duration" class="text-red-600 text-sm mt-1">
+                        {{ errors.duration }}
+                    </p>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="flex justify-center">
+                    <button
+                        type="submit"
+                        class="bg-lime-700 text-white px-6 py-2 rounded-lg hover:bg-lime-600 flex items-center justify-center gap-2"
+                    >
+                        Add Plan
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { ref } from "vue";
+import axios from "axios";
+import { useToast } from "vue-toastification"; // Import Vue Toastification
 
-const planForm = ref({
+const toast = useToast(); // Initialize toast
+
+// Form Data
+const newPlan = ref({
     name: "",
     price: "",
     duration: "",
 });
 
+// Validation Errors
 const errors = ref({});
 
-const addPlan = () => {
+// Function to validate and submit form
+const validateAndSubmit = async () => {
+    // Reset errors
     errors.value = {};
 
-    if (!planForm.value.name) {
+    // Validation Rules
+    if (!newPlan.value.name.trim()) {
         errors.value.name = "Plan name is required.";
     }
-    if (!planForm.value.price) {
+    if (!newPlan.value.price) {
         errors.value.price = "Price is required.";
-    } else if (planForm.value.price <= 0) {
-        errors.value.price = "Price must be greater than zero.";
+    } else if (newPlan.value.price <= 0) {
+        errors.value.price = "Price must be a positive number.";
     }
-    if (!planForm.value.duration) {
+    if (!newPlan.value.duration) {
         errors.value.duration = "Duration is required.";
+    } else if (
+        newPlan.value.duration <= 0 ||
+        !Number.isInteger(Number(newPlan.value.duration))
+    ) {
+        errors.value.duration = "Duration must be a positive whole number.";
     }
 
-    if (Object.keys(errors.value).length === 0) {
-        alert("Plan added successfully!");
-        planForm.value = { name: "", price: "", duration: "" };
+    // If any errors exist, display error toast and stop submission
+    if (Object.keys(errors.value).length > 0) {
+        toast.error("Please fix validation errors!", { position: "top-right" });
+        return;
+    }
+
+    // Submit the form if no errors
+    try {
+        await axios.post("/api/plans", newPlan.value);
+        toast.success(" Plan added successfully!", { position: "top-right" });
+        // Reset form data
+        newPlan.value = { name: "", price: "", duration: "" };
+    } catch (err) {
+        console.error("Error adding plan:", err);
+        toast.error("Failed to add plan. Please try again.", {
+            position: "top-right",
+        });
     }
 };
 </script>
+
+<style scoped>
+/* Smooth transition effects */
+input {
+    transition: all 0.3s ease-in-out;
+}
+
+input:focus {
+    border-color: #84cc16;
+    box-shadow: 0 0 10px rgba(132, 204, 22, 0.2);
+}
+</style>

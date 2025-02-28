@@ -14,17 +14,17 @@ return new class extends Migration {
             $table->id();
             $table->string('slug')->unique();
 
-            $table->string('title')->nullable();
+            $table->string('title');
             $table->longText('instraction')->nullable();
-            $table->string('question_type');
+            $table->string('question_type')->default(CHOICE);
 
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('course_content_id')->nullable()->constrained('course_contents')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete(); 
+            $table->foreignId('module_id')->nullable()->constrained('course_modules')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('course_id')->nullable()->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
         });
     }

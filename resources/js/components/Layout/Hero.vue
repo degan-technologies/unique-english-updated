@@ -22,13 +22,13 @@
                     class="mt-6 flex justify-center lg:justify-start space-x-4"
                 >
                     <button
-                        @click="getStarted"
+                        @click="setTab(0)"
                         class="bg-lime-700 text-white px-6 py-3 rounded-md hover:bg-lime-800 transition"
                     >
-                        Get Started for Free
+                        Test Your Level
                     </button>
                     <button
-                        @click="exploreCourses"
+                        @click="setTab(1)"
                         class="bg-gray-800 text-white px-6 py-3 rounded-md hover:bg-gray-900 transition"
                     >
                         Explore Courses
@@ -48,28 +48,27 @@
             </div>
         </div>
     </section>
+
+    <!-- Tabs Content -->
+    <div v-if="activeTab === 0">
+        <!-- Show the Test component when tab 0 is active -->
+        <Test />
+    </div>
+    <div v-if="activeTab === 1"></div>
 </template>
 
-<script>
-import { defineComponent } from "vue";
+<script setup>
+import { ref } from "vue";
+import Test from "../Course/Test.vue";
+// Ensure the path is correct
 
-export default defineComponent({
-    name: "HeroSection",
-    setup() {
-        const getStarted = () => {
-            alert("Redirecting to sign-up page...");
-        };
+// Declare reactive state using Composition API
+const activeTab = ref(null); // Default to the first tab
 
-        const exploreCourses = () => {
-            alert("Redirecting to courses page...");
-        };
-
-        return {
-            getStarted,
-            exploreCourses,
-        };
-    },
-});
+// Method to change tabs
+const setTab = (tabIndex) => {
+    activeTab.value = tabIndex;
+};
 </script>
 
 <style scoped>

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Live\LiveSession;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 
 class LiveSessionSeeder extends Seeder
 {
@@ -17,7 +18,8 @@ class LiveSessionSeeder extends Seeder
     public function run()
     {
         $instructor = User::query()
-            ->whereSystemAdminOrInstructor()
+            ->has('systemAdmin')
+            ->orWhere(fn ($query) => $query->has('instructor') )
             ->first(); 
 
         if ($instructor) {
@@ -63,7 +65,7 @@ class LiveSessionSeeder extends Seeder
                 LiveSession::create($session);
             }
         } else {
-            \Log::error('No instructor found to assign to the sessions.');
+            Log::error('No instructor found to assign to the sessions.');
         }
     }
 }
