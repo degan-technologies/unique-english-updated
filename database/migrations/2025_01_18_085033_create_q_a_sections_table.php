@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('q_a_section_id')->constrained('q_a_sections')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('q_a_section_id')->nullable()->constrained('q_a_sections')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

@@ -15,10 +15,10 @@ use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
 
-use App\Models\Quize\Quize;
-use App\Models\Quize\Result;
-use App\Models\Quize\QASection;
-use App\Models\Quize\QMetaData;
+use App\Models\Quiz\Quiz;
+use App\Models\Quiz\Result;
+use App\Models\Quiz\QASection;
+use App\Models\Quiz\QMetaData;
 
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Builder;
@@ -96,7 +96,7 @@ class User extends Authenticatable {
     public function quizzes() { return $this->hasMany(Quiz::class);}
     public function results() { return $this->hasMany(Result::class);}
     public function qaSections() { return $this->hasMany(QASection::class); }
-    public function quizMetaData() { return $this->hasMany(QMetaData::class); }
+    public function qMetaDatas() { return $this->hasMany(QMetaData::class); }
     
     public function books() { return $this->hasMany(Book::class); } 
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }

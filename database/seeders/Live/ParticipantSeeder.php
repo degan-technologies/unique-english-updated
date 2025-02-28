@@ -17,7 +17,11 @@ class ParticipantSeeder extends Seeder
      */
     public function run()
     {
-        $user = User::whereSystemAdminOrInstructor()->first();
+        $user = User::query()
+            ->has('systemAdmin')
+            ->orWhere(fn ($query) => $query->has('instructor') )
+            ->first();
+
         $liveSession = LiveSession::where('user_id', $user->id)->latest()->first();
 
         if (!$liveSession) {

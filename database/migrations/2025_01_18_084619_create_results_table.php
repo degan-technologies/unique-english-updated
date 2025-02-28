@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->softDeletes();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('quize_id')->constrained('quizes')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('q_meta_data_id')->nullable()->constrained('q_meta_data')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

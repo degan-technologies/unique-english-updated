@@ -17,11 +17,11 @@ use Database\Seeders\Live\LiveSessionSeeder;
 use Database\Seeders\Live\ParticipantSeeder;
 use Database\Seeders\Live\LiveResourceSeeder;
 use Database\Seeders\Live\VirtualClassEnrollmentSeeder;
-use Database\Seeders\Message\MessageSeeder;
-use Database\Seeders\Quize\QuizSeeder;
-use Database\Seeders\Quize\ResultSeeder;
-use Database\Seeders\Quize\QMetaDataSeeder;
-use Database\Seeders\Quize\QASectionSeeder;
+
+use Database\Seeders\Quiz\QuizSeeder;
+use Database\Seeders\Quiz\ResultSeeder;
+use Database\Seeders\Quiz\QMetaDataSeeder;
+use Database\Seeders\Quiz\QASectionSeeder;
 
 
 class DatabaseSeeder extends Seeder {
@@ -48,12 +48,13 @@ class DatabaseSeeder extends Seeder {
             FeedBackSeeder::class,
             VirtualClassEnrollmentSeeder::class,
 
-            QuizSeeder::class,
             QMetaDataSeeder::class,
-            QASectionSeeder::class,
+            QuizSeeder::class,
             ResultSeeder::class,
+            TestSeeder::class,
+            ScheduleSeeder::class,
 
-            MessageSeeder::class,
+            QASectionSeeder::class,
         ]);
     }
 }

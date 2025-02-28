@@ -13,6 +13,16 @@ class ErrorLangEnglish extends Lang {
 
     public static function lang() {
         return [
+            'plan_created' => 'Plan created successfully',
+    'plan_updated' => 'Plan updated successfully',
+    'plan_deleted' => 'Plan deleted successfully',
+    'plan_not_found' => 'Plan not found',
+          'test_created_successfully' => 'Test created successfully.',
+    'test_updated_successfully' => 'Test updated successfully.',
+    'test_deleted_successfully' => 'Test deleted successfully.',
+    'test_not_found' => 'Test not found.',
+            'validation_failed' => 'Validation failed. Please check your input.',
+                'schedule_exists' => 'This time slot already exists for the selected day.',
             'email_required' => 'Email is required',
             'invalid_email' => 'Invalid email provided',
 
@@ -101,7 +111,10 @@ class ErrorLangEnglish extends Lang {
             'qa_section_updated_successfully'=>'qa_section updated succesfully',
             'qa_section_deleted_successfully'=>'qa_section deleted succesfully',
     
-
+                'schedule_not_found' => 'Schedule not found.',
+                'schedule_created' => 'Schedule added successfully.',
+                'schedule_updated' => 'Schedule updated successfully.',
+                'schedule_deleted' => 'Schedule deleted successfully.',
 
 
             'registration' => [
@@ -191,15 +204,17 @@ class ErrorLangEnglish extends Lang {
                 'end_date_after_enrolled' => 'End date must be after the enrolled date',
             ],
 
-            'Quize' => [
-                'answer_array' => 'The answer must be an array.',
-                'choice_array' => 'The choice must be an array.',
-                'answer_required' => 'The answer field is required.',
-                'question_string' => 'The question must be a string.',
-                'question_required' => 'The question field is required.',
-                'question_type_in' => 'The selected question type is invalid.',
-                'q_meta_data_id_exists' => 'The selected metadata is invalid.',
-                'question_type_required' => 'The question type field is required.',
+            'quiz' => [
+                'choice.array' => 'The choice must be an array.',
+                'choice.required' => 'The choice field is required.',
+                'answer.required' => 'The answer field is required.',
+                'ansewer.string' => 'The answer must be a string.',
+                'question.string' => 'The question must be a string.',
+                'question.required' => 'The question field is required.',
+                'question_type.in' => 'The selected question type is invalid.',
+                'question_type.required' => 'The question type field is required.',
+                 'hint.string'=> 'The hint must be a string',
+                 'hint.min' => 'The hint must be at least 10 characters.',
             ],
 
             'Result' => [
@@ -214,11 +229,11 @@ class ErrorLangEnglish extends Lang {
                 ],
 
             'QMetaData' => [
-                'title_max' => 'The title may not be greater than 255 characters.',
-                'instraction_string' => 'The instruction must be a string.',
-                'question_type_required' => 'The question type field is required.',
-                'question_type_string' => 'The question type must be a string.',
-                'question_type_in' => 'The selected question type is invalid.',
+                'title.required' => 'Title is required',
+                'title.string' => 'The title must be a string.', 
+                'title.max' => 'The title may not be greater than 255 characters.',
+                'instraction.string' => 'The instruction must be a string.',
+                'instraction.min' => 'The instraction may not be less than 10 characters.', 
             ],
 
             'transactions' => [
@@ -285,6 +300,9 @@ class ErrorLangEnglish extends Lang {
                 'issue_type.required' => 'The issue type is required.',
                 'issue_details.required' => 'The issue details is required minimum 10 characters',
             ],
+       
+              
+              
 
             'messages' => [
                 'user_id.required' => 'The user ID is required.',

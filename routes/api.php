@@ -9,12 +9,21 @@ use App\Http\Controllers\Course\CourseModuleController;
 use App\Http\Controllers\Course\CourseController;
 use App\Http\Controllers\FeedBackController;
 use App\Http\Controllers\Live\ParticipantController;
+use App\Http\Controllers\Quiz\QuizController;
+use App\Http\Controllers\Quiz\QMetaDataController;
+use App\Http\Controllers\Quiz\ResultController;
+use App\Http\Controllers\Quiz\QASectionController;
 use App\Http\Controllers\Live\LiveSessionController;
 use App\Http\Controllers\Live\LiveResourceController;
 use App\Http\Controllers\Live\VirtualClassEnrollmentController;
 use App\Http\Controllers\Message\SMSController;
 use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\Plan\PlanController;
+use App\Http\Controllers\Schedule\ScheduleController;
+use App\Http\Controllers\Test\TestController;
+
+
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -40,6 +49,17 @@ Route::middleware('auth:api')
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
         Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
+       
+        
+        
+    Route::resource('quize',QuizController::class);
+    Route::resource('schedules', ScheduleController::class);
+    Route::resource('QMetaData', QMetaDataController::class);  
+    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+    Route::resource('tests', TestController::class);
+    Route::resource('Results', ResultController::class);
+    Route::resource('plans', PlanController::class);
+    Route::resource('QASection', QASectionController::class);
     });
 
 Route::middleware('auth:api')

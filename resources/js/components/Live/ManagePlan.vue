@@ -1,184 +1,258 @@
 <template>
-    <div class="max-w-5xl mx-auto p-6 md:p-8 bg-white rounded-lg shadow-md">
-        <h2
-            class="text-2xl md:text-3xl font-bold text-center text-lime-700 mb-6"
-        >
-            Manage Subscription Plans
-        </h2>
+    <div
+        class="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6"
+    >
+        <!-- Plan List Container -->
+        <div class="bg-white shadow-lg rounded-lg p-8 w-full max-w-4xl">
+            <h1
+                class="text-3xl font-extrabold text-lime-700 mb-6 text-center flex items-center gap-2 justify-center"
+            >
+                Manage Plans
+            </h1>
 
-        <!-- Plans Table -->
-        <div v-if="plans.length" class="overflow-x-auto">
-            <table class="w-full border-collapse border border-gray-300">
-                <thead>
-                    <tr class="bg-lime-700 text-white">
-                        <th class="p-3 text-left">Plan Name</th>
-                        <th class="p-3 text-left">Price (Birr)</th>
-                        <th class="p-3 text-left">Duration</th>
-                        <th class="p-3 text-left">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="plan in plans" :key="plan.id" class="border-b">
-                        <td class="p-3">{{ plan.name }}</td>
-                        <td class="p-3">{{ plan.price }}</td>
-                        <td class="p-3">{{ plan.duration }}</td>
-                        <td class="p-3 space-x-2">
-                            <button
-                                @click="editPlan(plan)"
-                                class="text-lime-800 hover:text-lime-600"
-                            >
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button
-                                @click="deletePlan(plan.id)"
-                                class="text-red-800 hover:text-red-600"
-                            >
-                                <i class="fas fa-trash-alt"></i> Delete
-                            </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <!-- Loading Spinner -->
+            <Spinner v-if="loading" />
+
+            <!-- Plans Table -->
+            <div v-else>
+                <table class="min-w-full table-auto border-collapse border">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="px-4 py-3 text-left">Name</th>
+                            <th class="px-4 py-3 text-left">Price</th>
+                            <th class="px-4 py-3 text-left">Duration</th>
+                            <th class="px-4 py-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr
+                            v-for="plan in plans"
+                            :key="plan.id"
+                            class="border-b"
+                        >
+                            <td class="px-4 py-3">{{ plan.name }}</td>
+                            <td class="px-4 py-3">{{ plan.price }} Birr</td>
+                            <td class="px-4 py-3">
+                                {{ plan.duration }}
+                            </td>
+                            <td class="px-4 py-3 flex justify-center gap-3">
+                                <button
+                                    @click="editPlan(plan)"
+                                    class="text-lime-700 hover:text-lime-600"
+                                >
+                                    <i class="fas fa-edit text-lg"></i>
+                                </button>
+                                <button
+                                    @click="confirmDeletePlan(plan.id)"
+                                    class="text-red-600 hover:text-red-500"
+                                >
+                                    <i class="fas fa-trash-alt text-lg"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-
-        <p v-else class="text-center text-gray-600">No plans available.</p>
 
         <!-- Edit Plan Modal -->
         <div
-            v-if="isEditing"
-            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4"
+            v-if="showEditModal"
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center"
         >
-            <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-                <h3
-                    class="text-xl font-semibold text-center text-lime-700 mb-4"
+            <div class="bg-white p-6 rounded-lg shadow-lg w-96">
+                <h2
+                    class="text-xl font-semibold text-lime-700 mb-4 flex items-center gap-2"
                 >
-                    Edit Plan
-                </h3>
+                    <i class="fas fa-pen"></i> Edit Plan
+                </h2>
 
-                <form @submit.prevent="updatePlan">
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700"
-                            >Plan Name</label
+                        <label class="block text-gray-700 font-medium"
+                            >Name</label
                         >
                         <input
-                            v-model="editForm.name"
+                            v-model="editPlanData.name"
                             type="text"
-                            class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
+                            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
                         />
-                        <p v-if="errors.name" class="text-red-600 text-sm mt-1">
-                            {{ errors.name }}
-                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700"
-                            >Price (Birr)</label
+                        <label class="block text-gray-700 font-medium"
+                            >Price (in Birr)</label
                         >
                         <input
-                            v-model="editForm.price"
+                            v-model="editPlanData.price"
                             type="number"
-                            class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
+                            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
                         />
-                        <p
-                            v-if="errors.price"
-                            class="text-red-600 text-sm mt-1"
-                        >
-                            {{ errors.price }}
-                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700"
-                            >Duration</label
+                        <label class="block text-gray-700 font-medium"
+                            >Duration (in months)</label
                         >
-                        <select
-                            v-model="editForm.duration"
-                            class="w-full mt-2 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                        >
-                            <option value="1 Month">1 Month</option>
-                            <option value="3 Months">3 Months</option>
-                            <option value="6 Months">6 Months</option>
-                        </select>
-                        <p
-                            v-if="errors.duration"
-                            class="text-red-600 text-sm mt-1"
-                        >
-                            {{ errors.duration }}
-                        </p>
+                        <input
+                            v-model="editPlanData.duration"
+                            type="number"
+                            class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-lime-500"
+                        />
                     </div>
 
                     <div class="flex justify-between mt-4">
                         <button
-                            type="button"
-                            @click="isEditing = false"
-                            class="px-4 py-2 bg-gray-400 text-white rounded-lg"
+                            @click="updatePlan"
+                            class="bg-lime-700 text-white px-4 py-2 rounded-lg hover:bg-lime-600 flex items-center gap-2"
+                        >
+                            <i class="fas fa-save"></i> Update
+                        </button>
+                        <button
+                            @click="showEditModal = false"
+                            class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500"
                         >
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            class="px-4 py-2 bg-lime-700 hover:bg-lime-800 text-white rounded-lg"
-                        >
-                            Update Plan
-                        </button>
                     </div>
-                </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Overlay -->
+        <div
+            v-if="showDeleteConfirmation"
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center"
+        >
+            <div class="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+                <h2
+                    class="text-xl font-semibold text-red-600 mb-4 flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
+                </h2>
+                <p class="text-gray-700 mb-6">
+                    Are you sure you want to delete this plan?
+                </p>
+
+                <div class="flex justify-between">
+                    <button
+                        @click="deletePlan(deletingPlanId)"
+                        class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-500 flex items-center gap-2"
+                    >
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    <button
+                        @click="showDeleteConfirmation = false"
+                        class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import axios from "axios";
+import Spinner from "../Layout/Spinner.vue";
+import { useToast } from "vue-toastification"; // Import Vue Toastification
 
-// Sample data (Replace with API calls in real-world scenarios)
-const plans = ref([
-    { id: 1, name: "Monthly", price: 12000, duration: "1 Month" },
-    { id: 2, name: "3 Months", price: 30000, duration: "3 Months" },
-    { id: 3, name: "6 Months", price: 56000, duration: "6 Months" },
-]);
+const toast = useToast(); // Initialize toast
 
-const isEditing = ref(false);
-const editForm = ref({ id: null, name: "", price: "", duration: "" });
-const errors = ref({});
+const plans = ref([]);
+const loading = ref(true);
+const error = ref(null);
+const showEditModal = ref(false);
+const showDeleteConfirmation = ref(false);
+const editPlanData = ref({
+    id: null,
+    name: "",
+    price: null,
+    duration: null,
+});
+const deletingPlanId = ref(null);
 
-// Edit Plan
+// Fetch all plans from API
+const fetchPlans = async () => {
+    loading.value = true;
+    try {
+        const response = await axios.get("/api/plans");
+        plans.value = response.data.data;
+    } catch (err) {
+        error.value = "Failed to fetch plans.";
+        console.error("Error fetching plans:", err);
+        toast.error("Failed to fetch plans.", { position: "top-right" });
+    } finally {
+        loading.value = false;
+    }
+};
+
+// Edit plan data
 const editPlan = (plan) => {
-    isEditing.value = true;
-    editForm.value = { ...plan };
+    editPlanData.value = { ...plan };
+    showEditModal.value = true;
 };
 
-// Update Plan with Validation
-const updatePlan = () => {
-    errors.value = {};
+// Update plan
+const updatePlan = async () => {
+    // Ensure duration is an integer
+    editPlanData.value.duration = parseInt(editPlanData.value.duration);
 
-    if (!editForm.value.name) {
-        errors.value.name = "Plan name is required.";
-    }
-    if (!editForm.value.price || editForm.value.price <= 0) {
-        errors.value.price = "Price must be greater than zero.";
-    }
-    if (!editForm.value.duration) {
-        errors.value.duration = "Duration is required.";
+    if (isNaN(editPlanData.value.duration)) {
+        toast.error("Duration must be a valid number.", {
+            position: "top-right",
+        });
+        return;
     }
 
-    if (Object.keys(errors.value).length === 0) {
-        const index = plans.value.findIndex((p) => p.id === editForm.value.id);
-        if (index !== -1) {
-            plans.value[index] = { ...editForm.value };
-        }
-        isEditing.value = false;
+    try {
+        await axios.put(
+            `/api/plans/${editPlanData.value.id}`,
+            editPlanData.value
+        );
+        toast.success("Plan updated successfully!", { position: "top-right" });
+        showEditModal.value = false;
+        fetchPlans(); // Refresh the plan list after update
+    } catch (err) {
+        console.error("Error updating plan:", err);
+        toast.error("Failed to update plan.", { position: "top-right" });
     }
 };
 
-// Delete Plan with Confirmation
-const deletePlan = (id) => {
-    if (confirm("Are you sure you want to delete this plan?")) {
-        plans.value = plans.value.filter((plan) => plan.id !== id);
+// Confirm delete plan
+const confirmDeletePlan = (id) => {
+    deletingPlanId.value = id;
+    showDeleteConfirmation.value = true;
+};
+
+// Delete plan
+const deletePlan = async (id) => {
+    try {
+        await axios.delete(`/api/plans/${id}`);
+        toast.success("Plan deleted successfully!", { position: "top-right" });
+        showDeleteConfirmation.value = false;
+        fetchPlans(); // Refresh the plan list after deletion
+    } catch (err) {
+        console.error("Error deleting plan:", err);
+        toast.error("Failed to delete plan.", { position: "top-right" });
     }
 };
+
+// Fetch plans on component mount
+onMounted(fetchPlans);
 </script>
 
 <style scoped>
-/* No extra styles needed; Tailwind + FontAwesome icons handle UI */
+/* Smooth transition effects */
+input {
+    transition: all 0.3s ease-in-out;
+}
+
+input:focus {
+    border-color: #84cc16;
+    box-shadow: 0 0 10px rgba(132, 204, 22, 0.2);
+}
 </style>

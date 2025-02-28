@@ -1,102 +1,175 @@
 <template>
     <div class="p-6 flex flex-col md:flex-row mt-24 gap-6">
-        <!-- Schedule Section (Fixed height) -->
+        <!-- Schedule Section -->
         <div class="flex-[0.7]">
-            <h1 class="text-2xl font-bold mb-4">
+            <h1 class="text-2xl font-bold mb-4 text-center text-lime-700">
                 Weekly Live Session Schedule
             </h1>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+
+            <!-- Loading Spinner -->
+            <Spinner v-if="loadingSchedule" />
+
+            <div
+                v-else
+                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+            >
                 <div
                     v-for="(day, index) in schedule"
                     :key="index"
-                    class="p-4 rounded-lg shadow-md bg-white border"
+                    class="p-4 rounded-lg shadow-lg bg-white border border-gray-200"
                 >
-                    <h2 class="text-lg font-semibold text-gray-700 text-center">
+                    <h2
+                        class="text-lg font-bold text-gray-700 text-center mb-3"
+                    >
                         {{ day.name }}
                     </h2>
-                    <div class="mt-2 flex flex-col gap-2">
-                        <template v-if="day.slots.length">
-                            <div
-                                v-for="(slot, slotIndex) in day.slots"
-                                :key="slotIndex"
-                                class="p-1 rounded-md text-center flex items-center justify-center gap-2 bg-gray-50 text-black"
-                            >
-                                <i class="fas fa-clock text-lime-700"></i>
-                                <span>{{ slot.time }}</span>
-                            </div>
-                        </template>
-                        <div v-else class="p-2 text-center text-gray-500">
-                            No Schedule
+
+                    <!-- Display Times as Cards -->
+                    <div v-if="day.slots.length" class="space-y-3">
+                        <div
+                            v-for="(slot, slotIndex) in day.slots"
+                            :key="slotIndex"
+                            class="flex items-center justify-center gap-3 bg-gray-100 p-2 rounded-md shadow-sm border border-gray-300"
+                        >
+                            <i class="fas fa-clock text-lime-700 text-lg"></i>
+                            <span class="text-base font-semibold text-gray-800">
+                                {{ formatTime(slot.time) }}
+                            </span>
                         </div>
+                    </div>
+
+                    <div
+                        v-else
+                        class="p-2 text-center text-gray-500 bg-gray-100 rounded-md"
+                    >
+                        No Schedule
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Subscription Section (Smaller height) -->
+        <!-- Subscription Section with Dynamic Plans -->
         <div
-            class="flex-[0.3] bg-white p-3 rounded-lg shadow-md border flex flex-col justify-start py-2"
+            class="flex-[0.3] bg-white p-4 rounded-lg shadow-lg border border-gray-200 flex flex-col justify-start"
         >
-            <h2 class="text-xl font-bold mb-3 text-center">Join a Plan</h2>
-            <div class="space-y-6 flex flex-col">
+            <h2 class="text-xl font-bold mb-3 text-center text-lime-700">
+                Join a Plan
+            </h2>
+
+            <!-- Loading Spinner -->
+            <Spinner v-if="loadingPlans" />
+
+            <!-- Error Message -->
+            <div v-if="error" class="text-red-500 text-center">{{ error }}</div>
+
+            <!-- Dynamic Plan Buttons -->
+            <div v-else-if="plans.length" class="space-y-6 flex flex-col">
                 <button
-                    class="w-full p-2 rounded-lg bg-lime-700 text-white hover:bg-lime-600"
+                    v-for="plan in plans"
+                    :key="plan.id"
+                    @click="joinPlan(plan)"
+                    class="w-full py-2 px-5 bg-lime-700 text-white font-semibold text-lg rounded-lg hover:bg-lime-800 transition duration-200"
                 >
-                    Join Monthly - 12,000 Birr
+                    {{ plan.name }} - {{ plan.price }} Birr
                 </button>
-                <button
-                    class="w-full p-2 rounded-lg bg-lime-700 text-white hover:bg-lime-600"
-                >
-                    Join 3 Months - 30,000 Birr
-                </button>
-                <button
-                    class="w-full p-2 rounded-lg bg-lime-700 text-white hover:bg-lime-600"
-                >
-                    Join 6 Months - 56,000 Birr
-                </button>
+            </div>
+
+            <!-- No Plans Found -->
+            <div v-else class="text-gray-500 text-center">
+                No plans available.
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import axios from "axios";
+import Spinner from "../Layout/Spinner.vue"; // Import Spinner
 
-const schedule = ref([
-    {
-        name: "Monday",
-        slots: [{ time: "9:00 AM - 10:00 AM" }, { time: "2:00 PM - 3:00 PM" }],
-    },
-    {
-        name: "Tuesday",
-        slots: [{ time: "10:00 AM - 11:00 AM" }],
-    },
-    {
-        name: "Wednesday",
-        slots: [{ time: "1:00 PM - 2:00 PM" }, { time: "4:00 PM - 5:00 PM" }],
-    },
-    {
-        name: "Thursday",
-        slots: [{ time: "8:00 AM - 9:00 AM" }],
-    },
-    {
-        name: "Friday",
-        slots: [],
-    },
-    {
-        name: "Saturday",
-        slots: [{ time: "8:00 AM - 9:00 AM" }],
-    },
-    {
-        name: "Sunday",
-        slots: [],
-    },
-]);
+const schedule = ref([]);
+const plans = ref([]); // Store fetched plans
+const loadingSchedule = ref(true);
+const loadingPlans = ref(true);
+const error = ref(null);
+
+// Ordered days from Monday to Sunday
+const orderedDays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+];
+
+// Function to format 24-hour time to 12-hour format with AM/PM
+const formatTime = (time) => {
+    if (!time) return "";
+    let [hour, minute] = time.split(":").map(Number);
+    let period = hour >= 12 ? "PM" : "AM";
+    hour = hour % 12 || 12; // Convert 0-23 hours to 12-hour format
+    return `${hour}:${minute.toString().padStart(2, "0")} ${period}`;
+};
+
+// Fetch schedule from API
+const fetchSchedule = async () => {
+    try {
+        const response = await axios.get("/api/schedules");
+        const rawData = response.data.data;
+
+        console.log("Raw API Data:", rawData); // Debugging: Check what the API returns
+
+        // Grouping schedules by day
+        const groupedSchedule = orderedDays.reduce((acc, day) => {
+            acc[day] = { name: day, slots: [] };
+            return acc;
+        }, {});
+
+        rawData.forEach((schedule) => {
+            if (groupedSchedule[schedule.day]) {
+                groupedSchedule[schedule.day].slots.push({
+                    time: schedule.time,
+                });
+            }
+        });
+
+        schedule.value = Object.values(groupedSchedule);
+        console.log("Formatted Schedule:", schedule.value); // Debugging: Check the final schedule array
+    } catch (error) {
+        console.error("Error fetching schedule:", error);
+    } finally {
+        loadingSchedule.value = false;
+    }
+};
+
+// Fetch plans from API
+const fetchPlans = async () => {
+    try {
+        const response = await axios.get("/api/plans");
+        console.log("API Response:", response);
+        plans.value = response.data.data;
+    } catch (err) {
+        console.error("Error fetching plans:", err);
+        error.value = "Failed to fetch plans.";
+    } finally {
+        loadingPlans.value = false;
+    }
+};
+
+// Join plan function (dummy for now)
+const joinPlan = (plan) => {
+    alert(`You have joined the ${plan.name} plan for ${plan.price} Birr.`);
+};
+
+// Fetch data on component mount
+onMounted(() => {
+    fetchSchedule();
+    fetchPlans();
+});
 </script>
 
-<style>
-/* Reset overflow on left card */
-.scrollbar-hidden {
-    overflow: unset;
-}
+<style scoped>
+/* Additional styles if needed */
 </style>

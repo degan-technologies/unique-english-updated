@@ -48,6 +48,7 @@ class Lang {
     public static function getIcon() {
         return static::$icon;
     }
+
     /**
      * Returns the value based on the key provided
      * @param string $key
@@ -55,22 +56,32 @@ class Lang {
      */
     public static function get($key)
     {
+        // Handle empty key cases
+        if (empty($key)) {
+            return "[Missing Translation Key]";
+        }
+
         $translations = static::lang();
-        return $translations[$key] ?? throw new Exception("No translation found for '$key'");
+        
+        // Return translation or a default message
+        return $translations[$key] ?? "[Missing Translation: $key]";
     }
 
     /**
-     * holds the language
-     * translations
+     * Holds the language translations
      * @return array<string, string>
      */
     public static function lang() {
         return [];
     }
 
+    /**
+     * Returns the available translations
+     * @return array
+     */
     public static function translations(){
         return [
-            static::$key => [static::$name, static::$icon, static::Lang()]
+            static::$key => [static::$name, static::$icon, static::lang()]
         ];
     }
 }

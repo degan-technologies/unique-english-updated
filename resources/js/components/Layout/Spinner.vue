@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="flex items-center justify-center min-h-screen">
         <div class="flex flex-col items-center">
             <!-- Spinner -->
             <div class="relative w-16 h-16">
