@@ -4,40 +4,7 @@ import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
-const sidebarStore = useSidebarStore();
-const {
-    sidebarCollapsed,
-    sideBarOpen,
-    selectedContent,
-    profile,
-    dashboard,
-    users,
-    courses,
-    payments,
-    liveSssions,
-    messaging,
-} = storeToRefs(sidebarStore);
-
-import Navbar from "@/components/Layout/Navbar.vue";
-import DashboardHome from "@/components/Layout/DashboardHome.vue";
-import UserManagement from "@/components/Layout/UserManagement.vue";
-import DashboardFooter from "@/components/Layout/DashboardFooter.vue";
-import DashboardSidebar from "@/components/Layout/DashboardSidebar.vue";
-import CourseManagement from "@/components/Layout/CourseManagement.vue";
-import RevenueManagement from "@/components/Layout/RevenueManagement.vue";
-import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue";
-import SystemAnalyticsReport from "@/components/Layout/SystemAnalyticsReport.vue";
-import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
-import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
-import ExamManagement from "../../components/Layout/ExamManagement.vue";
-
-const isMobileSidebarOpen = computed(() => sideBarOpen.value);
-
-const selectedContent = ref("dashboard");
-
-function setSelectedContent(contentId) {
-    selectedContent.value = contentId;
-}
+// Import Components
 import Navbar from "@/components/Layout/Navbar.vue";
 import ProfileForm from "@/components/Profile/ProfileForm.vue";
 import DashboardHome from "@/components/Layout/DashboardHome.vue";
@@ -50,19 +17,46 @@ import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue";
 import SystemAnalyticsReport from "@/components/Layout/SystemAnalyticsReport.vue";
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
 import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
+import ExamManagement from "@/components/Layout/ExamManagement.vue";
 
+// Sidebar Store Setup
+const sidebarStore = useSidebarStore();
+const {
+    sidebarCollapsed,
+    sideBarOpen,
+    selectedContent,
+    profile,
+    dashboard,
+    users,
+    courses,
+    exams,
+    payments,
+    liveSessions, // Fixed typo
+    messaging,
+} = storeToRefs(sidebarStore);
+
+// Vue Router Setup
 const route = useRoute();
 const router = useRouter();
 
+// Mobile Sidebar Computation
 const isMobileSidebarOpen = computed(() => sideBarOpen.value);
-selectedContent.value = route.query.currentTab;
 
+// Ensure selectedContent updates dynamically
 watch(
     () => route.query.currentTab,
-    () => {
-        selectedContent.value = route?.query.currentTab;
-    }
+    (newTab) => {
+        if (newTab) {
+            selectedContent.value = newTab;
+        }
+    },
+    { immediate: true } // Ensure it runs on component mount
 );
+
+// Function to Change Content
+function setSelectedContent(contentId) {
+    selectedContent.value = contentId;
+}
 </script>
 
 <template>
@@ -85,7 +79,7 @@ watch(
                     <div v-if="selectedContent === profile">
                         <ProfileForm />
                     </div>
-                    <div v-if="selectedContent === dashboard">
+                    <div v-else-if="selectedContent === dashboard">
                         <DashboardHome />
                     </div>
                     <div v-else-if="selectedContent === users">
@@ -94,10 +88,14 @@ watch(
                     <div v-else-if="selectedContent === courses">
                         <CourseManagement />
                     </div>
+
+                    <div v-else-if="selectedContent === exams">
+                        <ExamManagement />
+                    </div>
                     <div v-else-if="selectedContent === payments">
                         <RevenueManagement />
                     </div>
-                    <div v-else-if="selectedContent === liveSssions">
+                    <div v-else-if="selectedContent === liveSessions">
                         <LiveSessionManagement />
                     </div>
                     <div v-else-if="selectedContent === messaging">

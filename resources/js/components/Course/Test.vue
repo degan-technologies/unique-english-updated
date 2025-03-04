@@ -1,8 +1,35 @@
 <template>
     <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-bold mb-6 text-center text-lime-700">
+        <h1 class="text-3xl font-bold mb-4 text-center text-lime-700">
             Test Yourself
         </h1>
+
+        <!-- Instructions Section -->
+        <div class="bg-gray-100 p-4 rounded-lg mb-6 border-l-4 border-lime-500">
+            <h2 class="text-lg font-semibold text-lime-700">Instructions:</h2>
+            <ul class="list-disc pl-5 text-gray-700">
+                <li>
+                    Read each question carefully before selecting an answer.
+                </li>
+                <li>Click on an option to select your answer.</li>
+                <li>Use the "Next" and "Previous" buttons to navigate.</li>
+                <li>
+                    Once you reach the last question, click "Finish Test" to
+                    submit.
+                </li>
+                <li>
+                    Your results and level assessment will be displayed at the
+                    end.
+                </li>
+            </ul>
+            <!-- Total Questions Display -->
+            <div
+                v-if="quizzes.length > 0"
+                class="text-center mb-4 text-gray-700"
+            >
+                <p><strong>Total Questions:</strong> {{ quizzes.length }}</p>
+            </div>
+        </div>
 
         <!-- Loading Spinner -->
         <div v-if="loading" class="text-center">
@@ -22,7 +49,8 @@
                     class="bg-white p-6 rounded-lg shadow-lg mb-6 border border-lime-500"
                 >
                     <h2 class="text-xl font-semibold mb-4">
-                        {{ currentQuestion + 1 }}:
+                        Question {{ currentQuestion + 1 }} of
+                        {{ quizzes.length }}:
                         {{ quizzes[currentQuestion]?.question }}
                     </h2>
 
@@ -33,7 +61,7 @@
                         :key="index"
                         class="mb-3 p-3 border rounded-md cursor-pointer transition-all duration-300 flex items-center gap-3"
                         :class="{
-                            'border-lime-500 bg-lime-50 ':
+                            'border-lime-500 bg-lime-50':
                                 userAnswers[currentQuestion] === choice,
                             'hover:border-lime-500 hover:bg-gray-100':
                                 userAnswers[currentQuestion] !== choice,
@@ -121,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import axios from "axios";
 import confetti from "canvas-confetti"; // Import Confetti library
 import Spinner from "../Layout/Spinner.vue"; // Import Spinner component
@@ -139,7 +167,14 @@ const feedbackMessage = ref(""); // Store feedback message
 const showConfetti = ref(false);
 const confettiCanvas = ref(null);
 
-// Fetch quiz questions
+// Define setLevel to update result properties
+const setLevel = (level, icon, levelClass, feedback) => {
+    resultLevel.value = level;
+    resultIcon.value = icon;
+    resultLevelClass.value = levelClass;
+    feedbackMessage.value = feedback;
+};
+
 const fetchQuizzes = async () => {
     try {
         const response = await axios.get("/api/tests");
@@ -157,28 +192,24 @@ const fetchQuizzes = async () => {
     }
 };
 
-// Move to the previous question
 const prevQuestion = () => {
     if (currentQuestion.value > 0) {
         currentQuestion.value--;
     }
 };
 
-// Move to the next question
 const nextQuestion = () => {
     if (currentQuestion.value < quizzes.value.length - 1) {
         currentQuestion.value++;
     } else {
-        submitTest(); // Automatically finish test on last question
+        submitTest();
     }
 };
 
-// Select an answer
 const selectAnswer = (choice) => {
     userAnswers.value[currentQuestion.value] = choice;
 };
 
-// Submit the test
 const submitTest = async () => {
     testCompleted.value = true;
 
@@ -237,28 +268,22 @@ const submitTest = async () => {
     }
 };
 
-// Function to set level details
-const setLevel = (level, icon, colorClass, message) => {
-    resultLevel.value = level;
-    resultIcon.value = icon;
-    resultLevelClass.value = colorClass;
-    feedbackMessage.value = message;
-};
-
-// Infinite confetti effect for C2
 const triggerConfetti = () => {
     showConfetti.value = true;
-    setInterval(() => {
-        confetti.create(confettiCanvas.value, { resize: true })({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-        });
-    }, 3000);
+    nextTick(() => {
+        if (confettiCanvas.value) {
+            const myConfetti = confetti.create(confettiCanvas.value, {
+                resize: true,
+                useWorker: true,
+            });
+            myConfetti({
+                particleCount: 1000,
+                spread: 80,
+                origin: { y: 0.8 },
+            });
+        }
+    });
 };
 
-// Fetch quizzes on mount
-onMounted(() => {
-    fetchQuizzes();
-});
+onMounted(fetchQuizzes);
 </script>

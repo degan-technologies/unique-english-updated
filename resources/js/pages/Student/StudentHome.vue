@@ -15,12 +15,11 @@ import Book from "@/components/Book/Book.vue";
 import BookDetails from "@/components/Book/BookDetails.vue";
 import Pdf from "@/components/Book/Pdf.vue";
 import Schedule from "@/components/Live/Schedule.vue";
-import liveSession from "@/components/Course/liveSession.vue";
-import QuizReader from "@/components/Live/QuizReader.vue";
-import AddSchedule from "@/components/Course/AddSchedule.vue";
-import ManageSchedule from "@/components/Course/ManageSchedule.vue";
-import ManagePlan from "../../components/Course/ManagePlan.vue";
-import AddPlan from "../../components/Course/AddPlan.vue";
+import QuizReader from "@/components/Course/QuizReader.vue";
+import AddSchedule from "@/components/Live/AddSchedule.vue";
+import ManageSchedule from "@/components/Live/ManageSchedule.vue";
+import ManagePlan from "@/components/Live/ManagePlan.vue";
+import AddPlan from "@/components/Live/AddPlan.vue";
 
 const studentStore = UseStudentStore();
 const {

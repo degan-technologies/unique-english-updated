@@ -1,147 +1,179 @@
 <template>
-    <div class="container max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <h1 class="text-3xl font-bold mb-6 text-center text-lime-700">
-            Manage Tests
-        </h1>
-
-        <!-- Display Tests or Spinner if loading -->
-        <div v-if="loading" class="flex justify-center items-center h-64">
-            <Spinner />
-        </div>
-        <div v-else>
-            <table class="w-full border-collapse border border-gray-300">
-                <thead class="bg-gray-200">
-                    <tr>
-                        <th class="p-3 border">#</th>
-                        <th class="p-3 border">Question</th>
-                        <th class="p-3 border">Choices</th>
-                        <th class="p-3 border">Answer</th>
-                        <th class="p-3 border">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr
-                        v-for="(test, index) in paginatedTests"
-                        :key="test.id"
-                        class="text-left"
+    <div class="container mx-auto p-4">
+        <div class="grid grid-cols-1 md:grid-cols-3">
+            <!-- Left Panel: Paginated Test List -->
+            <div class="col-span-1 bg-gray-50 p-4 shadow-md">
+                <div
+                    class="flex justify-between items-center border-b pb-2 mb-4"
+                >
+                    <h2 class="text-xl font-bold">Tests</h2>
+                    <!-- Plus icon resets form for a new test -->
+                    <i
+                        @click="toggleNewTest"
+                        class="fa-solid fa-plus text-lg text-gray-800 cursor-pointer"
+                        title="New Test"
+                    ></i>
+                </div>
+                <div
+                    v-for="(test, index) in paginatedTests"
+                    :key="test.id"
+                    class="mb-2"
+                >
+                    <div
+                        class="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
+                        @click="onSelectTest(test)"
                     >
-                        <td class="p-3 border">
-                            {{ getQuestionNumber(index) }}
-                        </td>
-                        <td class="p-3 border">{{ test.question }}</td>
-                        <td class="p-3 border">
-                            <select
-                                v-if="test.choices && test.choices.length"
-                                class="border-none px-2 py-1 bg-white"
-                            >
-                                <option
-                                    v-for="(choice, i) in test.choices"
-                                    :key="i"
-                                >
-                                    {{ choice }}
-                                </option>
-                            </select>
-                            <span v-else>-</span>
-                        </td>
-                        <td class="p-3 border">
-                            {{
-                                Array.isArray(test.answer)
-                                    ? test.answer.join(", ")
-                                    : test.answer
-                            }}
-                        </td>
-                        <td class="p-3 border space-x-2">
+                        <div>
+                            <!-- Display test number (across pages) and question preview -->
+                            <h3 class="text-sm font-medium">
+                                {{
+                                    (currentPage - 1) * itemsPerPage +
+                                    index +
+                                    1
+                                }}.
+                                {{ test.question.slice(0, 50) }}
+                                {{ test.question.length > 50 ? "..." : "" }}
+                            </h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
                             <button
-                                @click="editTest(test)"
-                                class="text-lime-500 text-lg hover:text-lime-700 transition"
-                                title="Edit Test"
-                            >
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button
-                                @click="openDeleteModal(test)"
-                                class="text-red-500 text-lg hover:text-red-700 transition"
+                                @click.stop="openDeleteModal(test)"
+                                class="text-red-500 hover:text-red-700"
                                 title="Delete Test"
                             >
-                                <i class="fas fa-trash-alt"></i>
+                                <i class="fa-solid fa-trash-alt"></i>
                             </button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination Controls -->
-        <div
-            v-if="tests.length > itemsPerPage"
-            class="mt-4 flex justify-between items-center"
-        >
-            <button
-                @click="changePage(currentPage - 1)"
-                :disabled="currentPage === 1"
-                class="px-4 py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                Previous
-            </button>
-
-            <span class="text-lg font-semibold text-gray-700">
-                Page {{ currentPage }} of {{ totalPages }}
-            </span>
-
-            <button
-                @click="changePage(currentPage + 1)"
-                :disabled="currentPage === totalPages"
-                class="px-4 py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                Next
-            </button>
-        </div>
-
-        <!-- Edit Test Modal -->
-        <div
-            v-if="showEditModal"
-            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50"
-        >
-            <div class="bg-white p-6 rounded-lg shadow-lg w-1/2">
-                <h2 class="text-xl font-semibold mb-4">Edit Test</h2>
-                <label class="block text-sm font-medium">Question:</label>
-                <textarea
-                    v-model="editedTest.question"
-                    class="w-full border p-2 rounded mt-1"
-                ></textarea>
-                <label class="block text-sm font-medium mt-3">
-                    Select or Add a Choice:
-                </label>
-                <select
-                    v-model="editedTest.answer"
-                    class="w-full border p-2 rounded mt-1"
+                        </div>
+                    </div>
+                </div>
+                <!-- Pagination Controls -->
+                <div
+                    v-if="tests.length > itemsPerPage"
+                    class="mt-4 flex justify-center items-center"
                 >
-                    <option
-                        v-for="(choice, index) in editedTest.choices"
-                        :key="index"
-                        :value="choice"
-                    >
-                        {{ choice }}
-                    </option>
-                </select>
-                <div class="mt-3">
-                    <strong>Selected Answer:</strong>
-                    <span>{{ editedTest.answer }}</span>
-                </div>
-                <div class="flex justify-end mt-4">
+                    <!-- Previous Button -->
                     <button
-                        @click="showEditModal = false"
-                        class="px-4 py-2 bg-gray-400 text-white rounded mr-2 transition hover:bg-gray-500"
+                        @click="changePage(currentPage - 1)"
+                        :disabled="currentPage === 1"
+                        class="px-4 py-1 text-lime-700 rounded-lg hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
-                        Cancel
+                        <i class="fas fa-chevron-left"></i>
+                        <!-- Chevron Left Icon -->
                     </button>
+
+                    <!-- Next Button -->
                     <button
+                        @click="changePage(currentPage + 1)"
+                        :disabled="currentPage === totalPages"
+                        class="px-4 py-1 text-lime-700 rounded-lg hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                        <i class="fas fa-chevron-right"></i>
+                        <!-- Chevron Right Icon -->
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Test Meta Data Form -->
+            <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 shadow-md">
+                <!-- Header for Existing Test -->
+                <div
+                    v-if="selectedTest"
+                    class="flex items-center justify-between mb-4"
+                >
+                    <h2
+                        @click="toggleCollapse"
+                        class="text-lg font-bold text-gray-700 cursor-pointer"
+                    >
+                        {{ selectedTest.question }}
+                    </h2>
+                </div>
+                <!-- Test Meta Data Form -->
+                <form v-if="openCollapse" @submit.prevent class="space-y-6">
+                    <!-- Question Field -->
+                    <div>
+                        <label
+                            class="block text-sm font-semibold text-gray-700"
+                        >
+                            Question
+                        </label>
+                        <textarea
+                            v-model="metaData.question"
+                            @input="markUpdate('question')"
+                            class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
+                            placeholder="Enter test question"
+                        ></textarea>
+                    </div>
+
+                    <!-- Dynamic Choices List -->
+                    <div>
+                        <label
+                            class="block text-sm font-semibold text-gray-700"
+                        >
+                            Choices
+                        </label>
+                        <div
+                            v-for="(choice, index) in metaData.choices"
+                            :key="index"
+                            class="flex items-center mt-2"
+                        >
+                            <!-- Radio button for selecting correct answer -->
+                            <input
+                                type="radio"
+                                :name="'answer'"
+                                class="mr-2"
+                                width="4"
+                                height="4"
+                                :value="choice"
+                                v-model="metaData.answer"
+                                @change="markUpdate('answer')"
+                            />
+                            <!-- Choice input -->
+                            <input
+                                type="text"
+                                v-model="metaData.choices[index]"
+                                @input="markUpdate('choices')"
+                                class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
+                                placeholder="Enter choice"
+                            />
+                            <!-- Remove button (only if more than one choice exists) -->
+                            <button
+                                type="button"
+                                v-if="metaData.choices.length > 1"
+                                @click="removeChoice(index)"
+                                class="ml-2 text-red-500 hover:text-red-700"
+                                title="Remove choice"
+                            >
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <!-- Add Choice Button -->
+                        <button
+                            type="button"
+                            @click="addChoice"
+                            class="mt-2 px-4 py-2 text-lime-600 rounded-lg hover:text-lime-700 transition duration-200"
+                        >
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                    <button
+                        type="button"
+                        v-if="openCollapse && readyForUpdate"
                         @click="updateTest"
-                        class="px-4 py-2 bg-lime-600 text-white rounded transition hover:bg-lime-700"
+                        class="w-full py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 transition duration-200"
                     >
-                        Update
+                        Update Test
                     </button>
-                </div>
+
+                    <!-- Create Test Button (only in new test mode) -->
+                    <button
+                        type="button"
+                        v-if="isNewTestMode"
+                        @click="storeTest"
+                        class="w-full py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 transition duration-200"
+                    >
+                        Create Test
+                    </button>
+                </form>
             </div>
         </div>
 
@@ -181,130 +213,236 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
-import Spinner from "../Layout/Spinner.vue";
 import { useToast } from "vue-toastification";
 
 const toast = useToast();
 
-// State variables
+// State variables for tests
 const tests = ref([]);
-const currentPage = ref(1);
-const itemsPerPage = 10;
 const loading = ref(true);
-const showEditModal = ref(false);
+const selectedTest = ref(null);
+const isNewTestMode = ref(false); // Flag for new test mode
+const openCollapse = ref(true); // Toggle meta form collapse
+const readyForUpdate = ref(false);
+
+// Meta data for test creation/updating
+const metaData = ref({
+    question: "",
+    choices: [],
+    answer: null,
+});
+
+// Delete modal state
 const showDeleteModal = ref(false);
-const editedTest = ref({ id: null, question: "", choices: [], answer: "" });
 const testToDelete = ref(null);
 
-// Computed: paginated tests and total pages
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = 5;
 const paginatedTests = computed(() => {
     const start = (currentPage.value - 1) * itemsPerPage;
     return tests.value.slice(start, start + itemsPerPage);
 });
-
 const totalPages = computed(() => Math.ceil(tests.value.length / itemsPerPage));
 
-// Get dynamic question number
-const getQuestionNumber = (index) => {
-    return (currentPage.value - 1) * itemsPerPage + index + 1;
-};
+// Toggle new test mode and reset meta data
+function toggleNewTest() {
+    isNewTestMode.value = true;
+    selectedTest.value = null;
+    openCollapse.value = true;
+    // Initialize with four empty choices and no default answer selected
+    metaData.value = { question: "", choices: ["", "", "", ""], answer: null };
+    readyForUpdate.value = false;
+}
 
-// Fetch tests from API
-const fetchTests = async () => {
+// When a test is selected, load its data and exit new test mode
+function onSelectTest(test) {
+    isNewTestMode.value = false;
+    if (selectedTest.value && selectedTest.value.id === test.id) {
+        selectedTest.value = null;
+    } else {
+        selectedTest.value = { ...test };
+        metaData.value = {
+            question: test.question,
+            choices: test.choices ? [...test.choices] : ["", "", "", ""],
+            answer: test.answer ? test.answer[0] : null,
+        };
+        openCollapse.value = true;
+        readyForUpdate.value = false;
+    }
+}
+
+// Add a new empty choice field
+function addChoice() {
+    metaData.value.choices.push("");
+    markUpdate("choices");
+}
+
+// Remove a choice at a given index
+function removeChoice(index) {
+    metaData.value.choices.splice(index, 1);
+    if (!metaData.value.choices.length) {
+        metaData.value.choices.push("");
+    }
+    if (metaData.value.answer === metaData.value.choices[index]) {
+        metaData.value.answer = null;
+    }
+    markUpdate("choices");
+}
+
+// Mark that meta data has been changed (for update)
+function markUpdate(field) {
+    if (selectedTest.value) {
+        if (
+            field === "question" &&
+            selectedTest.value.question !== metaData.value.question
+        ) {
+            readyForUpdate.value = true;
+        }
+        if (field === "choices") {
+            const original = selectedTest.value.choices || [];
+            if (
+                JSON.stringify(original) !==
+                JSON.stringify(metaData.value.choices)
+            ) {
+                readyForUpdate.value = true;
+            }
+        }
+        if (
+            field === "answer" &&
+            selectedTest.value.answer[0] !== metaData.value.answer
+        ) {
+            readyForUpdate.value = true;
+        }
+    }
+}
+
+// Create a new test
+async function storeTest() {
+    if (!metaData.value.question.trim()) {
+        toast.error("Test question is required");
+        return;
+    }
+    if (
+        !metaData.value.choices.length ||
+        metaData.value.choices.some((ch) => !ch.trim())
+    ) {
+        toast.error("All choices must have a value");
+        return;
+    }
+    const payload = {
+        question: metaData.value.question,
+        choices: metaData.value.choices,
+        answer: [metaData.value.answer],
+    };
+    try {
+        const response = await axios.post("/api/tests", payload);
+        tests.value.push(response.data.data);
+        selectedTest.value = response.data.data;
+        isNewTestMode.value = false;
+        openCollapse.value = true;
+        toast.success("Test created successfully!");
+    } catch (error) {
+        toast.error("Failed to create test");
+    }
+}
+
+// Update an existing test
+async function updateTest() {
+    if (!readyForUpdate.value) return;
+    if (!metaData.value.question.trim()) {
+        toast.error("Test question is required");
+        return;
+    }
+    if (
+        !metaData.value.choices.length ||
+        metaData.value.choices.some((ch) => !ch.trim())
+    ) {
+        toast.error("All choices must have a value");
+        return;
+    }
+    const payload = {
+        question: metaData.value.question,
+        choices: metaData.value.choices,
+        answer: [metaData.value.answer],
+    };
+    try {
+        const response = await axios.put(
+            `/api/tests/${selectedTest.value.id}`,
+            payload
+        );
+        tests.value = tests.value.map((t) =>
+            t.id === response.data.data.id ? response.data.data : t
+        );
+        selectedTest.value = response.data.data;
+        readyForUpdate.value = false;
+        toast.success("Test updated successfully!");
+    } catch (error) {
+        toast.error("Failed to update test");
+    }
+}
+
+// Toggle collapse of meta data form
+function toggleCollapse() {
+    openCollapse.value = !openCollapse.value;
+}
+
+// Change page for pagination
+function changePage(page) {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+    }
+}
+
+// Open delete confirmation modal
+function openDeleteModal(test) {
+    testToDelete.value = test.id;
+    showDeleteModal.value = true;
+}
+
+// Delete test
+async function deleteTest() {
+    try {
+        await axios.delete(`/api/tests/${testToDelete.value}`);
+        tests.value = tests.value.filter((t) => t.id !== testToDelete.value);
+        toast.success("Test deleted successfully!");
+        showDeleteModal.value = false;
+        if (
+            selectedTest.value &&
+            selectedTest.value.id === testToDelete.value
+        ) {
+            selectedTest.value = null;
+        }
+    } catch (error) {
+        toast.error("Error deleting test.");
+    }
+}
+
+// Fetch tests from the API
+async function fetchTests() {
     loading.value = true;
     try {
         const response = await axios.get("/api/tests");
         tests.value = response.data.data.map((test) => ({
             ...test,
-            // Ensure answer is always an array; for display and editing we use its first element.
             answer: Array.isArray(test.answer) ? test.answer : [test.answer],
         }));
     } catch (error) {
-        console.error(
-            "Error fetching tests:",
-            error.response?.data || error.message
-        );
         toast.error("Error fetching tests.");
     } finally {
         loading.value = false;
     }
-};
+}
 
-// Change page in pagination
-const changePage = (page) => {
-    if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page;
-    }
-};
-
-// Open Edit Modal and clone test data into editedTest.
-// We set the answer to the first element from the answer array.
-const editTest = (test) => {
-    editedTest.value = {
-        ...test,
-        choices: test.choices ? [...test.choices] : [],
-        answer: Array.isArray(test.answer) ? test.answer[0] : test.answer,
-    };
-    showEditModal.value = true;
-};
-
-// Update test function
-const updateTest = async () => {
-    try {
-        // Prepare payload with answer sent as an array.
-        const payload = {
-            question: editedTest.value.question,
-            choices: editedTest.value.choices,
-            answer: [editedTest.value.answer],
-        };
-        console.log("Updating test with payload:", payload);
-        await axios.put(`/api/tests/${editedTest.value.id}`, payload);
-        toast.success("Test updated successfully!");
-        showEditModal.value = false;
-        await fetchTests();
-    } catch (error) {
-        console.error(
-            "Error updating test:",
-            error.response?.data || error.message
-        );
-        toast.error("Error updating test.");
-    }
-};
-
-// Open Delete Modal
-const openDeleteModal = (test) => {
-    testToDelete.value = test.id;
-    showDeleteModal.value = true;
-};
-
-// Delete test function
-const deleteTest = async () => {
-    try {
-        await axios.delete(`/api/tests/${testToDelete.value}`);
-        toast.success("Test deleted successfully!");
-        showDeleteModal.value = false;
-        await fetchTests();
-    } catch (error) {
-        console.error(
-            "Error deleting test:",
-            error.response?.data || error.message
-        );
-        toast.error("Error deleting test.");
-    }
-};
-
-// Fetch tests on component mount
-onMounted(fetchTests);
+// On component mount, fetch tests and set initial new test mode
+onMounted(() => {
+    fetchTests();
+    toggleNewTest();
+});
 </script>
 
 <style scoped>
 textarea {
     min-height: 100px;
-}
-select {
-    min-height: 40px;
-}
-button {
-    transition: background-color 0.3s ease;
 }
 </style>

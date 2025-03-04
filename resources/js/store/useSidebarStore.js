@@ -5,22 +5,24 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
     const sidebarCollapsed = ref(false);
 
-    const profile = ref('profile')
-    const dashboard = ref('dashboard')
-    const users = ref('users')
-    const courses = ref('courses')
-    const payments = ref('payments')
-    const liveSssions = ref('live-sessions')
-    const messaging = ref('messaging')
+    const profile = ref("profile");
+    const dashboard = ref("dashboard");
+    const users = ref("users");
+    const courses = ref("courses");
+    const exams = ref("exams");
+    const payments = ref("payments");
+    const liveSssions = ref("live-sessions");
+    const messaging = ref("messaging");
     const selectedContent = ref(dashboard.value);
 
     function loadSidebarState() {
         sideBarOpen.value =
-        window.innerWidth >= 1024
-            ? JSON.parse(localStorage.getItem("sideBarOpen")) || false
-            : false;
+            window.innerWidth >= 1024
+                ? JSON.parse(localStorage.getItem("sideBarOpen")) || false
+                : false;
 
-        sidebarCollapsed.value = JSON.parse(localStorage.getItem("sidebarCollapsed")) || false;
+        sidebarCollapsed.value =
+            JSON.parse(localStorage.getItem("sidebarCollapsed")) || false;
     }
 
     function toggleSidebar() {
@@ -30,14 +32,20 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
 
     function closeSidebarOnMobile() {
         if (window.innerWidth < 1024) {
-        sideBarOpen.value = false;
-        localStorage.setItem("sideBarOpen", JSON.stringify(sideBarOpen.value));
+            sideBarOpen.value = false;
+            localStorage.setItem(
+                "sideBarOpen",
+                JSON.stringify(sideBarOpen.value)
+            );
         }
     }
 
     function toggleCollapse() {
         sidebarCollapsed.value = !sidebarCollapsed.value;
-        localStorage.setItem("sidebarCollapsed", JSON.stringify(sidebarCollapsed.value));
+        localStorage.setItem(
+            "sidebarCollapsed",
+            JSON.stringify(sidebarCollapsed.value)
+        );
     }
 
     const isSidebarOpen = computed(() => sideBarOpen.value);
@@ -61,6 +69,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         dashboard,
         users,
         courses,
+        exams,
         payments,
         liveSssions,
         messaging,
