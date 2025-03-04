@@ -8,7 +8,7 @@
                 <h1 class="text-3xl font-bold text-lime-700">
                     Exam Management
                 </h1>
-                <p class="text-sm text-gray-500">Manage Quizzes and Tests</p>
+                <p class="text-sm text-gray-500">Manage Tests</p>
             </div>
         </header>
 
@@ -16,76 +16,32 @@
         <div class="my-6">
             <div class="flex border-b">
                 <button
-                    :class="tabClass('addQuiz')"
-                    @click="currentPage = 'addQuiz'"
-                    class="p-2"
-                >
-                    Add Quiz
-                </button>
-                <button
-                    :class="tabClass('manageQuiz')"
-                    @click="currentPage = 'manageQuiz'"
-                    class="p-2"
-                >
-                    Manage Quizzes
-                </button>
-                <button
-                    :class="tabClass('addTest')"
-                    @click="currentPage = 'addTest'"
-                    class="p-2"
-                >
-                    Add Test
-                </button>
-                <button
                     :class="tabClass('manageTest')"
                     @click="currentPage = 'manageTest'"
                     class="p-2"
                 >
-                    Manage Tests
+                    Manage Test
+                </button>
+                <button
+                    :class="tabClass('metaDataForm')"
+                    @click="currentPage = 'metaDataForm'"
+                    class="p-2"
+                >
+                    Meta Data Form
                 </button>
             </div>
         </div>
 
         <!-- Main Content -->
-        <div class="container mx-auto px-6 py-6 min-h-screen">
-            <!-- Add Quiz Page -->
-            <div
-                v-if="currentPage === 'addQuiz'"
-                class="p-3 max-w-2xl mx-auto bg-white rounded-lg shadow-lg"
-            >
-                <AddQuiz @quiz-added="handleQuizAdded" />
-                <button
-                    @click="currentPage = 'manageQuiz'"
-                    class="bg-gray-300 px-4 py-2 rounded mt-3"
-                >
-                    Back to List
-                </button>
-            </div>
-
-            <!-- Manage Quizzes Page -->
-            <div v-if="currentPage === 'manageQuiz'">
-                <ManageQuiz />
-            </div>
-
-            <!-- Add Test Page -->
-            <MetaDataForm v-if="currentPage === 'addTest'" />
-            <!-- <div
-                v-if="currentPage === 'addTest'"
-                class="p-6 max-w-2xl mx-auto bg-white rounded-lg shadow-lg"
-            >
-                <AddTest @test-added="handleTestAdded" />
-                
-                <button
-                    @click="currentPage = 'manageTest'"
-                    class="bg-gray-300 px-4 py-2 rounded mt-3"
-                >
-                    Back to List
-                </button>
-            </div> -->
-
-            <!-- Manage Tests Page -->
+        <div class="container mx-auto px-6 py-6">
+            <!-- ManageTest Page -->
             <div v-if="currentPage === 'manageTest'">
                 <ManageTest />
+            </div>
+
+            <!-- MetaDataForm Page -->
+            <div v-if="currentPage === 'metaDataForm'">
+                <MetaDataForm />
             </div>
         </div>
     </div>
@@ -93,14 +49,11 @@
 
 <script setup>
 import { ref } from "vue";
-import AddQuiz from "../Course/AddQuiz.vue";
-import ManageQuiz from "../Course/ManageQuiz.vue";
-import AddTest from "../Course/AddTest.vue";
-import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
 import ManageTest from "../Course/ManageTest.vue";
+import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
 
 // Active page for tab navigation
-const currentPage = ref("addTest");
+const currentPage = ref("manageTest");
 
 // Function to return dynamic classes for tabs
 const tabClass = (tab) => {
@@ -108,18 +61,4 @@ const tabClass = (tab) => {
         ? "border-b-2 border-lime-700 text-lime-700"
         : "text-gray-700";
 };
-
-// When a quiz is added, switch to Manage Quizzes view.
-const handleQuizAdded = (newQuiz) => {
-    currentPage.value = "manageQuiz";
-};
-
-// When a test is added, switch to Manage Tests view.
-const handleTestAdded = (newTest) => {
-    currentPage.value = "manageTest";
-};
 </script>
-
-<style scoped>
-/* Additional styles if needed */
-</style>

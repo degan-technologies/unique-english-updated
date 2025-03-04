@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QuizResource;
+use Illuminate\Http\Response;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class QuizController extends Controller
@@ -114,7 +115,7 @@ class QuizController extends Controller
         $validationRules = [
             'question'      => 'required|string',
             'choice'        => 'required|array',
-            'answer'        => 'required|array', 
+            'answer'        => 'required|string', 
              'hint' => 'string|min:10', 
         ];
 

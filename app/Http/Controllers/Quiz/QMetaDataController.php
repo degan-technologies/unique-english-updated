@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Http\Controllers\Quiz;
 
@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QMetaDataResource;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
 
 class QMetaDataController extends Controller{
     protected $langService;
@@ -21,10 +22,8 @@ class QMetaDataController extends Controller{
     }
 
     public function index(){
-        $qMetaData = QMetaData::all()
-        ->where('user_id', Auth::id())
-        ->paginate(10);
-        
+        $qMetaData = QMetaData::where('user_id', Auth::id())->paginate(10); // Fixed paginate issue
+
         $pagination = $qMetaData->toArray();
         unset($pagination['data']);
 
@@ -76,25 +75,23 @@ class QMetaDataController extends Controller{
             ], 422);
         }
 
-         $qMetaData = $user->qMetaDatas()->create([ 
-                    'slug' => Str::uuid(), 
-                    'instraction' => $request->instraction,
-                    'title' => $request->title,  
-                    'module_id' => $moduleId, 
-                    'course_id' => $courseId, 
-                ]);
+        $qMetaData = $user->qMetaDatas()->create([ 
+            'slug' => Str::uuid(), 
+            'instraction' => $request->instraction,
+            'title' => $request->title,  
+            'module_id' => $moduleId, 
+            'course_id' => $courseId, 
+        ]);
 
         return response()->json([
-            'message' => $this->langService->getLang ('q_meta_data_created_successfully'),
+            'message' => $this->langService->getLang('q_meta_data_created_successfully'),
             'data' => new QMetaDataResource($qMetaData),
         ]);
     }
 
     public function show($id){
-        $qMetaData = QMetaData::query()
-        ->where('user_id', Auth::id())
-        ->first();
-        
+        $qMetaData = QMetaData::where('user_id', Auth::id())->findOrFail($id); // Fixed missing findOrFail
+
         return response()->json([
             'data' => new QMetaDataResource($qMetaData),
         ]);
@@ -102,17 +99,11 @@ class QMetaDataController extends Controller{
 
     public function update(Request $request, $id){
         $user = User::query()
-                ->whereSystemAdminOrInstructor()
-                            ->first();
+            ->whereSystemAdminOrInstructor()
+            ->first();
         if (!$user) return;
 
         $qMetaData = QMetaData::where('user_id', $user->id)->findOrFail($id);
-
-        if(!$qMetaData) {
-            return response()->json([
-                'message'=> $this->langService->getLang ('q_meta_data_not_found'),
-            ], 404);
-        }
 
         $validationRules = [
             'title' => 'required|string|min:5|max:255',

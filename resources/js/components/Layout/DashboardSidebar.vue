@@ -17,6 +17,7 @@ const {
     dashboard,
     users,
     courses,
+    exams,
     payments,
     liveSssions,
     messaging,
@@ -41,6 +42,14 @@ const mainItems = [
         description: "Manage courses and books.",
         icon: "book-open",
     },
+
+    {
+        label: "Exams & Quizzes",
+        route: "exams",
+        description: "Manage tests, quizzes, and questions.",
+        icon: "clipboard-list",
+    },
+
     {
         label: "Payments & Revenue",
         route: payments.value,

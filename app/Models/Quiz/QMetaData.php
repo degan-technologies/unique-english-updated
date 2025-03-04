@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class QMetaData extends Model {
     use HasFactory, SoftDeletes;
 
+
+    
     protected $fillable = [
         'slug', 'title', 'instraction', 'question_type',
         'user_id', 'course_content_id', 'course_id'

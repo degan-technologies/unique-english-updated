@@ -1,30 +1,194 @@
+<script setup>
+import { ref, computed, onMounted, nextTick } from "vue";
+import Axios from "axios";
+import confetti from "canvas-confetti";
+import Spinner from "../Layout/Spinner.vue";
+import { toast } from "vue3-toastify";
+
+const examData = ref(null);
+const quizData = ref([]);
+const currentQuestion = ref(1);
+const answers = ref([]);
+const correctAnswers = ref(0);
+const showResult = ref(false);
+const loading = ref(true);
+const confettiCanvas = ref(null);
+
+// Toggle for hint display per question
+const showHintForQuestion = ref(false);
+
+const totalQuestions = computed(() => quizData.value.length);
+const quiz = computed(() => quizData.value[currentQuestion.value - 1] || null);
+
+const scorePercentage = computed(() =>
+    totalQuestions.value > 0
+        ? (correctAnswers.value / totalQuestions.value) * 100
+        : 0
+);
+
+const fetchExamData = async () => {
+    await Axios.get("/api/QMetaData/1")
+        .then((res) => {
+            examData.value = res.data.data;
+            quizData.value = examData.value.questions.map((item) => ({
+                ...item,
+                choice: parseChoice(item.choice),
+            }));
+            answers.value = new Array(quizData.value.length).fill(null);
+        })
+        .catch((err) => {
+            toast.error("Error fetching exam data:", err);
+            quizData.value = [];
+        })
+        .finally(() => {
+            loading.value = false;
+        });
+};
+
+const parseChoice = (choiceData) => {
+    if (Array.isArray(choiceData)) {
+        return choiceData;
+    }
+    try {
+        return JSON.parse(choiceData);
+    } catch (error) {
+        console.warn("Invalid choice format:", choiceData);
+        return [];
+    }
+};
+
+const goToNext = () => {
+    if (
+        quiz.value &&
+        answers.value[currentQuestion.value - 1] === quiz.value.answer
+    ) {
+        correctAnswers.value += 1;
+    }
+    // Reset hint display when moving to a new question
+    showHintForQuestion.value = false;
+    if (currentQuestion.value < totalQuestions.value) {
+        currentQuestion.value += 1;
+    }
+};
+
+const goToPrevious = () => {
+    if (currentQuestion.value > 1) {
+        currentQuestion.value -= 1;
+    }
+    showHintForQuestion.value = false;
+};
+
+const submitQuiz = async () => {
+    if (
+        quiz.value &&
+        answers.value[currentQuestion.value - 1] === quiz.value.answer
+    ) {
+        correctAnswers.value += 1;
+    }
+    showResult.value = true;
+    await nextTick();
+    if (scorePercentage.value >= 70) {
+        launchConfetti();
+    }
+};
+
+const retakeQuiz = () => {
+    currentQuestion.value = 1;
+    correctAnswers.value = 0;
+    showResult.value = false;
+    answers.value = new Array(quizData.value.length).fill(null);
+    showHintForQuestion.value = false;
+};
+
+// Launch confetti only 3 times at 1-second intervals
+const launchConfetti = () => {
+    const myCanvas = confettiCanvas.value;
+    if (!myCanvas) return;
+    const confettiInstance = confetti.create(myCanvas, { resize: true });
+    let count = 0;
+    const interval = setInterval(() => {
+        if (count >= 3) {
+            clearInterval(interval);
+            return;
+        }
+        confettiInstance({
+            particleCount: 200,
+            spread: 70,
+            origin: { y: 0.6 },
+        });
+        count++;
+    }, 1000);
+};
+
+// Simply toggle the display of the hint if the current question contains one
+const toggleHint = () => {
+    if (quiz.value && quiz.value.hint) {
+        showHintForQuestion.value = !showHintForQuestion.value;
+    } else {
+        toast.info("No hint available for this question.");
+    }
+};
+
+onMounted(fetchExamData);
+</script>
+
 <template>
     <div class="container mx-auto p-6">
         <Spinner v-if="loading" />
-
         <div v-else>
-            <!-- Instruction Section -->
-            <div class="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">
-                    Instructions
-                </h3>
-                <p class="text-lg text-gray-700">
-                    Answer the following questions and click "Finish Quiz" at
-                    the end. You can move to the next question by clicking
-                    "Next" and go back to previous questions with "Previous".
+            <!-- Exam Information -->
+            <div
+                v-if="examData"
+                class="bg-gradient-to-r from-lime-300 to-lime-500 p-6 rounded-lg shadow-md mb-8 text-gray-800"
+            >
+                <h2 class="text-3xl font-bold mb-2">{{ examData.title }}</h2>
+                <p class="mb-4 text-lg">
+                    <strong>Instruction: </strong>
+                    <span>{{ examData.instruction }}</span>
                 </p>
+                <div class="flex items-center gap-3">
+                    <span class="text-lg font-bold">Total Questions:</span>
+                    <span
+                        class="px-3 py-1 bg-white text-lime-600 rounded-full text-lg font-semibold"
+                    >
+                        {{ totalQuestions }}
+                    </span>
+                </div>
             </div>
 
-            <!-- Quiz Section -->
-            <div v-if="!showResult">
+            <!-- Quiz Question Section -->
+            <div v-if="!showResult && quizData.length > 0">
                 <div
                     v-if="quiz"
                     class="bg-white p-6 rounded-lg shadow-lg border border-lime-500"
                 >
-                    <h2 class="text-xl font-semibold text-gray-800">
-                        {{ currentQuestion }}. {{ quiz.question }}
-                    </h2>
+                    <!-- Question header with hint button -->
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            {{ currentQuestion }}: {{ quiz.question }}
+                        </h2>
+                        <button
+                            @click="toggleHint"
+                            class="p-2 focus:outline-none"
+                            title="Show Hint"
+                        >
+                            <span class="text-2xl"
+                                ><i
+                                    class="fa-solid fa-lightbulb text-blue-500 text-2xl"
+                                ></i
+                            ></span>
+                        </button>
+                    </div>
 
+                    <!-- Display hint if toggled and available -->
+                    <div
+                        v-if="showHintForQuestion && quiz.hint"
+                        class="mt-2 p-3 border-l-4 border-yellow-500 bg-yellow-50 text-yellow-700"
+                    >
+                        Hint: {{ quiz.hint }}
+                    </div>
+
+                    <!-- Answer Choices -->
                     <div class="mt-4 space-y-3">
                         <div
                             v-for="(choice, index) in quiz.choice"
@@ -56,6 +220,7 @@
                         </div>
                     </div>
 
+                    <!-- Navigation Buttons -->
                     <div class="mt-6 flex justify-between">
                         <button
                             @click="goToPrevious"
@@ -64,7 +229,6 @@
                         >
                             Previous
                         </button>
-
                         <button
                             v-if="currentQuestion < totalQuestions"
                             @click="goToNext"
@@ -73,7 +237,6 @@
                         >
                             Next
                         </button>
-
                         <button
                             v-if="currentQuestion === totalQuestions"
                             @click="submitQuiz"
@@ -86,157 +249,56 @@
                 </div>
             </div>
 
+            <div
+                v-if="!loading && quizData.length === 0"
+                class="text-center text-lg text-gray-700"
+            >
+                No quiz questions found. 📭
+            </div>
+
             <!-- Result Section -->
             <div
                 v-if="showResult"
-                class="mt-8 bg-white p-8 rounded-lg shadow-lg text-center relative overflow-hidden"
+                class="result-container relative mt-8 w-full max-w-xl h-96 mx-auto flex items-center justify-center overflow-hidden bg-white p-8 rounded-lg shadow-lg"
             >
                 <canvas
                     ref="confettiCanvas"
-                    class="absolute inset-0 pointer-events-none"
+                    class="absolute inset-0 pointer-events-none w-full h-full"
                 ></canvas>
-
-                <h2 class="text-3xl font-bold text-gray-800 mb-4">
-                    <i
-                        v-if="scorePercentage >= 70"
-                        class="fas fa-trophy text-yellow-400"
-                    ></i>
-                    Quiz Completed <i class="fas fa-trophy"></i> 🎉
-                </h2>
-                <p class="mt-4 text-lg text-gray-700">
-                    You answered
-                    <span class="font-bold">{{ correctAnswers }}</span> out of
-                    <span class="font-bold">{{ totalQuestions }}</span>
-                    correctly.
-                </p>
-                <p class="mt-2 text-lg text-red-500 font-semibold">
-                    Missed Questions: {{ totalQuestions - correctAnswers }}
-                </p>
-                <p
-                    class="mt-4 text-xl font-bold"
-                    :class="{
-                        'text-lime-700 animate-bounce': scorePercentage >= 70,
-                        'text-red-600 animate-shake': scorePercentage < 70,
-                    }"
-                >
-                    Status:
-                    {{ scorePercentage >= 70 ? "Passed ✅" : "Failed ❌" }}
-                </p>
-
-                <div
-                    v-if="scorePercentage >= 70"
-                    class="mt-6 text-xl font-semibold text-lime-700"
-                >
-                    <p>Congratulations! 🎉 You passed the quiz! 🏆</p>
-                </div>
-
-                <button
-                    v-if="scorePercentage < 70"
-                    @click="retakeQuiz"
-                    class="mt-6 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105"
-                >
-                    Retake Quiz <i class="fas fa-redo"></i>
-                </button>
+                <transition name="fade">
+                    <div class="z-10 text-center">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-4">
+                            Quiz Completed 🎉
+                        </h2>
+                        <p class="mt-4 text-lg text-gray-700">
+                            You answered
+                            <span class="font-bold">{{ correctAnswers }}</span>
+                            out of
+                            <span class="font-bold">{{ totalQuestions }}</span>
+                            correctly.
+                        </p>
+                        <button
+                            v-if="scorePercentage < 70"
+                            @click="retakeQuiz"
+                            class="mt-6 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105"
+                        >
+                            Retake Quiz 🔄
+                        </button>
+                    </div>
+                </transition>
             </div>
         </div>
     </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, nextTick } from "vue";
-import axios from "axios";
-import confetti from "canvas-confetti";
-import Spinner from "../Layout/Spinner.vue";
-
-const quizData = ref([]);
-const currentQuestion = ref(1);
-const answers = ref([]);
-const correctAnswers = ref(0);
-const showResult = ref(false);
-const loading = ref(true);
-const confettiCanvas = ref(null);
-
-const totalQuestions = computed(() => quizData.value.length);
-const quiz = computed(() => quizData.value[currentQuestion.value - 1]);
-const scorePercentage = computed(
-    () => (correctAnswers.value / totalQuestions.value) * 100
-);
-
-const fetchQuiz = async () => {
-    try {
-        const response = await axios.get("/api/Quize");
-        quizData.value = response.data.data.map((item) => ({
-            ...item,
-            choice: Array.isArray(item.choice)
-                ? item.choice
-                : JSON.parse(item.choice),
-            answer: Array.isArray(item.answer)
-                ? item.answer
-                : JSON.parse(item.answer),
-        }));
-        answers.value = new Array(quizData.value.length).fill(null);
-    } catch (error) {
-        console.error("Error fetching quiz data:", error);
-    } finally {
-        loading.value = false;
-    }
-};
-
-const goToNext = () => {
-    if (answers.value[currentQuestion.value - 1] === quiz.value.answer[0]) {
-        correctAnswers.value += 1;
-    }
-    if (currentQuestion.value < totalQuestions.value) {
-        currentQuestion.value += 1;
-    }
-};
-
-const goToPrevious = () => {
-    if (currentQuestion.value > 1) {
-        currentQuestion.value -= 1;
-    }
-};
-
-const submitQuiz = async () => {
-    if (answers.value[currentQuestion.value - 1] === quiz.value.answer[0]) {
-        correctAnswers.value += 1;
-    }
-    showResult.value = true;
-
-    await nextTick();
-    if (scorePercentage.value >= 70) {
-        launchConfetti();
-    }
-};
-
-const retakeQuiz = () => {
-    currentQuestion.value = 1;
-    correctAnswers.value = 0;
-    showResult.value = false;
-    answers.value = new Array(quizData.value.length).fill(null);
-};
-
-// 🎉 Confetti Effect
-const launchConfetti = () => {
-    const myCanvas = confettiCanvas.value;
-    if (!myCanvas) return;
-
-    const confettiInstance = confetti.create(myCanvas, { resize: true });
-    setInterval(() => {
-        confettiInstance({
-            particleCount: 200,
-            spread: 70,
-            origin: { y: 0.6 },
-        });
-    }, 2000);
-};
-
-onMounted(fetchQuiz);
-</script>
-
 <style scoped>
-canvas {
-    width: 100%;
-    height: 100%;
+/* Fade transition for the result page */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>

@@ -1,3 +1,83 @@
+<template>
+    <div class="max-w-xl mx-auto p-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+            {{ selectedQuestion ? "Update Question" : "Add Question" }}
+        </h2>
+        <form class="space-y-6">
+            <!-- Question Field -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Question
+                </label>
+                <textarea
+                    v-model.trim="quizForm.question"
+                    placeholder="Enter test question"
+                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
+                ></textarea>
+            </div>
+            <!-- Hint Field -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Hint (optional)
+                </label>
+                <textarea
+                    v-model.trim="quizForm.hint"
+                    placeholder="Add hint here (at least 10 characters)"
+                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
+                ></textarea>
+            </div>
+            <!-- Choices Section -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Choices
+                    <span
+                        @click="addChoice"
+                        class="cursor-pointer ml-2 text-lime-600 hover:text-lime-500"
+                    >
+                        <i class="fa-solid fa-plus text-lg"></i>
+                    </span>
+                </label>
+                <div class="space-y-3 mt-2">
+                    <div
+                        v-for="(choice, index) in quizForm.choice"
+                        :key="index"
+                        class="flex items-center space-x-3"
+                    >
+                        <input
+                            type="radio"
+                            v-model="quizForm.answer"
+                            :value="choice"
+                            name="choice"
+                            class="w-5 h-5 text-lime-600"
+                        />
+                        <input
+                            v-model.trim="quizForm.choice[index]"
+                            type="text"
+                            placeholder="Enter choice"
+                            class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
+                        />
+                        <button
+                            type="button"
+                            @click="removeChoice(index)"
+                            class="text-red-500 hover:text-red-700"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Submit Button -->
+            <button
+                type="button"
+                @click="selectedQuestion ? updateQuiz() : storeQuiz()"
+                class="w-full py-3 bg-lime-600 text-white font-semibold rounded-lg hover:bg-lime-700 transition duration-200 text-base"
+            >
+                {{ selectedQuestion ? "Update Question" : "Add Question" }}
+            </button>
+        </form>
+    </div>
+</template>
+
 <script setup>
 import { ref, watch } from "vue";
 import Axios from "axios";
@@ -6,26 +86,50 @@ import { useToast } from "vue-toastification";
 const toast = useToast();
 const emit = defineEmits(["quizAdded"]);
 
+const props = defineProps({
+    selectedExam: Object,
+    selectedQuestion: {
+        type: Object,
+        default: null,
+    },
+});
+
 const quizForm = ref({
     question: "",
     choice: ["", "", "", ""],
-    answer: "",
-    question_type: "choice",
     hint: "",
+    question_type: "choice",
+    answer: null,
 });
 
-const props = defineProps({
-    selectedExam: Object,
-    selectedQuestion: Object | null,
-});
-
-if (props.selectedQuestion) {
-    quizForm.value = { ...props.selectedQuestion };
-}
-
-function addAnswer(answer) {
-    quizForm.value.answer = answer;
-}
+// Populate or reset the form when selectedQuestion changes.
+watch(
+    () => props.selectedQuestion,
+    (newVal) => {
+        if (newVal) {
+            const existing = { ...newVal };
+            quizForm.value = {
+                question: existing.question,
+                choice:
+                    existing.choice && existing.choice.length
+                        ? existing.choice
+                        : ["", "", "", ""],
+                hint: existing.hint || "",
+                question_type: existing.question_type || "choice",
+                answer: existing.answer || null,
+            };
+        } else {
+            quizForm.value = {
+                question: "",
+                choice: ["", "", "", ""],
+                hint: "",
+                question_type: "choice",
+                answer: null,
+            };
+        }
+    },
+    { immediate: true }
+);
 
 const addChoice = () => {
     if (quizForm.value.choice.length < 6) {
@@ -33,121 +137,88 @@ const addChoice = () => {
     }
 };
 
+function removeChoice(index) {
+    const removedChoice = quizForm.value.choice[index];
+    quizForm.value.choice.splice(index, 1);
+    if (quizForm.value.answer === removedChoice) {
+        quizForm.value.answer = null;
+    }
+}
+
 function storeQuiz() {
+    if (!quizForm.value.question.trim()) {
+        toast.error("Question is required");
+        return;
+    }
+    const choices = quizForm.value.choice.filter((c) => c.trim() !== "");
+    if (choices.length < 2) {
+        toast.error("At least two choices are required");
+        return;
+    }
+    if (!quizForm.value.answer) {
+        toast.error("Please select the correct answer");
+        return;
+    }
+    if (quizForm.value.hint.trim().length < 10) {
+        toast.error("Hint must be at least 10 characters");
+        return;
+    }
     const payload = {
         question: quizForm.value.question,
-        choice: quizForm.value.choice,
+        choice: choices,
         answer: quizForm.value.answer,
         question_type: quizForm.value.question_type,
         exam_id: props.selectedExam.id,
         hint: quizForm.value.hint,
     };
-
     Axios.post("/api/quize", payload)
-        .then((res) => {
-            toast.success("Quiz added successfully");
+        .then(() => {
+            toast.success("Quiz created successfully");
             emit("quizAdded");
             quizForm.value = {
                 question: "",
                 choice: ["", "", "", ""],
-                answer: "",
+                hint: "",
                 question_type: "choice",
+                answer: null,
             };
         })
-        .catch((error) => {
-            toast.error("Failed to add quiz");
+        .catch(() => {
+            toast.error("Failed to create quiz");
         });
 }
 
 function updateQuiz() {
     if (!props.selectedQuestion) return;
-
+    if (!quizForm.value.question.trim()) {
+        toast.error("Question is required");
+        return;
+    }
+    const choices = quizForm.value.choice.filter((c) => c.trim() !== "");
+    if (choices.length < 2) {
+        toast.error("At least two choices are required");
+        return;
+    }
+    if (!quizForm.value.answer) {
+        toast.error("Please select the correct answer");
+        return;
+    }
+    if (quizForm.value.hint.trim().length < 10) {
+        toast.error("Hint must be at least 10 characters");
+        return;
+    }
     const payload = {
         question: quizForm.value.question,
-        choice: quizForm.value.choice,
+        choice: choices,
         answer: quizForm.value.answer,
         hint: quizForm.value.hint,
     };
-
     Axios.patch(`/api/quize/${props.selectedQuestion.id}`, payload)
-        .then((res) => {
-            toast.success("Quiz added successfully");
+        .then(() => {
+            toast.success("Quiz updated successfully");
         })
-        .catch((error) => {
-            toast.error("Failed to add quiz");
+        .catch(() => {
+            toast.error("Failed to update quiz");
         });
 }
-
-watch(
-    () => props.selectedQuestion,
-    () => {
-        quizForm.value = { ...props.selectedQuestion };
-    }
-);
 </script>
-
-<template>
-    <div class="">
-        <div class="col-span-3 bg-gray-50 p-4">
-            <form class="space-y-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700">
-                        Question
-                    </label>
-                    <textarea
-                        v-model.trim="quizForm.question"
-                        placeholder="Enter test question"
-                        class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 text-sm focus:ring-lime-700"
-                    ></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700">
-                        Hint (optional)
-                    </label>
-                    <textarea
-                        v-model.trim="quizForm.hint"
-                        placeholder="Add hint here"
-                        class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 text-sm focus:ring-lime-700"
-                    ></textarea>
-                </div>
-                <div class="w-[90%]">
-                    <label class="block text-sm font-semibold text-gray-700">
-                        Choices
-                        <span>
-                            <i
-                                class="fa-solid fa-plus text-xl text-lime-700 hover:text-lime-500 pl-2"
-                            ></i>
-                        </span>
-                    </label>
-                    <div class="space-y-2 mt-2">
-                        <div
-                            v-for="(choice, index) in quizForm.choice"
-                            :key="index"
-                            class="flex items-center space-x-2"
-                        >
-                            <input
-                                type="radio"
-                                @input="addAnswer(choice)"
-                                name="choice"
-                                class="w-5 h-5 p-2 text-sm border rounded-lg"
-                            />
-                            <input
-                                v-model.trim="quizForm.choice[index]"
-                                type="text"
-                                class="w-full p-2 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
-                                placeholder="Enter choice"
-                            />
-                        </div>
-                    </div>
-                </div>
-                <button
-                    type="button"
-                    @click="selectedQuestion ? updateQuiz() : storeQuiz()"
-                    class="border p-2 mt-2 px-4 bg-lime-700 border-gray-400 text-white rounded-lg text-center hover:bg-lime-800 text-sm w-fit mx-auto"
-                >
-                    {{ selectedQuestion ? "Update Question" : "Add Question" }}
-                </button>
-            </form>
-        </div>
-    </div>
-</template>
