@@ -63,7 +63,9 @@ class CourseController extends Controller {
             'price' => 'numeric',
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
-            'thumbnail_url' => 'image'
+            'thumbnail_url' => 'image',
+            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp'
+
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -80,6 +82,10 @@ class CourseController extends Controller {
         if($request->hasFile('thumbnail_url')) {
             $imagePath = $request->file('thumbnail_url')->store('/course/images', 'public');
         }
+        $videoPath = null;
+        if($request->hasFile('intro_video')) {
+            $videoPath = $request->file('intro_video')->store('course/video', 'public');
+        }
         $course = $user->courses()->create([
             'slug' => Str::uuid(),
             'course_name' => $request->course_name,
@@ -89,7 +95,10 @@ class CourseController extends Controller {
             'price' => $request->price,
             'discount' => $request->discount,
             'credit_hour' => $request->credit_hour,
-            'thumbnail_url' => $imagePath
+            'thumbnail_url' => $imagePath,
+            'intro_video' => $videoPath,
+            'language' => $request->language,
+            'status' => $request->status
         ]);
 
         return response()->json([
@@ -132,7 +141,7 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            // ->where('user_id', $user->id)
+            ->where('user_id', $user->id)
             ->findOrFail($id);
 
         if(!$course) {
@@ -141,15 +150,17 @@ class CourseController extends Controller {
             ], 404);
         }
         
-        $validationRules = [
+       $validationRules = [
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'overview' => 'min:10',
             'tag' => 'min:3',
-            'skill_level' => 'numeric',
+            'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
-            'thumbnail_url' => 'sometimes|image'
+            'thumbnail_url' => 'image',
+            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp'
+
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -164,28 +175,33 @@ class CourseController extends Controller {
         }
 
         $data = $validator->validated();
-    
-        // Process file uploads:
-    
-            // Process file uploads
-    if ($request->hasFile('thumbnail_url')) {
-        // Delete the old image if exists
-        if ($course->thumbnail_url) {
-            Storage::disk('public')->delete($course->thumbnail_url);
+
+        if ($course->status === 'draft') {
+            $data['status'] = 'published'; // Set status to 'published'
         }
-        $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course/images', 'public');
-    }
-    
 
-    $course->update($data);
+        if ($request->hasFile('thumbnail_url')) {
 
-        return response()->json([
-            'message' => $this->langService->getLang('course_successfully_updated'),
-            'data' => new CourseResource($course),
-        ]);
-    }
-    
-    
+            if ($course->thumbnail_url) {
+                Storage::disk('public')->delete($course->thumbnail_url);
+            }
+            $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course/images', 'public');
+        }
+
+        if ($request->hasFile('intro_video')) {
+            if ($course->intro_video) {
+                Storage::disk('public')->delete($course->intro_video);
+            }
+            $data['intro_video'] = $request->file('intro_video')->store('course/video', 'public');
+        }
+
+        $course->update($data);
+
+            return response()->json([
+                'message' => $this->langService->getLang('course_successfully_updated'),
+                'data' => new CourseResource($course),
+            ]);
+        }
 
     /**
      * Remove the specified resource from storage.
@@ -220,11 +236,13 @@ class CourseController extends Controller {
     }
 
     public function search(Request $request) {
-        $courses = Course::query()
-            ->where('course_name', 'like', "%{$request->searchQuery}%")
-            ->where('user_id', Auth::id())
-            ->paginate($request->rowsPerPageOptions);
-
+        $courses = Course::where('user_id', Auth::id())
+        ->when($request->searchQuery, fn($q) => $q->where('course_name', 'like', "%{$request->searchQuery}%"))
+        ->when($request->skillLevel, fn($q) => $q->where('skill_level', $request->skillLevel))
+        ->paginate($request->rowsPerPageOptions);
+    
+    
+        // Get overall statistics (these are not filtered by search or skill level)
         $stats = Course::query()
             ->where('user_id', Auth::id())
             ->selectRaw(
@@ -232,16 +250,17 @@ class CourseController extends Controller {
                 [Carbon::now()->format('Y-m-d')]
             )
             ->first();
-
+    
         $pagination = $courses->toArray();
         unset($pagination['data']);
-
+    
         return response()->json([
-            'newToday' => $stats->newToday,
-            'total' => $stats->total,
+            'newToday'   => $stats->newToday,
+            'total'      => $stats->total,
             'pagination' => $pagination,
-            'data' => CourseResource::collection($courses)
+            'data'       => CourseResource::collection($courses)
         ]);
     }
+    
     
 }

@@ -1,9 +1,8 @@
  <script setup>
     import Axios from "axios";
-    import Editor from 'primevue/editor';
     import { storeToRefs } from "pinia";
     import { useRoute, useRouter } from "vue-router"
-    import { ref, onMounted,onUnmounted, watch,computed, watchEffect} from "vue";
+    import { ref, onMounted, watch, watchEffect} from "vue";
 
     import { useInstructorStore } from "@/store/useInstructorStore";
     
@@ -16,18 +15,15 @@
     const router = useRouter();
     const selectedCourseSlug =ref(route.query.slug);
 
-    const error = ref("");
     const loading = ref(true);
 
-    const selectedCourseForModules = ref(null);
-
     const activeMenuId = ref(null);
-    const selectedFilter = ref("");
     const rowsPerPageOptions = [5, 10, 15, 20];
     const rowsPerPage = ref(10)
     const pagination =ref('');
     const totalPages = ref('');
     const currentPage = ref(1);
+    const skillLevelFilter = ref('');
 
     const editingCourseId = ref(null); 
     const actionType = ref('STORE');
@@ -38,9 +34,10 @@
 
     function filteredCourses(page=1) {
         Axios
-            .post(`/api/courses/search?page = ${page}`, {
+            .post(`/api/courses/search?page=${page}`, {
                 searchQuery: props.searchQuery,
-                rowsPerPageOptions:rowsPerPage.value
+                rowsPerPageOptions:rowsPerPage.value,
+                skillLevel: skillLevelFilter.value 
             })
             .then(res => {
                 instructorCourses.value = res.data.data
@@ -88,7 +85,7 @@
         Axios
             .delete(`/api/courses/course/${id}`)
             .finally(res =>{
-                courses.value = instructorCourses.value.filter(course => course.id !== id);
+                instructorCourses.value = instructorCourses.value.filter(course => course.id !== id);
             });
     };
 
@@ -123,9 +120,13 @@
         document.addEventListener("click", handleClickOutside);
     });
 
-    watch(() => props.searchQuery, () => {
-        filteredCourses(1);
-    });
+    watch(
+        [() => props.searchQuery, skillLevelFilter],
+        () => {
+            filteredCourses(1);
+        }
+    );
+
 </script>
 
 <template>
@@ -141,17 +142,17 @@
     <div  v-if="!selectedCourse && !loading">
         <div class="flex justify-end mb-4 mr-5">
             <select 
-                v-model="selectedFilter"
+                v-model="skillLevelFilter"
                 class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" >
                 <option value="">All Skill Levels</option>
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advance">Advanced</option>
-                <option value="Full Package">Full Package</option>
+                <option value="1">Beginner</option>
+                <option value="2">Intermediate</option>
+                <option value="3">Advance</option>
+                <option value="4">Full Package</option>
             </select>
         </div>
 
-        <div>
+        <div v-if="instructorCourses.length > 4 ">
             <div  class="border border-gray-300 rounded-lg [-ms-overflow-style:'none'] [scrollbar-width:'none'] [&::-webkit-scrollbar]:hidden">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-white rounded-t-lg">
@@ -242,32 +243,107 @@
                     </tbody>
                 </table>
             </div>
-
             <!-- Pagination Footer -->
             <div  class="flex justify-between items-center mt-4 px-4">
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm text-gray-600">Rows per page:</span>
-                    <div v-for="option in rowsPerPageOptions" 
+                <div class="flex space-x-2 items-center">
+                    <span class="text-sm text-gray-600">Courses per page:</span>
+                    <div 
+                        v-for="option in rowsPerPageOptions" 
                         :key="option"
                         @click="coursePerPage(option)"
-                        class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        class="border border-gray-300 rounded-md px-4 py-2 text-sm cursor-pointer transition-all duration-200"
+                        :class="{
+                            'bg-blue-500 text-white font-bold': rowsPerPage === option, 
+                            'bg-white text-gray-700 hover:bg-gray-200': rowsPerPage !== option
+                        }">
                         {{ option }}
                     </div>
                 </div>
+
                 <div class="flex items-center space-x-2">
                     <button
-                        @click="onNextPage()"
+                        @click="onPreviousPage()"
                         :disabled="currentPage === 1"
                         class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" >
                         Prev
                     </button>
                     <span class="text-sm text-gray-600"> Page {{ currentPage }} of {{ totalPages }} </span>
                     <button
-                        @click="onPreviousPage()"
+                        @click="onNextPage() "
                         :disabled="currentPage === totalPages"
                         class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50" >
                         Next
                     </button>
+                </div>
+            </div>
+        </div>
+        <div v-if="instructorCourses.length <= 4" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+                v-for="course in instructorCourses"
+                :key="course.id"
+                class="bg-white rounded-lg border transition duration-300 overflow-hidden w-72">
+                <img
+                    :src="course.thumbnail_url"
+                    alt="Course Image"
+                    class="w-full h-36 object-cover" />
+                <div class="p-3 space-y-2">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">{{ course.course_name }}</h3>
+                        <p class="text-xs text-gray-500">
+                            Level: <span class="font-semibold">{{ course.skill_level }}</span>
+                        </p>
+                    </div>
+                    <div class="text-gray-600 text-justify line-clamp-2" v-html="course.overview"></div> 
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center text-xs text-gray-700">
+                            <svg class="w-3 h-3 text-yellow-500 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M10 15l-5.878 3.09L5.244 12 .49 7.91l6.07-.88L10 2l2.44 5.03 6.07.88-4.754 4.09 1.122 5.99z" />
+                            </svg>
+                            <span class="ml-1 font-bold">{{ course.rating || 4.6 }}</span>
+                        </div>
+                        <div class="text-xs font-semibold text-gray-700">
+                            {{ course.total_enroll || 15 }} Enrolled
+                        </div>
+                        <div class="text-xs font-semibold text-gray-700">
+                            ${{ course.revenue || 25 }}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <button
+                            @click="getSelectedCourse(courseModuleTab, course)"
+                            class="bg-white border border-gray-200 px-2 py-1 rounded text-xs text-black hover:bg-gray-200 transition">
+                            Details
+                        </button>
+                        <div class="relative">
+                            <button
+                                @click.stop="toggleMenu(course.id)"
+                                class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <circle cx="12" cy="6" r="1.5" fill="currentColor" />
+                                    <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                                    <circle cx="12" cy="18" r="1.5" fill="currentColor" />
+                                </svg>
+                            </button>
+                            <div v-if="activeMenuId === course.id"
+                                 class="absolute right-0 bottom-0 mt-1 bg-white shadow-md rounded-md z-50 w-28 text-xs border">
+                                <button
+                                    @click="getSelectedCourse(courseEditTab, course)"
+                                    class="w-full px-2 py-1 text-left text-black hover:bg-blue-100 transition">
+                                    Edit
+                                </button>
+                                <button
+                                    @click="deleteCourse(course.id)"
+                                    class="w-full px-2 py-1 text-left text-black hover:bg-red-100 transition">
+                                    Delete
+                                </button>
+                                <button
+                                    @click="openModuleForm(course.id)"
+                                    class="w-full px-2 py-1 text-left text-black hover:bg-purple-100 transition">
+                                    Add Module
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,15 +356,15 @@
 </div>
 </template>
 <style scoped>
-@keyframes orbit {
-  0% { transform: rotate(0deg) translateX(20px) rotate(0deg); }
-  100% { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
-}
-.st8 {
-        fill: #B7C7CEFF;
-        stroke: #D4C1C1FF;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-miterlimit: 10;
-      }
+    @keyframes orbit {
+    0% { transform: rotate(0deg) translateX(20px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
+    }
+    .st8 {
+            fill: #B7C7CEFF;
+            stroke: #D4C1C1FF;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-miterlimit: 10;
+        }
 </style>

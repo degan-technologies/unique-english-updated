@@ -30,7 +30,11 @@ class CourseResource extends JsonResource {
             'discount' => $this->discount,
             'credit_hour' => $this->credit_hour,
             'created_at' => $this->created_at,
+            'status' => $this->status,
             'user' => new userResource($this->user),
+            'intro_video' => $this->intro_video
+            ? Storage::disk('public')->url($this->intro_video)
+            : 'no-intro_video.png',
             'thumbnail_url' => $this->thumbnail_url
             ? Storage::disk('public')->url($this->thumbnail_url)
             : 'no-thumbnail_url.png',

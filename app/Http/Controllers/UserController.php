@@ -305,7 +305,7 @@ class UserController extends Controller {
             'first_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
             'middle_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
             'last_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
-            'phone' => [ 'unique:users,phone,' . $user->id, 'regex:/[0-9]/', 'size:13'],
+            'phone' => [ 'unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/' ],
             'profile' => 'image',
             'bg_image' => 'image',
             'gender' => [Rule::in(GENDER)],

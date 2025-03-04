@@ -1,6 +1,230 @@
+<script setup>
+    import Axios from "axios";
+    import { onMounted, ref, computed } from "vue";
+    import { useToast } from "vue-toastification";
+
+    import AddQuestion from "@/components/Quize/AddQuestion.vue";
+
+    const toast = useToast();
+
+    const qMetaDatas = ref([]);
+    const selectedExam = ref(null);
+    const oppenCollaps = ref(true);
+    const prepaireForUpdate = ref(false);
+    const selectedQuestion = ref(null);
+    const isNewExamMode = ref(false);
+
+    const currentQuestionPage = ref(1);
+    const questionsPerPage = 5;
+    
+    const metaData = ref({
+        title: "",
+        instraction: "",
+    });
+
+    const props = defineProps({
+        courseID: Number,
+        moduleID: Number
+    });
+
+    console.log("Course ID:", props.courseID);
+    console.log("Module ID:", props.moduleID);
+
+    const visibleQuestions = computed(() => {
+        if (selectedExam.value && selectedExam.value.questions) {
+            const start = (currentQuestionPage.value - 1) * questionsPerPage;
+            return selectedExam.value.questions.slice(
+                start,
+                start + questionsPerPage
+            );
+        }
+        return [];
+    });
+
+    const totalQuestionPages = computed(() => {
+        if (selectedExam.value && selectedExam.value.questions) {
+            return Math.ceil(
+                selectedExam.value.questions.length / questionsPerPage
+            );
+        }
+        return 0;
+    });
+
+    const confirmDialog = ref({
+        visible: false,
+        message: "",
+        onConfirm: null,
+    });
+
+    function showConfirm(message, onConfirm) {
+        confirmDialog.value = { visible: true, message, onConfirm };
+    }
+
+    function hideConfirm() {
+        confirmDialog.value.visible = false;
+    }
+
+    function onSelectExam(exam) {
+        isNewExamMode.value = false;
+        if (selectedExam.value && selectedExam.value.id === exam.id) {
+            selectedExam.value = null;
+        } else {
+            const instractionVal = exam.instraction || exam.instruction || "";
+            selectedExam.value = { ...exam, instraction: instractionVal };
+            metaData.value = {
+                title: exam.title || "",
+                instraction: instractionVal,
+            };
+            oppenCollaps.value = true;
+            currentQuestionPage.value = 1;
+            selectedQuestion.value = null;
+        }
+    }
+
+    function onCollapsExam() {
+        oppenCollaps.value = !oppenCollaps.value;
+    }
+
+    function onPrepareForUpdate(type) {
+        prepaireForUpdate.value =
+            selectedExam.value && selectedExam.value[type] !== metaData.value[type];
+    }
+
+    function onPrepareForUpdateQuestion(question) {
+        selectedQuestion.value = question;
+        oppenCollaps.value = false;
+    }
+
+    function toggleNewExam() {
+        isNewExamMode.value = true; 
+        selectedExam.value = null;
+        oppenCollaps.value = true;
+        selectedQuestion.value = null;
+        metaData.value = { title: "", instraction: "" };
+    }
+
+    function showAddQuestionForm() {
+        selectedQuestion.value = null;
+        oppenCollaps.value = false;
+    }
+
+    function fetchExams() {
+        Axios.get("/api/exams")
+            .then((res) => {
+                qMetaDatas.value = res.data.data;
+            })
+            .catch(() => {
+                toast.error("Failed to fetch exams");
+            });
+    }
+
+    function storeMetaData() {
+        if (!metaData.value.title.trim()) {
+            toast.error("Exam title is required");
+            return;
+        }
+        const payload = {
+            title: metaData.value.title,
+            instraction: metaData.value.instraction,
+        };
+        Axios.post("/api/QMetaData", payload)
+            .then((res) => {
+                selectedExam.value = res.data.data;
+                qMetaDatas.value.push(res.data.data);
+                oppenCollaps.value = true;
+                isNewExamMode.value = false; 
+                toast.success("Exam created successfully");
+            })
+            .catch(() => {
+                toast.error("Failed to create exam");
+            });
+    }
+
+    // API call: Update Existing Exam Meta Data
+    function UpdateMetaData() {
+        if (!prepaireForUpdate.value) return;
+        if (!metaData.value.title.trim()) {
+            toast.error("Exam title is required");
+            return;
+        }
+        const payload = {
+            title: metaData.value.title,
+            instraction: metaData.value.instraction,
+        };
+        Axios.put(`/api/QMetaData/${selectedExam.value?.id}`, payload)
+            .then((res) => {
+                selectedExam.value = res.data.data;
+                qMetaDatas.value = qMetaDatas.value.map((q) =>
+                    q.id === res.data.data.id ? res.data.data : q
+                );
+                prepaireForUpdate.value = false;
+                toast.success("Exam updated successfully");
+            })
+            .catch(() => {
+                toast.error("Failed to update exam");
+            });
+    }
+
+    // API call: Delete Exam
+    function deleteExam(examId) {
+        showConfirm("Are you sure you want to delete this exam?", () => {
+            Axios.delete(`/api/QMetaData/${examId}`)
+                .then(() => {
+                    qMetaDatas.value = qMetaDatas.value.filter(
+                        (q) => q.id !== examId
+                    );
+                    if (selectedExam.value && selectedExam.value.id === examId) {
+                        selectedExam.value = null;
+                    }
+                    toast.success("Exam deleted successfully");
+                })
+                .catch(() => {
+                    toast.error("Error deleting exam");
+                })
+                .finally(() => {
+                    hideConfirm();
+                });
+        });
+    }
+
+    // API call: Delete Question
+    function deleteQuestion(questionId) {
+        showConfirm("Are you sure you want to delete this question?", () => {
+            Axios.delete(`/api/quize/${questionId}`)
+                .then(() => {
+                    toast.success("Question deleted successfully");
+                    selectedExam.value.questions =
+                        selectedExam.value.questions.filter(
+                            (q) => q.id !== questionId
+                        );
+                    if (currentQuestionPage.value > totalQuestionPages.value) {
+                        currentQuestionPage.value = 1;
+                    }
+                })
+                .catch(() => {
+                    toast.error("Error deleting question");
+                })
+                .finally(() => {
+                    hideConfirm();
+                });
+        });
+    }
+
+    // Change question page for pagination
+    function changeQuestionPage(page) {
+        if (page >= 1 && page <= totalQuestionPages.value) {
+            currentQuestionPage.value = page;
+        }
+    }
+
+    onMounted(() => {
+        fetchExams();
+        toggleNewExam();
+    });
+</script>
+
 <template>
     <div class="container mx-auto p-4">
-        <!-- Confirmation Modal -->
         <div
             v-if="confirmDialog.visible"
             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
@@ -246,222 +470,4 @@
     </div>
 </template>
 
-<script setup>
-import { onMounted, ref, computed } from "vue";
-import Axios from "axios";
-import { useToast } from "vue-toastification";
-import AddQuestion from "@/components/Quize/AddQuestion.vue";
 
-// Toast notifications for alerts
-const toast = useToast();
-
-// Reactive Variables
-const metaData = ref({
-    title: "",
-    instraction: "",
-});
-const qMetaDatas = ref([]);
-const selectedExam = ref(null);
-const oppenCollaps = ref(true);
-const prepaireForUpdate = ref(false);
-const selectedQuestion = ref(null);
-const isNewExamMode = ref(false); // Flag for new exam mode
-
-// Pagination for questions in selected exam
-const currentQuestionPage = ref(1);
-const questionsPerPage = 5;
-const visibleQuestions = computed(() => {
-    if (selectedExam.value && selectedExam.value.questions) {
-        const start = (currentQuestionPage.value - 1) * questionsPerPage;
-        return selectedExam.value.questions.slice(
-            start,
-            start + questionsPerPage
-        );
-    }
-    return [];
-});
-const totalQuestionPages = computed(() => {
-    if (selectedExam.value && selectedExam.value.questions) {
-        return Math.ceil(
-            selectedExam.value.questions.length / questionsPerPage
-        );
-    }
-    return 0;
-});
-
-// Confirmation Dialog Data
-const confirmDialog = ref({
-    visible: false,
-    message: "",
-    onConfirm: null,
-});
-
-// Confirmation Modal functions
-function showConfirm(message, onConfirm) {
-    confirmDialog.value = { visible: true, message, onConfirm };
-}
-function hideConfirm() {
-    confirmDialog.value.visible = false;
-}
-
-// Exam selection and toggle functions
-function onSelectExam(exam) {
-    // Exit new exam mode when an exam is selected
-    isNewExamMode.value = false;
-    if (selectedExam.value && selectedExam.value.id === exam.id) {
-        selectedExam.value = null;
-    } else {
-        const instractionVal = exam.instraction || exam.instruction || "";
-        selectedExam.value = { ...exam, instraction: instractionVal };
-        metaData.value = {
-            title: exam.title || "",
-            instraction: instractionVal,
-        };
-        oppenCollaps.value = true;
-        currentQuestionPage.value = 1;
-        selectedQuestion.value = null;
-    }
-}
-function onCollapsExam() {
-    oppenCollaps.value = !oppenCollaps.value;
-}
-function onPrepareForUpdate(type) {
-    prepaireForUpdate.value =
-        selectedExam.value && selectedExam.value[type] !== metaData.value[type];
-}
-function onPrepareForUpdateQuestion(question) {
-    selectedQuestion.value = question;
-    oppenCollaps.value = false;
-}
-
-// Toggle New Exam Mode and reset form data
-function toggleNewExam() {
-    isNewExamMode.value = true; // Enable new exam mode
-    selectedExam.value = null; // Clear any selected exam
-    oppenCollaps.value = true; // Open the metadata form
-    selectedQuestion.value = null;
-    metaData.value = { title: "", instraction: "" };
-}
-
-// Show the Add Question form by collapsing the meta form
-function showAddQuestionForm() {
-    selectedQuestion.value = null;
-    oppenCollaps.value = false;
-}
-
-// API call: Fetch Exams
-function fetchExams() {
-    Axios.get("/api/exams")
-        .then((res) => {
-            qMetaDatas.value = res.data.data;
-        })
-        .catch(() => {
-            toast.error("Failed to fetch exams");
-        });
-}
-
-// API call: Create New Exam
-function storeMetaData() {
-    if (!metaData.value.title.trim()) {
-        toast.error("Exam title is required");
-        return;
-    }
-    const payload = {
-        title: metaData.value.title,
-        instraction: metaData.value.instraction,
-    };
-    Axios.post("/api/QMetaData", payload)
-        .then((res) => {
-            selectedExam.value = res.data.data;
-            qMetaDatas.value.push(res.data.data);
-            oppenCollaps.value = true;
-            isNewExamMode.value = false; // Reset new exam mode flag after creation
-            toast.success("Exam created successfully");
-        })
-        .catch(() => {
-            toast.error("Failed to create exam");
-        });
-}
-
-// API call: Update Existing Exam Meta Data
-function UpdateMetaData() {
-    if (!prepaireForUpdate.value) return;
-    if (!metaData.value.title.trim()) {
-        toast.error("Exam title is required");
-        return;
-    }
-    const payload = {
-        title: metaData.value.title,
-        instraction: metaData.value.instraction,
-    };
-    Axios.put(`/api/QMetaData/${selectedExam.value?.id}`, payload)
-        .then((res) => {
-            selectedExam.value = res.data.data;
-            qMetaDatas.value = qMetaDatas.value.map((q) =>
-                q.id === res.data.data.id ? res.data.data : q
-            );
-            prepaireForUpdate.value = false;
-            toast.success("Exam updated successfully");
-        })
-        .catch(() => {
-            toast.error("Failed to update exam");
-        });
-}
-
-// API call: Delete Exam
-function deleteExam(examId) {
-    showConfirm("Are you sure you want to delete this exam?", () => {
-        Axios.delete(`/api/QMetaData/${examId}`)
-            .then(() => {
-                qMetaDatas.value = qMetaDatas.value.filter(
-                    (q) => q.id !== examId
-                );
-                if (selectedExam.value && selectedExam.value.id === examId) {
-                    selectedExam.value = null;
-                }
-                toast.success("Exam deleted successfully");
-            })
-            .catch(() => {
-                toast.error("Error deleting exam");
-            })
-            .finally(() => {
-                hideConfirm();
-            });
-    });
-}
-
-// API call: Delete Question
-function deleteQuestion(questionId) {
-    showConfirm("Are you sure you want to delete this question?", () => {
-        Axios.delete(`/api/quize/${questionId}`)
-            .then(() => {
-                toast.success("Question deleted successfully");
-                selectedExam.value.questions =
-                    selectedExam.value.questions.filter(
-                        (q) => q.id !== questionId
-                    );
-                if (currentQuestionPage.value > totalQuestionPages.value) {
-                    currentQuestionPage.value = 1;
-                }
-            })
-            .catch(() => {
-                toast.error("Error deleting question");
-            })
-            .finally(() => {
-                hideConfirm();
-            });
-    });
-}
-
-// Change question page for pagination
-function changeQuestionPage(page) {
-    if (page >= 1 && page <= totalQuestionPages.value) {
-        currentQuestionPage.value = page;
-    }
-}
-
-onMounted(() => {
-    fetchExams();
-    toggleNewExam();
-});
-</script>

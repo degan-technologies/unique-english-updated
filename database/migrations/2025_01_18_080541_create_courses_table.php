@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('price')->nullable();
             $table->unsignedBigInteger('discount')->nullable();
             $table->integer('credit_hour')->nullable();
+            $table->string('status');
 
             $table->string('thumbnail_url')->unique()->nullable();
             $table->string('language')->nullable();

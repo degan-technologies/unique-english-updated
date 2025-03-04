@@ -137,8 +137,14 @@
               <h1 class="text-xl font-bold text-center mb-4">Books Content</h1>
               <bookmanagment :searchQuery="searchQuery" />
             </div>
+           
+        <div v-else-if="activeTab === addbookTab" class="space-y-4">
+          <button @click="selectedTab(bookTab)" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded transition">
+            Back to List
+          </button>
+          <AddBook />
+        </div>
           </div>
-
           <div>
             <div class="mb-6 flex justify-center space-x-4">
                 <button 
@@ -152,7 +158,7 @@
                         Add Book
                 </button>
             </div>
-            <aside class="bg-white shadow rounded-lg p-4 lg:col-span-1 h-fit">
+            <aside v-if="activeTab !== addcourseTab" class="bg-white shadow rounded-lg p-4 lg:col-span-1 h-fit">
                 <h3 class="text-xl font-semibold text-center mb-4">Analytics Dashboard</h3>
                 <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
@@ -172,6 +178,9 @@
             </aside>
         </div>
         </div>
+        <div v-if="activeTab === addcourseTab" class="space-y-4">
+          <AddCourse />
+        </div>
         <div  v-if="selectedCourse">
             <div v-if="selectedAction === courseModuleTab" class="w-full h-full bg-white p-6">
                 <div class="relative w-full  mx-auto  p-6   gap-6">
@@ -186,24 +195,6 @@
         </div>
       </div>
 
-      <!-- Add Course Page -->
-      <div v-if="activeTab === addcourseTab" class="space-y-4">
-     
-        
-        <button @click="selectedTab(courseTab)" class="bg-lime-100 hover:bg-lime-400 text-gray-700 px-4 py-2 rounded transition">
-          Back to List
-        </button>
-        <AddCourse />
-      </div>
-
-      <!-- Add Book Page -->
-      <div v-else-if="activeTab === addbookTab" class="space-y-4">
-       
-        <button @click="selectedTab(bookTab)" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded transition">
-          Back to List
-        </button>
-        <AddBook />
-      </div>
     </div>
   </div>
 </template>
