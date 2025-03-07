@@ -24,4 +24,7 @@ class QMetaData extends Model {
     public function quizzes(){ return $this->hasMany(Quiz::class,); }
     public function course() { return $this->belongsTo(Course::class);}
     public function courseContent() { return $this->belongsTo(CourseContent::class);}
+    public function results() {
+        return $this->belongsTo(Result::class);
+    }
 }

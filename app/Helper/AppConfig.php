@@ -23,7 +23,6 @@ define('STUDENT_ROLE', 'student');
 define('INSTRUCTOR_ROLE', 'instructor');
 define('SYSTEM_ADMIN_ROLE', 'system_admin');
 
-
 define('AMAHARIC', 'am');
 define('ENGLISH', 'en');
 
@@ -49,6 +48,12 @@ define('COMPLETED', 3);
 define('CANCELLED', 4);
 define('LiVESESSION_STATUS',[
     SCHEDULED,LIVE,COMPLETED,CANCELLED
+]);
+
+define('STARTED', 1);
+define('COMPLETED', 2);
+define('COURSE_CONTENT_STATUS', [
+    STARTED, COMPLETED
 ]);
 
 define('REGISTERED', 1);

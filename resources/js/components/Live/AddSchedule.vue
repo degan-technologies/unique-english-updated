@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-lg mt-10">
+    <div class="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-lg ">
         <h2 class="text-2xl font-bold text-center text-lime-700 mb-6">
             Add Schedule
         </h2>

@@ -22,6 +22,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Plan\PlanController;
 use App\Http\Controllers\Schedule\ScheduleController;
 use App\Http\Controllers\Test\TestController;
+use App\Http\Controllers\ActivityFeedController;
 
 
 
@@ -62,6 +63,9 @@ Route::middleware('auth:api')
     Route::resource('QASection', QASectionController::class);
     });
 
+
+
+    
 Route::middleware('auth:api')
     ->prefix('courses')
     ->group(function () {
@@ -71,6 +75,10 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
+        Route::get('/{course}/certificate-status', [CourseController::class, 'certificateStatus']);
+        Route::post('/course-content-progress/{courseContentId}', [CourseController::class, 'updateProgress']);
+        Route::get('/activities', [ActivityFeedController::class, 'index']);
+
     });
 
 Route::middleware('auth:api')

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Services\LangService;
 use Illuminate\Http\Request;
+
+use App\Traits\LogsActivity;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,7 +18,7 @@ class AuthController extends Controller {
      * localized 
      */
     protected $langService;
-
+    use LogsActivity;
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
@@ -30,6 +32,7 @@ class AuthController extends Controller {
      * @return mixed
      */
     public function login(Request $request) {
+  
         $validation = [
             'email' => ['required', 'email'],
             'password' => ['required']
@@ -62,6 +65,7 @@ class AuthController extends Controller {
         }
 
         $token = Auth::user()->createToken($request->email);
+        $this->logActivity('login', 'User logged in', 'User successfully logged in.');
         return response()->json([
             'token' => $token->accessToken
         ]);

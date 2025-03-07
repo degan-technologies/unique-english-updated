@@ -20,6 +20,7 @@ const {
     exams,
     payments,
     liveSssions,
+    schedule,
     messaging,
 } = storeToRefs(sidebarStore);
 
@@ -61,6 +62,12 @@ const mainItems = [
         route: liveSssions.value,
         description: "Track, join, schedule live classes.",
         icon: "video",
+    },
+     {
+        label: "Schedule",
+        route: schedule.value,
+        description: " schedule live classes.",
+        icon: "calendar",
     },
     {
         label: "Messaging & Notifications",

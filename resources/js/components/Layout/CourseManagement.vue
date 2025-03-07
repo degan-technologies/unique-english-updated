@@ -49,6 +49,7 @@
 
         activeTab.value = tab;
     }
+    
 
     computed(()=>activeTab.value = route?.query?.currentActiveTab);
     
@@ -134,15 +135,17 @@
             </div>
            
             <div v-else-if="activeTab === bookTab">
-              <h1 class="text-xl font-bold text-center mb-4">Books Content</h1>
               <bookmanagment :searchQuery="searchQuery" />
+
             </div>
-           
+             <!-- Add Course Page -->
+          <div v-if="activeTab === addcourseTab" class="space-y-4">
+            <AddCourse />
+            </div>
+
+         <!-- Add Book Page -->
         <div v-else-if="activeTab === addbookTab" class="space-y-4">
-          <button @click="selectedTab(bookTab)" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded transition">
-            Back to List
-          </button>
-          <AddBook />
+        <AddBook />
         </div>
           </div>
           <div>
@@ -157,6 +160,7 @@
                         class="bg-lime-700 hover:bg-lime-800 text-white px-4 py-2 rounded transition">
                         Add Book
                 </button>
+                
             </div>
             <aside v-if="activeTab !== addcourseTab" class="bg-white shadow rounded-lg p-4 lg:col-span-1 h-fit">
                 <h3 class="text-xl font-semibold text-center mb-4">Analytics Dashboard</h3>
@@ -195,6 +199,7 @@
         </div>
       </div>
 
+     
     </div>
   </div>
 </template>

@@ -36,6 +36,10 @@ class BookResource extends JsonResource {
             'page_number' => $this->page_number,
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
+            'intro_video' => $this->intro_video 
+            ? Storage::disk('public')->url($this->intro_video) 
+            : 'no-video.mp4',
+
             'cover_page_url' => $this->cover_page_url
             ? Storage::disk('public')->url($this->cover_page_url)
             : 'no-cover_page_url.png',
