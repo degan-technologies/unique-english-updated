@@ -9,6 +9,7 @@ use App\Models\Live\Live;
 use App\Services\ChapaService;
 use App\Services\LangService;
 use Carbon\Carbon;
+use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ class TransactionController extends Controller {
      */
     protected $langService;
     protected $chapaService;
+    use LogsActivity;
 
     public function __construct(LangService $langService, ChapaService $chapaService) {
         $this->langService = $langService;
@@ -141,9 +143,12 @@ class TransactionController extends Controller {
             ], 500);
         }
 
+        $this->logActivity('enroll', 'User enrolled in course', 'User enrolled in course ID: ' . $request->course_id, $request->course_id);
+        
         return response()->json([
             'message' => $this->langService->getLang('payment_initiated'),
             'checkout_url' => $response['data']['checkout_url']
         ]);
+
     }
 }

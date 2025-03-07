@@ -14,9 +14,9 @@ class Result extends Model {
         'slug',
         'result',
         'user_id',
-        'quize_id',
+        'q_meta_data_id',
     ];
 
     public function user() { return $this->belongsTo(User::class); }
-    public function quize() { return $this->belongsTo(Quiz::class,); }
+    public function qMetaData() { return $this->belongsTo(QMetaData::class,); }
 }

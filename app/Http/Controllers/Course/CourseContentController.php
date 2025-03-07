@@ -29,9 +29,7 @@ class CourseContentController extends Controller {
 
 
     public function index() {
-        $courses = CourseContent::All()
-            ->get();
-
+        $courses = CourseContent::all();
         return response() -> json([
             'data' => CourseContentResource::collection($courses)
         ]);
@@ -139,7 +137,7 @@ class CourseContentController extends Controller {
             'content_url' => 'file', // Just validates that a file is present, does not store it.
             'thumbnail_url' => 'image', // Same here.
             'hour' => 'date_format:H:i',
-            'status' => [Rule::in(COURSE_STATUS)],
+            'status' => [Rule::in(COURSE_CONTENT_STATUS)],
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));

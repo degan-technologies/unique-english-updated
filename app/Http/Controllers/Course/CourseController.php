@@ -14,6 +14,10 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use App\Models\Course\CourseContent;
+use App\Models\Quiz\QMetaData;
+use App\Models\Quiz\Result;
+use App\Models\Course\CourseContentProgress;
 
 class CourseController extends Controller {
 
@@ -112,14 +116,11 @@ class CourseController extends Controller {
      */
     public function show(string $id)
     {
-        // Fetch the course by its ID and ensure it belongs to the authenticated user
         $course = Course::with('courseModules')
         
             ->where('id', $id)
-           // Use Auth::id() instead of Auth::user()->id
             ->first();
     
-        // If the course is not found, return a 404 response
         if (!$course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
@@ -197,20 +198,90 @@ class CourseController extends Controller {
 
         $course->update($data);
 
-            return response()->json([
-                'message' => $this->langService->getLang('course_successfully_updated'),
-                'data' => new CourseResource($course),
-            ]);
+        return response()->json([
+            'message' => $this->langService->getLang('course_successfully_updated'),
+            'data' => new CourseResource($course),
+        ]);
+    }
+
+
+
+    public function certificateStatus(Request $request, $course_id)
+    {
+        $user = Auth::user();
+        $allContentsCompleted= false;
+        $allQuizzesCompleted = false;
+
+        $courseContents = CourseContent::where('course_id', $course_id)->get();
+        $countLessons = $courseContents->count();
+        $countCompletedLesson = $courseContents->filter(function ($content) use ($user) {
+            return $content->courseContentProgress()
+                ->where('user_id', $user->id)
+                ->where('progress', 'completed')
+                ->exists();
+        })->count();
+
+        if($countLessons && $countCompletedLesson === $countLessons){
+            $allContentsCompleted = true;
         }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id) {
+        $qMetaDataRecords = QMetaData::where('course_id', $course_id)->get();
+        $countExams = $qMetaDataRecords->count();
+        $countResult = $qMetaDataRecords->filter(function ($exam) use ($user) {
+            return $exam->results()
+                ->where('user_id', $user->id)
+                ->where('result', '>=', 0)
+                ->exists();
+        })->count();
 
-        /**
-         * @var App\Models\User $user;
-         */
+        if ($countExams && $countCompletedLesson === $countExams) {
+            $allQuizzesCompleted = true;
+        }
+
+        // foreach ($qMetaDataRecords as $qMeta) {
+        //     $result = Result::where('q_meta_data_id', $qMeta->id)
+        //         ->where('user_id', $user->id)
+        //         ->first();
+        //     if (!$result) {
+        //         $allQuizzesCompleted = false;
+        //         break;
+        //     }
+        // }
+
+        return response()->json([
+            'certificate_active' => $allContentsCompleted && $allQuizzesCompleted,
+            'allContentsCompleted' => $allContentsCompleted,
+            'allQuizzesCompleted' => $allQuizzesCompleted,
+        ]);
+    }
+
+    public function updateProgress(Request $request, $courseContentId)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'progress' => 'required|string', 
+        ]);
+
+        $progress = CourseContentProgress::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'course_content_id' => $courseContentId,
+            ],
+            [
+                'progress' => $validated['progress'],
+            ]
+        );
+
+        return response()->json([
+            'message' => 'Progress updated successfully.',
+            'data' => $progress,
+        ]);
+    }
+
+
+
+    public function destroy(string $id) {
 
         $user = User::query()
             ->whereSystemAdminOrInstructor()

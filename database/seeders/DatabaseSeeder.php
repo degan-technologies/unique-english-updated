@@ -30,31 +30,31 @@ class DatabaseSeeder extends Seeder {
      */
     public function run(): void {
         $this->call([
-            SystemAdminSeeder::class,
-            InstructorSeeder::class,
-            StudentSeeder::class,
+            // SystemAdminSeeder::class,
+            // InstructorSeeder::class,
+            // StudentSeeder::class,
 
-            CourseSeeder::class,
-            CourseModuleSeeder::class,
+            // CourseSeeder::class,
+            // CourseModuleSeeder::class,
             CourseContentSeeder::class,
 
-            BookSeeder::class,
-            OrderBookSeeder::class,
+            // BookSeeder::class,
+            // OrderBookSeeder::class,
 
-            LiveSessionSeeder::class,
-            LiveResourceSeeder::class,
-            ParticipantSeeder::class,
+            // LiveSessionSeeder::class,
+            // LiveResourceSeeder::class,
+            // ParticipantSeeder::class,
 
-            FeedBackSeeder::class,
-            VirtualClassEnrollmentSeeder::class,
+            // FeedBackSeeder::class,
+            // VirtualClassEnrollmentSeeder::class,
 
-            QMetaDataSeeder::class,
-            QuizSeeder::class,
-            ResultSeeder::class,
-            TestSeeder::class,
-            ScheduleSeeder::class,
+            // QMetaDataSeeder::class,
+            // QuizSeeder::class,
+            // ResultSeeder::class,
+            // // TestSeeder::class,
+            // // ScheduleSeeder::class,
 
-            QASectionSeeder::class,
+            // QASectionSeeder::class,
         ]);
     }
 }

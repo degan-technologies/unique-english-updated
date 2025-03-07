@@ -85,7 +85,7 @@ class UserController extends Controller {
         $users = $query->get();
     
         return response()->json([
-             'data' => \App\Http\Resources\userResource::collection($users)
+             'data' => userResource::collection($users)
         ]);
     }
     

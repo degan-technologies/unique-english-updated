@@ -64,6 +64,8 @@ class BookController extends Controller
             'auther' => 'required|string|max:255',
             // 'isDownloadable' => 'required|boolean',
             'file_url' => 'image' ,
+            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
+
             'cover_page_url' => 'image',
 
            
@@ -85,6 +87,11 @@ class BookController extends Controller
         if($request->hasFile('cover_page_url')) {
             $imagesPath = $request->file('cover_page_url')->store('/books/images', 'public');
         }
+        $videoPath = null;
+        if($request->hasFile('intro_vedio')) {
+            $videoPath = $request->file('intro_vedio')->store('books/videos', 'public');
+        }
+
         $boks = $user->books()->create([
             'slug' => Str::uuid(),
             'title' => $request->title,
@@ -101,6 +108,7 @@ class BookController extends Controller
             'tag' => json_encode($request->tag),
             'file_url' => $imagePath,
             'cover_page_url' => $imagesPath,
+            'intro_vedio'=>$videoPath ,
             'isDownloadable' => false,
 
         ]);
@@ -149,6 +157,7 @@ class BookController extends Controller
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
             // 'isDownloadable' => 'required|boolean',
+            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
             'file_url' => 'image',
             'cover_page_url' => 'image',
         ];
@@ -165,15 +174,16 @@ class BookController extends Controller
         // Get validated data
         $data = $validator->validated();
     
-        // Check if new file for file_url is provided
         if ($request->hasFile('file_url')) {
             $data['file_url'] = $request->file('file_url')->store('/books/images', 'public');
         }
-        // Check if new file for cover_page_url is provided
         if ($request->hasFile('cover_page_url')) {
             $data['cover_page_url'] = $request->file('cover_page_url')->store('/books/images', 'public');
         }
-    
+        if($request->hasFile('intro_vedio')) {
+            $data['intro_vedio'] = $request->file('intro_vedio')->store('books/videos', 'public');
+        }
+        
         $book->update($data);
     
         return response()->json([

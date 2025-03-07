@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, watch } from "vue";
-import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
-import { useSidebarStore } from "@/store/useSidebarStore";
+    import { ref, computed, watch } from 'vue';
+    import { storeToRefs } from 'pinia';
+    import { useRoute, useRouter } from "vue-router";
+    import { useSidebarStore } from '@/store/useSidebarStore';
 
 // Import Components
 import Navbar from "@/components/Layout/Navbar.vue";
@@ -18,6 +18,7 @@ import SystemAnalyticsReport from "@/components/Layout/SystemAnalyticsReport.vue
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
 import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
 import ExamManagement from "@/components/Layout/ExamManagement.vue";
+import ScheduleManagment from '@/components/Live/ScheduleManagment.vue';
 
 // Sidebar Store Setup
 const sidebarStore = useSidebarStore();
@@ -65,7 +66,6 @@ function setSelectedContent(contentId) {
     >
         <div class="relative md:flex transition-all duration-300">
             <DashboardSidebar />
-        </div>
 
         <div
             class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300"
@@ -88,7 +88,10 @@ function setSelectedContent(contentId) {
                     <div v-else-if="selectedContent === courses">
                         <CourseManagement />
                     </div>
-
+            <div v-else-if="selectedContent === 'schedule'">
+            <ScheduleManagment />
+          
+             </div>
                     <div v-else-if="selectedContent === exams">
                         <ExamManagement />
                     </div>
@@ -113,10 +116,13 @@ function setSelectedContent(contentId) {
             <DashboardFooter class="transition-all duration-300" />
         </div>
     </div>
+
+  
+  </div>
 </template>
 
 <style scoped>
 .transition-all {
-    transition: all 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
 }
 </style>

@@ -15,11 +15,13 @@ import Book from "@/components/Book/Book.vue";
 import BookDetails from "@/components/Book/BookDetails.vue";
 import Pdf from "@/components/Book/Pdf.vue";
 import Schedule from "@/components/Live/Schedule.vue";
-import QuizReader from "@/components/Course/QuizReader.vue";
-import AddSchedule from "@/components/Live/AddSchedule.vue";
-import ManageSchedule from "@/components/Live/ManageSchedule.vue";
-import ManagePlan from "@/components/Live/ManagePlan.vue";
-import AddPlan from "@/components/Live/AddPlan.vue";
+import liveSession from "@/components/Live/LiveSession.vue";
+// import QuizReader from "@/components/Course/QuizReader.vue";
+// import AddSchedule from "@/components/Live/AddSchedule.vue";
+// import ManageSchedule from "@/components/Live/ManageSchedule.vue";
+// import ManagePlan from "@/components/Live/ManagePlan.vue";
+// import AddPlan from "@/components/Live/AddPlan.vue";
+import certificate from "../../components/Course/certificate.vue";
 
 const studentStore = UseStudentStore();
 const {
@@ -81,12 +83,20 @@ watch(
                 <div v-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard @mousemove="togglehover" />
+                     <!-- <Schedule /> -->
                     <LiveStreamingVue />
                     <Book />
+                    <!-- <ManageSchedule />
+                    
+                     <AddSchedule />
+                      <AddPlan />
+                    <ManagePlan />
+                    <QuizReader /> -->
+                    <certificate/>
                     <AboutUs />
                 </div>
 
-                <div class="mb-10">
+                <!-- <div class="mb-10">
                     <AddSchedule />
                 </div>
 
@@ -108,7 +118,7 @@ watch(
 
                 <div class="w-full bg-gray-100">
                     <QuizReader />
-                </div>
+                </div> -->
 
                 <div class="w-full bg-gray-900 text-white">
                     <Footer />
