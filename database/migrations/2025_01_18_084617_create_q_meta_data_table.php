@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('slug')->unique();
 
             $table->string('title');
-            $table->longText('instraction')->nullable();
+            $table->longText('instruction')->nullable();
             $table->string('question_type')->default(CHOICE);
 
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->softDeletes();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete(); 
-            $table->foreignId('module_id')->nullable()->constrained('course_modules')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_module_id')->nullable()->constrained('course_modules')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('course_id')->nullable()->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
         });
     }

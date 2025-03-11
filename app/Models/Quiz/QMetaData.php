@@ -15,10 +15,9 @@ class QMetaData extends Model {
     use HasFactory, SoftDeletes;
 
 
-    
     protected $fillable = [
-        'slug', 'title', 'instraction', 'question_type',
-        'user_id', 'course_content_id', 'course_id'
+        'slug', 'title', 'instruction',
+        'user_id', 'course_module_id', 'course_id'
     ];
     public function user() { return $this->belongsTo(User::class); }
     public function quizzes(){ return $this->hasMany(Quiz::class,); }

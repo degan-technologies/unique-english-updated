@@ -22,6 +22,8 @@ use Database\Seeders\Quiz\QuizSeeder;
 use Database\Seeders\Quiz\ResultSeeder;
 use Database\Seeders\Quiz\QMetaDataSeeder;
 use Database\Seeders\Quiz\QASectionSeeder;
+use Database\Seeders\Schedule\ScheduleSeeder;
+
 
 
 class DatabaseSeeder extends Seeder {

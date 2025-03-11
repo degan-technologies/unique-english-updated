@@ -1,7 +1,7 @@
 <script setup>
     import Axios from "axios";
-    import { onMounted, ref, computed } from "vue";
     import { useToast } from "vue-toastification";
+    import { onMounted, ref, computed } from "vue";
 
     import AddQuestion from "@/components/Quize/AddQuestion.vue";
 
@@ -26,9 +26,6 @@
         courseID: Number,
         moduleID: Number
     });
-
-    console.log("Course ID:", props.courseID);
-    console.log("Module ID:", props.moduleID);
 
     const visibleQuestions = computed(() => {
         if (selectedExam.value && selectedExam.value.questions) {
@@ -69,11 +66,11 @@
         if (selectedExam.value && selectedExam.value.id === exam.id) {
             selectedExam.value = null;
         } else {
-            const instractionVal = exam.instraction || exam.instruction || "";
-            selectedExam.value = { ...exam, instraction: instractionVal };
+            const instructionVal = exam.instruction || exam.instruction || "";
+            selectedExam.value = { ...exam, instruction: instructionVal };
             metaData.value = {
                 title: exam.title || "",
-                instraction: instractionVal,
+                instruction: instructionVal,
             };
             oppenCollaps.value = true;
             currentQuestionPage.value = 1;
@@ -111,10 +108,15 @@
     function fetchExams() {
         Axios.get("/api/exams")
             .then((res) => {
-                qMetaDatas.value = res.data.data;
+            const allExams = res.data.data;
+            console.log("All Exams:", allExams);
+            const filteredExams = allExams.filter(
+                (exam) => exam.course_id === props.courseID && exam.course_module_id === props.moduleID
+            );
+            qMetaDatas.value = filteredExams;
             })
             .catch(() => {
-                toast.error("Failed to fetch exams");
+            toast.error("Failed to fetch exams");
             });
     }
 
@@ -125,7 +127,9 @@
         }
         const payload = {
             title: metaData.value.title,
-            instraction: metaData.value.instraction,
+            instruction: metaData.value.instruction,
+            module_id:props.moduleID,
+            course_id:props.courseID
         };
         Axios.post("/api/QMetaData", payload)
             .then((res) => {
@@ -431,8 +435,8 @@
                             Exam Instruction (optional)
                         </label>
                         <textarea
-                            v-model="metaData.instraction"
-                            @input="onPrepareForUpdate('instraction')"
+                            v-model="metaData.instruction"
+                            @input="onPrepareForUpdate('instruction')"
                             placeholder="Add exam instruction if necessary"
                             class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
                         ></textarea>

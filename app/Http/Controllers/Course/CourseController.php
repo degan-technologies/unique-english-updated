@@ -19,6 +19,7 @@ use App\Models\Quiz\QMetaData;
 use App\Models\Quiz\Result;
 use App\Models\Course\CourseContentProgress;
 
+
 class CourseController extends Controller {
 
     /**
@@ -68,7 +69,8 @@ class CourseController extends Controller {
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
             'thumbnail_url' => 'image',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp'
+            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+
 
         ];
 
@@ -116,11 +118,7 @@ class CourseController extends Controller {
      */
     public function show(string $id)
     {
-        $course = Course::with('courseModules')
-        
-            ->where('id', $id)
-            ->first();
-    
+        $course = Course::with('courseModules')->where('id', $id)->first();
         if (!$course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
@@ -129,6 +127,14 @@ class CourseController extends Controller {
             'data' => new CourseResource($course)
         ]);
     }
+    
+    
+    
+    
+    
+    
+    
+    
     
 
     /**
@@ -160,7 +166,7 @@ class CourseController extends Controller {
             'discount' => 'numeric',
             'credit_hour' => 'numeric',
             'thumbnail_url' => 'image',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp'
+            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
 
         ];
 

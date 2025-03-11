@@ -9,12 +9,14 @@
     const props = defineProps({
                     module: Object
                 });
+    const emit = defineEmits(["backToModule"]);
 
     function tabClass(tab) {
         return currentPage.value === tab
             ? "border-b-2 border-lime-700 text-lime-700"
             : "text-gray-700";
     };
+
     watch(
         () => props.module,
         (newModule) => {
@@ -28,7 +30,12 @@
 <template>
     <div class="min-h-screen bg-gray-100 text-gray-800">
         <header
-            class="bg-white shadow-md px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between">
+            class="bg-white border px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-start">
+            <button
+                @click="emit('backToModule')"
+                class="px-4 py-2 bg-lime-700 text-white rounded-md hover:bg-lime-800 transition mr-4">
+                ← Back to Module
+            </button>
             <div>
                 <h1 class="text-3xl font-bold text-lime-700">
                     Exam Management

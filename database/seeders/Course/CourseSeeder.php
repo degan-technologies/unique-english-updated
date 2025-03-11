@@ -27,6 +27,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 12,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-1.jpg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -41,6 +43,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 15,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-2.jpg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -55,6 +59,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 18,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-3.webp',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -66,6 +72,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 10,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-4.jpeg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -77,6 +85,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 14,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-5.jpg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -88,6 +98,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 16,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-6.jpg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -99,6 +111,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 12,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-7.jpeg',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ],
                 [
                     'slug' => Str::uuid(),
@@ -110,6 +124,8 @@ class CourseSeeder extends Seeder {
                     'credit_hour' => 20,
                     'language' => 'English',
                     'thumbnail_url' => '/images/course-8.webp',
+                    'status' => 'published',
+                    'intro_video' => '',
                 ]
             ];
 
