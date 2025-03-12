@@ -65,7 +65,7 @@ class CourseContentController extends Controller {
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
             'description' => 'min:10',
             'content_type' => [Rule::in(CONTENT_TYPE)],
-            'content_url' => 'file',
+            'content_url' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
             'thumbnail_url' => 'image',
             'hour' => 'date_format:H:i',
             'status' => [Rule::in(COURSE_STATUS)],
@@ -134,7 +134,7 @@ class CourseContentController extends Controller {
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
             'description' => 'min:10',
             'content_type' => [Rule::in(CONTENT_TYPE)],
-            'content_url' => 'file', // Just validates that a file is present, does not store it.
+            'content_url' =>'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
             'thumbnail_url' => 'image', // Same here.
             'hour' => 'date_format:H:i',
             'status' => [Rule::in(COURSE_CONTENT_STATUS)],

@@ -22,7 +22,12 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Plan\PlanController;
 use App\Http\Controllers\Schedule\ScheduleController;
 use App\Http\Controllers\Test\TestController;
-use App\Http\Controllers\ActivityFeedController;
+use App\Http\Controllers\Course\CourseVideoController;
+use App\Http\Controllers\Course\CourseContentVideoController;
+
+
+
+
 
 
 
@@ -49,7 +54,8 @@ Route::middleware('auth:api')
         Route::resource('live-sessions', LiveSessionController::class);
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
-        Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
+        // Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
+       
        
         
         
@@ -75,11 +81,12 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
-        Route::get('/{course}/certificate-status', [CourseController::class, 'certificateStatus']);
-        Route::post('/course-content-progress/{courseContentId}', [CourseController::class, 'updateProgress']);
-        Route::get('/activities', [ActivityFeedController::class, 'index']);
-
+        // Route::get('/stream/video/{filename}', [CourseVideoController::class, 'stream']);
     });
+// In routes/api.php or routes/web.php, outside the auth:api group:
+Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
+Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
+
 
 Route::middleware('auth:api')
     ->prefix('feedbacks')

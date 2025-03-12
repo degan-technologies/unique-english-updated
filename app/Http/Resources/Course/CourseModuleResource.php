@@ -4,6 +4,8 @@ namespace App\Http\Resources\Course;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Quiz\QMetaDataResource;
+use App\Http\Resources\Course\CourseContentResource;
 
 class CourseModuleResource extends JsonResource {
     /**
@@ -19,6 +21,7 @@ class CourseModuleResource extends JsonResource {
             'description' => $this->description,
             'slug' => $this->slug,
             'course_id' => $this->course_id,      
+            'QMetaDatas' => QMetaDataResource::collection($this->QMetaDatas),
             'courseContents' => CourseContentResource::collection($this->courseContents->sortBy('sequence')),
         ];
     }

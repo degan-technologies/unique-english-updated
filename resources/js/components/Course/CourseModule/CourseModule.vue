@@ -337,6 +337,6 @@
             :actionType="actionType"/>
     </div>
     <div v-else>
-        <ExamManagement v-if="showQuizPage" :module="selectedModule" @close="closeQuizPage" />
+        <ExamManagement v-if="showQuizPage" :module="selectedModule"  @backToModule="closeQuizPage"  />
     </div>
 </template>

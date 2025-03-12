@@ -43,16 +43,16 @@
     function handleFileUpload(field, event) {
         const file = event.target.files[0];
         if (file) {
-
-            if(field === thumbnail_url.value){
-                form.value['thumbnail_url'] = file;
-                form.value['create_thumbnail_url'] = URL.createObjectURL(file);
-                return;
+            if (field === "thumbnail_url") {
+                form.value.thumbnail_url = file;
+                form.value.create_thumbnail_url = URL.createObjectURL(file);
+            } else if (field === "content_url") {
+                form.value.content_url = file;
+                form.value.create_content_url = URL.createObjectURL(file);
             }
-            form.value['content_url'] = file;
-            form.value['create_content_url'] = URL.createObjectURL(file);
         }
-    };
+    }
+
     
     function storeModuleContent() {
         const formData = new FormData();
@@ -77,8 +77,8 @@
         formData.append("title", form.value.title);
         formData.append("description", form.value.description);
         formData.append("content_type", form.value.content_type);
-        formData.append("content_url", form.value.upload_content);
-        formData.append("thumbnail_url", form.value.upload_thumbnail);
+        formData.append("content_url", form.value.content_url);
+        formData.append("thumbnail_url", form.value.thumbnail_url);
         formData.append("hour", form.value.hour);
         formData.append("status", form.value.status);
         formData.append("sequence", form.value.sequence);

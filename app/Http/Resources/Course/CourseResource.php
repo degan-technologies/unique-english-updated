@@ -9,6 +9,9 @@ use App\Models\Comment\FeedBack;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
+
+
+
 class CourseResource extends JsonResource {
     /**
      * Transform the resource into an array.
@@ -23,7 +26,7 @@ class CourseResource extends JsonResource {
             'course_name' => $this->course_name,
             'overview' => $this->overview,
             'tag' => $this->tag,
-            'skill_level' =>$this->skillLevel($this->skill_level),
+            'skill_level' => $this->skillLevel($this->skill_level),
             'skill_level_id' => $this->skill_level,
             'language' => $this->language,
             'price' => $this->price,
@@ -32,12 +35,18 @@ class CourseResource extends JsonResource {
             'created_at' => $this->created_at,
             'status' => $this->status,
             'user' => new userResource($this->user),
-            'intro_video' => $this->intro_video
-            ? Storage::disk('public')->url($this->intro_video)
+            // Use the streaming endpoint for the intro video
+       'intro_video_url' => $this->intro_video 
+            ? url('/api/courses/stream/video/' . basename($this->intro_video))
             : 'no-intro_video.png',
+
+
+
+
+
             'thumbnail_url' => $this->thumbnail_url
-            ? Storage::disk('public')->url($this->thumbnail_url)
-            : 'no-thumbnail_url.png',
+                ? Storage::disk('public')->url($this->thumbnail_url)
+                : 'no-thumbnail_url.png',
             'courseModules' => CourseModuleResource::collection($this->courseModules->sortBy('sequence')),
         ];
     }
@@ -52,10 +61,8 @@ class CourseResource extends JsonResource {
                 return 'Advance';
             case FULL_PACKAGE;
                 return 'Full Package';
-            default :
-            return 'not assigned';
+            default:
+                return 'not assigned';
         }
     }
 }
-
-

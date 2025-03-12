@@ -58,12 +58,12 @@ class QMetaDataController extends Controller{
 
         if(!$user) return;
         
-        $moduleId = $request->moduleId ?? null;
-        $courseId = $request->courseId ?? null;
+        $moduleId = $request->module_id ?? null;
+        $courseId = $request->course_id ?? null;
 
         $validationRules = [
             'title' => 'required|string|min:5|max:255',
-            'instraction' => 'string|min:10',
+            'instruction' => 'string|min:10',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('QMetaData'));
@@ -77,9 +77,9 @@ class QMetaDataController extends Controller{
 
         $qMetaData = $user->qMetaDatas()->create([ 
             'slug' => Str::uuid(), 
-            'instraction' => $request->instraction,
+            'instruction' => $request->instruction,
             'title' => $request->title,  
-            'module_id' => $moduleId, 
+            'course_module_id' => $moduleId, 
             'course_id' => $courseId, 
         ]);
 

@@ -25,9 +25,9 @@ class CourseContentResource extends JsonResource {
             'status' => $this->status,
             'sequence' => $this->sequence,
             'note' => $this->note,
-            'content_url' => $this->content_url
-                ? Storage::disk('public')->url($this->content_url)
-                : 'no-content_url.png',
+            'course_content_url' => $this->content_url 
+            ? url('/api/coursecontent/stream/video/' . basename($this->content_url))
+            : 'no-intro_video.png',
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',

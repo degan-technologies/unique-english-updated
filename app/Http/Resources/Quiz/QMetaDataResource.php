@@ -17,9 +17,9 @@ class QMetaDataResource extends JsonResource {
             'deleted_at' => $this->deleted_at,
             'updated_at' => $this->updated_at,
             'created_at' => $this->created_at,
-            'instruction' => $this->instraction,
+            'instruction' => $this->instruction,
             'question_type' => $this->question_type,
-            'course_content_id' => $this->course_content_id,
+            'course_module_id' => $this->course_module_id,
 
             'questions' => QuizResource::collection($this->quizzes),
         ];

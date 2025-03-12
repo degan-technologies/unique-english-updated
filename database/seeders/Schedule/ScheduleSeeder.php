@@ -7,6 +7,7 @@ use App\Models\Schedule\Schedule;
 use App\Models\User;
 use App\Services\LangService;
 
+
 class ScheduleSeeder extends Seeder
 {
 
