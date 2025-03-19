@@ -3,31 +3,59 @@ import { storeToRefs } from "pinia";
 import { onMounted, ref, watch, watchEffect, computed, nextTick,onBeforeUnmount  } from "vue";
 import { useRoute } from "vue-router";
 import { UseStudentStore } from "@/store/UseStudentStore";
+import { useAppStore } from "@/store/useAppStore";
 
 import QA from "@/components/Exam/QA.vue";
 import TextEditor from "@/components/Layout/TextEditor.vue";
 import CourseList from "@/components/Course/CourseList.vue";
 import ReviewList from "@/components/Course/ReviewList.vue";
+import QuizReader from "./QuizReader.vue";
+import certificate from "@/components/Course/certificate.vue"
 
 const studentStore = UseStudentStore();
-const { courses, selectedCourseSlug } = storeToRefs(studentStore);
+const appStore = useAppStore();
+const { courses, selectedCourseSlug , completedLessons} = storeToRefs(studentStore);
+const authUser = appStore.authUser;
+
+const courseListRef = ref(null);
+const overallProgress = ref(0);
+
 const route = useRoute();
 selectedCourseSlug.value = route.query.slug;
 
 const selectedCourse = ref(null);
 const selectedModule = ref(null);
 const selectedLesson = ref(null);
+const selectedQuiz = ref(null);
 const volumeControlsVisible = ref(false);
 const totalDuration = ref(0);
 const watchedTime = ref(0);
 const videoWatched = ref(false); // ✅ Will be true if watched at least 95%
 const minWatchThreshold = 0.95; 
 
+const downloadCertificate = ref(false);
+
+const handleDownloadCertificate = (status) => {
+  downloadCertificate.value = status;
+  console.log("Certificate download triggered:", status);
+  // Add any additional logic you need here
+};
+const handleCancelCertificate = () => {
+  downloadCertificate.value = false;
+};
+
 // Tab management
 const activeTab = ref("qa");
 const setActiveTab = (tab) => {
   activeTab.value = tab;
 };
+
+// A flag to indicate what kind of content is opened
+const contentType = computed(() => {
+  if (selectedLesson.value) return "lesson";
+  if (selectedQuiz.value) return "quiz";
+  return null;
+});
 
 // Video playback state
 const video = ref(null);
@@ -81,49 +109,36 @@ const handleSeekInput = (event) => {
   }, 300);
 };
 
-const setSeekTime = (desiredTime) => {
-  if (video.value.readyState < 3) {
-    video.value.addEventListener("canplay", () => {
-      video.value.currentTime = desiredTime;
-    }, { once: true });
-    return;
-  }
-  if (video.value.seekable.length > 0) {
-    const seekableStart = video.value.seekable.start(0);
-    const seekableEnd = video.value.seekable.end(0);
-    if (desiredTime < seekableStart || desiredTime > seekableEnd) return;
-  }
-  video.value.currentTime = desiredTime;
-};
-
+const storageKey = computed(() => {
+  return video.value && video.value.src
+    ? "videoSeek_" + btoa(video.value.src)
+    : "videoSeek_default";
+});
 
 const updateProgress = () => {
   if (!video.value || totalDuration.value === 0) return;
-
-  const dur = totalDuration.value;
   const current = video.value.currentTime;
-
-  if (!dur || dur <= 0) {
-    progress.value = 0;
-    currentTime.value = formatTime(current);
-  } else {
-    progress.value = (current / dur) * 100;
-    watchedTime.value = current; // ✅ Track watched time
-    currentTime.value = formatTime(current);
-  }
-
-  // ✅ Ensure video has reached at least 95% before marking it as watched
-  if (!videoWatched.value && watchedTime.value >= dur * minWatchThreshold) {
+  progress.value = (current / totalDuration.value) * 100;
+  watchedTime.value = current; // update the watched time
+  currentTime.value = formatTime(current);
+  
+  // If not already marked as watched and the video has reached threshold, mark it
+  if (!videoWatched.value && watchedTime.value >= totalDuration.value * minWatchThreshold) {
     videoWatched.value = true;
+    // Once threshold met, send the progress to backend
+    storeContentProgress();
+      // Save the current seek position in local storage
+  localStorage.setItem(storageKey.value, current);
   }
 };
 
-// ✅ Triggered when video ends
 const handleVideoEnd = () => {
+  // Double-check the condition when video ends
   if (watchedTime.value >= totalDuration.value * minWatchThreshold) {
     videoWatched.value = true;
+    storeContentProgress();
   }
-}
+};
 
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60);
@@ -160,7 +175,6 @@ const changeVolume = (event) => {
   volume.value = event.target.value;  // Directly set the value
   video.value.volume = volume.value;
 };
-
 
 const toggleMute = () => {
   if (!video.value) return;
@@ -221,8 +235,6 @@ const changeQuality = (newQuality) => {
   }
 };
 
-
-
 const lessonContentUrl = computed({
   get() {
     return selectedLesson.value ? selectedLesson.value.course_content_url : "";
@@ -245,12 +257,18 @@ const streamingLessonUrl = computed(() => {
 const hasSeeked = ref(false);
 
 function openedLesson(moduleId, contentId) {
+  selectedQuiz.value = null;
   selectedModule.value = selectedCourse.value.courseModules.find(
     (courseModule) => courseModule.id == moduleId
   );
   selectedLesson.value = selectedModule.value.courseContents.find(
     (courseContent) => courseContent.id == contentId
   );
+
+  videoWatched.value = false;
+  watchedTime.value = 0;
+  totalDuration.value = 0;
+
   if (selectedLesson.value && video.value) {
     video.value.src = streamingLessonUrl.value;
     video.value.load();
@@ -259,10 +277,65 @@ function openedLesson(moduleId, contentId) {
   }
 }
 
+function openedQuiz(moduleId, quizId) {
+  // Clear any lesson selection (video)
+  selectedLesson.value = null;
+  selectedModule.value = selectedCourse.value.courseModules.find(cm => cm.id == moduleId);
+  // For quizzes, assume the module has a QMetaDatas array containing quiz info
+  selectedQuiz.value = selectedModule.value.QMetaDatas.find(q => q.id == quizId);
+}
+
 const updateTotalTime = () => {
   if (!video.value || !video.value.duration) return;
   totalDuration.value = video.value.duration;
   totalTime.value = formatTime(video.value.duration);
+  const savedSeek = localStorage.getItem(storageKey.value);
+  if (savedSeek) {
+    video.value.currentTime = Number(savedSeek);
+  }
+};
+
+// Function to store lesson progress to the backend
+const storeContentProgress = async () => {
+  if (!selectedLesson.value || !selectedCourse.value || !selectedModule.value) return;
+
+  // First, call fetchAllProgress from the CourseList component (if available)
+  if (courseListRef.value && typeof courseListRef.value.fetchAllProgress === "function") {
+    await courseListRef.value.fetchAllProgress();
+  }
+  
+  const currentLessonId = selectedLesson.value.id;
+  let progressRecord;
+  if (courseListRef.value && courseListRef.value.progressRecords) {
+    progressRecord = courseListRef.value.progressRecords[currentLessonId];
+  }
+
+  // If found and progress meets the threshold, do nothing
+  if (progressRecord && Number(progressRecord.progress) >= minWatchThreshold) {
+    console.log("Lesson already marked as completed. No need to store again.");
+    return;
+  }
+
+  // Otherwise, send the POST request to store progress
+  const payload = {
+    user_id: authUser.id, // Authenticated user id
+    course_content_id: currentLessonId,
+    progress: 100, // Mark as completed
+    course_id: selectedCourse.value.id,
+    course_module_id: selectedModule.value.id,
+  };
+
+  try {
+    const response = await axios.post("/api/coursecontent/progress", payload);
+    console.log("Progress stored:", response.data);
+
+    // Refresh the progress records in the CourseList component
+    if (courseListRef.value && typeof courseListRef.value.fetchAllProgress === "function") {
+      await courseListRef.value.fetchAllProgress();
+    }
+  } catch (error) {
+    console.error("Error storing progress:", error);
+  }
 };
 watchEffect(() => {
   if (!courses.value) return;
@@ -284,7 +357,6 @@ watch(() => route.query.slug, () => {
   );
 });
 
-// Reset seek bar when the streaming URL changes
 watch(streamingLessonUrl, (newVal, oldVal) => {
   if (newVal && newVal !== oldVal && video.value) {
     resetSeekBar();
@@ -322,13 +394,19 @@ const handleKeyDown = (e) => {
     // Seek backward 5 seconds
     e.preventDefault();
     video.value.currentTime = Math.max(video.value.currentTime - 5, 0);
-  }  else if (e.key === ' ' || e.code === 'Space') {
+  } else if (e.key === ' ' || e.code === 'Space') {
     e.preventDefault();
     togglePlayPause();
   }
 };
 
 onMounted(() => {
+  // Make sure your video container is focusable
+  const videoContainer = document.querySelector(".video-container");
+  if (videoContainer) {
+    videoContainer.setAttribute("tabindex", "0");
+  }
+  
   studentStore.fetchCourses();
   if (!video.value) {
     console.error("Video element not found in onMounted!");
@@ -338,28 +416,46 @@ onMounted(() => {
   video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
   video.value.addEventListener("loadedmetadata", updateTotalTime);
   video.value.addEventListener("timeupdate", updateProgress);
-  window.addEventListener("keydown", handleKeyDown);
+
+  // Attach keydown event listener to document instead of window
+  document.addEventListener("keydown", handleKeyDown);
+
   video.value.load();
 });
+
 onBeforeUnmount(() => {
-  window.removeEventListener("keydown", handleKeyDown);
+  document.removeEventListener("keydown", handleKeyDown);
 });
+
 </script>
 
 <template>
   <div v-if="selectedCourseSlug" class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative mt-24 bg-slate-50">
-    <div class="flex-1 flex flex-col gap-4">
-      <div
-    class="relative bg-black rounded-lg overflow-hidden border-2 border-lime-700"
+    <div v-if="downloadCertificate && overallProgress === 100">
+      <certificate 
+        :selectedCourse="selectedCourse" 
+        :overallProgress="overallProgress"
+        @cancelCertificate="handleCancelCertificate" 
+      />
+    </div>
+    
+    
+    <div v-else class="flex-1 flex flex-col gap-4">
+      <template v-if="contentType === 'lesson'">
+  <!-- Make the container focusable by adding tabindex -->
+  <div
+    class="video-container relative bg-black rounded-lg overflow-hidden border-2 border-lime-700"
+    tabindex="0"
     @mousemove="resetControlsTimeout"
     @mouseleave="startControlsHideTimer"
     @mouseenter="resetControlsTimeout"
     @click="togglePlayPause"
+    @keydown="handleKeyDown" 
   >
-    <!-- Video Element (using Video.js if needed, but here it's a standard HTML5 video) -->
+    <!-- Video Element: Remove pointer-events-none -->
     <video
       ref="video"
-      class="w-full h-full object-cover pointer-events-none"
+      class="w-full h-full object-cover"
       :src="streamingLessonUrl"
       @timeupdate="updateProgress"
       @loadedmetadata="updateTotalTime"
@@ -371,12 +467,26 @@ onBeforeUnmount(() => {
       Your browser does not support the video tag.
     </video>
 
-    <!-- Custom Controls Overlay -->
+    <!-- Custom Controls Overlay with reduced height -->
     <div
       v-show="showControls"
-      class="absolute bottom-0 left-0 right-0 p-3 bg-lime-700 bg-opacity-100 transition-opacity duration-300 z-20 gap-4"
+      class="absolute bottom-0 left-0 right-0 pl-2 pt-0 pr-2 pb-1 bg-lime-700 bg-opacity-100 transition-opacity duration-300 z-20 gap-2"
       @click.stop
     >
+      <!-- Seek Bar (Full Width) -->
+      <div class="mb-1">
+        <input
+          type="range"
+          :value="progress"
+          @input="handleSeekInput"
+          min="0"
+          max="100"
+          step="0.01"
+          class="w-full h-1 bg-white rounded-md transition-all duration-300"
+          aria-label="Seek Video"
+        />
+      </div>
+
       <!-- MOBILE LAYOUT: below sm breakpoint -->
       <div class="flex flex-col gap-2 sm:hidden">
         <!-- Row 1: Volume & Time Display -->
@@ -395,7 +505,7 @@ onBeforeUnmount(() => {
             >
               <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
             </button>
-            <div v-if="volumeControlsVisible" class="flex items-center space-x-2 ml-2">
+            <div v-if="volumeControlsVisible" class="flex items-center space-x-1 ml-2">
               <span class="text-xs text-white">{{ Math.round(volume * 100) }}%</span>
               <input
                 type="range"
@@ -414,20 +524,7 @@ onBeforeUnmount(() => {
             <span>{{ currentTime }}</span> / <span>{{ totalTime }}</span>
           </div>
         </div>
-        <!-- Row 2: Seek Bar -->
-        <div>
-          <input
-            type="range"
-            :value="progress"
-            @input="handleSeekInput"
-            min="0"
-            max="100"
-            step="0.01"
-            class="w-full h-1 bg-white rounded-md transition-all duration-300"
-            aria-label="Seek Video"
-          />
-        </div>
-        <!-- Row 3: Quality, Playback Rate, and Fullscreen -->
+        <!-- Row 2: Quality, Playback Rate, and Fullscreen -->
         <div class="flex items-center justify-end gap-2">
           <select
             @change="changeQuality($event.target.value)"
@@ -469,8 +566,8 @@ onBeforeUnmount(() => {
         >
           <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
         </button>
-        <!-- Volume Controls & Seek Bar Container -->
-        <div class="flex flex-1 items-center gap-4">
+        <!-- Volume Controls & Other Controls -->
+        <div class="flex-1 items-center gap-4">
           <!-- Volume Controls -->
           <div
             class="relative flex items-center overflow-hidden transition-all duration-300"
@@ -485,7 +582,7 @@ onBeforeUnmount(() => {
             >
               <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
             </button>
-            <div v-if="volumeControlsVisible" class="flex items-center space-x-2 ml-2">
+            <div v-if="volumeControlsVisible" class="flex items-center space-x-1 ml-2">
               <span class="text-xs text-white">{{ Math.round(volume * 100) }}%</span>
               <input
                 type="range"
@@ -498,19 +595,6 @@ onBeforeUnmount(() => {
                 aria-label="Volume Control"
               />
             </div>
-          </div>
-          <!-- Seek Bar -->
-          <div class="flex-1">
-            <input
-              type="range"
-              :value="progress"
-              @input="handleSeekInput"
-              min="0"
-              max="100"
-              step="0.01"
-              class="w-full h-1 bg-white rounded-md transition-all duration-300"
-              aria-label="Seek Video"
-            />
           </div>
         </div>
         <!-- Time Display -->
@@ -550,28 +634,50 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
+</template>
+
+
+      <template v-else-if="contentType === 'quiz'">
+        <!-- Quiz Component -->
+        <QuizReader :quizData="selectedQuiz" />
+      </template>
 
       <div class="bg-white p-4 py-8 rounded-b-lg">
         <div class="flex justify-between">
           <div class="flex flex-col">
-            <div v-if="videoWatched">
-  <span class="text-green-500 font-bold">✔ Lesson Completed</span>
-</div>
             <p class="text-lg text-gray-600 py-2">{{ selectedLesson?.title }}</p>
             <p class="text-2xl text-blue-600">{{ selectedModule?.title }}</p>
           </div>
 
-          <!-- Global Progress Circle -->
-          <div class="relative mt-2">
-            <div
-              class="w-16 h-16 bg-sky-700 rounded-full flex items-center justify-center"
-              role="progressbar"
-              aria-valuemin="0"
-              aria-valuemax="100" >
-              <span class="text-lg font-bold text-white"> 0 % </span>
-            </div>
-            <p class="text-center text-sm mt-2 text-gray-700"> Progress: 0 % </p>
-          </div>
+        <!-- Global Progress Circle -->
+  <!-- Circular Progress Bar Container -->
+  <div class="relative mt-2 flex items-center justify-center">
+    <!-- Full Circle (Gray background) -->
+    <div class="relative w-24 h-24">
+     
+
+      <!-- Progress Circle (Blue fill based on progress) -->
+      <div
+        class="absolute w-full h-full rounded-full border-4"
+        :style="{
+          background: `conic-gradient(#00BFFF ${overallProgress}%, #e0e0e0 ${overallProgress}% 100%)`
+        }"
+      ></div>
+
+      <!-- Progress Percentage Text in the Center -->
+      <div class="absolute w-full h-full flex items-center justify-center">
+        <span class="text-lg font-bold text-black">
+          {{ overallProgress }}%
+        </span>
+      </div>
+    </div>
+
+    <!-- Progress Label -->
+    <p class="text-center text-sm mt-2 text-gray-700">
+      Progress: {{ overallProgress }}%
+    </p>
+  </div>
+
         </div>
         <div class="flex justify-start mt-8 border-b-2 border-gray-200 pb-4 gap-4">
           <button
@@ -608,26 +714,41 @@ onBeforeUnmount(() => {
 
         <!-- Tab Content -->
         <div v-if="activeTab === 'qa'" class="pt-4">
-          <QA />
+          <QA 
+           v-if="selectedCourse"
+           :selectedCourse="selectedCourse"
+          />
         </div>
         <div v-if="activeTab === 'editor'" class="mt-4">
-          <TextEditor />
+          <div v-if="activeTab === 'editor'" class="mt-4">
+            <TextEditor :selectedLesson="selectedLesson" :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
+
+</div>
+
         </div>
         <div v-if="activeTab === 'reviews'" class="mt-4">
-          <ReviewList  
+          <ReviewList
+            v-if="selectedCourse"
+            :selectedCourse="selectedCourse"  
             :feedBacks="selectedCourse?.feedBacks"
             :averageRating="selectedCourse?.averageRating"
             :starDistribution="selectedCourse?.starDistribution" />
         </div>
       </div>
     </div>
-
+    
     <!-- Course List Section (now on the right side) -->
     <div class="">
       <CourseList 
         v-if="selectedCourse"
+        ref="courseListRef"
         :selectedCourse="selectedCourse"
-        @openedLesson="openedLesson"/>
+        @openedLesson="openedLesson"
+        @openedQuiz="openedQuiz"
+        @updateProgress="progress => overallProgress = progress"
+        @downloadCertificate="handleDownloadCertificate"
+        />
+        
     </div>
   </div>
 </template>

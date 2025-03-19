@@ -14,6 +14,9 @@ class ResultResource extends JsonResource {
             'result' => $this->result,
             'user' => new userResource($this->user),
             'quiz' => new QuizResource($this->quiz),
+            'quiz_id'=> $this->q_meta_data_id,
+            'course_module_id'=>$this->course_module_id,
+            'course_id'=> $this->course_id,
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
         ];

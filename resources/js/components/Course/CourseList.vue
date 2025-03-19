@@ -1,49 +1,115 @@
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, onMounted, watch, computed,watchEffect } from "vue";
+import Axios from "axios";
+import { useAppStore } from "@/store/useAppStore";
 
-const collapsModuleId = ref(1);
-const selectedLessonId = ref(null);
-const completedLessons = ref(new Set()); // Store completed lessons
-const videoRef = ref(null); // Video reference
+const appStore = useAppStore();
+const authUser = appStore.authUser;
 
 const props = defineProps({
   selectedCourse: Object,
+  completedLessons: {
+    type: Object, // expecting a Set
+    default: () => new Set()
+  }
 });
 
-const emit = defineEmits(["openedLesson"]);
+const emit = defineEmits(["openedLesson", "openedQuiz", "updateProgress", "downloadCertificate"]);
 
-// Toggle module lesson expansion
+const collapsModuleId = ref(null);
+const selectedLessonId = ref(null);
+const selectedQuizId = ref(null);
+const completedLessons = ref(new Set());
+const completedQuizzes = ref(new Set());
+const progressRecords = ref({});
+const downloadCertificate = ref(false);
+
+const minWatchThreshold = 95;
+
 function toggleModuleLesson(id) {
   collapsModuleId.value = collapsModuleId.value === id ? null : id;
 }
 
-// Open a lesson and emit event
 function openLesson(moduleId, contentId) {
   selectedLessonId.value = contentId;
+  selectedQuizId.value = null;
   emit("openedLesson", moduleId, contentId);
 }
 
-// Mark lesson as completed when the video finishes
-function markLessonCompleted() {
-  if (selectedLessonId.value) {
-    completedLessons.value.add(selectedLessonId.value);
-    localStorage.setItem("completedLessons", JSON.stringify([...completedLessons.value]));
+function openQuiz(moduleId, quizId) {
+  selectedQuizId.value = quizId;
+  selectedLessonId.value = null;
+  emit("openedQuiz", moduleId, quizId);
+}
+
+async function fetchAllProgress() {
+  try {
+    const lessonResponse = await Axios.get("/api/coursecontent/progress", {
+      params: { user_id: authUser.id }
+    });
+
+    lessonResponse.data.data.forEach(record => {
+      progressRecords.value[record.course_content_id] = record;
+      if (Number(record.progress) >= minWatchThreshold) {
+        completedLessons.value.add(record.course_content_id);
+      }
+    });
+
+    const quizResponse = await Axios.get("/api/results", {
+      params: { user_id: authUser.id }
+    });
+
+    quizResponse.data.data.forEach(record => {
+      completedQuizzes.value.add(record.quiz_id);
+    });
+
+    updateOverallProgress();
+  } catch (error) {
+    console.error("Error fetching progress records:", error);
   }
 }
 
-// Watch for lesson changes and attach video event listener
-watch(selectedLessonId, () => {
-  if (videoRef.value) {
-    videoRef.value.removeEventListener("ended", markLessonCompleted);
-    videoRef.value.addEventListener("ended", markLessonCompleted);
-  }
+const updateOverallProgress = () => {
+  if (!props.selectedCourse || !props.selectedCourse.courseModules) return 0;
+
+  let totalItems = 0;
+  let completedItems = 0;
+
+  props.selectedCourse.courseModules.forEach(module => {
+    if (module.courseContents) {
+      totalItems += module.courseContents.length;
+      completedItems += module.courseContents.filter(content => completedLessons.value.has(content.id)).length;
+    }
+
+    if (module.QMetaDatas) {
+      totalItems += module.QMetaDatas.length;
+      completedItems += module.QMetaDatas.filter(quiz => completedQuizzes.value.has(quiz.id)).length;
+    }
+  });
+
+  const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  emit("updateProgress", progress);
+  return progress;
+ 
+};
+
+const overallProgress = computed(() => updateOverallProgress());
+
+
+onMounted(() => {
+  fetchAllProgress();
+  const saved = JSON.parse(localStorage.getItem("completedLessons")) || [];
+  completedLessons.value = new Set(saved);
 });
 
-// Load completed lessons from localStorage on mount
-onMounted(() => {
-  const savedLessons = JSON.parse(localStorage.getItem("completedLessons")) || [];
-  completedLessons.value = new Set(savedLessons);
+watch([completedLessons, completedQuizzes], () => {
+  updateOverallProgress();
 });
+
+watchEffect(() => {
+  updateOverallProgress();
+});
+
 </script>
 
 <template>
@@ -51,10 +117,9 @@ onMounted(() => {
     <div class="border-b mb-2 border-lime-700 text-lime-600">
       <h2 class="text-2xl leading-9 py-4 font-semibold">Course Lesson</h2>
     </div>
-
     <div
-      v-for="(courseModule, courseModuleIndex) in selectedCourse?.courseModules"
-      :key="courseModuleIndex"
+      v-for="(courseModule, moduleIndex) in props.selectedCourse?.courseModules"
+      :key="moduleIndex"
       class="mb-3 px-2"
     >
       <div class="flex justify-between items-center">
@@ -71,47 +136,95 @@ onMounted(() => {
       </div>
 
       <div v-if="collapsModuleId == courseModule.id" class="ml-4 mt-2">
-        <ul class="list-none pl-0">
-          <li
-            v-for="(courseContent, courseContentIndex) in courseModule?.courseContents"
-            :key="courseContentIndex"
-            @click="openLesson(courseModule.id, courseContent.id)"
-            class="text-gray-700 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1 rounded-lg transition-all duration-300"
-            :class="{
-              'bg-blue-100 text-blue-600 font-bold': selectedLessonId === courseContent.id, // Highlight active lesson
-              'hover:bg-gray-200': selectedLessonId !== courseContent.id, // Normal hover effect
-            }"
-          >
-            <i
-              :class="{
-                'fa-circle-play': courseContent.content_type == 1,
-                'fa-file-lines': courseContent.content_type == 2,
-                'fa-image': courseContent.content_type == 3,
-              }"
-              class="fa-solid px-8 text-lg w-5 h-5"
-            ></i>
-            {{ courseContent.title }}
+    <ul class="list-none pl-0">
+      <li
+        v-for="(courseContent, contentIndex) in courseModule?.courseContents"
+        :key="contentIndex"
+        @click="openLesson(courseModule.id, courseContent.id)"
+        class="flex items-center py-2 cursor-pointer rounded-lg transition-colors duration-300"
+        :class="{
+          'bg-blue-100 text-blue-600 font-bold': selectedLessonId === courseContent.id,
+          'hover:bg-gray-200': selectedLessonId !== courseContent.id,
+        }"
+      >
+     <!-- Always reserve space for the tick icon -->
+<span
+  v-if="completedLessons.has(courseContent.id)"
+  class="text-green-500 font-bold mr-2"
+>✔</span>
+<span
+  v-else
+  class="text-green-500 font-bold mr-2"
+  style="visibility: hidden;"
+>✔</span>
 
-            <!-- ✅ Tick icon for completed lessons -->
-            <i
-              v-if="completedLessons.has(courseContent.id)"
-              class="fa-solid fa-check-circle text-green-500 ml-4"
-            ></i>
-          </li>
-        </ul>
-      </div>
+<!-- Icon based on content type -->
+<i
+  :class="{
+    'fa-circle-play': courseContent.content_type == 1,
+    'fa-file-lines': courseContent.content_type == 2,
+    'fa-image': courseContent.content_type == 3,
+  }"
+  class="fa-solid text-lg w-5 h-5 mr-2"
+/>
+
+<!-- Lesson title -->
+<span>{{ courseContent.title }}</span>
+
+      </li>
+   <!-- Quiz Items -->
+        <li
+        v-for="(qMetaData, qMetaDataIndex) in courseModule.QMetaDatas"
+        :key="'qMetaData-' + qMetaDataIndex"
+        @click="openQuiz(courseModule.id, qMetaData.id)"
+        class="flex items-center py-2 cursor-pointer my-1 transition-colors duration-300"
+        :class="{
+          'bg-blue-100 text-blue-600 font-bold': selectedQuizId === qMetaData.id,
+          'hover:bg-gray-200': selectedQuizId !== qMetaData.id,
+        }"
+      >
+       <!-- Show check mark if quiz is completed, else reserve space with an invisible check mark -->
+<span
+  v-if="completedQuizzes.has(qMetaData.id)"
+  class="text-green-500 font-bold mr-2"
+>✔</span>
+<span
+  v-else
+  class="text-green-500 font-bold mr-2"
+  style="visibility: hidden;"
+>✔</span>
+        <i class="fa-solid fa-clipboard-list text-lg w-5 h-5 mr-2"></i>
+        <span class="font-semibold">Quiz {{ qMetaDataIndex + 1 }} - </span>
+        <span class="ml-2">{{ qMetaData.title }}</span>
+      </li>
+
+    </ul>
+  </div>
     </div>
+    <button
+  @click="$emit('downloadCertificate', true)"
+  :disabled="overallProgress < 100"
+  :class="overallProgress === 100 
+    ? 'text-blue-500 hover:underline'
+    : 'text-gray-400 cursor-not-allowed'"
+  :title="overallProgress < 100 
+    ? 'Complete all lessons and quizzes to download your certificate'
+    : 'Download your certificate'"
+  class="leading-relaxed text-lg py-2 flex items-center"
+>
+  <i class="fas fa-certificate text-teal-500 mr-2 ml-2"></i>
+  <strong>Certificate of Completion</strong>
+</button>
 
-    <!-- Video Player -->
-    <video ref="videoRef" controls class="w-full mt-4">
-      <source src="your-video-source.mp4" type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
+
+
+
+
   </div>
 </template>
 
 <style scoped>
-/* Styling for selected lesson */
+/* TailwindCSS is used for most styling. The scoped style below is for minor adjustments if needed. */
 .bg-blue-100 {
   background-color: #ebf8ff;
 }

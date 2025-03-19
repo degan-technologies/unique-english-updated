@@ -453,5 +453,5 @@ const getInitials = (name) => {
 
 
 <style scoped>
-/* Add any additional custom styles here */
+/* Additional custom styles if needed */
 </style>

@@ -15,6 +15,8 @@ class Result extends Model {
         'result',
         'user_id',
         'q_meta_data_id',
+        'course_module_id',
+        'course_id'
     ];
 
     public function user() { return $this->belongsTo(User::class); }

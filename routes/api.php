@@ -29,11 +29,8 @@ use App\Http\Controllers\System\PlatformComissionController;
 use App\Http\Controllers\Test\TestController;
 use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
-
-
-
-
-
+use App\Http\Controllers\Course\CourseContentProgressController;
+use App\Http\Controllers\Quiz\AnswerController;
 
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -50,6 +47,7 @@ Route::middleware('auth:api')
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{id}', [UserController::class, 'show']);
         Route::resource('/delete-instructor', UserController::class );
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
         Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
@@ -70,19 +68,25 @@ Route::middleware('auth:api')
         Route::resource('live-sessions', LiveSessionController::class);
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
-        Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
-               
-        Route::resource('quize',QuizController::class);
-        Route::resource('schedules', ScheduleController::class);
-        Route::resource('QMetaData', QMetaDataController::class);  
-        Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
-        Route::resource('tests', TestController::class);
-        Route::resource('Results', ResultController::class);
-        Route::resource('plans', PlanController::class);
-        Route::resource('QASection', QASectionController::class);
+       
+    Route::resource('quize',QuizController::class);
+    Route::resource('schedules', ScheduleController::class);
+    Route::resource('QMetaData', QMetaDataController::class);  
+    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+    Route::resource('tests', TestController::class);
+    Route::resource('results', ResultController::class);
+    Route::resource('plans', PlanController::class);
+    Route::resource('QASection', QASectionController::class);
+    Route::resource('answers', AnswerController::class);
+
+
+     // New progress endpoints for course content
+     Route::post('/coursecontent/progress', [CourseContentProgressController::class, 'store']);
+     Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
+
+     Route::get('/coursecontent/progress/{courseContentId}', [CourseContentProgressController::class, 'show']);
+
     });
-
-
 
 
 Route::middleware('auth:api')
@@ -94,12 +98,10 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
+        Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
+        Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
         // Route::get('/stream/video/{filename}', [CourseVideoController::class, 'stream']);
     });
-// In routes/api.php or routes/web.php, outside the auth:api group:
-Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
-Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
-
 
 Route::middleware('auth:api')
     ->prefix('feedbacks')

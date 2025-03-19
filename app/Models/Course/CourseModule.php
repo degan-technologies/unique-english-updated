@@ -10,7 +10,7 @@ use App\Models\Quiz\QMetaData;
 class CourseModule extends Model {
     protected $fillable = [
        'title', 'sequence', 'description',
-       'user_id', 'course_id',
+       'user_id', 'course_id','slug'
     ];
 
     public function user() { return $this->belongsTo(User::class); }
