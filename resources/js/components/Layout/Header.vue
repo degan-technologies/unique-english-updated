@@ -1,3 +1,68 @@
+<script setup>
+import Axios from "axios";
+import Popper from "vue3-popper";
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
+import { ref } from "vue";
+
+import { useAppStore } from "@/store/useAppStore"; 
+import { useCartStore } from "@/store/useCartStore";
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+
+
+
+const checkoutUrl = ref(null);
+
+const { items, itemCount, image, totalPrice } = storeToRefs(cartStore);
+const { courses, selectedCourseSlug, landingPageTab } = storeToRefs(studentStore);
+
+const isMenuOpen = ref(false);
+const isMenuVisible = ref(true);
+const isMobileCoursesOpen = ref(false);
+
+const toggleMenu = () => (isMenuOpen.value = !isMenuOpen.value);
+const toggleMobileCourses = () => (isMobileCoursesOpen.value = !isMobileCoursesOpen.value);
+const closeMenu = () => {
+  isMenuOpen.value = false;
+};
+
+function enrollCourse() {
+  Axios.post("/api/initiate-payment", { cartItems: items.value })
+    .then((res) => {
+      checkoutUrl.value = res.data.checkout_url;
+      window.open(checkoutUrl.value, "_blank");
+    })
+    .catch((error) => {});
+}
+
+function removeItem(item) {
+  let selectedItem = {
+    type: "course",
+    slug: item.slug,
+    price: item.price,
+    name: item.course_name,
+    image: item.thumbnail_url,
+  };
+  cartStore.removeFromCart(selectedItem);
+}
+
+function changeTab() {
+  router.push({
+    name: "student",
+    query: {
+      tab: landingPageTab.value,
+    },
+  });
+  selectedCourseSlug.value = null;
+}
+
+function signOut() {
+  // Implement your sign-out logic here.
+  // For demonstration, we navigate to a sign-out route.
+  router.push("/sign-out");
+}
+</script>
 
 <template>
     <header
@@ -17,53 +82,109 @@
           <span class="text-xl font-bold text-white drop-shadow-md">UniqueEnglish</span>
         </a>
 
-        <ul class="hidden md:flex items-center gap-6 text-lg font-medium">
-          <li>
-            <button @click="changeTab" class="nav-link">Home</button>
-          </li>
-          <li>
-            <a href="#about" class="nav-link">About</a>
-          </li>
-          <li>
-            <a href="#courses" class="nav-link">Courses</a>
-          </li>
-          <li>
-            <a href="#contact" class="nav-link">Contact</a>
-          </li>
-
-          <!-- Cart Icon -->
-          <div class="relative">
-            <Popper placement="bottom-start">
-              <div class="relative text-2xl flex items-center cursor-pointer">
-                <i class="fa-solid fa-cart-plus text-white w-10 h-10"></i>
-                <span
-                  v-if="itemCount > 0"
-                  class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                >
-                  {{ itemCount }}
-                </span>
+      <!-- Desktop Menu -->
+      <ul class="hidden md:flex gap-6 items-center">
+        <li>
+          <button @click="changeTab" class="hover:text-gray-300">
+            Home
+          </button>
+        </li>
+        <li>
+          <a href="#about" class="hover:text-gray-300">About</a>
+        </li>
+        <!-- Courses Dropdown -->
+        <li class="relative">
+          <Popper :offset-distance="'0'" placement="bottom-start">
+            <template #default>
+              <button class="hover:text-gray-300 flex items-center gap-1">
+                <i class="fa-solid fa-book"></i>
+                <span>My Courses</span>
+               
+              </button>
+            </template>
+            <template #content>
+              <div class="bg-gray-50 text-black mt-6 w-48 shadow-lg rounded p-2">
+                <ul>
+                  <li>
+                 <router-link
+  to="/my-course"
+                      class="block px-2 py-2 hover:bg-gray-200 text-sm  flex items-center gap-2"
+                    >
+                      <i class="fa-solid fa-graduation-cap"></i>
+                      <span>My Courses</span>
+                    </router-link>
+                  </li>
+                  <li>
+                    <a
+                      href="/certificate"
+                      class="block px-2 py-2 hover:bg-gray-200 text-sm  flex items-center gap-2"
+                    >
+                      <i class="fa-solid fa-certificate"></i>
+                      <span>Certificate</span>
+                    </a>
+                  </li>
+                </ul>
+                <hr class="my-2 border-gray-300" />
+                <ul>
+                  <li>
+                    <a
+                      href="#"
+                      @click.prevent="signOut"
+                      class="block px-2 py-2 hover:bg-red-100 text-red-500 text-sm flex round items-center gap-2"
+                    >
+                      <i class="fa-solid fa-sign-out-alt"></i>
+                      <span>Sign Out</span>
+                    </a>
+                  </li>
+                </ul>
               </div>
-              <template #content>
-                <div class="cart-dropdown">
+            </template>
+          </Popper>
+        </li>
+        <li>
+          <a href="#contact" class="hover:text-gray-300">Contact</a>
+        </li>
+        <!-- Cart Dropdown -->
+        <div class="relative">
+          <Popper :offset-distance="'0'" placement="bottom-start">
+            <div class="relative text-2xl flex items-center">
+              <i class="fa-solid fa-cart-plus text-white cursor-pointer w-10 h-10"></i>
+              <span
+                v-if="itemCount > 0"
+                class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+              >
+                {{ itemCount }}
+              </span>
+            </div>
+            <template #content>
+              <div
+                class="absolute top-12 right-0 bg-white text-black shadow-lg w-96 h-96 overflow-y-auto scrollbar p-4 rounded"
+              >
+                <div class="flex justify-between items-center mb-2">
                   <h3 class="font-bold text-lg">Your Cart</h3>
-                  <ul v-if="itemCount">
+                </div>
+                <div v-if="!itemCount" class="h-20 flex justify-center items-center">
+                  <h1>No Item add to cart</h1>
+                </div>
+                <div v-else>
+                  <ul>
                     <li
                       v-for="item in items"
                       :key="item.id"
-                      class="cart-item"
+                      class="flex items-center justify-between mb-2 border-b pb-2"
                     >
                       <img
                         :src="item.image"
                         alt="Item Image"
-                        class="h-12 w-12 rounded object-cover"
+                        class="h-12 w-12 object-cover rounded"
                       />
-                      <div class="ml-2">
+                      <div class="flex-1 ml-2">
                         <span class="block font-semibold">{{ item?.name }}</span>
                         <span class="text-gray-500 text-sm">${{ item?.price.toFixed(2) }}</span>
                       </div>
                       <i
                         @click="removeItem(item)"
-                        class="fa-solid fa-minus text-red-500 hover:text-red-700 cursor-pointer"
+                        class="fa-solid fa-minus text-red-500 hover:text-red-700"
                       ></i>
                     </li>
                   </ul>
@@ -72,21 +193,16 @@
                   </div>
                   <button
                     @click="enrollCourse()"
-                    class="checkout-btn"
+                    class="mt-2 bg-green-600 text-white px-4 py-2 rounded w-full hover:bg-green-700"
                   >
                     Proceed to Checkout
                   </button>
                 </div>
-              </template>
-            </Popper>
-          </div>
-
-          <!-- Login & Register Call-to-Action Buttons -->
-          <div class="flex gap-4">
-            <router-link to="/login" class="btn-login">Login</router-link>
-            <router-link to="/register" class="btn-register">Register</router-link>
-          </div>
-        </ul>
+              </div>
+            </template>
+          </Popper>
+        </div>
+      </ul>
 
         <!-- Mobile Menu Toggle -->
         <button
@@ -148,17 +264,11 @@
 
   const cartStore = useCartStore();
   const studentStore = UseStudentStore();
-  const router = useRouter();
+  
 
-  const checkoutUrl = ref(null);
-  const { items, itemCount, totalPrice } = storeToRefs(cartStore);
-  const { landingPageTab, selectedCourseSlug } = storeToRefs(studentStore);
-  const isMenuOpen = ref(false);
-  const isMenuVisible = ref(true);
 
-  const toggleMenu = () => {
-    isMenuOpen.value = !isMenuOpen.value;
-  };
+
+
 
   function enrollCourse() {
     Axios.post("/api/initiate-payment", { cartItems: items.value })

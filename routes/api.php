@@ -98,6 +98,8 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
+        Route::get('/transactions/{type}', [TransactionController::class, 'index'])
+            ->where('type', 'course|book|live');
         Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
         Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
         // Route::get('/stream/video/{filename}', [CourseVideoController::class, 'stream']);

@@ -12,6 +12,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
+use App\Models\Transaction\Transaction;
 use Carbon\Carbon;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;
@@ -40,16 +41,34 @@ class TransactionController extends Controller {
         $this->chapaService = $chapaService;
     }
     
-    /* Initialize Rave payment process
-     * @param \Illuminate\Http\Request $request
-     * @return mixed
-     * @throws \Exception
-     * this method will initiate the payment process
-     * and return the checkout url
-     * to the user
-     * register order to the transaction table
-     * and calculate the total price
-     */
+    public function index($type)
+    {
+        if (!in_array($type, ['course', 'book', 'live'])) {
+            return response()->json(['error' => 'Invalid type'], 400);
+        }
+
+        switch ($type) {
+            case 'course':
+                $transactions = Transaction::with('course')
+                    ->where('product_type', $type)
+                    ->get();
+                break;
+            case 'book':
+                $transactions = Transaction::with('book')
+                    ->where('product_type', $type)
+                    ->get();
+                break;
+            case 'live':
+                $transactions = Transaction::with('live')
+                    ->where('product_type', $type)
+                    ->get();
+                break;
+        }
+
+        return response()->json($transactions);
+    }
+
+
     public function initiatePayment(Request $request) {
         /**
          * @var App\Models\user $user
