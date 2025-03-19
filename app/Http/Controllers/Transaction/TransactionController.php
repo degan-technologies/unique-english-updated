@@ -12,7 +12,6 @@ use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
-use App\Models\Transaction\Transaction;
 use Carbon\Carbon;
 use App\Traits\LogsActivity;
 use Illuminate\Http\Request;

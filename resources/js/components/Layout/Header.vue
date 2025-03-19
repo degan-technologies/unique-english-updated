@@ -2,13 +2,53 @@
 import Axios from "axios";
 import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { useRouter } from "vue-router";
-import { ref } from "vue";
 
+import { ref } from "vue";
 import { useAppStore } from "@/store/useAppStore"; 
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
+import { useRouter } from "vue-router";
 
+
+
+
+  const cartStore = useCartStore();
+  const studentStore = UseStudentStore();
+  
+
+
+
+
+
+  function enrollCourse() {
+    Axios.post("/api/initiate-payment", { cartItems: items.value })
+      .then((res) => {
+        checkoutUrl.value = res.data.checkout_url;
+        window.open(checkoutUrl.value, "_blank");
+      })
+      .catch((error) => {});
+  }
+
+  function removeItem(item) {
+    let selectedItem = {
+      type: "course",
+      slug: item.slug,
+      price: item.price,
+      name: item.course_name,
+      image: item.thumbnail_url,
+    };
+    cartStore.removeFromCart(selectedItem);
+  }
+
+  function changeTab() {
+    router.push({
+      name: "student",
+      query: {
+        tab: landingPageTab.value,
+      },
+    });
+    selectedCourseSlug.value = null;
+  }
 
 
 
@@ -27,35 +67,6 @@ const closeMenu = () => {
   isMenuOpen.value = false;
 };
 
-function enrollCourse() {
-  Axios.post("/api/initiate-payment", { cartItems: items.value })
-    .then((res) => {
-      checkoutUrl.value = res.data.checkout_url;
-      window.open(checkoutUrl.value, "_blank");
-    })
-    .catch((error) => {});
-}
-
-function removeItem(item) {
-  let selectedItem = {
-    type: "course",
-    slug: item.slug,
-    price: item.price,
-    name: item.course_name,
-    image: item.thumbnail_url,
-  };
-  cartStore.removeFromCart(selectedItem);
-}
-
-function changeTab() {
-  router.push({
-    name: "student",
-    query: {
-      tab: landingPageTab.value,
-    },
-  });
-  selectedCourseSlug.value = null;
-}
 
 function signOut() {
   // Implement your sign-out logic here.
@@ -252,55 +263,7 @@ function signOut() {
     </header>
   </template>
 
-  <script setup>
-  import Axios from "axios";
-  import Popper from "vue3-popper";
-  import { storeToRefs } from "pinia";
-  import { useRouter } from "vue-router";
-  import { ref } from "vue";
-  import { useAppStore } from "@/store/useAppStore";
-  import { useCartStore } from "@/store/useCartStore";
-  import { UseStudentStore } from "@/store/UseStudentStore";
-
-  const cartStore = useCartStore();
-  const studentStore = UseStudentStore();
-  
-
-
-
-
-
-  function enrollCourse() {
-    Axios.post("/api/initiate-payment", { cartItems: items.value })
-      .then((res) => {
-        checkoutUrl.value = res.data.checkout_url;
-        window.open(checkoutUrl.value, "_blank");
-      })
-      .catch((error) => {});
-  }
-
-  function removeItem(item) {
-    let selectedItem = {
-      type: "course",
-      slug: item.slug,
-      price: item.price,
-      name: item.course_name,
-      image: item.thumbnail_url,
-    };
-    cartStore.removeFromCart(selectedItem);
-  }
-
-  function changeTab() {
-    router.push({
-      name: "student",
-      query: {
-        tab: landingPageTab.value,
-      },
-    });
-    selectedCourseSlug.value = null;
-  }
-  </script>
-
+ 
   <style scoped>
   /* Glassmorphic Header Base */
   header {
