@@ -9,14 +9,11 @@ use Illuminate\Http\Request;
 
 use App\Traits\LogsActivity;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller {
 
-    /**
-     * get error traslation and success beased on the language 
-     * localized 
-     */
     protected $langService;
     use LogsActivity;
     public function __construct(LangService $langService) {
@@ -24,23 +21,18 @@ class AuthController extends Controller {
     }
 
     /**
-     * Login user using email and password
-     * if there is a successfull attempt 
-     * it will create passport Bearer token
-     * and returns it to the user
-     * @param \Illuminate\Http\Request $request
-     * @return mixed
+     * Log in a user using the web guard and issue a Passport token.
+     * The token is then stored in an HTTP-only cookie.
      */
     public function login(Request $request) {
-  
         $validation = [
-            'email' => ['required', 'email'],
+            'email'    => ['required', 'email'],
             'password' => ['required']
         ];
 
         $validationMessage = [
             'email.required' => $this->langService->getLang('email_required'),
-            'email.email' => $this->langService->getLang('invalid_email'),
+            'email.email'    => $this->langService->getLang('invalid_email'),
             'password.required' => $this->langService->getLang('enter_your_password'),
         ];
 
@@ -54,44 +46,65 @@ class AuthController extends Controller {
         }
 
         $credentials = [
-            'email' => $request->email,
+            'email'    => $request->email,
             'password' => $request->password
         ];
 
+        // Authenticate using the web guard
         if (!Auth::guard('web')->attempt($credentials)) {
             return response()->json([
                 'message' => $this->langService->getLang('invalid_credentials')
             ], 422);
         }
 
-        $token = Auth::user()->createToken($request->email);
-        $this->logActivity('login', 'User logged in', 'User successfully logged in.');
+        // Generate a Passport token for API authentication
+        $user = Auth::user();
+        $token = $user->createToken('AuthToken')->accessToken;
+
+        // Store token in an HTTP-Only, Secure Cookie (valid for 7 days)
+        $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
+
         return response()->json([
-            'token' => $token->accessToken
-        ]);
+            'message' => 'Login successful',
+            'token' => $token
+        ])->withCookie($cookie);
     }
 
-    
     /**
-     * Return the current user information
-     * based on the given Resource
-     * this route should be guarded using the
-     * auth:api guard middleware
-     * @return mixed
+     * Return the current user information.
+     * This method uses the API guard. If the Authorization header
+     * is not present, it sets the header from the HTTP-only cookie.
      */
-    public function currentUser() {
+    public function currentUser(Request $request) {
+        // If no Authorization header, set it from the authToken cookie
+        if (!$request->hasHeader('Authorization')) {
+            $token = Cookie::get('authToken');
+            if ($token) {
+                $request->headers->set('Authorization', 'Bearer ' . $token);
+            } else {
+                return response()->json(['message' => 'Unauthorized'], 401);
+            }
+        }
 
-        /**
-         * @var \App\Models\User $user
-         */
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
         return response()->json(new CurrentUserResource($user));
     }
 
+    /**
+     * Log out the user by revoking the Passport token and deleting the auth cookie.
+     */
     public function logout(Request $request) {
         $request->user()->token()->revoke();
+        $cookie = Cookie::forget('authToken');
+
         return response()->json([
             'message' => $this->langService->getLang('logged_out')
-        ]);
+        ])->withCookie($cookie);
     }
+
 }

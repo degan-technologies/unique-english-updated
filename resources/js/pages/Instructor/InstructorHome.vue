@@ -90,7 +90,7 @@ function setSelectedContent(contentId) {
                     </div>
             <div v-else-if="selectedContent === 'schedule'">
             <ScheduleManagment />
-          
+
              </div>
                     <div v-else-if="selectedContent === exams">
                         <ExamManagement />
@@ -117,7 +117,7 @@ function setSelectedContent(contentId) {
         </div>
     </div>
 
-  
+
   </div>
 </template>
 

@@ -17,6 +17,7 @@ onMounted(() => {
 <template>
     <div>
         <div class="overflow-hidden">
+
             <template v-if="isLoggedIn">
                 <Body />
             </template>

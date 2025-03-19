@@ -26,26 +26,35 @@ return new class extends Migration
             $table->string('user_name')->nullable()->unique();
             $table->string('full_name')->storedAs("CONCAT(`first_name`, ' ', `middle_name`, ' ', `last_name`)");
 
-            $table->string('phone')->nullable();
+            $table->string('phone')->nullable()->unique();
             $table->string('profile')->nullable()->unique();
             $table->string('bg_image')->nullable()->unique();
 
             $table->integer('role');
             $table->timestamp('user_banned_at')->nullable();
-            
-            $table->integer('progress')->default(0); 
+
+            $table->integer('progress')->default(0);
+
+            $table->string('provider')->nullable();
+            $table->string('provider_id')->nullable()->unique();
 
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
 
             $table->softDeletes();
+            $table->integer('otp')->nullable();
+            
+            $table->timestamp('otp_expires_at')->nullable();
+
+            $table->integer('otp_attempts')->default(0);
+
         });
 
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
-        
+
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

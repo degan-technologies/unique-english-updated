@@ -34,6 +34,9 @@ class UserResource extends JsonResource {
             'myCourse'    => TransactionResource::collection($this->transaction),
             // Add temp_password field if it exists
             'temp_password' => $this->temp_password ?? null,
+            'otp' => $this->otp ?? null,
+            'otp_expires_at' => $this->otp_expires_at ? $this->otp_expires_at->format('Y-m-d H:i:s') : null,
+            'otp_attempts' => $this->otp_attempts ?? 0,
         ];
     }
 }

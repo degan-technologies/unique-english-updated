@@ -1,7 +1,9 @@
 import Axios from "axios";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { useLocalStorage } from "@vueuse/core";
+import Cookies from "js-cookie";  // Import js-cookie
+
+Axios.defaults.withCredentials = true;
 
 export const useAppStore = defineStore('useAppStore', () => {
     const authUser = ref(null);
@@ -10,28 +12,47 @@ export const useAppStore = defineStore('useAppStore', () => {
     const facebook = ref("/socialMediaIcons/face.png");
     const lang = ref('en');
     const google = ref("/socialMediaIcons/google.png");
-    
-    const authToken = useLocalStorage('authToken', '');
-    const loggedIn = useLocalStorage('loggedin', false);
+
+    // Use js-cookie to store token and login status
+    const authToken = ref(Cookies.get('authToken') || '');
+    const loggedIn = ref(Cookies.get('loggedin') === 'true');  // Cookies store boolean as string
+
+    const otpPhoneNumber = ref(null);
 
     const firstName = computed(() => authUser.value?.first_name);
     const middleName = computed(() => authUser.value?.middle_name);
     const lastName = computed(() => authUser.value?.last_name);
 
     const isLoggedIn = computed(() => loggedIn.value == true && authToken.value != '');
-        
-    // set authToken
+
+
+
+    // set authToken and store it in cookies
     function setAuthToken(token) {
+        console.log("Setting Token: ", token); // Debugging
+
+        // Store token in Pinia state
         authToken.value = token;
-        Axios.defaults.headers.common['Authorization'] = `Bearer ${authToken.value}`;
+
+        // Store token in Cookies (7 days expiration)
+        Cookies.set('authToken', token, {
+            expires: 7,             // Cookie expires in 7 days
+            secure: true,           // Send cookie only over HTTPS (set to false for local dev)
+            sameSite: 'Strict'      // Prevent CSRF attacks by limiting cross-site usage
+        });
+
+        // Set Authorization header for future Axios requests
+        Axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
- 
-    // change login status
-    // either true or false
+
+
+    // change login status and store it in cookies
     function changeLoginStatus(status) {
         loggedIn.value = status;
-        if(status == false) setAuthToken('');
-        else {
+        Cookies.set('loggedin', status.toString(), { expires: 7, secure: true, sameSite: 'Strict' });
+        if (status == false) {
+            setAuthToken('');
+        } else {
             fetchUserInfo();
         }
     }
@@ -49,12 +70,14 @@ export const useAppStore = defineStore('useAppStore', () => {
         Axios
             .get('/api/current')
             .then(response => {
-                authUser.value = response.data; 
+                authUser.value = response.data;
             })
             .catch(error => changeLoginStatus(false))
     }
 
-    function logout(){
+    function logout() {
+        Cookies.remove('authToken');
+        Cookies.remove('loggedin');
         authToken.value = '';
         loggedIn.value = false;
     }
@@ -64,20 +87,16 @@ export const useAppStore = defineStore('useAppStore', () => {
         isLoggedIn,
         setAuthToken,
         changeLoginStatus,
-
         authUser,
         firstName,
         middleName,
         lastName,
         fetchUserInfo,
-
         lang,
         frontLang,
         fetchFrontLanguages,
-
         facebook,
         google,
-
         logout,
     };
 });

@@ -49,6 +49,9 @@ class FeedBack extends Model
         return $this->belongsTo(Course::class);
     }
 
+    public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
+
+
     public static function reviewRate($feedBacks){
         // Compute average rating (supports half-star values)
         $averageRating = $feedBacks->avg('rate') ?? 0;

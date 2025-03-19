@@ -1,4 +1,7 @@
 <?php
+use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Live\ChatController;
+use App\Http\Controllers\Live\MeetingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
@@ -39,6 +42,7 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
         Route::post('/add-student', [UserController::class, 'addStudent']);
+        Route::post('/register', [UserController::class, 'store']);
         Route::delete('/delete-instructor/{id}', [UserController::class, 'destroy']);
         Route::post('/update-profile', [UserController::class, 'profileUpdate']);
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
@@ -46,23 +50,33 @@ Route::middleware('auth:api')
         Route::get('/users', [UserController::class, 'index']);
         Route::resource('/delete-instructor', UserController::class );
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
+        Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
+        Route::post('/resend-otp', [UserController::class, 'resendOTP']);
     });
+// Social Login Routes
+Route::middleware(['web'])->group(function () {
+    Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider']);
+    Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProviderCallback']);
+});
+
 
 Route::middleware('auth:api')
     ->group(function () {
         Route::get('/current', [AuthController::class, 'currentUser']);
+
+        // Existing resource routes
         Route::resource('live-sessions', LiveSessionController::class);
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
         // Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
-       
-       
-        
-        
+
+
+
+
     Route::resource('quize',QuizController::class);
     Route::resource('schedules', ScheduleController::class);
-    Route::resource('QMetaData', QMetaDataController::class);  
-    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+    Route::resource('QMetaData', QMetaDataController::class);
+    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']);
     Route::resource('tests', TestController::class);
     Route::resource('Results', ResultController::class);
     Route::resource('plans', PlanController::class);
@@ -71,7 +85,7 @@ Route::middleware('auth:api')
 
 
 
-    
+
 Route::middleware('auth:api')
     ->prefix('courses')
     ->group(function () {
@@ -93,23 +107,37 @@ Route::middleware('auth:api')
     ->group(function () {
         // Standard resource endpoints
         Route::get('/', [FeedBackController::class, 'index']);
+        Route::get('/feedback/{slug}', [FeedBackController::class, 'courseFeedBack']);
         Route::post('/', [FeedBackController::class, 'store']);
         Route::get('{id}', [FeedBackController::class, 'show']);
         Route::put('{id}', [FeedBackController::class, 'update']);
         Route::delete('{id}', [FeedBackController::class, 'destroy']);
 
         // Custom endpoints for additional feedback actions
-        Route::post('{id}/like', [FeedBackController::class, 'like']);
-        Route::post('{id}/dislike', [FeedBackController::class, 'dislike']);
+        Route::post('favorite/{id}', [FeedBackController::class, 'addFavorite']);
         Route::post('{id}/report', [FeedBackController::class, 'report']);
     });
 
     // SMS endpoints added here
 Route::middleware('auth:api')->group(function () {
-    Route::post('/send-sms', [SMSController::class, 'sendSMS']);
-    Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
+        Route::post('/send-sms', [SMSController::class, 'sendSMS']);
+        Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
+        Route::post('/send-otp', [SMSController::class, 'sendOTP']);
+        Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
+        });
+
+Route::middleware('auth:api')->group(function () {
+        Route::get('/chat/{meetingId}', [ChatController::class, 'index']);
+        Route::post('/chat', [ChatController::class, 'store']);
+        });
+
+Route::middleware('auth:api')->group(function () {
+        Route::post('/meetings', [MeetingController::class, 'create']);
+        Route::post('/meetings/join', [MeetingController::class, 'join']);
+        Route::post('/meetings/end', [MeetingController::class, 'end']);
     });
-    
+
+
 Route::middleware('auth:api')
     ->prefix('books')
     ->group(function(){
@@ -118,4 +146,3 @@ Route::middleware('auth:api')
     });
 
 Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment'])->middleware('auth:api');
-

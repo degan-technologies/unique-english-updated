@@ -23,6 +23,11 @@ const handleLogin = () => {
         loading.value = false;
     }, 1500);
 };
+
+const socialLogin = (provider) => {
+    window.location.href = `http://127.0.0.1:8000/auth/${provider}/redirect`;
+};
+
 </script>
 
 <template>
@@ -96,14 +101,28 @@ const handleLogin = () => {
                 <p class="text-gray-600 mb-2">Or log in with</p>
                 <div class="flex justify-center space-x-4">
                     <button
-                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300"
+                        @click="socialLogin('google')"
+                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
                     >
                         Google
                     </button>
                     <button
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300"
+                        @click="socialLogin('facebook')"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
                         Facebook
+                    </button>
+                    <button
+                        @click="socialLogin('linkedin')"
+                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                    >
+                        LinkedIn
+                    </button>
+                    <button
+                        @click="socialLogin('twitter')"
+                        class="bg-blue-400 text-white px-4 py-2 rounded-lg hover:bg-blue-500"
+                    >
+                        Twitter
                     </button>
                 </div>
             </div>

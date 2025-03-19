@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\LangService;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Comment\FeedbackUserInteraction;
+use App\Models\Course\Course;
+use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class FeedBackController extends Controller
 {
@@ -16,92 +20,88 @@ class FeedBackController extends Controller
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
-
     /**
      * Display a listing of feedback.
      */
     public function index()
     {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+        if(!$user) return;
         // Eager-load the "user" relationship to get the reviewer's name.
         $feedbacks = FeedBack::query()
-            ->where('instractor_id', Auth::id())
+            ->where('instractor_id', $user->id)
             ->get();
-
         $review = FeedBack::reviewRate($feedbacks);
-
         return response()->json([
             'data'             => FeedBackResource::collection($feedbacks),
             'averageRating'    => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
         ]);
     }
-
     /**
      * Store a newly created feedback in storage.
      */
     public function store(Request $request)
     {
+        /* @var \App\Models\User $user
+        */
+        $user = Auth::user();
+        $courseId = $request->course_id ?? null;
+
+        $course = Course::query()
+            ->where('id', $courseId)
+            ->first();
+        if(!$course) {
+            return response()->json([
+                'message' => $this->langService->getLang('course_not_found')
+            ], 404);
+        }
         $validationRules = [
             'rate'           => 'required|numeric|between:1,5',
             'comment'        => 'required|string',
-            'user_id'        => 'required|exists:users,id',
-            'instractor_id'  => 'required|exists:users,id',
-            'course_id'      => 'required|exists:courses,id',
         ];
-
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('feedbacks'));
-
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
-
             return response()->json([
                 'message' => $message,
                 'errors'  => $validator->errors()
             ], 422);
         }
-
-        $feedback = FeedBack::create($request->only(['rate', 'comment', 'user_id', 'instractor_id', 'course_id']));
-        $feedback->load('user');
-
-        $transformedFeedback = [
-            'id'        => $feedback->id,
-            'name'      => $feedback->user ? $feedback->user->name : 'Anonymous',
-            'rating'    => $feedback->rate,
-            'comment'   => $feedback->comment,
-            'timestamp' => $feedback->created_at->toDateTimeString(),
-        ];
-
+        $feedback = $user->feedBacks()->create([
+            'rate' => $request->rate,
+            'comment' => $request->comment,
+            'course_id'=> $request->course_id,
+            'instractor_id' => $course->user_id,
+        ]);
         return response()->json([
             'message'  => 'Feedback submitted successfully!',
-            'feedback' => $transformedFeedback
+            'feedback' => new FeedBackResource($feedback),
         ], 201);
     }
-
     /**
      * Display the specified feedback.
      */
     public function show($id)
     {
         $feedback = FeedBack::with('user')->findOrFail($id);
-
         $transformedFeedback = [
             'id'        => $feedback->id,
-            'name'      => $feedback->user ? $feedback->user->name : 'Anonymous',
+            'name'      => $feedback->user,
             'rating'    => $feedback->rate,
             'comment'   => $feedback->comment,
             'timestamp' => $feedback->created_at->toDateTimeString(),
         ];
-
         return response()->json($transformedFeedback);
     }
-
     /**
      * Update the specified feedback in storage.
      */
     public function update(Request $request, $id)
     {
         $feedback = FeedBack::findOrFail($id);
-
         $validatedData = $request->validate([
             'rate'           => 'sometimes|numeric|between:1,5',
             'comment'        => 'sometimes|string',
@@ -109,10 +109,8 @@ class FeedBackController extends Controller
             'instractor_id'  => 'sometimes|exists:users,id',
             'course_id'      => 'sometimes|exists:courses,id',
         ]);
-
         $feedback->update($validatedData);
         $feedback->load('user');
-
         $transformedFeedback = [
             'id'        => $feedback->id,
             'name'      => $feedback->user ? $feedback->user->name : 'Anonymous',
@@ -120,13 +118,11 @@ class FeedBackController extends Controller
             'comment'   => $feedback->comment,
             'timestamp' => $feedback->created_at->toDateTimeString(),
         ];
-
         return response()->json([
             'message'  => 'Feedback updated successfully!',
             'feedback' => $transformedFeedback
         ]);
     }
-
     /**
      * Remove the specified feedback from storage.
      */
@@ -134,77 +130,106 @@ class FeedBackController extends Controller
     {
         $feedback = FeedBack::findOrFail($id);
         $feedback->delete();
-
         return response()->json(['message' => 'Feedback deleted successfully!']);
     }
-
     /**
      * Like the specified feedback.
      */
-    public function like($id)
-    {
-        $feedback = FeedBack::findOrFail($id);
-        // Assumes a "likes" column exists on the feedback table
-        $feedback->increment('likes');
-
+    public function addFavorite(Request $request, $id) {
+        /* @var \App\Models\User $user
+        */
+        $user = Auth::user();
+        $favorite = FeedbackUserInteraction::query()
+        ->where('user_id', $user->id)
+        ->where('feed_back_id', $id)
+        ->first();
+        $validationRules = [
+            'action'           => ['required', Rule::in(FEEDBACK_ACTIONS)],
+        ];
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('feedbacks'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json([
+                'message' => $message,
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+        if(!$favorite) {
+            $user->feedbackUserInteractions()->create([
+                'favorite' => $request->action,
+                'feed_back_id' => $id,
+            ]);
+        }
+        $favorite->update([
+            'favorite' => $request->action,
+        ]);
+        $reaction = FeedbackUserInteraction::query()
+            ->where('feed_back_id', $id)
+            ->get();
+        $countLike = $reaction ->where('favorite', 'liked')->count();
+        $countDislike = $reaction ->where('favorite', 'disliked')->count();
         return response()->json([
-            'message' => 'Feedback liked successfully!',
-            'likes'   => $feedback->likes,
+            'like' => $countLike,
+            'dislike' => $countDislike,
         ]);
     }
-
     /**
      * Dislike the specified feedback.
      */
-    public function dislike($id)
-    {
+    public function dislike($id) {
+        $userId = Auth::id();
         $feedback = FeedBack::findOrFail($id);
-        // Assumes a "dislikes" column exists on the feedback table
+        $interaction = FeedbackUserInteraction::firstOrNew(
+            ['user_id' => $userId, 'feedback_id' => $id]
+        );
+        if ($interaction->disliked) {
+            return response()->json(['message' => 'You have already disliked this feedback.'], 400);
+        }
+        $interaction->disliked = true;
+        $interaction->liked = false; // Remove like if previously liked
+        $interaction->save();
         $feedback->increment('dislikes');
-
+        if ($feedback->likes > 0) {
+            $feedback->decrement('likes'); // Adjust count if previously liked
+        }
         return response()->json([
             'message'  => 'Feedback disliked successfully!',
             'dislikes' => $feedback->dislikes,
         ]);
     }
-
     /**
      * Report abuse for the specified feedback.
      *
      * Flagged content is reviewed by staff to determine whether it violates Terms of Service or Community Guidelines.
      * The request must include an issue type and issue details.
      */
-    public function report(Request $request, $id)
-    {
+    public function report(Request $request, $id) {
+        $userId = Auth::id();
         $feedback = FeedBack::findOrFail($id);
-
-        $validationRules = [
-            'issue_type'    => 'required|string',       // e.g., "Harassment", "Inappropriate Content", etc.
-            'issue_details' => 'required|string|min:10', // More details are required to review the report.
-        ];
-
-        $validator = Validator::make($request->all(), $validationRules);
-
+        $interaction = FeedbackUserInteraction::firstOrNew(
+            ['user_id' => $userId, 'feedback_id' => $id]
+        );
+        if ($interaction->reported) {
+            return response()->json(['message' => 'You have already reported this feedback.'], 400);
+        }
+        $validator = Validator::make($request->all(), [
+            'issue_type'    => 'required|string',
+            'issue_details' => 'required|string|min:10',
+        ]);
         if (!$validator->passes()) {
-            $message = $validator->errors()->all()[0];
-
             return response()->json([
-                'message' => $message,
+                'message' => $validator->errors()->first(),
                 'errors'  => $validator->errors(),
             ], 422);
         }
-
-        // Option 1: If you store report details in the feedback record,
-        // you might update specific columns. For example:
+        $interaction->reported = true;
+        $interaction->save();
         $feedback->increment('reports');
         $feedback->report_issue_type = $request->input('issue_type');
         $feedback->report_issue_details = $request->input('issue_details');
         $feedback->save();
-
-        // Option 2: Alternatively, you might create a separate Report model.
-
         return response()->json([
-            'message' => 'Feedback reported successfully! Our staff will review the flagged content.',
+            'message' => 'Feedback reported successfully!',
             'reports' => $feedback->reports,
         ]);
     }
