@@ -2,6 +2,8 @@
 
 namespace App\Models\Transaction;
 
+use App\Models\Course\Course;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class Transaction extends Model {
@@ -13,4 +15,8 @@ class Transaction extends Model {
     ];
 
     public function enrollments() { return $this->morphTo(); }
+
+    public function customer() { return $this->belongsTo(User::class, 'customer_id'); }
+    public function course() { return $this->belongsTo(Course::class); }
+    public function transfer() { return $this->hasOne(Transfer::class); }
 }

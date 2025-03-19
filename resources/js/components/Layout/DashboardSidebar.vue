@@ -70,19 +70,19 @@ const mainItems = [
         icon: "calendar",
     },
     {
-        label: "Messaging & Notifications",
+        label: "Messaging ",
         route: messaging.value,
         description: "Send & manage messages.",
         icon: "envelope",
     },
     {
-        label: "System Reports & Analytics",
+        label: "System Reports",
         route: "reports",
         description: "View performance metrics.",
         icon: "chart-simple",
     },
     {
-        label: "Settings & Customization",
+        label: "Settings ",
         route: "settings",
         description: "Configure platform branding & security.",
         icon: "gear",
@@ -176,7 +176,7 @@ function selectContent(changeTab) {
                                 :class="{
                                     ['fa-' + item.icon]: true,
                                 }"
-                                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-xl"
+                                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"
                             ></i>
                             <span
                                 v-if="!sidebarCollapsed"

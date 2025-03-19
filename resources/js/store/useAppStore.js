@@ -54,7 +54,7 @@ export const useAppStore = defineStore('useAppStore', () => {
             setAuthToken('');
         } else {
             fetchUserInfo();
-        }
+        }  
     }
 
     // Fetch front languages

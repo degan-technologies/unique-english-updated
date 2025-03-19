@@ -148,6 +148,7 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
+            -> where('user_id', $user->id)
             ->where('user_id', $user->id)
             ->findOrFail($id);
 

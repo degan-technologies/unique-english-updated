@@ -17,9 +17,10 @@ return new class extends Migration
 
             $table->unsignedBigInteger('amount');
             $table->string('transaction_type')->nullable();
-            $table->string('status')->nullable();
+            $table->string('status')->default(TRANSACTION_PENDING);
             $table->string('payment_method')->nullable();
             $table->string('product_type');
+            $table->string('currency')->default('ETB');
 
             $table->string('tx_ref');
             $table->string('payment_url')->nullable();

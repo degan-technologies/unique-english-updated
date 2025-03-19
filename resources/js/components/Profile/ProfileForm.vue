@@ -1,13 +1,15 @@
-<script setup>
-    import { ref } from "vue";
+<script setup >
+    import { ref } from 'vue';
+    
     import ProfileSettings from './profileSetting.vue';
     import ChangePassword from './ChangePassword.vue';
+    import BankAccount from './Bank/BankAccount.vue';
 
     const activeTab = ref('profile');
-
-    const setActiveTab = (tab) => {
+    function setActiveTab(tab) {
         activeTab.value = tab;
-    };
+    }
+  
 </script>
 
 <template>
@@ -20,8 +22,8 @@
                         <li 
                             @click="setActiveTab('profile')" 
                             :class="{
-                            'bg-lime-700 text-white': activeTab === 'profile',
-                            'hover:bg-lime-500': activeTab !== 'profile'
+                                'bg-lime-700 text-white': activeTab === 'profile',
+                                'hover:bg-lime-500': activeTab !== 'profile'
                             }" 
                             class="py-2 px-3 cursor-pointer">
                             👤 Profile Settings
@@ -29,17 +31,28 @@
                         <li 
                             @click="setActiveTab('password')" 
                             :class="{
-                            'bg-lime-700 text-white': activeTab === 'password',
-                            'hover:bg-lime-500': activeTab !== 'password'
+                                'bg-lime-700 text-white': activeTab === 'password',
+                                'hover:bg-lime-500': activeTab !== 'password'
                             }" 
                             class="py-2 px-3 cursor-pointer">
                             🔒 Password
                         </li>
+                        <li 
+                            @click="setActiveTab('account')" 
+                            :class="{
+                                'bg-lime-700 text-white': activeTab === 'password',
+                                'hover:bg-lime-500': activeTab !== 'password'
+                            }" 
+                            class="py-2 px-3 cursor-pointer">
+                            Add Account
+                        </li>
                     </ul>
                 </nav>
+            
                 <div class="flex-1 bg-white p-5 rounded-lg shadow">
-                <ProfileSettings v-if="activeTab === 'profile'" />
-                <ChangePassword v-if="activeTab === 'password'" />
+                    <ProfileSettings v-if="activeTab === 'profile'" />
+                    <ChangePassword v-if="activeTab === 'password'" />
+                    <BankAccount v-if="activeTab === 'account'" />
                 </div>
             </div>
         </section>

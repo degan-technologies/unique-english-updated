@@ -3,10 +3,10 @@ namespace App\Helper;
 
 define('DB_CONNECTION', 'mysql');
 define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3306');
+define('DB_PORT', '3307');
 define('DB_DATABASE', 'unique');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '1234');
+define('DB_PASSWORD', 'qlarapass');
 
 define('MALE', 1);
 define('FEMALE', 2);
@@ -51,7 +51,6 @@ define('LiVESESSION_STATUS',[
 ]);
 
 define('STARTED', 1);
-define('COMPLETED', 2);
 define('COURSE_CONTENT_STATUS', [
     STARTED, COMPLETED
 ]);
@@ -103,4 +102,22 @@ define('FULL_PACKAGE', 4);
 
 define('SKILL_LEVEL', [
     BIGINNER, INTERMIDIATE, ADVANCE, FULL_PACKAGE
+]);
+
+define('TRANSACTION_PENDING', 'pending');
+define('TRANSACTION_SUCCESS', 'success');
+define('TRANSACTION_FAILED', 'failed');
+define('TRANSACTION_REFUNDED', 'refunded');
+
+define('TRANSACTION_STATUS', [
+    TRANSACTION_PENDING, TRANSACTION_SUCCESS, 
+    TRANSACTION_FAILED, TRANSACTION_REFUNDED,
+]);
+
+define('WITHDRAWAL', 'withdrawal');
+define('DEPOSIT', 'deposit');
+define('TRANSFER', 'transfer');
+
+define('TRANSACTION_CATEGORY', [
+    WITHDRAWAL, DEPOSIT, TRANSFER
 ]);

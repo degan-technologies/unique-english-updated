@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Bank\BankInfo;
 use App\Models\Book\Book;
 use App\Models\Book\OrderedBook;
 use App\Models\Comment\FeedBack;
@@ -9,7 +10,6 @@ use App\Models\Comment\FeedbackUserInteraction;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
-use App\Models\Course\Enrollment;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
@@ -21,8 +21,10 @@ use App\Models\Quiz\Quiz;
 use App\Models\Quiz\Result;
 use App\Models\Quiz\QASection;
 use App\Models\Quiz\QMetaData;
-
+use App\Models\System\PlatformComission;
+use App\Models\System\PlatformComissionHistory;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\Transfer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -112,6 +114,12 @@ class User extends Authenticatable {
 
     // public function books() { return $this->hasMany(Book::class); }
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
+    public function transactions() { return $this->hasMany(Transaction::class); }
+    public function bankInfos() { return $this->hasMany(BankInfo::class); }
+    public function transfers() { return $this->hasMany(Transfer::class); }
+
+    public function platformComissions() { return $this->hasOne(PlatformComission::class); }
+    public function platformComissionHistories() { return $this->hasOne(PlatformComissionHistory::class); }
     public function feedBacks() { return $this->hasMany(FeedBack::class); }
     public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
 

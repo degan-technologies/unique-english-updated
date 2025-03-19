@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Transaction;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Transaction\Trait\TransferTrait;
+use App\Http\Resources\Transaction\TransactionResource;
 use App\Models\Book\Book;
 use App\Models\Course\Course;
 use App\Models\Live\Live;
+use App\Models\Transaction\Transaction;
+use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
 use Carbon\Carbon;
@@ -18,6 +22,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 
 class TransactionController extends Controller {
+
+    use TransferTrait;
 
     /* get error traslation and success beased on the language 
      * localized 
@@ -53,6 +59,7 @@ class TransactionController extends Controller {
         $model = null;
         $txRef = 'TX-' . uniqid();
         $totalPrice = 0;
+        $tax = 0;
          
         if(!$cartItems) {
             return response()->json([
@@ -107,12 +114,13 @@ class TransactionController extends Controller {
                         ], 404);
                     }
 
-                    $model->transactions()->create([
+                   $transaction = $order->transactions()->create([
                         'slug' => Str::uuid(),
                         'user_id' => $order->user_id,
                         'tx_ref' => $txRef,
                         'amount' => $order->price,
                         'customer_id' => $user->id,
+                        'status' => TRANSACTION_PENDING,
                         'product_type' => $item['type'],
                         'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
                     ]);
@@ -127,6 +135,7 @@ class TransactionController extends Controller {
                     'first_name' => $user->first_name,
                     'last_name' => $user->first_name,
                     'tx_ref' => $txRef,
+                    "return_url" => "http://127.0.0.1:8000/#/invoice-page/$txRef",
                     "customization" => [
                         "title" => $this->langService->getLang('unique_english_payment_transaction'),
                         "description" => $this->langService->getLang('my_payment_description'). 29392,
@@ -147,7 +156,234 @@ class TransactionController extends Controller {
         
         return response()->json([
             'message' => $this->langService->getLang('payment_initiated'),
-            'checkout_url' => $response['data']['checkout_url']
+            'checkout_url' => $response['data']['checkout_url'],
+        ]);
+    }
+
+    public function transactions(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) return;
+
+        /**
+         * @var \Illuminate\Pagination\LengthAwarePaginator $transactions
+         */
+
+        $transactions = Transaction::query()
+                        ->where('user_id', $user->id) 
+                        ->get();
+                        
+        $courseSell = $transactions->where('product_type', COURSE)
+                ->where('status', TRANSACTION_SUCCESS)
+                ->sum('amount');
+
+        $bookSell = $transactions->where('product_type', BOOK)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $liveSell = $transactions->where('product_type', LIVE)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $totalSell = $transactions
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $transactionSummary = $transactions->groupBy(function ($transaction) {
+            return $transaction->created_at->format('Y-m-d');
+        })->map(function ($transactionsByDate) {
+            return $transactionsByDate->sum('amount');
+        })->all();
+
+
+        $pagination = $transactions->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'data' => TransactionResource::collection($transactions),
+            'pagination' => $pagination,
+            
+            'courseSell' => $courseSell,
+            'bookSell' => $bookSell,
+            'liveSell' => $liveSell,
+            'totalSell' => $totalSell,
+            'transactionSummary' => $transactionSummary
+        ]);
+    }
+
+    public function transactionInvoce($txRef) {
+
+        $user = Auth::user();
+        $cartItems = [];
+        $tax = 0;
+        $date = null;
+        $name = null;
+
+        $transactionStatus = $this->chapaService->verifyPayment($txRef);
+
+        if ($transactionStatus['status'] !== 'success') {
+            return response()->json([
+                'message' => $this->langService->getLang('transaction_not_successful')
+            ], 400);
+        }
+
+        $transactions = Transaction::query()
+            ->where('user_id', $user->id)
+            ->where('tx_ref', $txRef)
+            ->get();
+
+        if (!$transactions) {
+            return response()->json([
+                'message' => $this->langService->getLang('transaction_not_found')
+            ], 404);
+        }
+        $totalPrice = $transactions->sum('amount');
+
+        try{
+            DB::beginTransaction();
+                foreach ($transactions as $transaction) {
+                    $transaction->update([
+                        'status' => TRANSACTION_SUCCESS
+                    ]);
+        
+                    switch ($transaction->product_type) {
+                        case COURSE:
+                            $name = $transaction->course->course_name;
+                            break;
+                        case BOOK:
+                            $name = $transaction->book->title;
+                            break;
+                        case LIVE:
+                            $name = $transaction->live->title;
+                            break;
+                    }
+        
+                    $cartItems[] = [
+                        'name' => $name,
+                        'price' => $transaction->amount,
+                        'quantity' => 1,
+                    ];
+                    $date = $transaction->created_at->format('M d, Y, H:i:s');
+                }
+
+                $this->transferHistory($transaction, DEPOSIT);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'invoiceNumber' => $txRef,
+            'date' => $date,
+            'customerName' => $user->full_name,
+            'customerEmail' => $user->email,
+            'customerPhone' => $user->phone,
+            'items' => $cartItems,
+            'subtotal' => $totalPrice,
+            'tax' => $tax,
+            'total' => $totalPrice,
+        ]);
+    }
+
+    public function refundTransaction($txRef) {
+
+        $user = User::query()
+            ->where('id', Auth::id())
+            ->has('systemAdmin')
+            ->first();
+
+        $transactions = Transaction::query()
+            ->where('tx_ref', $txRef)
+            ->get();
+
+        if (!$transactions) {
+            return response()->json([
+                'message' => $this->langService->getLang('transaction_not_found')
+            ], 404);
+        }
+
+
+        $response = $this->chapaService->refundPayment($txRef);
+
+        if($response['status'] === 'success') {
+            foreach ($transactions as $transaction) {
+                $transaction->update([
+                    'status' => TRANSACTION_REFUNDED
+                ]);
+            }
+        }
+
+            return response()->json([
+            'message' => $response['message']
+        ]);
+    }
+
+    public function getBankList() {
+        $response = $this->chapaService->getBankList();
+
+        return response()->json([
+            'data' => $response
+        ]);
+    }
+
+    public function transferToBank(Request $request) {
+        $user = User::query()
+            ->where('id', Auth::id())
+            ->has('systemAdmin')
+            ->first();
+
+        $txRef = 'Trf-' . uniqid();
+
+        $validation = [
+            'amount' => ['required', 'numeric'],
+        ];
+
+        $validator = Validator::make($request->all(), $validation, $this->langService->getLang('transfers'));
+
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $bankInfo = $user->bankInfos()->first();
+        $withdralAmount = $request->amount ;
+
+        $data = (object) [
+            'account_number' => $bankInfo->account_number,
+            'bank_code' => $bankInfo->bank_code,
+            'amount' => $request->amount,
+            'currency' => 'ETB',
+            'reference' => $txRef,
+        ];
+
+        $balance = $this->getBalance()->getData()->data; 
+
+        if ($balance < $request->amount) {
+            return response()->json([
+                'message' => $this->langService->getLang('insufficient_balance')
+            ], 400);
+        }
+   
+        $response = $this->chapaService->transfer($data);
+
+        $this->transferHistory($data, WITHDRAWAL);
+
+        if($response['status'] === 'success') {
+            $this->transferHistory($data, WITHDRAWAL);
+        }
+
+        return response()->json([
+            'message' => $response['message']
         ]);
 
     }

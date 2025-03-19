@@ -17,8 +17,13 @@ class TransactionResource extends JsonResource
         return [
             'id' => $this->id,
             'status' => $this->status,
-            'isEligible' => true,
-            'course_id' => $this->course_id,
+            'date' => $this->created_at->format('Y-m-d'),
+            'amount' => $this->amount,
+            'payment_method' => $this->payment_method,
+            'type' => $this->product_type,
+            'ref_key' => $this->tx_ref,
+
+            'customer' => new CustomerInfoResource($this->customer),
         ];
     }
 }

@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { UseStudentStore } from "@/store/UseStudentStore";
+
 import Hero from "@/components/Layout/Hero.vue";
 import Header from "@/components/Layout/Header.vue";
 import CourseCard from "@/components/Course/CourseCard.vue";
@@ -15,13 +16,6 @@ import Book from "@/components/Book/Book.vue";
 import BookDetails from "@/components/Book/BookDetails.vue";
 import Pdf from "@/components/Book/Pdf.vue";
 import Schedule from "@/components/Live/Schedule.vue";
-import liveSession from "@/components/Live/LiveSession.vue";
-// import QuizReader from "@/components/Course/QuizReader.vue";
-// import AddSchedule from "@/components/Live/AddSchedule.vue";
-// import ManageSchedule from "@/components/Live/ManageSchedule.vue";
-// import ManagePlan from "@/components/Live/ManagePlan.vue";
-// import AddPlan from "@/components/Live/AddPlan.vue";
-import certificate from "../../components/Course/certificate.vue";
 
 const studentStore = UseStudentStore();
 const {
@@ -33,13 +27,12 @@ const {
     bookReadingTab,
 } = storeToRefs(studentStore);
 
-    const route = useRoute();
-    const router = useRouter()
-    const currentTab = ref({
-        tab:route.query.tab,
-        slug:route.query.slug
-    })
+const route = useRoute();
 
+const currentTab = ref({
+    tab: route.query.tab,
+    slug: route.query.slug,
+});
 
 watch(
     () => route.query.tab,
@@ -84,42 +77,12 @@ watch(
                 <div v-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard @mousemove="togglehover" />
-                     <!-- <Schedule /> -->
                     <LiveStreamingVue />
                     <Book />
-                    <!-- <ManageSchedule />
-
-                     <AddSchedule />
-                      <AddPlan />
-                    <ManagePlan />
-                    <QuizReader /> -->
+                    <QuizReader />
                     <certificate/>
                     <AboutUs />
                 </div>
-
-                <!-- <div class="mb-10">
-                    <AddSchedule />
-                </div>
-
-                <div class="mb-10">
-                    <Schedule />
-                </div>
-
-                <div>
-                    <ManageSchedule />
-                </div>
-
-                <div class="mb-10">
-                    <AddPlan />
-                </div>
-
-                <div class="w-full">
-                    <ManagePlan />
-                </div>
-
-                <div class="w-full bg-gray-100">
-                    <QuizReader />
-                </div> -->
 
                 <div class="w-full bg-gray-900 text-white">
                     <Footer />

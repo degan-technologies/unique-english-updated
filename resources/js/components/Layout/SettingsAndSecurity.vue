@@ -1,4 +1,105 @@
-<template>
+  <script setup>
+    import { ref, computed } from 'vue'
+
+    import ChangeComission from '@/components/Transaction/ChangeComission.vue'
+    
+    // Tab definitions for sidebar
+    const tabs = [
+        { key: 'theme', label: 'Platform Settings', icon: '🎨' },
+        { key: 'security', label: 'Security Management', icon: '🔒' },
+    ]
+    const selectedTab = ref('theme')
+    
+    // Theme & Branding Settings
+    const themeSettings = ref({
+        primaryColor: '#3B82F6',
+        headingFont: 'Arial, sans-serif',
+        logoUrl: '',
+        sidebarLayout: 'full',
+    })
+    const fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Roboto, sans-serif']
+    
+    function handleLogoUpload(event) {
+        const file = event.target.files[0]
+        if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            themeSettings.value.logoUrl = e.target.result
+        }
+        reader.readAsDataURL(file)
+        }
+    }
+    function resetThemeSettings() {
+        themeSettings.value = {
+        primaryColor: '#3B82F6',
+        headingFont: 'Arial, sans-serif',
+        logoUrl: '',
+        sidebarLayout: 'full',
+        }
+    }
+    
+    // Feature Controls
+    const features = ref([
+        { name: 'Live Sessions', description: 'Enable live streaming sessions', enabled: true },
+        { name: 'Course Pricing', description: 'Control pricing options', enabled: false },
+        { name: 'Advanced Analytics', description: 'Access detailed analytics', enabled: true },
+    ])
+    function toggleBulkFeatures(enable) {
+        features.value = features.value.map(f => ({ ...f, enabled: enable }))
+    }
+        
+    // Security Settings
+    const securitySettings = ref({
+        twoFactorEnabled: false,
+    })
+    // 2FA Modal State
+    const show2FAModal = ref(false)
+    const twoFactorCode = ref('')
+    function open2FASetup() {
+        show2FAModal.value = true
+    }
+    function close2FASetup() {
+        show2FAModal.value = false
+        twoFactorCode.value = ''
+    }
+    function confirm2FASetup() {
+        alert(`2FA code ${twoFactorCode.value} confirmed!`)
+        close2FASetup()
+    }
+    
+    // Role-Based Access: Dummy user data and drag-drop stubs
+    const users = ref([
+        { id: 1, name: 'Alice', role: 'Instructor' },
+        { id: 2, name: 'Bob', role: 'Admin' },
+        { id: 3, name: 'Charlie', role: 'Instructor' },
+    ])
+    let draggedUser = null
+    function onDragStart(user) {
+        draggedUser = user
+    }
+    function onDrop(targetUser) {
+        if (draggedUser && draggedUser !== targetUser) {
+        const temp = draggedUser.role
+        draggedUser.role = targetUser.role
+        targetUser.role = temp
+        }
+        draggedUser = null
+    }
+    
+    // Activity Logs
+    const logsSearch = ref('')
+    const logs = ref([
+        { timestamp: '2025-01-01 10:00', activity: 'Logged in' },
+        { timestamp: '2025-01-01 10:05', activity: 'Changed commission settings' },
+        { timestamp: '2025-01-01 10:10', activity: 'Enabled 2FA' },
+    ])
+    const filteredLogs = computed(() => {
+        if (!logsSearch.value) return logs.value
+        return logs.value.filter(log => log.activity.toLowerCase().includes(logsSearch.value.toLowerCase()))
+    })
+</script>
+
+  <template>
     <div class="min-h-screen bg-gray-100 flex flex-col">
       <!-- Page Header -->
       <header class="bg-white shadow p-4 flex items-center">
@@ -175,45 +276,7 @@
               </div>
   
               <!-- Commission Settings Card -->
-              <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center mb-4">
-                  <div class="text-3xl text-purple-500 mr-2">
-                    💲
-                  </div>
-                  <h2 class="text-xl font-semibold">Instructor Commission Settings</h2>
-                </div>
-                <div class="space-y-4">
-                  <div>
-                    <label class="block text-gray-700 font-medium mb-1">Commission Percentage: {{ commission }}%</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      v-model="commission"
-                      class="w-full"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      v-model="commission"
-                      class="mt-2 w-20 border rounded p-1"
-                    />
-                    <p class="text-sm text-gray-500 mt-1">
-                      <span @mouseenter="showTooltip = true" @mouseleave="showTooltip = false" class="underline cursor-help">
-                        What's this?
-                      </span>
-                      <span v-if="showTooltip" class="text-xs text-gray-600">This percentage affects instructor payouts.</span>
-                    </p>
-                  </div>
-                  <button
-                    @click="saveCommission"
-                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                  >
-                    Save Commission
-                  </button>
-                </div>
-              </div>
+              <ChangeComission/>
             </div>
           </transition>
   
@@ -337,112 +400,6 @@
       </transition>
     </div>
   </template>
-  
-  <script setup>
-  import { ref, computed } from 'vue'
-  
-  // Tab definitions for sidebar
-  const tabs = [
-    { key: 'theme', label: 'Platform Settings', icon: '🎨' },
-    { key: 'security', label: 'Security Management', icon: '🔒' },
-  ]
-  const selectedTab = ref('theme')
-  
-  // Theme & Branding Settings
-  const themeSettings = ref({
-    primaryColor: '#3B82F6',
-    headingFont: 'Arial, sans-serif',
-    logoUrl: '',
-    sidebarLayout: 'full',
-  })
-  const fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Roboto, sans-serif']
-  
-  function handleLogoUpload(event) {
-    const file = event.target.files[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        themeSettings.value.logoUrl = e.target.result
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-  function resetThemeSettings() {
-    themeSettings.value = {
-      primaryColor: '#3B82F6',
-      headingFont: 'Arial, sans-serif',
-      logoUrl: '',
-      sidebarLayout: 'full',
-    }
-  }
-  
-  // Feature Controls
-  const features = ref([
-    { name: 'Live Sessions', description: 'Enable live streaming sessions', enabled: true },
-    { name: 'Course Pricing', description: 'Control pricing options', enabled: false },
-    { name: 'Advanced Analytics', description: 'Access detailed analytics', enabled: true },
-  ])
-  function toggleBulkFeatures(enable) {
-    features.value = features.value.map(f => ({ ...f, enabled: enable }))
-  }
-  
-  // Commission Settings
-  const commission = ref(20)
-  const showTooltip = ref(false)
-  function saveCommission() {
-    alert(`Commission set to ${commission.value}%`)
-  }
-  
-  // Security Settings
-  const securitySettings = ref({
-    twoFactorEnabled: false,
-  })
-  // 2FA Modal State
-  const show2FAModal = ref(false)
-  const twoFactorCode = ref('')
-  function open2FASetup() {
-    show2FAModal.value = true
-  }
-  function close2FASetup() {
-    show2FAModal.value = false
-    twoFactorCode.value = ''
-  }
-  function confirm2FASetup() {
-    alert(`2FA code ${twoFactorCode.value} confirmed!`)
-    close2FASetup()
-  }
-  
-  // Role-Based Access: Dummy user data and drag-drop stubs
-  const users = ref([
-    { id: 1, name: 'Alice', role: 'Instructor' },
-    { id: 2, name: 'Bob', role: 'Admin' },
-    { id: 3, name: 'Charlie', role: 'Instructor' },
-  ])
-  let draggedUser = null
-  function onDragStart(user) {
-    draggedUser = user
-  }
-  function onDrop(targetUser) {
-    if (draggedUser && draggedUser !== targetUser) {
-      const temp = draggedUser.role
-      draggedUser.role = targetUser.role
-      targetUser.role = temp
-    }
-    draggedUser = null
-  }
-  
-  // Activity Logs
-  const logsSearch = ref('')
-  const logs = ref([
-    { timestamp: '2025-01-01 10:00', activity: 'Logged in' },
-    { timestamp: '2025-01-01 10:05', activity: 'Changed commission settings' },
-    { timestamp: '2025-01-01 10:10', activity: 'Enabled 2FA' },
-  ])
-  const filteredLogs = computed(() => {
-    if (!logsSearch.value) return logs.value
-    return logs.value.filter(log => log.activity.toLowerCase().includes(logsSearch.value.toLowerCase()))
-  })
-  </script>
   
   <style>
   .fade-enter-active, .fade-leave-active {

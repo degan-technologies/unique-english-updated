@@ -7,9 +7,11 @@ use App\Http\Resources\Course\CourseContentResource;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\LangService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
@@ -30,6 +32,7 @@ class CourseContentController extends Controller {
 
     public function index() {
         $courses = CourseContent::all();
+
         return response() -> json([
             'data' => CourseContentResource::collection($courses)
         ]);
@@ -203,6 +206,15 @@ class CourseContentController extends Controller {
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getMyEnrolledCourses(Request $request) {
+        $user = Auth::user();
+
+        $myTransactions = Transaction::query()
+            ->where('customer_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->get();
     }
     
 }

@@ -14,15 +14,15 @@ class ErrorLangEnglish extends Lang {
     public static function lang() {
         return [
             'plan_created' => 'Plan created successfully',
-    'plan_updated' => 'Plan updated successfully',
-    'plan_deleted' => 'Plan deleted successfully',
-    'plan_not_found' => 'Plan not found',
-          'test_created_successfully' => 'Test created successfully.',
-    'test_updated_successfully' => 'Test updated successfully.',
-    'test_deleted_successfully' => 'Test deleted successfully.',
-    'test_not_found' => 'Test not found.',
+            'plan_updated' => 'Plan updated successfully',
+            'plan_deleted' => 'Plan deleted successfully',
+            'plan_not_found' => 'Plan not found',
+            'test_created_successfully' => 'Test created successfully.',
+            'test_updated_successfully' => 'Test updated successfully.',
+            'test_deleted_successfully' => 'Test deleted successfully.',
+            'test_not_found' => 'Test not found.',
             'validation_failed' => 'Validation failed. Please check your input.',
-                'schedule_exists' => 'This time slot already exists for the selected day.',
+            'schedule_exists' => 'This time slot already exists for the selected day.',
             'email_required' => 'Email is required',
             'invalid_email' => 'Invalid email provided',
 
@@ -111,9 +111,22 @@ class ErrorLangEnglish extends Lang {
             'qa_section_created_successfully'=>'qa_section created succesfully',
             'qa_section_updated_successfully'=>'qa_section updated succesfully',
             'qa_section_deleted_successfully'=>'qa_section deleted succesfully',
-
+    
+            'schedule_not_found' => 'Schedule not found.',
+            'schedule_created' => 'Schedule added successfully.',
+            'schedule_updated' => 'Schedule updated successfully.',
+            'schedule_deleted' => 'Schedule deleted successfully.',
 
             'meeting_created_successfully'=>'Meeting created successfully',
+            'bank_info_created' => 'Bank information created successfully',
+            'bank_info_updated' => 'Bank information updated successfully',
+            'bankInfo_not_found' => 'Bank information not found',
+            
+            'incorrect_password' => 'Incorrect password',
+            'comission_updated' => 'Comission updated successfully',
+            'comission_not_found' => 'Comission not found',
+            'comission_added' => 'platform comission is added',
+            'comission_error' => 'comission error',
 
             'registration' => [
                 'email.required' => 'Email is required',
@@ -339,6 +352,25 @@ class ErrorLangEnglish extends Lang {
             ],
             'Meeting'=> [
                 'meeting_id.required' => 'Meeting ID is required',
+            ],
+
+            'banksInfos' => [
+                'full_name.required' => 'Full name is required',
+                'bank_name.required' => 'Bank name is required',
+                'bank_code.required' => 'Bank code is required',
+                'account_number.required' => 'Account number is required',
+            ],
+
+            'transfers' => [
+                'amount.required' => 'amount is required',
+                'amount.numeric' => 'amount must be a number',
+                'currency.required' => 'currency is required',
+                'currency.in' => 'currency must be ETB or USD',
+            ],
+
+            'comission' => [
+                'fee.required' => 'fee is required',
+                'fee.numeric' => 'fee must be a number',
             ],
 
 

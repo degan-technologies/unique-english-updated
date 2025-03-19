@@ -19,7 +19,33 @@ class ChapaService {
         $response = Http::withToken($this->secretKey)
             ->post("$this->baseUrl/transaction/initialize", $data);
 
-            
+        return $response->json();
+    }
+
+    public function verifyPayment($tx_ref) {
+        $response = Http::withToken($this->secretKey)
+            ->get("$this->baseUrl/transaction/verify/$tx_ref");
+
+        return $response->json();
+    }
+
+    public function refundPayment($txRef) {
+        $response = Http::withToken($this->secretKey)
+            ->get("$this->baseUrl/refund/$txRef" );
+
+        return $response->json();
+    }
+
+    public function getBankList() {
+        $response = Http::withToken($this->secretKey)
+            ->get("$this->baseUrl/banks");
+
+        return $response->json();
+    }
+
+    public function transfer($data) {
+        $response = Http::withToken($this->secretKey)
+            ->post("$this->baseUrl/transfers", $data);
 
         return $response->json();
     }

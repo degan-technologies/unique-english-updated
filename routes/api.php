@@ -5,6 +5,7 @@ use App\Http\Controllers\Live\MeetingController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Bank\BankInfoController;
 use App\Http\Controllers\Book\BookController;
 use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Plan\PlanController;
 use App\Http\Controllers\Schedule\ScheduleController;
+use App\Http\Controllers\System\PlatformComissionController;
 use App\Http\Controllers\Test\TestController;
 use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
@@ -68,19 +70,16 @@ Route::middleware('auth:api')
         Route::resource('live-sessions', LiveSessionController::class);
         Route::resource('live-resources', LiveResourceController::class);
         Route::resource('participants', ParticipantController::class);
-        // Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
-
-
-
-
-    Route::resource('quize',QuizController::class);
-    Route::resource('schedules', ScheduleController::class);
-    Route::resource('QMetaData', QMetaDataController::class);
-    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']);
-    Route::resource('tests', TestController::class);
-    Route::resource('Results', ResultController::class);
-    Route::resource('plans', PlanController::class);
-    Route::resource('QASection', QASectionController::class);
+        Route::resource('virtual-class-enrollments', VirtualClassEnrollmentController::class);
+               
+        Route::resource('quize',QuizController::class);
+        Route::resource('schedules', ScheduleController::class);
+        Route::resource('QMetaData', QMetaDataController::class);  
+        Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::resource('tests', TestController::class);
+        Route::resource('Results', ResultController::class);
+        Route::resource('plans', PlanController::class);
+        Route::resource('QASection', QASectionController::class);
     });
 
 
@@ -145,4 +144,19 @@ Route::middleware('auth:api')
         Route::resource('/order-books', orderdController::class);
     });
 
-Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment'])->middleware('auth:api');
+Route::middleware('auth:api')
+    ->group(function () {
+    Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
+    Route::get('/transaction', [TransactionController::class, 'transactions']);
+    Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoce']);
+    Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);
+    Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
+    Route::resource('/bank-info', BankInfoController::class);
+    Route::get('//my-bank-info', [BankInfoController::class, 'myBankInfo']);
+    Route::post('/transfer', [TransactionController::class, 'transferToBank']);
+    Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
+    Route::get('/get-balance', [TransactionController::class, 'getBalance']);
+
+    Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
+    Route::post('/change-comission', [PlatformComissionController::class, 'store']);
+});

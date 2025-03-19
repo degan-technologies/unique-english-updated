@@ -24,8 +24,8 @@ use Database\Seeders\Quiz\ResultSeeder;
 use Database\Seeders\Quiz\QMetaDataSeeder;
 use Database\Seeders\Quiz\QASectionSeeder;
 use Database\Seeders\Schedule\ScheduleSeeder;
-
-
+use Database\Seeders\System\PlatformComissionSeeder;
+use Database\Seeders\Test\TestSeeder;
 
 class DatabaseSeeder extends Seeder {
     /**
@@ -52,11 +52,14 @@ class DatabaseSeeder extends Seeder {
             VirtualClassEnrollmentSeeder::class,
 
             QMetaDataSeeder::class,
-
-            MessageSeeder::class,
-            ResultSeeder::class,
-            QASectionSeeder::class,
             QuizSeeder::class,
+            ResultSeeder::class,
+            TestSeeder::class,
+            ScheduleSeeder::class,
+
+            QASectionSeeder::class,
+
+            PlatformComissionSeeder::class
         ]);
     }
 }

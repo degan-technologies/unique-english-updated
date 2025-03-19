@@ -6,6 +6,7 @@ export const useCartStore = defineStore("useCartStore", ()=> {
     const items = ref([]);
     const itemCount = ref(0);
     const totalPrice = ref(0);
+    const invoiceData = ref(null);
     const image = ref("/images/course-1.jpg");
 
     function addToCart(selectedItem) {
