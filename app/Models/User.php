@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Book\Book;
 use App\Models\Book\OrderedBook;
+use App\Models\Comment\FeedBack;
+use App\Models\Comment\FeedbackUserInteraction;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
@@ -38,22 +40,29 @@ class User extends Authenticatable {
      * @var list<string>
      */
     protected $fillable = [
-        'slug', 
-        'gender', 
-        'email', 
+        'slug',
+        'gender',
+        'email',
         'password',
-        'temp_password', 
-        'first_name', 
-        'middle_name', 
+        'temp_password',
+        'first_name',
+        'middle_name',
         'last_name',
-        'user_name', 
-        'full_name', 
+        'user_name',
+        'full_name',
         'phone',
-        'profile', 
-        'bg_image', 
+        'profile',
+        'bg_image',
         'role',
         'user_banned_at',
         'progress',
+        'provider',
+        'provider_id',
+        'email_verified_at',
+        'otp',
+        'otp_expires_at',
+        'otp_attempts',
+
     ];
 
     /**
@@ -88,18 +97,24 @@ class User extends Authenticatable {
     public function courses() { return $this->hasMany(Course::class); }
     public function liveSessions() { return $this->hasMany(LiveSession::class);}
     public function participants() { return $this->hasMany(Participant::class);}
-    public function liveResources() { return $this->hasMany(LiveResource::class);} 
+    public function liveResources() { return $this->hasMany(LiveResource::class);}
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function transaction() { return $this->hasMany(Transaction::class); }
-    
+
     public function quizzes() { return $this->hasMany(Quiz::class);}
     public function results() { return $this->hasMany(Result::class);}
     public function qaSections() { return $this->hasMany(QASection::class); }
+    public function quizMetaData() { return $this->hasMany(QMetaData::class); }
+
+    public function books() { return $this->hasMany(Book::class); }
     public function qMetaDatas() { return $this->hasMany(QMetaData::class); }
-    
-    public function books() { return $this->hasMany(Book::class); } 
+
+    // public function books() { return $this->hasMany(Book::class); }
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
+    public function feedBacks() { return $this->hasMany(FeedBack::class); }
+    public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
+
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){

@@ -1,170 +1,342 @@
-    <script setup>
-    import Axios from "axios";
-    import { ref } from "vue";
-    import { storeToRefs } from "pinia";
-    import { useAppStore } from "@/store/useAppStore";
+<script setup>
+import Axios from "axios";
+import { ref } from "vue";
+import { storeToRefs } from "pinia";
+import { useAppStore } from "@/store/useAppStore";
+import { useRouter } from "vue-router";
 
-    const appStore = useAppStore();
-    const { frontLang, facebook, google } = storeToRefs(appStore);
+const appStore = useAppStore();
+const { frontLang, facebook, google } = storeToRefs(appStore);
+const router = useRouter();
 
-    const name = ref("");
-    const email = ref("");
-    const password = ref("");
-    const showPassword = ref(false);
-    const loading = ref(false);
-    const agreeTerms = ref(false);
-    const successMessage = ref("");
-    const errorMessage = ref("");
+const verifyOtpNav = ref(false);
 
-    const togglePassword = () => {
-    showPassword.value = !showPassword.value;
-    };
-    function handleRegister() {
-    if (!agreeTerms.value) {
-        errorMessage.value = frontLang.value.lang.termsAndConditions;
-        setTimeout(() => {
-            errorMessage.value = ""; 
-        }, 2000);
-        return;
-    }
+// Registration form fields (phone removed)
+const name = ref("");
+const email = ref("");
+const password = ref("");
+const showPassword = ref(false);
+const loading = ref(false);
+const agreeTerms = ref(false);
+const successMessage = ref("");
+const errorMessage = ref("");
 
-    loading.value = true;
+// OTP screen fields
+const otp = ref(["", "", "", "", "", ""]); // 6-digit OTP input
+const otpLoading = ref(false);
+const otpError = ref("");
+const otpSuccess = ref("");
+const registeredEmail = ref(""); // Store email for OTP screen
+const otpMethod = ref("EMAIL"); // Since OTP is sent via email
 
-    const data = {
-        first_name: name.value,
-        email: email.value,
-        password: password.value,
-    };
+const togglePassword = () => {
+  showPassword.value = !showPassword.value;
+};
 
-    Axios.post("/api/registration", data)
-        .then((res) => {
-            successMessage.value = res.data.message;
-            setTimeout(() => {
-                successMessage.value = ""; 
-            }, 2000);
-        })
-        .catch((err) => {
-            errorMessage.value = err.response.data.message;
-            setTimeout(() => {
-                errorMessage.value = ""; 
-            }, 2000);
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+// Handle registration
+function handleRegister() {
+  if (!agreeTerms.value) {
+    errorMessage.value = frontLang.value.lang.termsAndConditions;
+    setTimeout(() => (errorMessage.value = ""), 2000);
+    return;
+  }
+  loading.value = true;
+  const data = {
+    first_name: name.value,
+    email: email.value,
+    password: password.value,
+  };
+  Axios.post("/api/register", data)
+    .then((res) => {
+      successMessage.value = res.data.message;
+      registeredEmail.value = email.value;
+      otpMethod.value = res.data.otp_method || "EMAIL";
+      verifyOtpNav.value = true; // Display OTP verification screen
+    })
+    .catch((err) => {
+      errorMessage.value = err.response?.data?.message || "Registration failed";
+      setTimeout(() => (errorMessage.value = ""), 2000);
+    })
+    .finally(() => (loading.value = false));
 }
 
-    </script>
+// Handle OTP input navigation
+const focusNext = (index, event) => {
+  if (event.target.value.length === 1 && index < 5) {
+    document.getElementById(`otp-${index + 1}`).focus();
+  }
+};
 
-    <template>
-    <div class="flex flex-col md:flex-row justify-center items-center min-h-screen bg-gray-100 p-4 md:space-x-4">
-        <div class="flex flex-col md:flex-row md:items-stretch w-full max-w-4xl space-y-4 md:space-y-0">
-        <div class="bg-blue-500 text-white p-6 rounded-lg shadow-lg w-full md:w-1/2 flex flex-col justify-center">
-            <h1 class="text-3xl md:text-4xl font-bold mb-4"> {{ frontLang.lang.wellcomeToPlatform }} </h1>
-            <p class="text-lg">{{ frontLang.lang.joinUsAndSignUp }}</p>
+// Handle OTP submission
+const handleOtpSubmit = () => {
+  const otpCode = otp.value.join("");
+  if (otpCode.length !== 6) {
+    otpError.value = "Please enter a 6-digit OTP";
+    setTimeout(() => (otpError.value = ""), 2000);
+    return;
+  }
+  otpLoading.value = true;
+  Axios.post("/api/verify-otp", {
+    email: registeredEmail.value,
+    otp: otpCode,
+  })
+    .then((res) => {
+      otpSuccess.value = res.data.message;
+      setTimeout(() => {
+        otpSuccess.value = "";
+        router.push({
+          name: 'student'
+        });
+      }, 1500);
+    })
+    .catch((err) => {
+      otpError.value = err.response?.data?.message || "Invalid OTP";
+      setTimeout(() => (otpError.value = ""), 2000);
+    })
+    .finally(() => (otpLoading.value = false));
+};
+
+// Resend OTP (optional feature)
+const resendOtp = () => {
+  otpLoading.value = true;
+  Axios.post("/api/resend-otp", {
+    email: registeredEmail.value,
+  })
+    .then((res) => {
+      otpSuccess.value = "OTP resent successfully!";
+      setTimeout(() => (otpSuccess.value = ""), 2000);
+    })
+    .catch((err) => {
+      otpError.value = err.response?.data?.message || "Failed to resend OTP";
+      setTimeout(() => (otpError.value = ""), 3000);
+    })
+    .finally(() => (otpLoading.value = false));
+};
+
+const socialLogin = (provider) => {
+    window.location.href = `http://127.0.0.1:8000/auth/${provider}/redirect`;
+    appStore.changeLoginStatus(true);
+    console.log('provider');
+};
+</script>
+
+<template>
+  <!-- Registration Screen -->
+  <div
+    v-if="!verifyOtpNav"
+    class="flex flex-col md:flex-row justify-center items-center min-h-screen bg-gradient-to-br from-lime-100 to-gray-100 p-4 md:space-x-4"
+  >
+    <div v-if="frontLang?.lang" class="flex flex-col md:flex-row md:items-stretch w-full max-w-4xl space-y-4 md:space-y-0 ">
+      <!-- Welcome Section with Background Image and Overlay -->
+      <div class="relative w-full md:w-1/2 rounded-lg overflow-hidden shadow-lg">
+        <img
+          src="images/signup.jpg"
+          alt="Welcome Background"
+          class="w-full h-full object-cover"
+        />
+        <div class="absolute inset-0 bg-lime-700 bg-opacity-50 flex flex-col justify-center items-center p-6">
+          <h1 class="text-3xl md:text-4xl font-bold text-white mb-4">
+            {{ frontLang.lang.wellcomeToPlatform }}
+          </h1>
+          <p class="text-lg text-white">
+            {{ frontLang.lang.joinUsAndSignUp }}
+          </p>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-lg w-full md:w-1/2 flex flex-col justify-center">
-            <h1 class="text-2xl font-bold text-center mb-4">{{frontLang.lang.createAccount}}</h1>
-            <p class="text-gray-600 text-center mb-6">{{frontLang.lang.startjourneywithus}}</p>     
-            <div class="flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4 mb-6">
-            <button class="flex items-center justify-center px-4 py-2 border rounded-lg w-full text-gray-700 hover:bg-gray-100" >
-                <img :src="google" alt="Google" class="mr-2" />
-                {{frontLang.lang.signupwithgoogle}}
-            </button>
-            <button class="flex items-center justify-center px-4 py-2 border rounded-lg w-full text-gray-700 hover:bg-gray-100" >
-                <img :src="facebook" alt="Facebook" class="mr-2" />
-                {{frontLang.lang.signupwithfacebook}}
-            </button>
-            </div>
+      </div>
 
-            <div class="relative my-6">
-            <hr class="border-gray-300" />
-            <span
-                class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-gray-500"
-            >
-                {{frontLang.lang.or}}
-            </span>
-            </div>
-
-            <form @submit.prevent="handleRegister" class="space-y-4">
-            <div>
-                <label for="name" class="block text-sm font-medium text-gray-700">{{frontLang.lang.name}}</label>
-                <input
-                type="text"
-                id="name"
-                v-model="name"
-                placeholder="Enter your name"
-                required
-                class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700">{{frontLang.lang.email}}</label>
-                <input
-                type="email"
-                id="email"
-                v-model="email"
-                placeholder="Enter your email"
-                required
-                class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700">{{frontLang.lang.password}}</label>
-                <div class="relative">
-                <input
-                    :type="showPassword ? 'text' : 'password'"
-                    id="password"
-                    v-model="password"
-                    placeholder="Enter your password"
-                    required
-                    class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                    type="button"
-                    @click="togglePassword"
-                    class="absolute right-3 top-3 text-gray-500 focus:outline-none"
-                >
-                    <span v-if="showPassword">🙈</span>
-                    <span v-else>👁️</span>
-                </button>
+      <!-- Registration Form with Glassmorphism -->
+      <div
+        class="glass p-6 rounded-lg shadow-lg w-full md:w-1/2 flex flex-col justify-center transform transition-transform duration-300 hover:scale-105"
+      >
+        <h1 class="text-2xl font-bold text-center mb-4 text-lime-700">
+          {{ frontLang.lang.createAccount }}
+        </h1>
+        <p class="text-gray-600 text-center mb-6">
+          {{ frontLang.lang.startjourneywithus }}
+        </p>
+        <!-- Social Login Section -->
+        <div class="mt-8 text-center">
+                    <p class="text-gray-600 mb-4">Continue with</p>
+                    <div class="flex justify-center space-x-6">
+                        <button @click="socialLogin('google')" class="social-btn"><i class="fab fa-google"></i></button>
+                        <button @click="socialLogin('facebook')" class="social-btn"><i class="fab fa-facebook-f"></i></button>
+                        <button @click="socialLogin('linkedin')" class="social-btn"><i class="fab fa-linkedin-in"></i></button>
+                        <button @click="socialLogin('twitter')" class="social-btn"><i class="fab fa-twitter"></i></button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="flex items-start space-x-2">
-                <input
-                type="checkbox"
-                id="terms"
-                v-model="agreeTerms"
-                class="mt-1"
-                />
-                <label for="terms" class="text-sm text-gray-700">
-                {{frontLang.lang.agreeto}}
-                <a href="#" class="text-blue-500 hover:underline">{{frontLang.lang.termsAndConditions}}</a>
-                </label>
-            </div>
-
-            <button
-                @click="handleRegister()"
-                :disabled="loading"
-                class="w-full bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition duration-300"
-            >
-                <span v-if="loading">{{frontLang.lang.CreatingAccount}}</span>
-                <span v-else>{{frontLang.lang.signup}}</span>
-            </button>
-            </form>
-
-            <div v-if="successMessage" class="mt-4 text-green-500 text-center font-semibold"> {{ successMessage }} </div>
-            <div v-if="errorMessage" class="mt-4 text-red-500 text-center font-semibold"> {{ errorMessage }} </div>
-            <div class="mt-6 text-center text-sm">
-            <p>
-                {{ frontLang.lang.haveAccount }}
-                <a href="/login" class="text-blue-500 hover:underline">{{frontLang.lang.login}}</a>
-            </p>
-            </div>
+        <div class="relative my-6">
+          <hr class="border-gray-300" />
+          <span
+            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-gray-500"
+          >
+            {{ frontLang.lang.or }}
+          </span>
         </div>
+
+        <form @submit.prevent="handleRegister" class="space-y-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">
+              {{ frontLang.lang.name }}
+            </label>
+            <input
+              type="text"
+              id="name"
+              v-model="name"
+              placeholder="Enter your name"
+              required
+              class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+            />
+          </div>
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700">
+              {{ frontLang.lang.email }}
+            </label>
+            <input
+              type="email"
+              id="email"
+              v-model="email"
+              placeholder="Enter your email"
+              required
+              class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+            />
+          </div>
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700">
+              {{ frontLang.lang.password }}
+            </label>
+            <div class="relative">
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                id="password"
+                v-model="password"
+                placeholder="Enter your password"
+                required
+                class="mt-1 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+              />
+              <button type="button" @click="togglePassword" class="absolute right-3 top-3 text-gray-500 focus:outline-none">
+                <span v-if="showPassword">🙈</span>
+                <span v-else>👁️</span>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-start space-x-2">
+            <input type="checkbox" id="terms" v-model="agreeTerms" class="mt-1" />
+            <label for="terms" class="text-sm text-gray-700">
+              {{ frontLang.lang.agreeto }}
+              <a href="#" class="text-lime-700 hover:underline">
+                {{ frontLang.lang.termsAndConditions }}
+              </a>
+            </label>
+          </div>
+          <button
+            type="submit"
+            :disabled="loading"
+            class="w-full bg-lime-700 text-white py-3 rounded-lg hover:bg-lime-800 transition duration-300"
+          >
+            <span v-if="loading">{{ frontLang.lang.CreatingAccount }}</span>
+            <span v-else>{{ frontLang.lang.signup }}</span>
+          </button>
+        </form>
+
+        <div v-if="successMessage" class="mt-4 text-green-500 text-center font-semibold animate-pulse">
+          {{ successMessage }}
         </div>
+        <div v-if="errorMessage" class="mt-4 text-red-500 text-center font-semibold">
+          {{ errorMessage }}
+        </div>
+        <div class="mt-6 text-center text-sm">
+          <p>
+            {{ frontLang.lang.haveAccount }}
+            <a href="/login" class="text-lime-700 hover:underline">{{ frontLang.lang.login }}</a>
+          </p>
+        </div>
+      </div>
     </div>
-    </template>
+  </div>
+
+  <!-- OTP Verification Screen -->
+  <div v-else class="flex items-center justify-center min-h-screen bg-gradient-to-br from-lime-100 to-gray-100 p-4 animate-fade-in">
+    <div class="glass p-8 rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300 hover:scale-105">
+      <h1 class="text-3xl font-bold text-center mb-4 text-lime-700">Verify Your OTP</h1>
+      <p class="text-gray-600 text-center mb-6">
+        Enter the 6-digit code sent to your email
+        <span class="font-semibold">({{ registeredEmail }})</span>.
+      </p>
+
+      <!-- OTP Input Fields -->
+      <div class="flex justify-center space-x-2 mb-6">
+        <input
+          v-for="(digit, index) in otp"
+          :key="index"
+          :id="`otp-${index}`"
+          v-model="otp[index]"
+          type="text"
+          maxlength="1"
+          class="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-lime-700 transition-all duration-200 bg-gray-50"
+          @input="focusNext(index, $event)"
+          @keydown.backspace="index > 0 && !otp[index] ? document.getElementById(`otp-${index - 1}`).focus() : null"
+        />
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        @click="handleOtpSubmit"
+        :disabled="otpLoading"
+        class="w-full bg-lime-700 text-white py-3 rounded-lg hover:bg-lime-800 transition duration-300 flex items-center justify-center"
+      >
+        <span v-if="otpLoading" class="flex items-center">
+          <svg class="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Verifying...
+        </span>
+        <span v-else>Verify OTP</span>
+      </button>
+
+      <!-- Resend OTP Link -->
+      <div class="text-center mt-4">
+        <p class="text-sm text-gray-600">
+          Didn't receive the code?
+          <button @click="resendOtp" :disabled="otpLoading" class="text-lime-700 hover:underline focus:outline-none">
+            Resend OTP
+          </button>
+        </p>
+      </div>
+
+      <!-- Feedback Messages -->
+      <div v-if="otpSuccess" class="mt-4 text-green-500 text-center font-semibold animate-pulse">
+        {{ otpSuccess }}
+      </div>
+      <div v-if="otpError" class="mt-4 text-red-500 text-center font-semibold">
+        {{ otpError }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Fade-in Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+</style>

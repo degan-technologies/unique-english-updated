@@ -20,6 +20,7 @@ class CourseResource extends JsonResource {
      */
     public function toArray(Request $request): array {
         $review = FeedBack::reviewRate($this->feedbacks);
+ 
         return [
             'id' => $this->id,
             'slug' => $this->slug,
@@ -36,12 +37,13 @@ class CourseResource extends JsonResource {
             'status' => $this->status,
             'user' => new userResource($this->user),
             // Use the streaming endpoint for the intro video
-       'intro_video_url' => $this->intro_video 
+       'intro_video_url' => $this->intro_video
             ? url('/api/courses/stream/video/' . basename($this->intro_video))
             : 'no-intro_video.png',
 
-
-
+            'feedBacks' => FeedBackResource::collection($this->feedbacks),
+            'averageRating' => $review['averageRating'],
+            'starDistribution' => $review['starDistribution'],
 
 
             'thumbnail_url' => $this->thumbnail_url

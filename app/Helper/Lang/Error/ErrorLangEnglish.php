@@ -32,7 +32,7 @@ class ErrorLangEnglish extends Lang {
             'user_not_found'=>'user could not be found',
             'user_successfully_registered' => 'User successfully registered',
             'user_successfully_deleted' => 'User successfully deleted',
-            
+
             'profile_successfully_updated' => 'Profile succefully updated',
             'incorrect_old_password' => 'incorrect old password',
             'password_changed' => 'password succefully changed',
@@ -77,6 +77,7 @@ class ErrorLangEnglish extends Lang {
             'VertualClassEnrollment_created_successfully' => 'VertualClassEnrollment created succefully',
             'VirtualClassEnrollment_deleted_successfully' => 'VertualClassEnrollment is trash succefully',
             'Unauthorized_to_Create_VirtualClassEnrollment' => 'Unauthorized to Create VirtualClassEnrollment.',
+            'video_camera_status_updated' => 'playing_status_updated',
 
             'book_created_successfully' => 'book created successfully',
             'book_updated_successfully' => 'book updated successfully',
@@ -110,20 +111,18 @@ class ErrorLangEnglish extends Lang {
             'qa_section_created_successfully'=>'qa_section created succesfully',
             'qa_section_updated_successfully'=>'qa_section updated succesfully',
             'qa_section_deleted_successfully'=>'qa_section deleted succesfully',
-    
-                'schedule_not_found' => 'Schedule not found.',
-                'schedule_created' => 'Schedule added successfully.',
-                'schedule_updated' => 'Schedule updated successfully.',
-                'schedule_deleted' => 'Schedule deleted successfully.',
 
+
+            'meeting_created_successfully'=>'Meeting created successfully',
 
             'registration' => [
                 'email.required' => 'Email is required',
+                'phone.required' => 'phone number is required',
                 'invalid.email' => 'Invalid email provided',
                 'invalid.unique' => 'Email already exist',
                 'password.required' => 'Please enter you password',
                 'password.min' => 'Password contain atleast four characters',
-                
+
                 'first_name.required' => 'First Name is required',
                 'first_name.not_regex' => 'First Name must have valid characters',
                 'first_name.alpha_das' => 'First Name must have alphabetic  characters',
@@ -131,8 +130,7 @@ class ErrorLangEnglish extends Lang {
                 'middle_name.alpha_das' => 'Middle Name must have alphabetic  characters',
                 'last_name.not_regex' => 'Last Name must have valid characters',
                 'last_name.alpha_das' => 'Last Name must have alphabetic  characters',
-                'phone' => 'phone number already exists',
-                'phone.regex' => 'add digit only',
+                // 'phone.regex' => 'add digit only',
                 'profile.image' => 'It support only image',
                 'bg_image.image' => 'It support only image',
             ],
@@ -167,7 +165,7 @@ class ErrorLangEnglish extends Lang {
                 'status.in' => 'Do you want to publish',
                 'note.min' => 'Note must have minmum ten characters',
             ],
-            
+
             'LiveResource'=>[
                 'resurce_url_required' => 'Resource URL is required',
                 'resurce_url_url' => 'Resource URL must be a valid URL',
@@ -178,7 +176,7 @@ class ErrorLangEnglish extends Lang {
                 'resource_name_max' => 'Resource name may not be greater than 255 characters',
             ],
 
-            'LiveSession' =>[ 
+            'LiveSession' =>[
                 'title_required' => 'The title field is required.',
                 'stream_url_unique' => 'The stream URL must be unique.',
                 'stream_url_required' => 'The stream URL field is required.',
@@ -194,7 +192,7 @@ class ErrorLangEnglish extends Lang {
                 'joined_at_required' => 'The joined at field is required.',
                 'joined_at_date' => 'The joined at field must be a valid date.',
             ],
-                
+
             'VertualClassEnrollment' => [
                 'end_date_required' => 'End date is required',
                 'price_plan_required' => 'Price plan is required',
@@ -225,15 +223,15 @@ class ErrorLangEnglish extends Lang {
             'QASection'=>[
                 'question_required'=> 'The question answer field is required.',
                 'question_string' => 'The result must be an string.',
-                
+
                 ],
 
             'QMetaData' => [
-                'title.required' => 'Title is required',
-                'title.string' => 'The title must be a string.', 
-                'title.max' => 'The title may not be greater than 255 characters.',
-                'instraction.string' => 'The instruction must be a string.',
-                'instraction.min' => 'The instraction may not be less than 10 characters.', 
+                'title_max' => 'The title may not be greater than 255 characters.',
+                'instraction_string' => 'The instruction must be a string.',
+                'question_type_required' => 'The question type field is required.',
+                'question_type_string' => 'The question type must be a string.',
+                'question_type_in' => 'The selected question type is invalid.',
             ],
 
             'transactions' => [
@@ -300,32 +298,54 @@ class ErrorLangEnglish extends Lang {
                 'issue_type.required' => 'The issue type is required.',
                 'issue_details.required' => 'The issue details is required minimum 10 characters',
             ],
-       
-              
-              
 
             'messages' => [
                 'user_id.required' => 'The user ID is required.',
                 'user_id.exists' => 'The selected user does not exist.',
                 'message.required' => 'The message is required.',
                 'message.string' => 'The message must be a string.',
-                
+
+            ],
+            'otp_verification' => [
+                'phone.required' => 'Phone number is required',
+                'phone.regex' => 'Phone number is invalid',
+                'otp.required' => 'OTP is required',
+                'otp.numeric' => 'OTP must be a number',
+                'otp.min' => 'OTP must be 6 digits',
+                'otp.max' => 'OTP must be 6 digits',
+                'verification_id.required' => 'Verification ID is required',
+                'verification_id.string' => 'Verification ID must be a string',
             ],
 
-            'modules' => [
-                'title.required' => 'The title is required.',
-                'title.string' => 'The title must be an string.',
-                'title.min' => 'The title must be greater than three.',
-                'description.required' => 'The description is required.',
-                'description.string' => 'The description must be an string.',
-                'description.min' => 'The description must be greater than ten.',
-                'course_id.required' => 'The course must be is required to add module.',
-                'course_id.exists' => 'The course does not exist.',
-            ]
+            'email_otp_verification' => [
+                'email.required' => 'Email is required',
+                'email.email' => 'Email is invalid',
+                'otp.required' => 'OTP is required',
+                'otp.numeric' => 'OTP must be a number',
+                'otp.min' => 'OTP must be 6 digits',
+                'otp.max' => 'OTP must be 6 digits',
+                'verification_id.required' => 'Verification ID is required',
+                'verification_id.string' => 'Verification ID must be a string',
+            ],
+            'email_otpResend_verification' => [
+                'email.required' => 'Email is required',
+                'email.email' => 'Email is invalid',
+                'verification_id.required' => 'Verification ID is required',
+                'verification_id.string' => 'Verification ID must be a string',
+            ],
+            'ChatMessage'=> [
+                'meeting_id.required' => 'Meeting ID is required',
+                'message.required' => 'Message is required',
+            ],
+            'Meeting'=> [
+                'meeting_id.required' => 'Meeting ID is required',
+            ],
 
-            
+
+
+
         ];
-        
+
     }
 
 /*************  ✨ Codeium Command ⭐  *************/

@@ -33,12 +33,13 @@ const {
     bookReadingTab,
 } = storeToRefs(studentStore);
 
-const route = useRoute();
-const router = useRouter();
-const currentTab = ref({
-    tab: route.query.tab,
-    slug: route.query.slug,
-});
+    const route = useRoute();
+    const router = useRouter()
+    const currentTab = ref({
+        tab:route.query.tab,
+        slug:route.query.slug
+    })
+
 
 watch(
     () => route.query.tab,
@@ -87,7 +88,7 @@ watch(
                     <LiveStreamingVue />
                     <Book />
                     <!-- <ManageSchedule />
-                    
+
                      <AddSchedule />
                       <AddPlan />
                     <ManagePlan />

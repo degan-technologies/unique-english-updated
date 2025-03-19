@@ -1,6 +1,6 @@
 <template>
   <div :class="outerClass">
-    <div 
+    <div
       ref="certificateRef"
       class="bg-cover bg-center shadow-lg rounded-lg relative"
       :style="{
@@ -15,21 +15,21 @@
         <h1 class="text-4xl font-bold text-center text-gray-800 uppercase mb-4">
           Course Completion Certificate
         </h1>
-  
+
         <!-- Logo -->
         <img src="/images/logo.jpg" alt="Logo" class="mx-auto my-6 w-28 h-28 rounded-full" />
-  
+
         <!-- Student Info -->
         <h2 class="text-3xl font-semibold text-gray-800">{{ studentName }}</h2>
         <p class="text-xl text-gray-700 my-2">has successfully completed the</p>
         <!-- Here we use the courseName prop -->
         <h3 class="text-2xl font-medium text-gray-800">{{ courseName }}</h3>
-  
+
         <!-- Date -->
         <div class="flex justify-between w-full mt-6 text-lg">
           <span class="text-gray-600">Date: {{ completionDate }}</span>
         </div>
-  
+
         <!-- Bottom Section: Signature and QR Code -->
         <div class="flex justify-between items-center w-full px-18 mt-6">
           <div class="text-center">
@@ -39,30 +39,30 @@
           </div>
           <div class="text-center">
             <p class="text-gray-600 text-sm mb-1">Customer ID: {{ customerId }}</p>
-            <qrcode-vue 
-              :value="qrCodeData" 
-              :size="120" 
-              level="H" 
-              class="border border-gray-300 p-2 rounded-md" 
+            <qrcode-vue
+              :value="qrCodeData"
+              :size="120"
+              level="H"
+              class="border border-gray-300 p-2 rounded-md"
             />
             <p class="text-gray-600 text-sm mt-2">Scan to verify</p>
           </div>
         </div>
-  
+
         <!-- Conditionally Render Download Button -->
         <div v-if="showDownload" class="mt-12">
-          <button 
+          <button
             @click="downloadCertificate"
             class="download-btn bg-blue-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-700 transition"
           >
             Download Certificate
           </button>
-        </div> 
+        </div>
       </div>
     </div>
   </div>
 </template>
-  
+
 <script setup>
 import { ref, onMounted, defineProps, computed } from 'vue';
 import Axios from 'axios';

@@ -40,6 +40,31 @@ return [
         'api_token'     => env('AFROMESSAGE_API_TOKEN'),
         'identifier_id' => env('AFROMESSAGE_IDENTIFIER_ID'),
         'sender_name'   => env('AFROMESSAGE_SENDER_NAME'),
+        'verifyUrl'     =>env('AFROMESSAGE_VERIFY_URL'),
+        'security_url' => env('AFROMESSAGE_OTP_URL'),
     ],
+
+    
+    'google' => [
+        'client_id'     => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect'      => env('GOOGLE_REDIRECT_URI'),
+    ],
+    'facebook' => [
+        'client_id'     => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect'      => env('FACEBOOK_REDIRECT_URI'),
+    ],
+    'twitter' => [
+        'client_id'     => env('TWITTER_CLIENT_ID'),
+        'client_secret' => env('TWITTER_CLIENT_SECRET'),
+        'redirect'      => env('TWITTER_REDIRECT_URI'),
+    ],
+    'linkedin' => [
+        'client_id'     => env('LINKEDIN_CLIENT_ID'),
+        'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
+        'redirect'      => env('LINKEDIN_REDIRECT_URI'),
+    ],
+    
 
 ];

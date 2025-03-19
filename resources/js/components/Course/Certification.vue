@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center justify-center min-h-screen bg-gray-100 p-4">
-    <div 
+    <div
       class="bg-cover bg-center shadow-lg rounded-lg relative"
       :style="{ backgroundImage: 'url(' + backgroundImageUrl + ')', width: '1123px', height: '794px', backgroundSize: 'cover' }"
     >
@@ -34,7 +34,7 @@
 
         <!-- Download Button -->
         <!-- <div class="mt-12">
-          <button 
+          <button
             @click="downloadCertificate"
             class="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-700 transition"
           >
@@ -47,7 +47,7 @@
 </template>
 
 <script>
-import certificateBg from '/images/certificate.png'; // Use local certificate background
+// import certificateBg from '/images/certificate.png'; // Use local certificate background
 
 export default {
   data() {
@@ -58,7 +58,7 @@ export default {
       score: 95,
       issuedBy: 'Mehari', // Instructor name
       issuedRole: 'Course Instructor', // Instructor role
-      backgroundImageUrl: certificateBg, // A4 background image
+      // backgroundImageUrl: certificateBg, // A4 background image
     };
   },
   methods: {
@@ -68,5 +68,3 @@ export default {
   },
 };
 </script>
-
-
