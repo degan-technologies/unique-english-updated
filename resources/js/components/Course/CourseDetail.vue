@@ -1,12 +1,11 @@
 
-
 <script setup>
     import Axios from "axios";
     import { storeToRefs } from "pinia";
     import { onMounted, ref, watch, onBeforeUnmount, nextTick} from "vue";
     import { useRoute, useRouter } from "vue-router";
     import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
+    import 'video.js/dist/video-js.css';
     import { UseStudentStore } from "@/store/UseStudentStore";
 
 const studentStore = UseStudentStore();
@@ -386,7 +385,6 @@ onBeforeUnmount(() => {
                         <strong>Lifetime access to the community</strong>
                     </div>
                     <a
-                        href="#"
                         class="text-blue-500 hover:underline leading-relaxed text-lg py-2"
                     >
                         <i class="fas fa-certificate text-teal-500 mr-2"></i>

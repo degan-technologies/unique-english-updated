@@ -15,6 +15,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
 
     const books = ref(null);
     const selectedbookslug = ref(null);
+    const completedLessons = ref(new Set());
 
    async function fetchCourses() {
        await Axios
@@ -43,5 +44,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
         books,
         fetchBooks,
         selectedbookslug,
+
+        completedLessons
     }
 });

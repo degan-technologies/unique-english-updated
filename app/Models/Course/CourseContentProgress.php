@@ -4,6 +4,7 @@ namespace App\Models\Course;
 
 use Illuminate\Database\Eloquent\Model;
 
+
 class CourseContentProgress extends Model
 {
     protected $table = 'course_content_progress';
@@ -11,6 +12,8 @@ class CourseContentProgress extends Model
     protected $fillable = [
         'user_id',
         'course_content_id',
-        'progress',  
+        'progress',
+        'course_id',
+        'course_module_id'  
     ];
 }
