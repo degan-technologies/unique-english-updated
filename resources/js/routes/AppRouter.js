@@ -25,7 +25,7 @@ const appRouter = createRouter({
         // OTP verification page
         { path: "/otp-verification", name: "otp-verification", component: RegisterForm },
 
-         { path: "/invoice-page/:id", name: "InvoicePage", component: InvoicePage },
+        { path: "/invoice-page/:id", name: "InvoicePage", component: InvoicePage },
     ],
 });
 

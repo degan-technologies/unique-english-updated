@@ -20,10 +20,10 @@ return new class extends Migration {
             $table->unsignedBigInteger('price')->nullable();
             $table->unsignedBigInteger('discount')->nullable();
             $table->integer('credit_hour')->nullable();
-            $table->string('status');
-            $table->string('intro_video')->nullable();
+            $table->string('status')->default('draft');
 
             $table->string('thumbnail_url')->unique()->nullable();
+            $table->string('intro_video')->nullable()->unique();
             $table->string('language')->nullable();
             $table->json('tag')->default('{}');
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");

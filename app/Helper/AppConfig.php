@@ -121,3 +121,11 @@ define('TRANSFER', 'transfer');
 define('TRANSACTION_CATEGORY', [
     WITHDRAWAL, DEPOSIT, TRANSFER
 ]);
+
+define('LIKED', 'liked');
+define('DISLIKED', 'disliked');
+
+define('FEEDBACK_ACTIONS', [
+    LIKED,
+    DISLIKED
+]);
