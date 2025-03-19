@@ -22,8 +22,8 @@
           <!-- Video or Cover Image Display -->
           <div class="overflow-hidden max-w-full h-auto flex w-full justify-center items-center rounded-t-lg mt-6 relative cursor-pointer">
             <!-- If intro_video exists, display the video -->
-            <video v-if="selectedbook?.intro_video" controls class="w-full h-auto rounded-t-lg object-cover transform transition-transform duration-300 shadow-lg hover:shadow-xl">
-              <source :src="selectedbook?.intro_video" type="video/mp4">
+            <video v-if="selectedbook?.intro_vedio" controls class="w-full h-auto rounded-t-lg object-cover transform transition-transform duration-300 shadow-lg hover:shadow-xl">
+              <source :src="selectedbook?.intro_vedio" type="video/mp4">
               Your browser does not support the video tag.
             </video>
             <!-- Fallback: display cover image -->
@@ -128,7 +128,10 @@
   }
     
   // When "Continue Reading" is clicked, navigate using router.push
-  function changeTabTemporaryFunction(slug) {
+ function changeTabTemporaryFunction(slug) {
+  if (selectedbook.value?.file_url) {
+    window.open(selectedbook.value.file_url, "_blank"); // Open the book file
+  } else {
     router.push({
       name: 'student',
       query: {
@@ -138,7 +141,8 @@
     });
     selectedbookslug.value = slug;
   }
-    
+}
+
   const discountEndDate = new Date();
   discountEndDate.setDate(discountEndDate.getDate() + 3);
     

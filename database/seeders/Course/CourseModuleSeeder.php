@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
+
 class CourseModuleSeeder extends Seeder {
     /**
      * Run the database seeds.

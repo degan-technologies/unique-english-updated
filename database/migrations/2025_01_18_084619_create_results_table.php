@@ -16,7 +16,8 @@ return new class extends Migration {
             $table->unsignedBigInteger('result');
 
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
-
+            $table->unsignedBigInteger('course_module_id')->nullable();
+            $table->unsignedBigInteger('course_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

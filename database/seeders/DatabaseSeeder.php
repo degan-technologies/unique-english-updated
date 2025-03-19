@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder {
 
             CourseSeeder::class,
             CourseModuleSeeder::class,
+            
             CourseContentSeeder::class,
 
             BookSeeder::class,

@@ -6,8 +6,6 @@ use App\Http\Resources\userResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
-
-
 class BookResource extends JsonResource {
     /**
      * Transform the resource into an array.
@@ -36,8 +34,8 @@ class BookResource extends JsonResource {
             'page_number' => $this->page_number,
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
-            'intro_video' => $this->intro_video 
-            ? Storage::disk('public')->url($this->intro_video) 
+            'intro_vedio' => $this->intro_vedio 
+            ? Storage::disk('public')->url($this->intro_vedio) 
             : 'no-video.mp4',
 
             'cover_page_url' => $this->cover_page_url

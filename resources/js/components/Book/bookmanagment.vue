@@ -120,8 +120,8 @@ const updateCourse = async () => {
   if (selectedbook.value.file_url instanceof File) {
     formData.append("file_url", selectedbook.value.file_url);
   }
-  if (selectedbook.value.intro_video instanceof File) {
-    formData.append("intro_video", selectedbook.value.intro_video);
+  if (selectedbook.value.intro_vedio instanceof File) {
+    formData.append("intro_vedio", selectedbook.value.intro_vedio);
   }
   formData.append("page_number", selectedbook.value.page_number);
   formData.append("isDownloadable", selectedbook.value.isDownloadable);
@@ -230,7 +230,7 @@ const onFileChange = (field, event) => {
   if (file) {
     selectedbook.value[field] = file;
 
-    if (field === 'intro_video') {
+    if (field === 'intro_vedio') {
       introVideoPreview.value = URL.createObjectURL(file);
     }
   }
@@ -446,7 +446,7 @@ const onFileChange = (field, event) => {
   <div class="relative border-dashed border-2 border-gray-300 rounded p-2 text-center cursor-pointer">
     <input
       type="file"
-      @change="onFileChange('intro_video', $event)"
+      @change="onFileChange('intro_vedio', $event)"
       accept="video/*"
       class="absolute inset-0 opacity-0 cursor-pointer"
     />
@@ -457,15 +457,15 @@ const onFileChange = (field, event) => {
       </video>
       <p class="text-xs text-gray-700 mt-2">New Video Selected</p>
     </div>
-    <div v-else-if="selectedbook.intro_video && typeof selectedbook.intro_video === 'string'">
+    <div v-else-if="selectedbook.intro_vedio && typeof selectedbook.intro_vedio === 'string'">
       <p class="text-xs text-gray-700">
         Current Video:
         <a
-          :href="selectedbook.intro_video"
+          :href="selectedbook.intro_vedio"
           target="_blank"
           class="underline"
         >
-          {{ selectedbook.intro_video.split('/').pop() }}
+          {{ selectedbook.intro_vedio.split('/').pop() }}
         </a>
       </p>
     </div>

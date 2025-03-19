@@ -42,7 +42,7 @@ class CourseContentProgressSeeder extends Seeder
 
         CourseContentProgress::updateOrCreate(
             ['user_id' => 3, 'course_content_id' => 1],
-            ['progress' => '50']  
+            values: ['progress' => '50']  
         );
         CourseContentProgress::updateOrCreate(
             ['user_id' => 3, 'course_content_id' => 2],
@@ -52,7 +52,6 @@ class CourseContentProgressSeeder extends Seeder
             ['user_id' => 3, 'course_content_id' => 3],
             ['progress' => '0']   
         );
-
         // --- COURSE 2 ---
         CourseContentProgress::updateOrCreate(
             ['user_id' => 1, 'course_content_id' => 4],

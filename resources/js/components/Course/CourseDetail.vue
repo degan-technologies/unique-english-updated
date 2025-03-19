@@ -8,10 +8,10 @@
     import 'video.js/dist/video-js.css';
     import { UseStudentStore } from "@/store/UseStudentStore";
 
-const studentStore = UseStudentStore();
-const { videoPlayerTab, courses, selectedCourseSlug } = storeToRefs(studentStore);
-const route = useRoute();
-const router = useRouter();
+    const studentStore = UseStudentStore();
+    const { videoPlayerTab, courses, selectedCourseSlug } = storeToRefs(studentStore);
+    const route = useRoute();
+    const router = useRouter();
 
     const checkoutUrl = ref(null);
     const selectedCourse = ref(null);
