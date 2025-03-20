@@ -26,6 +26,8 @@ class CreateCourseContentProgressTable extends Migration
             $table->foreign('course_module_id')->references('id')->on('course_modules')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('course_content_id')->references('id')->on('course_contents')->onDelete('cascade');
+            $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
+            $table->foreign('course_module_id')->references('id')->on('course_modules')->onDelete('cascade');
         });
     }
 

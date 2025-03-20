@@ -19,7 +19,7 @@
     
     const metaData = ref({
         title: "",
-        instraction: "",
+        instruction: "",
     });
 
     const props = defineProps({
@@ -153,7 +153,7 @@
         }
         const payload = {
             title: metaData.value.title,
-            instraction: metaData.value.instraction,
+            instraction: metaData.value.instruction,
         };
         Axios.put(`/api/QMetaData/${selectedExam.value?.id}`, payload)
             .then((res) => {

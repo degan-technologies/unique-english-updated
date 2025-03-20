@@ -23,6 +23,8 @@ return new class extends Migration {
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('q_meta_data_id')->nullable()->constrained('q_meta_data')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_module_id')->references('id')->on('course_modules')->onDelete('cascade');
+            $table->foreignId('course_id')->references('id')->on('courses')->onDelete('cascade');
         });
     }
 

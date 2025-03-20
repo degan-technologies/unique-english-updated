@@ -102,7 +102,6 @@ Route::middleware('auth:api')
             ->where('type', 'course|book|live');
         Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
         Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
-        // Route::get('/stream/video/{filename}', [CourseVideoController::class, 'stream']);
     });
 
 Route::middleware('auth:api')

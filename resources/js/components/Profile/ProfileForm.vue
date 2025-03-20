@@ -40,8 +40,8 @@
                         <li 
                             @click="setActiveTab('account')" 
                             :class="{
-                                'bg-lime-700 text-white': activeTab === 'password',
-                                'hover:bg-lime-500': activeTab !== 'password'
+                                'bg-lime-700 text-white': activeTab === 'account',
+                                'hover:bg-lime-500': activeTab !== 'account'
                             }" 
                             class="py-2 px-3 cursor-pointer">
                             Add Account
