@@ -107,7 +107,7 @@ class QMetaDataController extends Controller{
 
         $validationRules = [
             'title' => 'required|string|min:5|max:255',
-            'instraction' => 'string|min:10',
+            'instruction' => 'string|min:10',
         ];
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('QMetaData'));
 

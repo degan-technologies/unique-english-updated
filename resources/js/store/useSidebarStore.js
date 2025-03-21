@@ -11,9 +11,9 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const courses = ref("courses");
     const exams = ref("exams");
     const payments = ref("payments");
-    const liveSssions = ref("live-sessions");
+    const liveSssions = ref("liveSssions");
     const messaging = ref("messaging");
-     const schedule=ref('schedule')
+     const schedule=ref("schedule");
     const selectedContent = ref(dashboard.value);
 
     function loadSidebarState() {
