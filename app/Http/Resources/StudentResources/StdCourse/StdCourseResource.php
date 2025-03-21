@@ -51,7 +51,7 @@ class StdCourseResource extends JsonResource {
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',
-            'courseModules' => StdCourseContentResource::collection($this->courseModules->sortBy('sequence')),
+            'courseModules' => StdCourseModuleResource::collection($this->courseModules->sortBy('sequence')),
 
             'isMyCourse' => $this->checkEligibility(),
         ];

@@ -4,7 +4,7 @@
 
     const banklists = ref([]);
     const searchBanks = ref([]);
-    const myBakInfo = ref(null);
+    const myBakInfo = ref({});
 
     const password = ref(null);
     const bank = ref({

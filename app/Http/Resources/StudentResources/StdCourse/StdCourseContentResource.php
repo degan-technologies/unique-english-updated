@@ -24,6 +24,7 @@ class StdCourseContentResource extends JsonResource {
             'title' => $this->title,
             'sequence' => $this->sequence,
             'note' => $this->note,
+            'content_type' => $this->content_type,
             'course_content_url' => $this->content_url
                 ? url('/api/coursecontent/stream/video/' . basename($this->content_url))
                 : 'no-intro_video.png',

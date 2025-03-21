@@ -29,23 +29,26 @@ function toggleModuleLesson(id) {
 }
 
 function enrollCourse(item) {
-  const selectedItem = [{ type: "course", slug: item.slug }];
-  Axios.post("/api/initiate-payment", { cartItems: selectedItem })
-    .then((res) => {
-      checkoutUrl.value = res.data.checkout_url;
-      window.open(checkoutUrl.value, "_blank");
-    })
-    .catch((error) => {
-      console.error("Payment initiation error:", error);
-    });
-}
 
-function changeTabTemporaryFunction(slug) {
-  router.push({
-    name: "student",
-    query: { tab: videoPlayerTab.value, slug: slug },
-  });
-  selectedCourseSlug.value = slug;
+    if(item.isMyCourse) {
+         router.push({
+            name: "student",
+            query: { tab: videoPlayerTab.value, slug: item.slug },
+        });
+        selectedCourseSlug.value = slug;
+        return;
+    }
+
+    const selectedItem = [{ type: "course", slug: item.slug }];
+    Axios
+        .post("/api/initiate-payment", { cartItems: selectedItem })
+        .then((res) => {
+            checkoutUrl.value = res.data.checkout_url;
+            window.open(checkoutUrl.value, "_blank");
+        })
+        .catch((error) => {
+            console.error("Payment initiation error:", error);
+        });
 }
 
 async function handleCertificateClick() {
@@ -343,9 +346,10 @@ onBeforeUnmount(() => {
             <!-- Right Card: Course Details -->
             <div class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center" >
                 <button
-                    @click="changeTabTemporaryFunction(selectedCourse.slug)"
+                    v-if="selectedCourse"
+                    @click="enrollCourse(selectedCourse)"
                     class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full" >
-                    continue
+                    {{ selectedCourse?.isMyCourse ? 'continue' : 'Enolle Course' }}
                 </button>
                 <h2 class="text-xl leading-9 font-semibold mb-4">
                     Course Details
