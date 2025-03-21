@@ -1,6 +1,17 @@
 <script setup>
-import Body from "@/components/Body.vue";
+    import { onMounted } from "vue";
+    import { storeToRefs } from "pinia";
 
+import Body from "@/components/Body.vue";
+import { useAppStore } from '@/store/useAppStore';
+
+    const appStore = useAppStore();
+    const { authUser } = storeToRefs(appStore);
+
+    onMounted(() => { 
+        appStore.fetchUserInfo();
+        appStore.fetchFrontLanguages();
+    })
 
 </script>
 

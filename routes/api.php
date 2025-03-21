@@ -32,10 +32,11 @@ use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
 
-
-Route::post('/login', [AuthController::class, 'login']);
+ 
 
 Route::post('/registration', [UserController::class, 'store']);
+Route::get('/allCouses', [CourseController::class, 'allCourses']);
+
 
 Route::middleware('auth:api')
     ->group(function () {
@@ -148,14 +149,14 @@ Route::middleware('auth:api')
     });
 
 Route::middleware('auth:api')
-    ->group(function () {
+->group(function () {
     Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
     Route::get('/transaction', [TransactionController::class, 'transactions']);
     Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoce']);
     Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);
     Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
     Route::resource('/bank-info', BankInfoController::class);
-    Route::get('//my-bank-info', [BankInfoController::class, 'myBankInfo']);
+    Route::get('/my-bank-info', [BankInfoController::class, 'myBankInfo']);
     Route::post('/transfer', [TransactionController::class, 'transferToBank']);
     Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
     Route::get('/get-balance', [TransactionController::class, 'getBalance']);

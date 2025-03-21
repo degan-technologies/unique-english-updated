@@ -2,10 +2,8 @@
 
 namespace App\Http\Resources\Course;
 
-use App\Models\Transaction\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
 class CourseContentResource extends JsonResource {
@@ -31,37 +29,21 @@ class CourseContentResource extends JsonResource {
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',
-
         ];
 
-        if($this->checkEligibility()) {
-                $data['hour'] = $this->hour;
-                $data['description'] = $this->description;
-                $data['content_type'] = $this->content_type;
-                $data['status'] = $this->status;
-                $data['note'] = $this->note;
-                $data['content_url'] = $this->content_url
-                    ? Storage::disk('public')->url($this->content_url)
-                    : 'no-content_url.png';
-            } 
+        // if($this->checkEligibility()) {
+        //         $data['hour'] = $this->hour;
+        //         $data['description'] = $this->description;
+        //         $data['content_type'] = $this->content_type;
+        //         $data['status'] = $this->status;
+        //         $data['note'] = $this->note;
+        //         $data['content_url'] = $this->content_url
+        //             ? Storage::disk('public')->url($this->content_url)
+        //             : 'no-content_url.png';
+        //     } 
 
         return $data;
     }
 
-
-    public function checkEligibility() {
-        $user = Auth::user();
-        $myTransactions = Transaction::query()
-            ->where('customer_id', $user->id)
-            ->where('course_id', $this->course_id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->first();
-
-        if ($myTransactions) {
-            return true;
-        }
-
-        return false;
-    }
     
 }

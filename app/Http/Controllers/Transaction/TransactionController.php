@@ -241,6 +241,7 @@ class TransactionController extends Controller {
 
         $transactionStatus = $this->chapaService->verifyPayment($txRef);
 
+
         if ($transactionStatus['status'] !== 'success') {
             return response()->json([
                 'message' => $this->langService->getLang('transaction_not_successful')
@@ -285,6 +286,7 @@ class TransactionController extends Controller {
                     ];
                     $date = $transaction->created_at->format('M d, Y, H:i:s');
                 }
+
 
                 $this->transferHistory($transaction, DEPOSIT);
 

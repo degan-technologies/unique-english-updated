@@ -1,18 +1,19 @@
 <?php
 
-namespace App\Http\Resources\Course;
+namespace App\Http\Resources\StudentResources\StdCourse;
 
-use App\Http\Resources\Comment\FeedBackResource;
+use App\Http\Resources\Comment\FeedBackResource; 
 use App\Http\Resources\userResource;
 use App\Models\Comment\FeedBack;
+use App\Models\Transaction\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
-use App\Models\Transaction\Transaction;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 
-class CourseResource extends JsonResource {
+
+class StdCourseResource extends JsonResource {
     /**
      * Transform the resource into an array.
      *
@@ -20,7 +21,7 @@ class CourseResource extends JsonResource {
      */
     public function toArray(Request $request): array {
         $review = FeedBack::reviewRate($this->feedbacks);
- 
+
         return [
             'id' => $this->id,
             'slug' => $this->slug,
@@ -35,12 +36,12 @@ class CourseResource extends JsonResource {
             'credit_hour' => $this->credit_hour,
             'created_at' => $this->created_at,
             'status' => $this->status,
-            'user' => new userResource($this->user), 
+            'user' => new userResource($this->user),
 
 
             'intro_video_url' => $this->intro_video
-                    ? url('/api/courses/stream/video/' . basename($this->intro_video))
-                    : 'no-intro_video.png',
+                ? url('/api/courses/stream/video/' . basename($this->intro_video))
+                : 'no-intro_video.png',
 
             'feedBacks' => FeedBackResource::collection($this->feedbacks),
             'averageRating' => $review['averageRating'],
@@ -50,14 +51,15 @@ class CourseResource extends JsonResource {
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',
-            'courseModules' => CourseModuleResource::collection($this->courseModules->sortBy('sequence')),
+            'courseModules' => StdCourseContentResource::collection($this->courseModules->sortBy('sequence')),
 
             'isMyCourse' => $this->checkEligibility(),
         ];
     }
 
-    public function skillLevel($leve) {
-        switch($leve){
+    public function skillLevel($leve)
+    {
+        switch ($leve) {
             case BIGINNER;
                 return 'Beginner';
             case INTERMIDIATE;
@@ -73,16 +75,18 @@ class CourseResource extends JsonResource {
 
     public function checkEligibility()
     {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+
         if (!$user) {
             return false;
         }
-        
+
         $myTransactions = Transaction::query()
             ->where('customer_id', $user->id)
-            ->where('course_id', $this->course_id)
+            ->where('course_id', $this->id)
             ->where('status', TRANSACTION_SUCCESS)
             ->first();
+
 
         if ($myTransactions) {
             return true;

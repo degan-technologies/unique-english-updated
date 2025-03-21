@@ -34,9 +34,9 @@ define('CONTENT_TYPE',[
     VIDEO, PDF, IMAGE
 ]);
 
-define('PUBLISHED', 1);
-define('DRAFT', 2);
-define('ARCHIVED', 3);
+define('PUBLISHED', 'published');
+define('DRAFT', 'draft');
+define('ARCHIVED', 'archived'); 
 
 define('COURSE_STATUS', [
     PUBLISHED, DRAFT, ARCHIVED

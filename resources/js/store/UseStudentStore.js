@@ -19,7 +19,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
 
    async function fetchCourses() {
        await Axios
-            .get('/api/courses/course')
+            .get('/api/allCouses')
             .then(res => courses.value = res.data.data)
     }
 

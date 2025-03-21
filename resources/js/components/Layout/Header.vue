@@ -69,10 +69,6 @@
         return name.charAt(0).toUpperCase();
     };
 
-    
-    onMounted(() => {
-        appStore.fetchUserInfo();
-    });
 </script>
 
 <template>

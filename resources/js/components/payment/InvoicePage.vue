@@ -1,8 +1,8 @@
 <script setup>
-    import { computed, onMounted, ref, watch, watchEffect } from "vue";
+    import Axios from "axios";
     import QRCode from "qrcode";
     import { useRoute } from "vue-router";
-    import Axios from "axios";
+    import { computed, onMounted, ref, watch, watchEffect } from "vue";
     
 
     const route = useRoute();

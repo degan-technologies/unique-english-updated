@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseResource;
+use App\Http\Resources\StudentResources\StdCourse\StdCourseResource;
 use App\Models\Course\Course;
 use App\Models\User;
 use App\Services\LangService;
@@ -35,17 +36,20 @@ class CourseController extends Controller {
     /**
      * Display a listing of the resource.
      */
-    public function index() {
-        $courses = Course::paginate(10);
+    public function allCourses() {
+        $courses = Course::query()
+            ->where('status', PUBLISHED)
+            ->paginate(10);
 
         $pagination = $courses->toArray();
         unset($pagination['data']);
 
         return response() -> json([
             'pagination' => $pagination,
-            'data' => CourseResource::collection($courses)
+            'data' => StdCourseResource::collection($courses)
         ]);
     }
+
     /**
      * Store a newly created resource in storage.
      */

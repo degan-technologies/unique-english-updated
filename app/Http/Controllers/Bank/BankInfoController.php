@@ -55,7 +55,7 @@ class BankInfoController extends Controller {
                 'message' => $this->langService->getLang('incorrect_password')
             ], 422);
         }
-
+ 
         $bank = $user->bankInfos()->create([
             'full_name' => $request->full_name,
             'bank_name' => $request->bank_name,

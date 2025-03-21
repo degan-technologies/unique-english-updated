@@ -4,7 +4,7 @@
 
     const banklists = ref([]);
     const searchBanks = ref([]);
-    const myBakInfo = ref({});
+    const myBakInfo = ref(null);
 
     const password = ref(null);
     const bank = ref({
@@ -153,7 +153,7 @@
                         class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700" />
                 </div>
             
-                <button
+                <button 
                     type="button"
                     @click="myBakInfo ? updateBankInfo(myBakInfo.id) : storeBankInfo()"
                     class="w-full bg-lime-700 text-white py-3 rounded-lg hover:bg-lime-800 transition flex justify-center">
