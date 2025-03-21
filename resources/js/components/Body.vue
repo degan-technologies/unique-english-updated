@@ -8,14 +8,13 @@
     const appStore = useAppStore();
     const { authUser } = storeToRefs(appStore);
 
-    onMounted(() => {
-        appStore.fetchUserInfo();
+    onMounted(() => { 
         appStore.fetchFrontLanguages();
     })
 </script>
 
 <template>
-    <div v-if="authUser">
+    <div>
        <RouterView/>
     </div>
 </template>

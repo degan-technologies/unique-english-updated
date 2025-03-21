@@ -1,29 +1,13 @@
 <script setup>
-import { onMounted } from "vue";
-import { storeToRefs } from "pinia";
-import { useAppStore } from "@/store/useAppStore";
-
-const appStore = useAppStore();
-const { isLoggedIn, logoImage, authUser } = storeToRefs(appStore);
-
-import Login from "@/components/Auth/Login.vue";
 import Body from "@/components/Body.vue";
 
-onMounted(() => {
-    appStore.fetchUserInfo();
-});
+
 </script>
 
 <template>
     <div>
         <div class="overflow-hidden">
-
-            <template v-if="isLoggedIn">
-                <Body />
-            </template>
-            <template v-else>
-                <Login />
-            </template>
+             <Body />
         </div>
     </div>
 </template>

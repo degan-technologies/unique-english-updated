@@ -7,6 +7,7 @@ import RegisterForm from "../components/Auth/RegisterForm.vue";
 
 import InvoicePage from "@/components/payment/InvoicePage.vue";
 import MyCourse from "@/components/Course/EnrolledManagement.vue";
+
 const appRouter = createRouter({
     history: createWebHashHistory("/"),
     routes: [
