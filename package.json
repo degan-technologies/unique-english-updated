@@ -23,7 +23,7 @@
         "@vueuse/core": "^12.3.0",
         "canvas-confetti": "^1.9.3",
         "chart.js": "^4.4.7",
-        "html2canvas": "^1.4.1",
+        "crypto-browserify": "^3.12.1",
         "html2canvas": "^1.4.1",
         "install": "^0.13.0",
         "js-cookie": "^3.0.5",

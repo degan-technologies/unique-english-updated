@@ -71,13 +71,8 @@
                     <h2 class="text-lg font-bold mb-2 text-lime-700">
                         {{ book.title }}
                     </h2>
-                    <p class="text-sm text-gray-600">By: {{ book.author }}</p>
-                    <div class="flex items-center mt-2">
-                        <span class="text-yellow-500">&#9733;</span>
-                        <span class="ml-1 text-sm text-gray-600">{{
-                            book.rating
-                        }}</span>
-                    </div>
+                    <p class="text-sm text-gray-600">By: {{ book.auther }}</p>
+                   
                     <div
                         class="mt-4 text-lg font-semibold text-lime-700 text-right"
                     >

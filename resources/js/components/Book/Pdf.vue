@@ -1,4 +1,3 @@
-G N, [06/02/2025 22:58]
 <script setup>
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
@@ -23,6 +22,9 @@ const showOverlay = ref(false);
 
 // Fullscreen toggle state
 const isFullScreen = ref(false);
+
+// New reactive variable for page search input
+const searchPage = ref("");
 
 // Load PDF
 const loadPdf = async () => {
@@ -108,6 +110,17 @@ const prevPage = () => {
     }
 };
 
+// New function: Go to a specific page based on user input
+const goToPage = () => {
+    const pageNumber = parseInt(searchPage.value);
+    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages.value) {
+        currentPage.value = pageNumber;
+        renderPage(pageNumber);
+    } else {
+        alert("Invalid page number. Please enter a number between 1 and " + totalPages.value);
+    }
+};
+
 // Security: Block Right-Click & Copy
 const preventCopy = (event) => {
     event.preventDefault();
@@ -116,7 +129,7 @@ const preventCopy = (event) => {
 // Security: Block DevTools
 const preventDevTools = (event) => {
     if (
-        event.key === "F12" 
+        event.key === "F12" ||
         (event.ctrlKey && event.shiftKey && ["I", "J", "C"].includes(event.key))
     ) {
         event.preventDefault();
@@ -156,7 +169,7 @@ const detectSnippingTool = () => {
     }, 500); // Check every 500ms (faster detection)
 };
 
-// 🔥  mt-24Hide Content When Window Loses Focus (Alt+Tab, Snipping Tool, etc.)
+// 🔥 Hide Content When Window Loses Focus (Alt+Tab, Snipping Tool, etc.)
 const hideOnWindowBlur = () => {
     showOverlay.value = true;
 };
@@ -202,63 +215,37 @@ watch(() => props.pdfUrl, loadPdf);
 </script>
 
 <template>
-    <div
-        class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen"
-    >
+    <div class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen">
         <!-- 🔥 Dynamic Overlay (Blocks screenshots/snipping tool in real-time) -->
-        <div
-            v-if="showOverlay"
-            class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-2xl font-bold z-50"
-        >
+        <div v-if="showOverlay" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-2xl font-bold z-50">
             Screenshot Blocked!
         </div>
 
-        <div
-            ref="containerRef"
-            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg"
-        >
+        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }" class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
             <!-- Set container to allow scroll if content exceeds height -->
             <div class="overflow-auto">
-                <canvas
-                    ref="canvasRef"
-                    class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
-                    @contextmenu.prevent
-                    @dragstart.prevent
-                ></canvas>
+                <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none" @contextmenu.prevent @dragstart.prevent></canvas>
             </div>
-            <div
-                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
-            >
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
                 <!-- Pagination Buttons -->
-                <div class="flex gap-4 mb-4 sm:mb-0">
-                    <button
-                        @click="prevPage"
-                        :disabled="currentPage === 1"
-                        class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50"
-                    >
+                <div class="flex gap-4 mb-4 sm:mb-0 items-center">
+                    <button @click="prevPage" :disabled="currentPage === 1" class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
                         <i class="fas fa-chevron-left"></i> Previous
                     </button>
                     <span class="font-semibold text-gray-700">
                         Page {{ currentPage }} / {{ totalPages }}
                     </span>
-                    <button
-                        @click="nextPage"
-                        :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50"
-                    >
+                    <button @click="nextPage" :disabled="currentPage === totalPages" class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
                         <i class="fas fa-chevron-right"></i> Next
                     </button>
                 </div>
-                <button
-                    @click="toggleFullScreen"
-                    class="px-4 py-2 bg-lime-500 text-white rounded flex items-center gap-2"
-                >
-                    <i
-                        :class="
-                            isFullScreen ? 'fas fa-compress' : 'fas fa-expand'
-                        "
-                    ></i>
+                <!-- Page Search Input -->
+                <div class="flex items-center gap-2">
+                    <input type="number" v-model="searchPage" placeholder="Go to page" class="px-2 py-1 border border-green-500  rounded w-24" />
+                    <button @click="goToPage" class="px-3 py-1 bg-blue-600 text-white rounded">search page</button>
+                </div>
+                <button @click="toggleFullScreen" class="px-4 py-2 bg-lime-500 text-white rounded flex items-center gap-2">
+                    <i :class="isFullScreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
                     {{ isFullScreen ? "Exit Full Screen" : "Go Full Screen" }}
                 </button>
             </div>
