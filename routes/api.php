@@ -163,4 +163,5 @@ Route::middleware('auth:api')
 
     Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
     Route::post('/change-comission', [PlatformComissionController::class, 'store']);
-});
+});// ->middleware('auth:api');
+

@@ -1,10 +1,17 @@
-
 <script setup>
 import { ref, onMounted } from "vue";
 import axios from "axios";
+import { useRouter } from "vue-router";
 import { fullUrl } from "../../utils/urlHelper.js";
+import Book from "../Book/Book.vue";
 
-import Book from "../Book/Book.vue"
+// Import Pinia helpers and student store
+import { storeToRefs } from "pinia";
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+const router = useRouter();
+const studentStore = UseStudentStore();
+const { bookOverviewTab } = storeToRefs(studentStore);
 
 const transactions = ref([]);
 
@@ -21,6 +28,13 @@ if (cleanedToken) {
   console.warn("No token found in localStorage");
 }
 
+function changeTab(slug) {
+  router.push({
+    name: "student",
+    query: { tab: bookOverviewTab.value, slug: slug },
+  });
+}
+
 const fetchTransactions = async () => {
   try {
     const response = await axios.get("/api/courses/transactions/book");
@@ -33,6 +47,8 @@ const fetchTransactions = async () => {
 
 onMounted(fetchTransactions);
 </script>
+
+
 
 <template>
   <div>
@@ -89,7 +105,7 @@ onMounted(fetchTransactions);
 
 
                   <!-- Continue Button -->
-                  <button class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600  font-semibold text-sm rounded-md hover:bg-lime-700">
+                  <button @click="changeTab(transaction.book?.slug)"  class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600  font-semibold text-sm rounded-md hover:bg-lime-700">
                      Continue
                   </button>
 
