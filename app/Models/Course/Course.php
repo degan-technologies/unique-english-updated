@@ -6,6 +6,7 @@ use App\Models\Comment\FeedBack;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Course extends Model {
 
@@ -20,4 +21,26 @@ class Course extends Model {
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function transactions() { return $this->hasMany(Transaction::class); }
     public function feedBacks() { return $this->hasMany(FeedBack::class); }
+    
+
+    public static function checkEligibility($courseId) {
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        $myTransactions = Transaction::query()
+            ->where('customer_id', $user->id)
+            ->where('course_id', $courseId)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->first();
+
+        if ($myTransactions) {
+            return true;
+        }
+
+        return false;
+    }
 }
+
+

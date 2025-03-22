@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Course\CourseContentResource;
+use App\Http\Resources\Course\CourseModuleResource;
+use App\Models\Course\Course;
+use App\Models\Course\CourseContent;
 use App\Models\Course\CourseContentProgress;
+use App\Models\Course\CourseModule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class CourseContentProgressController extends Controller
@@ -19,15 +25,38 @@ class CourseContentProgressController extends Controller
      * - course_id: (optional) ID of the course
      * - course_module_id: (optional) ID of the module
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
+
+        /**
+         * Get the authenticated user
+         * @var User $user
+         */
+
+        $user = Auth::user();
+        $courseContentId = $request->course_content_id ?? null;
+
+        $courseContent = CourseContent::query()
+            ->where('id', $courseContentId)
+            ->first();
+
+        if (!$courseContent) {
+            return response()->json([
+                'error' => 'Course content not found'
+            ], 404);
+        }
+
+        $eligibleCourse = Course::checkEligibility($courseContent->course_id);
+
+        if (!$eligibleCourse) {
+            return response()->json([
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
+        
+
         // Validate input
         $validator = Validator::make($request->all(), [
-            'user_id'           => 'required|integer|exists:users,id',
-            'course_content_id' => 'required|integer|exists:course_contents,id',
             'progress'          => 'required|numeric|min:0|max:100',
-            'course_id'         => 'sometimes|nullable|integer|exists:courses,id',
-            'course_module_id'  => 'sometimes|nullable|integer|exists:course_modules,id',
         ]);
 
         if ($validator->fails()) {
@@ -39,18 +68,23 @@ class CourseContentProgressController extends Controller
 
         $data = $validator->validated();
 
-        // Update the progress if it exists, otherwise create a new record
-        $progressRecord = CourseContentProgress::updateOrCreate(
-            [
-                'user_id'           => $data['user_id'],
-                'course_content_id' => $data['course_content_id']
-            ],
-            [
-                'progress'          => $data['progress'],
-                'course_id'         => $data['course_id'] ?? null,
-                'course_module_id'  => $data['course_module_id'] ?? null,
-            ]
-        );
+        $getProgress = $courseContent->courseContentProgress()->first();
+
+        if(!$getProgress) {
+            $progressRecord = $user->courseContentProgress()->create([
+                'progress'          => $request->progress,
+                'course_content_id'         => $courseContentId, 
+            ]);
+
+            return response()->json([
+                'message' => 'Progress saved successfully',
+                'data'    => $progressRecord
+            ], 200);
+        }
+
+        $progressRecord = $getProgress->update([
+            'progress' => $request->progress,
+        ]);
 
         return response()->json([
             'message' => 'Progress saved successfully',
@@ -59,8 +93,7 @@ class CourseContentProgressController extends Controller
     }
 
 
-    public function index(Request $request)
-{
+    public function index(Request $request) {
     $userId = $request->query('user_id');
     if (!$userId) {
         return response()->json(['error' => 'User ID is required'], 400);
@@ -85,8 +118,7 @@ class CourseContentProgressController extends Controller
      * You can call this endpoint with query parameter "user_id" (or use your auth middleware)
      * Example: GET /api/coursecontent/progress/{courseContentId}?user_id=1
      */
-    public function show(Request $request, $courseContentId)
-    {
+    public function show(Request $request, $courseContentId) {
         $userId = $request->query('user_id');
         if (!$userId) {
             return response()->json(['error' => 'User ID is required'], 400);
@@ -102,6 +134,45 @@ class CourseContentProgressController extends Controller
 
         return response()->json([
             'data' => $progressRecord
+        ], 200);
+    }
+
+
+    public function currentProgress($slug) {
+        $user = Auth::user();
+
+        $course = Course::query()
+            ->where('slug', $slug)
+            ->first();
+
+        $eligibleCourse = Course::checkEligibility($course->id);
+
+        if (!$eligibleCourse) {
+            return response()->json(['message' => 'Course not found'], 404);
+        }
+
+        $progress = CourseContentProgress::where('user_id', $user->id)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if (!$progress) {
+            $courseModule = $course->courseModules()->first();
+            $courseContent = $courseModule->courseContents()->first();
+
+            return response()->json([
+                'courseModule' => new CourseModuleResource($courseModule),
+                'courseContent' => new CourseContentResource($courseContent),
+            ], 200);
+        }
+
+        $courseModule = CourseModule::query()
+            ->where('course_id', $progress->courseContent->course_id)
+            ->first();
+        $courseContent = $courseModule->courseContents()->first();
+
+        return response()->json([
+            'courseModule' =>  new CourseModuleResource($courseModule),
+            'courseContent' => new CourseContentResource($courseContent),
         ], 200);
     }
 }

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseModuleResource;
+use App\Models\Course\Course;
 use App\Models\Course\CourseModule;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +29,34 @@ class CourseModuleController extends Controller
     public function index()
     {
         $courseModules = CourseModule::with('CourseContents')
+            ->get();
+
+        return response()->json([
+            'data' => CourseModuleResource::collection($courseModules),
+        ]);
+    }
+
+    public function getCourseModules($slug) {
+        $user = Auth::user();
+
+        $courseId = Course::query()
+            ->where('slug', $slug)
+            ->value('id');
+
+        $verifyTransaction = Transaction::query()
+            ->where('customer_id', $user->id)
+            ->where('course_id', $courseId)
+            ->where('status', 'success')
+            ->first();
+
+        if (!$verifyTransaction) {
+            return response()->json([
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+
+        $courseModules = CourseModule::query()
+            ->where('course_id', $courseId)
             ->get();
 
         return response()->json([

@@ -14,11 +14,8 @@ class QASectionResource extends JsonResource {
             'id' => $this->id,
             'question' => $this->question,
             'updated_at' => $this->updated_at,
-            'created_at' => $this->created_at,
-            'user' => new userResource($this->user),
-            'course' => new CourseResource($this->course),
-            'replies' => QASectionResource::collection($this->replies),
-            'parent_section' => new QASectionResource($this->parentSection),
+            'created_at' => $this->created_at, 
+            'replies' => QASectionResource::collection($this->replies), 
         ];
     }
 }

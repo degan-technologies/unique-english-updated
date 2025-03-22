@@ -20,7 +20,6 @@ const props = defineProps({
 
 // Initialize examData and quizData from props
 const examData = ref(null);
-const quizData = ref([]);
 const currentQuestion = ref(1);
 const answers = ref([]);
 const correctAnswers = ref(0);

@@ -48,7 +48,7 @@ class CourseController extends Controller {
             'pagination' => $pagination,
             'data' => StdCourseResource::collection($courses)
         ]);
-    }
+    } 
 
     /**
      * Store a newly created resource in storage.
@@ -74,8 +74,6 @@ class CourseController extends Controller {
             'credit_hour' => 'numeric',
             'thumbnail_url' => 'image',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
-
-
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));

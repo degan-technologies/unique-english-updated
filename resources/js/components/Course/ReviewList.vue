@@ -241,9 +241,9 @@ const getInitials = (name) => {
 </script>
 
 <template>
-  <div class="w-full bg-gray-50 p-4 md:p-8 space-y-8">
+  <div class="w-full bg-white p-4 md:p-8 space-y-8">
     <!-- STUDENT FEEDBACK & RATING DISTRIBUTION -->
-    <div class="bg-white shadow-lg rounded-lg p-6">
+    <div class="bg-white ">
       <h2 class="text-2xl font-bold text-gray-800 mb-4">
         Student Feedback
       </h2>
@@ -287,7 +287,7 @@ const getInitials = (name) => {
   
 
     <!-- YOUR RATING SECTION (with half-star support) -->
-    <div class="bg-white shadow-lg rounded-lg p-6 space-y-4">
+    <div class="bg-white space-y-4">
       <h2 class="text-xl font-bold text-gray-800">
         Your Rating
       </h2>
@@ -344,7 +344,7 @@ const getInitials = (name) => {
     </div>
 
     <!-- REVIEWS SECTION (each with possible half-star rating) -->
-    <div class="bg-white shadow-lg rounded-lg p-6 space-y-6">
+    <div class="bg-white space-y-6">
       <h2 class="text-xl font-bold text-gray-800">Reviews</h2>
       <div
         v-for="(comment, index) in feedBacks"

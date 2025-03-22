@@ -53,7 +53,9 @@ Route::middleware('auth:api')
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
         Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
         Route::post('/resend-otp', [UserController::class, 'resendOTP']);
-    });
+
+        Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
+});
 // Social Login Routes
 Route::middleware(['web'])->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider']);
@@ -83,7 +85,9 @@ Route::middleware('auth:api')
 
      // New progress endpoints for course content
      Route::post('/coursecontent/progress', [CourseContentProgressController::class, 'store']);
+    
      Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
+     Route::get('/contniue/progress/{slug}', [CourseContentProgressController::class, 'currentProgress']);
 
      Route::get('/coursecontent/progress/{courseContentId}', [CourseContentProgressController::class, 'show']);
 
@@ -101,9 +105,10 @@ Route::middleware('auth:api')
         Route::resource('/module', CourseModuleController::class);
         Route::get('/transactions/{type}', [TransactionController::class, 'index'])
             ->where('type', 'course|book|live');
+        });
+        
         Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
         Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
-    });
 
 Route::middleware('auth:api')
     ->prefix('feedbacks')

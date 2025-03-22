@@ -5,6 +5,7 @@ namespace App\Http\Resources\Course;
 use App\Http\Resources\Comment\FeedBackResource;
 use App\Http\Resources\userResource;
 use App\Models\Comment\FeedBack;
+use App\Models\Course\Course;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -52,7 +53,7 @@ class CourseResource extends JsonResource {
                 : 'no-thumbnail_url.png',
             'courseModules' => CourseModuleResource::collection($this->courseModules->sortBy('sequence')),
 
-            'isMyCourse' => $this->checkEligibility(),
+            'isMyCourse' => Course::checkEligibility($this->id),
         ];
     }
 
@@ -69,25 +70,5 @@ class CourseResource extends JsonResource {
             default:
                 return 'not assigned';
         }
-    }
-
-    public function checkEligibility()
-    {
-        $user = Auth::user();
-        if (!$user) {
-            return false;
-        }
-        
-        $myTransactions = Transaction::query()
-            ->where('customer_id', $user->id)
-            ->where('course_id', $this->course_id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->first();
-
-        if ($myTransactions) {
-            return true;
-        }
-
-        return false;
     }
 }

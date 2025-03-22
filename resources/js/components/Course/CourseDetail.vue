@@ -138,6 +138,7 @@ const playVideo = () => {
   }
   isPlaying.value = true;
   // Use the streaming URL from API:
+  
   videoSource.value = selectedCourse.value.intro_video_url;
   console.log("Selected video source:", videoSource.value);
   if (!videoSource.value || videoSource.value.trim() === '') {
@@ -157,6 +158,7 @@ const playVideo = () => {
       preload: 'auto',
       fluid: true,
     });
+    
     // Set the source (should trigger Video.js to request with Range headers)
     player.value.src({
       src: videoSource.value,

@@ -148,7 +148,7 @@
                     </button>
                     <div class="relative">
                         <img
-                            :src="authUser.profile || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'"
+                            :src="authUser?.profile"
                             alt="Profile Picture"
                             class="w-12 h-12 rounded-full shadow-lg cursor-pointer"
                             @click="dropDownOpen = !dropDownOpen"

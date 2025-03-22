@@ -7,7 +7,7 @@ const appStore = useAppStore();
 const authUser = appStore.authUser;
 
 const props = defineProps({
-  selectedCourse: Object,
+  selectedModules: Object,
   completedLessons: {
     type: Object, // expecting a Set
     default: () => new Set()
@@ -22,24 +22,22 @@ const selectedQuizId = ref(null);
 const completedLessons = ref(new Set());
 const completedQuizzes = ref(new Set());
 const progressRecords = ref({});
-const downloadCertificate = ref(false);
-
 const minWatchThreshold = 95;
 
 function toggleModuleLesson(id) {
   collapsModuleId.value = collapsModuleId.value === id ? null : id;
 }
 
-function openLesson(moduleId, contentId) {
-  selectedLessonId.value = contentId;
+function openLesson(module, lesson) {
+  selectedLessonId.value = lesson.id;
   selectedQuizId.value = null;
-  emit("openedLesson", moduleId, contentId);
+  emit("openedLesson", module, lesson);
 }
 
-function openQuiz(moduleId, quizId) {
-  selectedQuizId.value = quizId;
+function openQuiz(module, qMetaData) {
+  selectedQuizId.value = qMetaData.id;
   selectedLessonId.value = null;
-  emit("openedQuiz", moduleId, quizId);
+  emit("openedQuiz", module, qMetaData);
 }
 
 async function fetchAllProgress() {
@@ -70,12 +68,12 @@ async function fetchAllProgress() {
 }
 
 const updateOverallProgress = () => {
-  if (!props.selectedCourse || !props.selectedCourse.courseModules) return 0;
+  if (!props.selectedModules || !props.selectedModules.courseModules) return 0;
 
   let totalItems = 0;
   let completedItems = 0;
 
-  props.selectedCourse.courseModules.forEach(module => {
+  props.selectedModules.courseModules.forEach(module => {
     if (module.courseContents) {
       totalItems += module.courseContents.length;
       completedItems += module.courseContents.filter(content => completedLessons.value.has(content.id)).length;
@@ -118,7 +116,7 @@ watchEffect(() => {
       <h2 class="text-2xl leading-9 py-4 font-semibold">Course Lesson</h2>
     </div>
     <div
-      v-for="(courseModule, moduleIndex) in props.selectedCourse?.courseModules"
+      v-for="(courseModule, moduleIndex) in selectedModules"
       :key="moduleIndex"
       class="mb-3 px-2"
     >
@@ -140,7 +138,7 @@ watchEffect(() => {
       <li
         v-for="(courseContent, contentIndex) in courseModule?.courseContents"
         :key="contentIndex"
-        @click="openLesson(courseModule.id, courseContent.id)"
+        @click="openLesson(courseModule, courseContent)"
         class="flex items-center py-2 cursor-pointer rounded-lg transition-colors duration-300"
         :class="{
           'bg-blue-100 text-blue-600 font-bold': selectedLessonId === courseContent.id,
@@ -176,7 +174,7 @@ watchEffect(() => {
         <li
         v-for="(qMetaData, qMetaDataIndex) in courseModule.QMetaDatas"
         :key="'qMetaData-' + qMetaDataIndex"
-        @click="openQuiz(courseModule.id, qMetaData.id)"
+        @click="openQuiz(courseModule, qMetaData)"
         class="flex items-center py-2 cursor-pointer my-1 transition-colors duration-300"
         :class="{
           'bg-blue-100 text-blue-600 font-bold': selectedQuizId === qMetaData.id,

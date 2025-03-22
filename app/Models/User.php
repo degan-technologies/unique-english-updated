@@ -9,6 +9,7 @@ use App\Models\Comment\FeedBack;
 use App\Models\Comment\FeedbackUserInteraction;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
+use App\Models\Course\CourseContentProgress;
 use App\Models\Course\CourseModule;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
@@ -123,6 +124,7 @@ class User extends Authenticatable {
     public function feedBacks() { return $this->hasMany(FeedBack::class); }
     public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
 
+    public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){

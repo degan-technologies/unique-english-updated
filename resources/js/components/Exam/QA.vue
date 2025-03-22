@@ -20,30 +20,16 @@ const questions = ref([]);
 const newQuestion = ref("");
 const questionsToShow = ref(2);
 const questionError = ref("");
+const questionsData = ref([]);
 
 // ------------------------------
 // API Integration: Fetch Questions & Their Answers
 // ------------------------------
 const fetchQuestions = async () => {
   try {
-    const response = await Axios.get("/api/QASection", {
-      params: { course_id: props.selectedCourse.id },
-    });
+    const response = await Axios.get(`/api/QASection/${props.selectedCourse.id}`);
 
-    const questionsData = response.data.data.filter(item => !item.parent_id);
-    console.log("Fetched Questions Data:", questionsData);
-
-    await Promise.all(
-      questionsData.map(async (question) => {
-        const answersResponse = await Axios.get("/api/answers", {
-          params: { question_id: question.id },
-        });
-
-        // Ensure answers is always an array, even if empty or missing
-        question.answers = Array.isArray(answersResponse.data.data) ? answersResponse.data.data : [];
-        console.log(`Fetched Answers for Question ID ${question.id}:`, question.answers);
-      })
-    );
+  questionsData.value  = response.data.data;
 
     questions.value = questionsData;
     console.log("Updated Questions with Answers:", questions.value);
