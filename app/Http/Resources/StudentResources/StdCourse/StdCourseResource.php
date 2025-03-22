@@ -43,7 +43,7 @@ class StdCourseResource extends JsonResource {
                 ? url('/api/courses/stream/video/' . basename($this->intro_video))
                 : 'no-intro_video.png',
 
-            'feedBacks' => FeedBackResource::collection($this->feedbacks),
+            'feedBacks' => FeedBackResource::collection($this->feedbacks->sortByDesc('created_at')),
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
 

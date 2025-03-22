@@ -625,14 +625,17 @@ onBeforeUnmount(() => {
 
                 </div>
                 <div v-if="activeTab === 'reviews'" class="mt-4">
-                    <ReviewList :feedBacks="selectedCourse?.feedBacks" :averageRating="selectedCourse?.averageRating"
-                        :starDistribution="selectedCourse?.starDistribution" />
+                    <ReviewList 
+                        :feedBacks="selectedCourse?.feedBacks" 
+                        :averageRating="selectedCourse?.averageRating"
+                        :starDistribution="selectedCourse?.starDistribution"
+                        :showOnly="false" />
                 </div>
             </div>
         </div>
 
         <!-- Course List Section (now on the right side) -->
-        <div class="">
+        <div class="sticky">
             <CourseList v-if="selectedModules" ref="courseListRef" :selectedModules="selectedModules"
                 @openedLesson="openedLesson" @openedQuiz="openedQuiz"
                 @updateProgress="progress => overallProgress = progress"

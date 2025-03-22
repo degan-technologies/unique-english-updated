@@ -43,26 +43,45 @@ class FeedBackController extends Controller
     /**
      * Store a newly created feedback in storage.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         /* @var \App\Models\User $user
         */
         $user = Auth::user();
-        $courseId = $request->course_id ?? null;
+
+        $feedbackCompleted = $user->feedBacks;
+
+        if($feedbackCompleted){
+            return response()->json([
+                'message' => $this->langService->getLang('feedback_already_submitted')
+            ], 403);
+        }
+
+        $courseSlug = $request->slug ?? null;
 
         $course = Course::query()
-            ->where('id', $courseId)
+            ->where('slug', $courseSlug)
             ->first();
+
         if(!$course) {
             return response()->json([
                 'message' => $this->langService->getLang('course_not_found')
             ], 404);
         }
+
+        $eligibleCourse = Course::checkEligibility($course->id);
+
+        if (!$eligibleCourse) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action')
+            ], 403);
+        }
+
         $validationRules = [
             'rate'           => 'required|numeric|between:1,5',
             'comment'        => 'required|string',
         ];
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('feedbacks'));
+
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
             return response()->json([
@@ -70,15 +89,17 @@ class FeedBackController extends Controller
                 'errors'  => $validator->errors()
             ], 422);
         }
+
         $feedback = $user->feedBacks()->create([
             'rate' => $request->rate,
             'comment' => $request->comment,
-            'course_id'=> $request->course_id,
+            'course_id'=> $course->id,
             'instractor_id' => $course->user_id,
         ]);
+
         return response()->json([
             'message'  => 'Feedback submitted successfully!',
-            'feedback' => new FeedBackResource($feedback),
+            'data' => new FeedBackResource($feedback),
         ], 201);
     }
     /**
