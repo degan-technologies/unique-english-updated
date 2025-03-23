@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Book;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Book\BookResource;
+use App\Http\Resources\StudentResources\StdBook\StdBookResource;
 use App\Models\Book\Book;
 use App\Models\User;
 use App\Services\LangService;
@@ -36,6 +37,19 @@ class BookController extends Controller
         return response()->json([
             'pagination' => $pagination,
             'data' => BookResource::collection($resources),
+        ]);
+    }
+
+    public function allBooks() {
+        $resources = Book::with(['user']) 
+            ->paginate(10);
+
+        $pagination = $resources->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'pagination' => $pagination,
+            'data' => StdBookResource::collection($resources),
         ]);
     }
 

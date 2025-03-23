@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
 use App\Http\Controllers\Book\BookController;
+use App\Http\Controllers\Book\BookVideoController;
 use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
@@ -35,8 +36,12 @@ use App\Http\Controllers\Quiz\AnswerController;
  
 
 Route::post('/registration', [UserController::class, 'store']);
-Route::get('/allCouses', [CourseController::class, 'allCourses']);
+Route::get('/all-couses', [CourseController::class, 'allCourses']);
+Route::get('/all-books', [BookController::class, 'allBooks']);
 
+Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
+Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
+Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 
 Route::middleware('auth:api')
     ->group(function () {
@@ -107,9 +112,6 @@ Route::middleware('auth:api')
             ->where('type', 'course|book|live');
         });
         
-        Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
-        Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
-
 Route::middleware('auth:api')
     ->prefix('feedbacks')
     ->group(function () {

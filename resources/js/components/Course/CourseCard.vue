@@ -110,13 +110,13 @@ onMounted(() => {
                         <h2 class="text-lg font-bold mb-2">{{ course.course_name }}</h2>
                         <p class="text-sm text-gray-600">By: {{ course.user.first_name }}</p>
                     </div>
-                    <div class="flex items-center h-grow mt-2">
-                        <span class="text-yellow-500">&#9733;</span>
-                        <span class="ml-1 text-sm text-gray-600">{{ course.averageRating }}</span>
+                    <div class="flex items-center gap-2 font-bold h-grow mt-2">
+                        <span class="text-yellow-500 text-lg">&#9733;</span>
+                        <span class="ml-1 text-md text-gray-600">{{ course.averageRating }}</span>
                     </div>
                     
                     <div class="h-fit bottem-0">
-                        <div class="my-4 text-lg font-semibold flex flex-row items-center justify-between">
+                        <div class="text-lg font-semibold flex flex-row items-center justify-between">
                             <p class="self-center">{{ course.price.toFixed(2) }} ETB</p>
                             <button @click="addItems(course)" class="ml-auto focus:outline-none">
                                 <i

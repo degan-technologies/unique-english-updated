@@ -128,16 +128,7 @@ class CourseController extends Controller {
         return response()->json([
             'data' => new CourseResource($course)
         ]);
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    } 
 
     /**
      * Update the specified resource in storage.
