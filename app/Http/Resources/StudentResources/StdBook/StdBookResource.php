@@ -2,8 +2,10 @@
 
 namespace App\Http\Resources\StudentResources\StdBook;
 
+use App\Http\Resources\Comment\FeedBackResource;
 use App\Http\Resources\userResource;
 use App\Models\Book\Book;
+use App\Models\Comment\FeedBack;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -13,8 +15,9 @@ class StdBookResource extends JsonResource {
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
-    {
+    public function toArray(Request $request): array {
+        $review = FeedBack::reviewRate($this->feedbacks);
+
         return [
             'id' => $this->id,
             'tag' => $this->tag,
@@ -43,6 +46,10 @@ class StdBookResource extends JsonResource {
 
             'isMyBook' => Book::checkEligibility($this->id),
             'user' => new userResource($this->user),
+
+            'feedBacks' => FeedBackResource::collection($this->feedbacks->sortByDesc('created_at')),
+            'averageRating' => $review['averageRating'],
+            'starDistribution' => $review['starDistribution'],
         ];
     }
 }

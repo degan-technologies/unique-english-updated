@@ -6,6 +6,7 @@ import { useRoute, useRouter } from "vue-router";
 import { UseStudentStore } from "@/store/UseStudentStore";
  
 import PdfViewer from "./Pdf.vue";
+import ReviewList from "@/components/Course/ReviewList.vue";
 
 const studentStore = UseStudentStore();
 const { bookReadingTab, books, selectedbookslug } = storeToRefs(studentStore);
@@ -204,6 +205,16 @@ function playVideo() {
                                 {{ selectedbook?.description }}
                             </p>
                         </div>
+                    </div>
+
+                    <!-- reviewlist  -->
+
+                    <div v-if="selectedbook"  class="mt-4">
+                        <ReviewList 
+                            :feedBacks="selectedbook?.feedBacks" 
+                            :averageRating="selectedbook?.averageRating"
+                            :starDistribution="selectedbook?.starDistribution"
+                            :showOnly="!selectedbook?.isMyBook" />
                     </div>
                 </div>
 

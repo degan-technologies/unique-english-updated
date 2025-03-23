@@ -9,7 +9,7 @@ import { UseStudentStore } from "@/store/UseStudentStore";
 const cartStore = useCartStore();
 const studentStore = UseStudentStore();
 
-const { books, bookOverviewTab, selectedBook, } = storeToRefs(studentStore);
+const { books, bookOverviewTab, selectedBook, selectedbookslug } = storeToRefs(studentStore);
 const { items, itemCount, image } = storeToRefs(cartStore);
  
 const router = useRouter()
@@ -34,7 +34,7 @@ function changeTab(slug) {
         }
     });
 
-    selectedCourseSlug.value = slug;
+    selectedbookslug.value = slug;
 }
 
 onMounted(() => {
@@ -64,7 +64,7 @@ onMounted(() => {
                     </div>
                     <div class="flex items-center gap-2 font-bold h-grow mt-2">
                         <span class="text-yellow-500 text-lg">&#9733;</span>
-                        <span class="ml-1 text-md text-gray-600">4</span>
+                        <span class="ml-1 text-md text-gray-600">{{ book.averageRating }}</span>
                     </div>
 
                     <div class="h-fit bottem-0">

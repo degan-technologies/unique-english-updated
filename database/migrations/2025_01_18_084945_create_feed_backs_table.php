@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -31,8 +32,10 @@ return new class extends Migration
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('instractor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_id')->nullable()->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('book_id')->nullable()-> constrained('books')->cascadeOnUpdate()->restrictOnDelete();
         });
+
     }
 
     /**

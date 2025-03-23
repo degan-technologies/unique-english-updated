@@ -2,6 +2,7 @@
 
 namespace App\Models\Book;
 
+use App\Models\Comment\FeedBack;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,7 @@ class Book extends Model {
     public function transactions() { return $this->hasMany(Transaction::class); }
     public function getNotDeletedAttribute() { return !$this->deleted_at ? 1 : 0; }
     public function getDownloadStatusAttribute() { return $this->isDownloadable ? 1 : 0; }
+    public function feedBacks() { return $this->hasMany(FeedBack::class); }
 
     public static function checkEligibility($bookId) {
         $user = Auth::guard('api')->user();

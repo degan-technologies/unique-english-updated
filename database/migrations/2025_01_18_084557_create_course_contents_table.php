@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('thumbnail_url')->unique()->nullable();
 
             $table->time('hour')->nullable();
-            $table->integer('status')->nullable();
+            $table->string('status')->default(DRAFT);
             $table->boolean('isDownloadable')->default(false);
 
             $table->unsignedTinyInteger('download_status')->storedAs("IF(`isDownloadable` IS NULL, 1, NULL)");

@@ -12,22 +12,12 @@ class CreateCourseContentProgressTable extends Migration
     public function up()
     {
         Schema::create('course_content_progress', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('course_content_id');
-      
+            $table->id();      
             $table->string('progress')->default('0');
             $table->timestamps();
-            $table->unsignedBigInteger('course_id');
-            $table->unsignedBigInteger('course_module_id');
 
-            // Define the foreign key constraints.
-            $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
-            $table->foreign('course_module_id')->references('id')->on('course_modules')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('course_content_id')->references('id')->on('course_contents')->onDelete('cascade');
-            $table->foreign('course_id')->references('id')->on('courses')->onDelete('cascade');
-            $table->foreign('course_module_id')->references('id')->on('course_modules')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_content_id')->constrained('course_contents')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

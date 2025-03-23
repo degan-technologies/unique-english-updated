@@ -1,7 +1,12 @@
 <script setup>
 import Axios from "axios";
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
+import { storeToRefs } from "pinia";
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+const studentStore = UseStudentStore();
+const { bookOverviewTab, videoPlayerTab   } = storeToRefs(studentStore);
 
 const route = useRoute();
 
@@ -9,11 +14,12 @@ const props = defineProps({
     feedBacks: Object,
     averageRating: String,
     starDistribution: Object,
-    showOnly: String
+    showOnly: String,
 });
 
 const newComment = ref("");
 const commentError = ref("");
+const feedbackType = ref(null);
 
 const userRating = ref(0);
 const userHoverRating = ref(0);
@@ -24,6 +30,17 @@ const currentReportFeedback = ref(null);
 const reportIssueType = ref("");
 const reportIssueDetails = ref("");
 
+function getfeedbackTypes(){
+    if(route.query.tab == videoPlayerTab.value) {
+      return  feedbackType.value = "course";
+    } 
+
+    if(route.query.tab == bookOverviewTab.value) {
+       return feedbackType.value = "book";
+    }
+
+    return;
+}
  
 const handleHover = (event, starIndex) => {
     const { offsetX, currentTarget } = event;
@@ -46,10 +63,12 @@ const isStarFull = (star, rating) => star <= Math.floor(rating);
 const isStarHalf = (star, rating) => rating === star - 0.5;
  
 function addComment() {
+    getfeedbackTypes();
     const payload = {
         rate: userRating.value, 
         comment: newComment.value,
-        slug:route.query.slug
+        slug:route.query.slug,
+        feedbackType: feedbackType.value
      };
 
     Axios
@@ -76,7 +95,6 @@ function likeComment(comment, interact) {
                 }
             });
         })
-
 };
 
 const reportComment = (index) => {
@@ -87,25 +105,21 @@ const reportComment = (index) => {
     reportModalOpen.value = true;
 };
 
-const submitReport = async () => {
+function submitReport() {
     if (!reportIssueType.value.trim() || reportIssueDetails.value.trim().length < 10) {
         alert("Please fill in a valid issue type and details (min 10 characters).");
         return;
     }
-    try {
-        const payload = {
+   const payload = {
             issue_type: reportIssueType.value,
             issue_details: reportIssueDetails.value,
         };
-        const response = await Axios.post(
-            `/api/feedbacks/${currentReportFeedback.value.id}/report`,
-            payload
-        );
-        alert(response.data.message);
-        reportModalOpen.value = false;
-    } catch (error) {
-        console.error("Error reporting comment:", error);
-    }
+
+        Axios
+            .post( `/api/feedbacks/${currentReportFeedback.value.id}/report`, payload )
+            .then(res=>{
+                reportModalOpen.value = false;
+            })
 };
 
 const cancelReport = () => {
@@ -116,6 +130,10 @@ const getInitials = (name) => {
     if (!name) return "";
     return name.charAt(0).toUpperCase();
 };
+
+onMounted(()=>{
+    getfeedbackTypes();
+})
 </script>
 
 <template>
@@ -133,7 +151,7 @@ const getInitials = (name) => {
                     <div>
                         <p class="text-gray-700 text-lg font-semibold">Course Rating</p>
                         <p class="text-gray-500 text-sm">
-                            Based on {{ feedBacks.length }} review<span v-if="feedBacks.length !== 1">s</span>
+                            Based on {{ feedBacks?.length }} review<span v-if="feedBacks?.length !== 1">s</span>
                         </p>
                     </div>
                 </div>

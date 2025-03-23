@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Comment\FeedBackResource;
+use App\Models\Book\Book;
 use App\Models\Comment\FeedBack;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,6 +45,13 @@ class FeedBackController extends Controller
      * Store a newly created feedback in storage.
      */
     public function store(Request $request) {
+        $feedbackType = $request->feedbackType ?? null;
+        $courseSlug = $request->slug ?? null;
+        $currentFeedback = null;
+        $eligibleCourse = false;
+        $courseId = null;
+        $bookId = null;
+
         /* @var \App\Models\User $user
         */
         $user = Auth::user();
@@ -56,19 +64,33 @@ class FeedBackController extends Controller
             ], 403);
         }
 
-        $courseSlug = $request->slug ?? null;
+        switch ($feedbackType) {
+            case 'course':
+                $currentFeedback = Course::query()
+                    ->where('slug', $courseSlug)
+                    ->first();
+                $courseId = $currentFeedback->id;
+                $eligibleCourse = Course::checkEligibility($currentFeedback->id);
+                break;
+            case 'book':
+                $currentFeedback = Book::query()
+                    ->where('slug', $courseSlug)
+                    ->first();
+                $bookId = $currentFeedback->id;
+                $eligibleCourse = Book::checkEligibility($currentFeedback->id);
+                break;
+            default:
+                return response()->json([
+                    'message' => $this->langService->getLang('invalid_feedback_type')
+                ], 400);
+        }
 
-        $course = Course::query()
-            ->where('slug', $courseSlug)
-            ->first();
-
-        if(!$course) {
+        if(!$currentFeedback) {
             return response()->json([
                 'message' => $this->langService->getLang('course_not_found')
             ], 404);
         }
 
-        $eligibleCourse = Course::checkEligibility($course->id);
 
         if (!$eligibleCourse) {
             return response()->json([
@@ -93,8 +115,9 @@ class FeedBackController extends Controller
         $feedback = $user->feedBacks()->create([
             'rate' => $request->rate,
             'comment' => $request->comment,
-            'course_id'=> $course->id,
-            'instractor_id' => $course->user_id,
+            'course_id'=>  $courseId,
+            'instractor_id' => $currentFeedback->user_id,
+            'book_id' => $bookId,
         ]);
 
         return response()->json([

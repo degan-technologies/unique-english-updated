@@ -24,7 +24,8 @@ class FeedBack extends Model
         'dislikes',
         'reports',
         'report_issue_type',
-        'report_issue_details'
+        'report_issue_details',
+        'book_id',
     ];
 
     protected $casts = [
