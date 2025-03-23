@@ -3,6 +3,7 @@
 namespace App\Http\Resources\StudentResources\StdBook;
 
 use App\Http\Resources\userResource;
+use App\Models\Book\Book;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -40,6 +41,7 @@ class StdBookResource extends JsonResource {
             ? Storage::disk('public')->url($this->cover_page_url)
             : 'no-cover_page_url.png',
 
+            'isMyBook' => Book::checkEligibility($this->id),
             'user' => new userResource($this->user),
         ];
     }

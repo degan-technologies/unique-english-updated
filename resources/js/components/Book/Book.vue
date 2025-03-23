@@ -1,7 +1,7 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
@@ -11,17 +11,16 @@ const studentStore = UseStudentStore();
 
 const { books, bookOverviewTab, selectedBook, } = storeToRefs(studentStore);
 const { items, itemCount, image } = storeToRefs(cartStore);
-
-const route = useRoute();
+ 
 const router = useRouter()
 
 function addItems(item) {
     let selectedItem = {
-        type: 'course',
+        type: 'book',
         slug: item.slug,
         price: item.price,
         name: item.course_name,
-        image: item.thumbnail_url
+        image: item.cover_page_url
     };
     cartStore.addToCart(selectedItem);
 }
@@ -71,10 +70,11 @@ onMounted(() => {
                     <div class="h-fit bottem-0">
                         <div class="text-lg font-semibold flex flex-row items-center justify-between">
                             <p class="self-center">{{ book.price.toFixed(2) }} ETB</p>
-                            <button @click="addItems(book)" class="ml-auto focus:outline-none">
+                            <button v-if="!book.isMyBook" @click="addItems(book)" class="ml-auto focus:outline-none">
                                 <i
                                     class="fa-solid fa-cart-plus mb-2 material-icons right-8 text-lime-700 rounded-full  p-3 hover:text-lime-700"></i>
                             </button>
+                            <button v-else class="text-lime-700 font-normal h-fit w-fit text-sm px-2 py-1 rounded-md mt-3 border-2 border-yellow-400 hover:border-yellow-600" > Paid</button>
                         </div>
 
                         <button @click="changeTab(book.slug)"

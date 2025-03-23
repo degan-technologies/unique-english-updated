@@ -132,6 +132,14 @@ class TransactionController extends Controller {
                         ], 404);
                     }
 
+                    $cheTransactionExist = $order->transactions()->where('customer_id', $user->id)->where('product_type', $item['type'])->first();
+
+                    if($cheTransactionExist) {
+                        return response()->json([
+                            'message' => $this->langService->getLang('aleready exist')
+                        ], 404);
+                    }
+
                    $transaction = $order->transactions()->create([
                         'slug' => Str::uuid(),
                         'user_id' => $order->user_id,

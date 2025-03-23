@@ -117,11 +117,12 @@ onMounted(() => {
                     
                     <div class="h-fit bottem-0">
                         <div class="text-lg font-semibold flex flex-row items-center justify-between">
-                            <p class="self-center">{{ course.price.toFixed(2) }} ETB</p>
-                            <button @click="addItems(course)" class="ml-auto focus:outline-none">
+                            <p class="self-center my-auto">{{ course.price.toFixed(2) }} ETB</p>
+                            <button v-if="!course.isMyCourse" @click="addItems(course)" class="ml-auto focus:outline-none">
                                 <i
-                                    class="fa-solid fa-cart-plus mb-2 material-icons right-8 text-lime-700 rounded-full  p-3 hover:text-lime-700"></i>
+                                    class="fa-solid fa-cart-plus right-8 text-lime-700  p-3 hover:text-lime-700"></i>
                             </button>
+                            <button v-else class="text-lime-700 font-normal h-fit w-fit text-sm px-2 py-1 rounded-md mt-3 border-2 border-yellow-400 hover:border-yellow-600" > Paid</button>
                         </div>
 
                         <button @click="changeTab(course.slug)"

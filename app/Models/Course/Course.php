@@ -24,7 +24,8 @@ class Course extends Model {
     
 
     public static function checkEligibility($courseId) {
-        $user = Auth::user();
+        $user = Auth::guard('api')->user();
+
         if (!$user) {
             return false;
         }
@@ -32,6 +33,7 @@ class Course extends Model {
         $myTransactions = Transaction::query()
             ->where('customer_id', $user->id)
             ->where('course_id', $courseId)
+            ->where('product_type', COURSE)
             ->where('status', TRANSACTION_SUCCESS)
             ->first();
 

@@ -20,6 +20,13 @@ const selectedCourse = ref(null);
 const collapsModuleId = ref(null);
 const isPlaying = ref(false);
 
+const currentTime = ref(0);
+const duration = ref(0);
+const bufferProgress = ref(0);
+const videoPlayer = ref(null);
+const player = ref(null);
+const videoSource = ref('');
+
 selectedCourseSlug.value = route.query.slug;
 
 function toggleModuleLesson(id) {
@@ -53,30 +60,6 @@ function enrollCourse(item) {
         });
 }
 
-async function handleCertificateClick() {
-    try {
-        // Call the new API endpoint to get certificate status.
-        const response = await Axios.get(`/api/courses/${selectedCourse.value.id}/certificate-status`);
-        const { certificate_active, allContentsCompleted, allQuizzesCompleted } = response.data;
-
-        if (!certificate_active) {
-            // You might want to notify the user with a message.
-            alert("Certificate is not available yet. Please complete all course content and quizzes.");
-            return;
-        }
-
-        if (window.innerWidth < 768) {
-            if (certificateComponentRef.value && certificateComponentRef.value.downloadCertificate) {
-                certificateComponentRef.value.downloadCertificate();
-            }
-        } else {
-            // Desktop view:
-            showCertificateModal.value = true;
-        }
-    } catch (error) {
-        console.error("Error checking certificate status:", error);
-    }
-}
 
 onMounted(async () => {
     await studentStore.fetchCourses();
@@ -94,13 +77,6 @@ watch(
         );
     }
 );
-
-const currentTime = ref(0);
-const duration = ref(0);
-const bufferProgress = ref(0);
-const videoPlayer = ref(null);
-const player = ref(null);
-const videoSource = ref('');
 
 const onTimeUpdate = () => {
     if (player.value) {
@@ -170,22 +146,7 @@ const playVideo = () => {
         });
     });
 };
-
-const seekVideo = (event) => {
-    const seekTime = parseFloat(event.target.value);
-    if (isNaN(seekTime)) {
-        console.error("Invalid seek time:", event.target.value);
-        return;
-    }
-    console.log("Attempting to seek to:", seekTime);
-    if (player.value && duration.value > 0 && seekTime >= 0 && seekTime <= duration.value) {
-        player.value.currentTime(seekTime);
-        console.log("After seeking, current time is:", player.value.currentTime());
-    } else {
-        console.error("Seek time out of bounds:", seekTime, "Duration:", duration.value);
-    }
-};
-
+ 
 onBeforeUnmount(() => {
     if (player.value) {
         player.value.dispose();
@@ -256,9 +217,9 @@ onBeforeUnmount(() => {
                             </h2>
                         </div>
                     </div>
-                    <div v-for="(
-courseModule, courseModuleIndex
-                        ) in selectedCourse?.courseModules" :key="courseModuleIndex" class="mb-3 px-2">
+                    <div v-for="( courseModule, courseModuleIndex ) in selectedCourse?.courseModules" 
+                        :key="courseModuleIndex" 
+                        class="mb-3 px-2">
                         <div class="flex justify-between items-center">
                             <button @click="toggleModuleLesson(courseModule.id)"
                                 class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300">

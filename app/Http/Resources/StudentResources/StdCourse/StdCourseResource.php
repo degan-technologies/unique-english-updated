@@ -5,6 +5,7 @@ namespace App\Http\Resources\StudentResources\StdCourse;
 use App\Http\Resources\Comment\FeedBackResource; 
 use App\Http\Resources\userResource;
 use App\Models\Comment\FeedBack;
+use App\Models\Course\Course;
 use App\Models\Transaction\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -53,7 +54,7 @@ class StdCourseResource extends JsonResource {
                 : 'no-thumbnail_url.png',
             'courseModules' => StdCourseModuleResource::collection($this->courseModules->sortBy('sequence')),
 
-            'isMyCourse' => $this->checkEligibility(),
+            'isMyCourse' => Course::checkEligibility($this->id),
         ];
     }
 
@@ -71,27 +72,5 @@ class StdCourseResource extends JsonResource {
             default:
                 return 'not assigned';
         }
-    }
-
-    public function checkEligibility()
-    {
-        $user = Auth::guard('api')->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        $myTransactions = Transaction::query()
-            ->where('customer_id', $user->id)
-            ->where('course_id', $this->id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->first();
-
-
-        if ($myTransactions) {
-            return true;
-        }
-
-        return false;
     }
 }
