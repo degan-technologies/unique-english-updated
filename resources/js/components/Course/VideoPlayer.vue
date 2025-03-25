@@ -14,15 +14,11 @@ import QuizReader from "./QuizReader.vue";
 import certificate from "@/components/Course/certificate.vue"
 
 const studentStore = UseStudentStore();
-const appStore = useAppStore();
+const route = useRoute();
 
-const { authUser } = storeToRefs(appStore);
 const { selectedCourseSlug, courses, completedLessons } = storeToRefs(studentStore);
 
-const courseListRef = ref(null);
 const overallProgress = ref(0);
-
-const route = useRoute();
 selectedCourseSlug.value = route.query.slug;
 
 const selectedCourse = ref(null);
@@ -33,34 +29,11 @@ const selectedQuiz = ref(null);
 const volumeControlsVisible = ref(false);
 const totalDuration = ref(0);
 const watchedTime = ref(0);
-const videoWatched = ref(false); // ✅ Will be true if watched at least 95%
+const videoWatched = ref(false);
 const minWatchThreshold = 0.95;
 
 const downloadCertificate = ref(false);
 
-const handleDownloadCertificate = (status) => {
-    downloadCertificate.value = status;
-    console.log("Certificate download triggered:", status);
-    // Add any additional logic you need here
-};
-const handleCancelCertificate = () => {
-    downloadCertificate.value = false;
-};
-
-// Tab management
-const activeTab = ref("qa");
-const setActiveTab = (tab) => {
-    activeTab.value = tab;
-};
-
-// A flag to indicate what kind of content is opened
-const contentType = computed(() => {
-    if (selectedLesson.value) return "lesson";
-    if (selectedQuiz.value) return "quiz";
-    return null;
-});
-
-// Video playback state
 const video = ref(null);
 const isPlaying = ref(false);
 const showControls = ref(true);
@@ -71,7 +44,26 @@ const volume = ref(1);
 const isMuted = ref(false);
 const playbackRate = ref("default");
 const selectedQuality = ref("1080p");
+
 let hideControlsTimeout = null;
+
+const handleDownloadCertificate = (status) => {
+    downloadCertificate.value = status;
+};
+const handleCancelCertificate = () => {
+    downloadCertificate.value = false;
+};
+
+const activeTab = ref("qa");
+const setActiveTab = (tab) => {
+    activeTab.value = tab;
+};
+
+const contentType = computed(() => {
+    if (selectedLesson.value) return "lesson";
+    if (selectedQuiz.value) return "quiz";
+    return null;
+});
 
 // Resets the seek bar and current time to 0
 const resetSeekBar = () => {
@@ -103,8 +95,8 @@ const handleSeekInput = (event) => {
         }, { once: true });
         return;
     }
-    video.value.currentTime = seekTime;
-    // Verify seek position after a brief delay
+    video.value.currentTime = seekTime; 
+
     setTimeout(() => {
         if (Math.abs(video.value.currentTime - seekTime) > 1) {
             video.value.currentTime = seekTime;
@@ -120,23 +112,17 @@ const storageKey = computed(() => {
 
 const updateProgress = () => {
     if (!video.value || totalDuration.value === 0) return;
-    const current = video.value.currentTime;
-    progress.value = (current / totalDuration.value) * 100;
-    watchedTime.value = current; // update the watched time
-    currentTime.value = formatTime(current);
+    progress.value = video.value.currentTime;
+    watchedTime.value = current; 
 
-    // If not already marked as watched and the video has reached threshold, mark it
-    if (!videoWatched.value && watchedTime.value >= totalDuration.value * minWatchThreshold) {
+    if (!videoWatched.value && progress.value >= totalDuration.value * minWatchThreshold) {
         videoWatched.value = true;
-        // Once threshold met, send the progress to backend
         storeContentProgress();
-        // Save the current seek position in local storage
         localStorage.setItem(storageKey.value, current);
     }
 };
 
 const handleVideoEnd = () => {
-    // Double-check the condition when video ends
     if (watchedTime.value >= totalDuration.value * minWatchThreshold) {
         videoWatched.value = true;
         storeContentProgress();
@@ -170,7 +156,7 @@ const handlePlay = () => {
 const handlePause = () => {
     isPlaying.value = false;
     showControls.value = true;
-    updateProgress();
+    storeContentProgress();
 };
 
 const changeVolume = (event) => {
@@ -201,37 +187,28 @@ const toggleFullscreen = () => {
 
 const changeQuality = (newQuality) => {
     if (!selectedLesson.value || !selectedLesson.value.course_content_url) {
-        console.error("Selected lesson or URL is missing.");
         return;
     }
 
     let currentUrl = new URL(selectedLesson.value.course_content_url);
     let params = new URLSearchParams(currentUrl.search);
 
-    // Update the quality parameter based on the selection
     if (newQuality === "Auto") {
-        params.delete("quality"); // Remove quality param to default to original
-        console.log("Removed quality param for Auto");
+        params.delete("quality"); 
     } else {
-        params.set("quality", newQuality); // Set the selected quality
-        console.log("Updated quality param:", newQuality);
+        params.set("quality", newQuality); 
     }
 
     let newUrl = `${currentUrl.origin}${currentUrl.pathname}?${params.toString()}`;
-    console.log("New URL with quality set:", newUrl); // Debugging the updated URL
 
     selectedLesson.value.course_content_url = newUrl;
 
-    // Check if the video element exists and update it
     if (video.value) {
-        video.value.src = newUrl; // Set the new video source
-        console.log("Video source updated to:", newUrl); // Debugging the video source change
-        video.value.load(); // Reload the video element
-        resetSeekBar(); // Reset seek bar (if necessary)
-        video.value.play(); // Play the video
-        console.log("Video playback started.");
+        video.value.src = newUrl;  
+        video.value.load(); 
+        resetSeekBar(); 
+        video.value.play(); 
     } else {
-        console.error("Video element not found.");
     }
 };
 
@@ -245,7 +222,6 @@ function openedLesson(module, lesson) {
     totalDuration.value = 0;
 
     if (selectedLesson.value && video.value) {
-        console.log('video streaming')
         video.value.src = selectedLesson.value.course_content_url;
         video.value.load();
         resetSeekBar();
@@ -254,7 +230,6 @@ function openedLesson(module, lesson) {
 }
 
 function openedQuiz(module, qMetaData) {
-    // Clear any lesson selection (video)
     selectedLesson.value = null;
     selectedModule.value = module;
     selectedQuiz.value = qMetaData;
@@ -270,44 +245,27 @@ const updateTotalTime = () => {
     }
 };
 
-// Function to store lesson progress to the backend
-const storeContentProgress = async () => {
-    if (!selectedLesson.value || !selectedCourse.value || !selectedModule.value) return;
-
-    // First, call fetchAllProgress from the CourseList component (if available)
-    if (courseListRef.value && typeof courseListRef.value.fetchAllProgress === "function") {
-        await courseListRef.value.fetchAllProgress();
-    }
+function storeContentProgress() {
+    if (!selectedLesson.value) return;
 
     const currentLessonId = selectedLesson.value.id;
-    let progressRecord;
-    if (courseListRef.value && courseListRef.value.progressRecords) {
-        progressRecord = courseListRef.value.progressRecords[currentLessonId];
-    }
 
-    // If found and progress meets the threshold, do nothing
-    if (progressRecord && Number(progressRecord.progress) >= minWatchThreshold) {
-        console.log("Lesson already marked as completed. No need to store again.");
-        return;
-    }
+    // let progressRecord = courseListRef.value.progressRecords[currentLessonId];
+ 
+    // if (progressRecord && Number(progressRecord.progress) >= minWatchThreshold) {
+    //     return;
+    // }
 
-    // Otherwise, send the POST request to store progress
     const payload = {
         course_content_id: currentLessonId,
-        progress: 100, // Mark as completed
+        progress: progress.value,  
     };
 
-    try {
-        const response = await Axios.post("/api/coursecontent/progress", payload);
-        console.log("Progress stored:", response.data);
-
-        // Refresh the progress records in the CourseList component
-        if (courseListRef.value && typeof courseListRef.value.fetchAllProgress === "function") {
-            await courseListRef.value.fetchAllProgress();
-        }
-    } catch (error) {
-        console.error("Error storing progress:", error);
-    }
+    Axios
+        .post("/api/coursecontent/progress", payload)
+        .then(res => {
+            selectedModules.value = res.data.data;
+        })
 };
 
 function getCourseModules() {
@@ -322,7 +280,8 @@ function contniueProgress() {
     Axios
         .get(`/api/contniue/progress/${selectedCourseSlug.value}`)
         .then(res => {
-            openedLesson(res.data.courseModule, res.data.courseContent)
+            openedLesson(res.data.courseModule, res.data.courseContent);
+            overallProgress.value = res.data.overAllPogress;
         })
 }
 
@@ -342,7 +301,7 @@ watch(selectedLesson.value, (newVal, oldVal) => {
         resetSeekBar();
     }
 });
-// Keyboard controls for volume and seek
+
 const handleKeyDown = (e) => {
     if (!video.value) return;
     let currentVolume = Number(volume.value);
@@ -391,7 +350,6 @@ onMounted(() => {
 
     studentStore.fetchCourses();
     if (!video.value) {
-        console.error("Video element not found in onMounted!");
         return;
     }
     video.value.volume = volume.value;
@@ -560,34 +518,22 @@ onBeforeUnmount(() => {
                         <p class="text-lg text-gray-600 py-2">{{ selectedLesson?.title }}</p>
                         <p class="text-2xl text-blue-600">{{ selectedModule?.title }}</p>
                     </div>
-
-                    <!-- Global Progress Circle -->
-                    <!-- Circular Progress Bar Container -->
+ 
                     <div class="relative mt-2 flex items-center justify-center">
                         <!-- Full Circle (Gray background) -->
-                        <div class="relative w-24 h-24">
-
-
-                            <!-- Progress Circle (Blue fill based on progress) -->
-                            <div class="absolute w-full h-full rounded-full border-4" :style="{
+                        <div class="relative w-16 h-16">
+                            <div class="absolute w-full h-full rounded-full border border-lime-700" :style="{
                                 background: `conic-gradient(#00BFFF ${overallProgress}%, #e0e0e0 ${overallProgress}% 100%)`
                             }"></div>
-
-                            <!-- Progress Percentage Text in the Center -->
                             <div class="absolute w-full h-full flex items-center justify-center">
                                 <span class="text-lg font-bold text-black">
-                                    {{ overallProgress }}%
+                                    {{ overallProgress }} %
                                 </span>
                             </div>
                         </div>
-
-                        <!-- Progress Label -->
-                        <p class="text-center text-sm mt-2 text-gray-700">
-                            Progress: {{ overallProgress }}%
-                        </p>
                     </div>
-
                 </div>
+
                 <div class="flex justify-start mt-8 border-b-2 border-gray-200 pb-4 gap-4">
                     <button @click="setActiveTab('qa')"
                         class="tab-button text-black px-4 py-2 rounded-lg text-lg font-semibold" :class="{
@@ -635,12 +581,13 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Course List Section (now on the right side) -->
-        <div class="sticky">
-            <CourseList v-if="selectedModules" ref="courseListRef" :selectedModules="selectedModules"
-                @openedLesson="openedLesson" @openedQuiz="openedQuiz"
-                @updateProgress="progress => overallProgress = progress"
-                @downloadCertificate="handleDownloadCertificate" />
-
+        <div class="sticky top-10 h-fit">
+            <CourseList v-if="selectedModules"  
+                :selectedModules="selectedModules"
+                @openedLesson="openedLesson" 
+                @openedQuiz="openedQuiz"
+                @downloadCertificate="handleDownloadCertificate" 
+                />
         </div>
     </div>
 </template>

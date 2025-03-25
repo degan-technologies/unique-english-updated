@@ -13,11 +13,13 @@ class CreateCourseContentProgressTable extends Migration
     {
         Schema::create('course_content_progress', function (Blueprint $table) {
             $table->id();      
-            $table->string('progress')->default('0');
+            $table->time('progress')->default('00:00:00');
+            $table->time('vedeo_progress')->default('00:00:00');
             $table->timestamps();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('course_content_id')->constrained('course_contents')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

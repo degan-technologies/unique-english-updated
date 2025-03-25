@@ -10,11 +10,13 @@ use App\Models\Course\CourseModule;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\LangService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use getID3;
 
 class CourseContentController extends Controller {
 
@@ -44,8 +46,13 @@ class CourseContentController extends Controller {
     public function store(Request $request) {
         $user = User::query()->whereSystemAdminOrInstructor()->first();
         if (!$user) return;
-    
+
+        $fileExtension = null;
+        $filePath = null;    
+        $durarion = null;
         $moduleId = $request->course_module_id ?? null;
+        $fileType = null;
+        $imagePath = null;
     
         $courseModule = CourseModule::query()
             ->where('user_id', $user->id)
@@ -67,45 +74,60 @@ class CourseContentController extends Controller {
         $validationRules = [
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
             'description' => 'min:10',
-            'content_type' => [Rule::in(CONTENT_TYPE)],
             'content_url' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
-            'thumbnail_url' => 'image',
-            'hour' => 'date_format:H:i',
-            'status' => [Rule::in(COURSE_STATUS)],
-            'note' => 'min:10',
+            'thumbnail_url' => 'image', 
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courseContent'));
     
         if (!$validator->passes()) {
             return response()->json([
-                'message' => $validator->errors()->all()[0],
-                'errors' => $validator->errors()
+            'message' => $validator->errors()->all()[0],
+            'errors' => $validator->errors()
             ], 422);
         }
-    
-        $filePath = $request->hasFile('content_url')
-            ? $request->file('content_url')->store('/course', 'public')
-            : null;
-    
-            $imagePath = null;
-            if($request->hasFile('thumbnail_url')) {
-                $imagePath = $request->file('thumbnail_url')->store('/course', 'public');
+
+        if($request->hasFile('content_url')) {
+             $fileExtension = $request->file('content_url')->getClientOriginalExtension();
+             $filePath = $request->file('content_url')->store('/course', 'public');
+
+             if (in_array($fileExtension, VIDEO_EXTENTION)) {
+                $fileType = VIDEO;
+                $fileFullPath = storage_path('app/public/' . $filePath);
+                $getID3 = new \getID3();
+                $fileInfo = $getID3->analyze($fileFullPath);
+                if (isset($fileInfo['playtime_seconds'])) {
+                    $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
+                }
+             }
+
+            if (in_array($fileExtension, PDF_EXTENTION)) {
+                $fileType = PDF;
             }
+
+            if (in_array($fileExtension, IMAGE_EXTENTION)) {
+                $fileType = IMAGE;
+            }
+        } 
+
+        if($request->hasFile('thumbnail_url')) {
+            $imagePath = $request->file('thumbnail_url')->store('/course', 'public');
+        }
     
         $courseContent = $user->courseContents()->create([
-            'course_module_id' => $moduleId,  // Change from course_id to course_module_id
+            'course_module_id' => $moduleId,  
             'course_id' => $request->course_id,
             'slug' => Str::uuid(),
             'title' => $request->title,
             'description' => $request->description,
-            'content_type' => $request->content_type,
+            'content_type' => $fileType,
             'content_url' => $filePath,
             'thumbnail_url' => $imagePath,
-            'hour' => $request->hour,
-            'status' => $request->status,
+            'hour' => $durarion,
+            'status' => PUBLISHED,
             'sequence' => $sequence,
             'isDownloadable' => false,
+            'created_at' => Carbon::now(),
         ]);
     
         return response()->json([
@@ -124,7 +146,13 @@ class CourseContentController extends Controller {
             ->first();
     
         if (!$user) return;
-    
+
+        $fileExtension = null;
+        $filePath = null;
+        $durarion = null; 
+        $fileType = null;
+        $imagePath = null;
+
         $courseContent = CourseContent::findOrFail($id);
     
         if (!$courseContent) {
@@ -135,12 +163,9 @@ class CourseContentController extends Controller {
     
         $validationRules = [
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
-            'description' => 'min:10',
-            'content_type' => [Rule::in(CONTENT_TYPE)],
+            'description' => 'min:10', 
             'content_url' =>'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
-            'thumbnail_url' => 'image', // Same here.
-            'hour' => 'date_format:H:i',
-            'status' => [Rule::in(COURSE_CONTENT_STATUS)],
+            'thumbnail_url' => 'image',   
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -154,19 +179,43 @@ class CourseContentController extends Controller {
         }
     
         $data = $validator->validated();
-    
-        // Process file uploads:
+
         if ($request->hasFile('content_url')) {
-            // Store file in the "course" folder on the "public" disk
-            $data['content_url'] = $request->file('content_url')->store('course', 'public');
+            $fileExtension = $request->file('content_url')->getClientOriginalExtension();
+            $filePath = $request->file('content_url')->store('/course', 'public');
+
+            if (in_array($fileExtension, VIDEO_EXTENTION)) {
+                $fileType = VIDEO;
+                $fileFullPath = storage_path('app/public/' . $filePath);
+                $getID3 = new \getID3();
+                $fileInfo = $getID3->analyze($fileFullPath);
+                if (isset($fileInfo['playtime_seconds'])) {
+                    $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
+                }
+            }
+
+            if (in_array($fileExtension, PDF_EXTENTION)) {
+                $fileType = PDF;
+            }
+
+            if (in_array($fileExtension, IMAGE_EXTENTION)) {
+                $fileType = IMAGE;
+            }
         }
-    
+
         if ($request->hasFile('thumbnail_url')) {
-            $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course', 'public');
+            $imagePath = $request->file('thumbnail_url')->store('/course', 'public');
         }
-    
-        // Update the record with the processed data.
-        $courseContent->update($data);
+
+        $courseContent->update([   
+            'title' => $request->title,
+            'description' => $request->description,
+            'content_type' => $fileType,
+            'content_url' => $filePath,
+            'thumbnail_url' => $imagePath,
+            'hour' => $durarion, 
+            'updated_at' => Carbon::now(),
+        ]);
     
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_updated'),

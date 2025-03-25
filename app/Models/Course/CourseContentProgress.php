@@ -14,7 +14,8 @@ class CourseContentProgress extends Model
         'course_content_id',
         'progress',
         'course_id',
-        'course_module_id'  
+        'course_module_id',
+        'vedeo_progress'
     ];
 
     public function courseContent() { return $this->belongsTo(CourseContent::class); }

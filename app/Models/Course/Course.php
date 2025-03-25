@@ -21,7 +21,9 @@ class Course extends Model {
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function transactions() { return $this->hasMany(Transaction::class); }
     public function feedBacks() { return $this->hasMany(FeedBack::class); }
-    
+    public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
+
+
 
     public static function checkEligibility($courseId) {
         $user = Auth::guard('api')->user();

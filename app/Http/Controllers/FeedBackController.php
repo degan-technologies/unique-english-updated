@@ -58,12 +58,6 @@ class FeedBackController extends Controller
 
         $feedbackCompleted = $user->feedBacks;
 
-        if($feedbackCompleted){
-            return response()->json([
-                'message' => $this->langService->getLang('feedback_already_submitted')
-            ], 403);
-        }
-
         switch ($feedbackType) {
             case 'course':
                 $currentFeedback = Course::query()
@@ -83,6 +77,20 @@ class FeedBackController extends Controller
                 return response()->json([
                     'message' => $this->langService->getLang('invalid_feedback_type')
                 ], 400);
+        }
+
+        $feedbackCompleted = FeedBack::query()
+            ->where('user_id', $user->id)
+            ->where(function ($query) use ($courseId, $bookId) {
+                $query->orWhere('course_id', $courseId);
+                $query->orWhere('book_id', $bookId);
+            })
+            ->first();
+
+        if($feedbackCompleted){
+            return response()->json([
+                'message' => $this->langService->getLang('feedback_already_submitted')
+            ], 403);
         }
 
         if(!$currentFeedback) {

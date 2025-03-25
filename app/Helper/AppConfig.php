@@ -34,6 +34,18 @@ define('CONTENT_TYPE',[
     VIDEO, PDF, IMAGE
 ]);
 
+define('VIDEO_EXTENTION',[
+    'mp4', 'avi', 'mpeg', 'mov', 'wmv', 'webm', 'ogg', 'flv'
+]);
+
+define('PDF_EXTENTION',[
+    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'
+]);
+
+define('IMAGE_EXTENTION',[
+    'jpg', 'jpeg', 'png', 'gif'
+]);
+
 define('PUBLISHED', 'published');
 define('DRAFT', 'draft');
 define('ARCHIVED', 'archived'); 

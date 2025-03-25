@@ -40,8 +40,8 @@ class CourseContentResource extends JsonResource {
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',
+
+            'courseContentProgress' => new CourseContentProgressResource($this->courseContentProgress),
         ]; 
     }
-
-    
 }

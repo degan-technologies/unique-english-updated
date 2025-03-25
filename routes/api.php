@@ -60,6 +60,11 @@ Route::middleware('auth:api')
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
         Route::get('/get-book/{slug}', [BookController::class, 'getBook']);
         Route::get('/book-pdf/{filename}',[BookController::class, 'streamPdf']);
+
+        Route::post('/coursecontent/progress', [CourseContentProgressController::class, 'store']);
+        Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
+        Route::get('/contniue/progress/{slug}', [CourseContentProgressController::class, 'currentProgress']);
+        Route::get('/coursecontent/progress/{courseContentId}', [CourseContentProgressController::class, 'show']);
     });
     // Social Login Routes
 Route::middleware(['web'])->group(function () {
@@ -87,14 +92,6 @@ Route::middleware('auth:api')
     Route::resource('QASection', QASectionController::class);
     Route::resource('answers', AnswerController::class);
 
-
-     // New progress endpoints for course content
-     Route::post('/coursecontent/progress', [CourseContentProgressController::class, 'store']);
-    
-     Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
-     Route::get('/contniue/progress/{slug}', [CourseContentProgressController::class, 'currentProgress']);
-
-     Route::get('/coursecontent/progress/{courseContentId}', [CourseContentProgressController::class, 'show']);
 
     });
 
