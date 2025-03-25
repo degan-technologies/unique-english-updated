@@ -33,8 +33,6 @@ use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
 
- 
-
 Route::post('/registration', [UserController::class, 'store']);
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -60,8 +58,10 @@ Route::middleware('auth:api')
         Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
-});
-// Social Login Routes
+        Route::get('/get-book/{slug}', [BookController::class, 'getBook']);
+        Route::get('/book-pdf/{filename}',[BookController::class, 'streamPdf']);
+    });
+    // Social Login Routes
 Route::middleware(['web'])->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProviderCallback']);
@@ -170,5 +170,4 @@ Route::middleware('auth:api')
 
     Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
     Route::post('/change-comission', [PlatformComissionController::class, 'store']);
-});// ->middleware('auth:api');
-
+}); 

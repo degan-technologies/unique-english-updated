@@ -134,25 +134,30 @@ class TransactionController extends Controller {
 
                     $cheTransactionExist = $order->transactions()->where('customer_id', $user->id)->where('product_type', $item['type'])->first();
 
-                    if($cheTransactionExist) {
+                    if(!$cheTransactionExist) {
+
+                        $transaction = $order->transactions()->create([
+                             'slug' => Str::uuid(),
+                             'user_id' => $order->user_id,
+                             'tx_ref' => $txRef,
+                             'amount' => $order->price,
+                             'customer_id' => $user->id,
+                             'status' => TRANSACTION_PENDING,
+                             'product_type' => $item['type'],
+                             'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
+                         ]);                       
+                    }
+
+
+                    if ($cheTransactionExist->status === TRANSACTION_SUCCESS) {
                         return response()->json([
                             'message' => $this->langService->getLang('aleready exist')
                         ], 404);
-                    }
 
-                   $transaction = $order->transactions()->create([
-                        'slug' => Str::uuid(),
-                        'user_id' => $order->user_id,
-                        'tx_ref' => $txRef,
-                        'amount' => $order->price,
-                        'customer_id' => $user->id,
-                        'status' => TRANSACTION_PENDING,
-                        'product_type' => $item['type'],
-                        'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
-                    ]);
-                    
-                    $totalPrice += $order->price;
-                }
+                        $totalPrice += $order->price;
+                    }
+                        
+                } 
                 
                 $data = [
                     'amount' => $totalPrice,
@@ -169,6 +174,13 @@ class TransactionController extends Controller {
                 ];
         
                 $response = $this->chapaService->initializePayment($data);    
+
+               if($response['status'] == 'failed') {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $response['message']
+                ], 500);
+               }
         
             DB::commit();
         } catch (\Exception $e) {

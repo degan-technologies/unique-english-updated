@@ -43,11 +43,7 @@ class CourseModuleController extends Controller
             ->where('slug', $slug)
             ->value('id');
 
-        $verifyTransaction = Transaction::query()
-            ->where('customer_id', $user->id)
-            ->where('course_id', $courseId)
-            ->where('status', 'success')
-            ->first();
+        $verifyTransaction = Course::checkEligibility($courseId);
 
         if (!$verifyTransaction) {
             return response()->json([

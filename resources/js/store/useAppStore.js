@@ -28,8 +28,7 @@ export const useAppStore = defineStore('useAppStore', () => {
 
 
     // set authToken and store it in cookies
-    function setAuthToken(token) {
-        console.log("Setting Token: ", token); // Debugging
+    function setAuthToken(token) { 
 
         // Store token in Pinia state
         authToken.value = token;
@@ -98,5 +97,7 @@ export const useAppStore = defineStore('useAppStore', () => {
         facebook,
         google,
         logout,
+
+        authToken,
     };
 });

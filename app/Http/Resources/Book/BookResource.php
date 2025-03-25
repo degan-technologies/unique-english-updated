@@ -25,6 +25,7 @@ class BookResource extends JsonResource {
             'file_url' => $this->file_url
             ? Storage::disk('public')->url($this->file_url)
             : 'no-file_url.png',
+            
             'eddition' => $this->eddition,
             'discount' => $this->discount,
             'created_at' => $this->created_at,

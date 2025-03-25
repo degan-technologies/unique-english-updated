@@ -1,16 +1,26 @@
 <script setup>
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { useRoute } from "vue-router";
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
-// Set the worker source manually (For pdfjs-dist v4+)
+import { UseStudentStore } from "@/store/UseStudentStore";
+import { useAppStore } from "@/store/useAppStore";
+
+const appStore = useAppStore();
+const studentStore = UseStudentStore();
+
+const { selectedbookslug } = storeToRefs(studentStore);
+const { authToken } = storeToRefs(appStore);
+
+const route = useRoute();
+
 GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
     import.meta.url
 ).toString();
 
-const props = defineProps({
-    pdfUrl: String, // PDF file path
-});
 
 const canvasRef = ref(null);
 const containerRef = ref(null);
@@ -19,23 +29,44 @@ const totalPages = ref(0);
 let pdfDoc = null;
 let scale = ref(1);
 const showOverlay = ref(false);
-
-// Fullscreen toggle state
 const isFullScreen = ref(false);
-
-// New reactive variable for page search input
 const searchPage = ref("");
+const selectedBook = ref("");
+const openPdf = ref(false);
+selectedbookslug.value = route.query.slug; 
+
+function getSelectedBook() {
+    Axios
+        .get(`/api/get-book/${selectedbookslug.value}`)
+        .then(res => {
+            selectedBook.value = res.data.data;
+        })
+}
 
 // Load PDF
 const loadPdf = async () => {
-    if (!props.pdfUrl) return;
+    if (!selectedBook.value.file_url) return;
 
-    pdfDoc = await getDocument(props.pdfUrl).promise;
-    totalPages.value = pdfDoc.numPages;
-    renderPage(currentPage.value);
+    const filename = selectedBook.value.file_url.split('/').pop();
+    
+    const proxyUrl = `/api/book-pdf/${filename}`;
+
+    try {
+        pdfDoc = await getDocument({
+            url: proxyUrl,
+            httpHeaders: {
+                Authorization: `Bearer ${authToken.value}`,
+            },
+        }).promise;
+
+        totalPages.value = pdfDoc.numPages;
+        renderPage(currentPage.value);
+        openPdf.value = true;
+    } catch (error) {
+        console.error("Error loading PDF via proxy:", error);
+    }
 };
 
-// Render PDF Page
 const renderPage = async (pageNumber) => {
     const page = await pdfDoc.getPage(pageNumber);
     const canvas = canvasRef.value;
@@ -167,7 +198,7 @@ const detectSnippingTool = () => {
             showOverlay.value = false; // Remove overlay if no capture
         }
     }, 500); // Check every 500ms (faster detection)
-};
+}; 
 
 // 🔥 Hide Content When Window Loses Focus (Alt+Tab, Snipping Tool, etc.)
 const hideOnWindowBlur = () => {
@@ -188,8 +219,21 @@ const detectResize = () => {
     });
 };
 
+watch(()=> route.query.slug ,
+ ()=>{
+    selectedbookslug.value = route.query.slug;
+    getSelectedBook();
+ })
+
+ watch(selectedBook, (newVal) => {
+    if(newVal && newVal.file_url) {
+        loadPdf();
+    }
+});
+
 // Apply Security Measures
 onMounted(() => {
+    getSelectedBook();
     loadPdf();
     document.addEventListener("contextmenu", preventCopy);
     document.addEventListener("keydown", preventDevTools);
@@ -197,7 +241,7 @@ onMounted(() => {
     document.addEventListener("dragstart", preventDrag);
     window.addEventListener("blur", hideOnWindowBlur);
     window.addEventListener("focus", showOnWindowFocus);
-    detectSnippingTool();
+    // detectSnippingTool();
     detectResize();
 });
 
@@ -209,42 +253,39 @@ onBeforeUnmount(() => {
     window.removeEventListener("blur", hideOnWindowBlur);
     window.removeEventListener("focus", showOnWindowFocus);
 });
-
-// Watch for PDF URL changes
-watch(() => props.pdfUrl, loadPdf);
+ 
 </script>
 
 <template>
-    <div class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen">
-        <!-- 🔥 Dynamic Overlay (Blocks screenshots/snipping tool in real-time) -->
-        <div v-if="showOverlay" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center text-white text-2xl font-bold z-50">
-            Screenshot Blocked!
-        </div>
+    <div v-if="openPdf" class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen">
 
-        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }" class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
-            <!-- Set container to allow scroll if content exceeds height -->
+        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
+            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
             <div class="overflow-auto">
-                <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none" @contextmenu.prevent @dragstart.prevent></canvas>
+                <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
+                    @contextmenu.prevent @dragstart.prevent></canvas>
             </div>
             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
-                <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button @click="prevPage" :disabled="currentPage === 1" class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
+                    <button @click="prevPage" :disabled="currentPage === 1"
+                        class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
                         <i class="fas fa-chevron-left"></i> Previous
                     </button>
                     <span class="font-semibold text-gray-700">
                         Page {{ currentPage }} / {{ totalPages }}
                     </span>
-                    <button @click="nextPage" :disabled="currentPage === totalPages" class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
+                    <button @click="nextPage" :disabled="currentPage === totalPages"
+                        class="px-4 py-2 bg-lime-700 text-white rounded disabled:opacity-50">
                         <i class="fas fa-chevron-right"></i> Next
                     </button>
                 </div>
-                <!-- Page Search Input -->
                 <div class="flex items-center gap-2">
-                    <input type="number" v-model="searchPage" placeholder="Go to page" class="px-2 py-1 border border-green-500  rounded w-24" />
+                    <input type="number" v-model="searchPage" placeholder="Go to page"
+                        class="px-2 py-1 border border-green-500  rounded w-24" />
                     <button @click="goToPage" class="px-3 py-1 bg-blue-600 text-white rounded">search page</button>
                 </div>
-                <button @click="toggleFullScreen" class="px-4 py-2 bg-lime-500 text-white rounded flex items-center gap-2">
+                <button @click="toggleFullScreen"
+                    class="px-4 py-2 bg-lime-500 text-white rounded flex items-center gap-2">
                     <i :class="isFullScreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
                     {{ isFullScreen ? "Exit Full Screen" : "Go Full Screen" }}
                 </button>
@@ -266,6 +307,7 @@ watch(() => props.pdfUrl, loadPdf);
         flex-direction: column;
     }
 }
+
 .overflow-auto {
     scrollbar-width: none;
     -ms-overflow-style: none;

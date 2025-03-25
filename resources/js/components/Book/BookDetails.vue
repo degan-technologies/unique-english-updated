@@ -5,7 +5,6 @@ import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { UseStudentStore } from "@/store/UseStudentStore";
  
-import PdfViewer from "./Pdf.vue";
 import ReviewList from "@/components/Course/ReviewList.vue";
 
 const studentStore = UseStudentStore();
@@ -78,7 +77,10 @@ function enrollBook(item) {
 }
 
 onMounted(async () => {
-    await studentStore.fetchBooks();
+    if(!selectedbook.value){
+        await studentStore.fetchBooks();
+    }
+
     selectedbook.value = books.value.find(
         (item) => item?.slug === selectedbookslug.value
     );
@@ -141,14 +143,7 @@ function playVideo() {
 
 <template>
     <div>
-        <div v-if="showPdfViewer">
-            <PdfViewer :pdfUrl="selectedbook?.file_url" />
-            <button @click="showPdfViewer = false" class="mt-4 bg-red-500 text-white px-4 py-2 rounded">
-                Close PDF Viewer
-            </button>
-        </div>
-
-        <div v-else-if="selectedbookslug" class="p-6 mt-24 pb-16 rounded-lg bg-slate-50">
+        <div v-if="selectedbookslug" class="p-6 mt-24 pb-16 rounded-lg bg-slate-50">
             <div class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative">
                 <!-- Left Side: Book Info & Description -->
                 <div>
@@ -278,3 +273,4 @@ function playVideo() {
         </div>
     </div>
 </template>
+

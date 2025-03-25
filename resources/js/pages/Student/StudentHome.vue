@@ -69,7 +69,7 @@ watch(
                     <BookDetails />
                 </div>
                 <div v-if="currentTab.tab == bookReadingTab && currentTab.slug">
-                    <Pdf pdfUrl="/images/req.pdf" />
+                    <Pdf/>
                 </div>
                 <div v-if="currentTab.tab == liveSchedulTab">
                     <Schedule />

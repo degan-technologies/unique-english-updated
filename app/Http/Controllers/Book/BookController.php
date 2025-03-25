@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Book;
 
+use App\Http\Controllers\Book\Trait\PdfReaderTrait;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Book\BookResource;
 use App\Http\Resources\StudentResources\StdBook\StdBookResource;
@@ -13,8 +14,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-class BookController extends Controller
-{
+class BookController extends Controller {
+
+    use PdfReaderTrait;
+
     protected $langService;
 
     public function __construct(LangService $langService)
@@ -25,8 +28,7 @@ class BookController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
+    public function index() {
         $resources = Book::with(['user'])
             ->where('user_id', Auth::id())
             ->paginate(10);
@@ -53,6 +55,25 @@ class BookController extends Controller
         ]);
     }
 
+    public function getBook($slug){
+        $user = Auth::user();
+
+        $book = Book::query()
+            ->where('slug', $slug)
+            ->first();
+
+        $verifyTransaction = Book::checkEligibility($book->id);
+
+        if (!$verifyTransaction) {
+            return response()->json([
+                'message' => 'Unauthorized action.',
+            ], 403);
+        }
+        return response()->json([
+            'data' => new BookResource($book),
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -61,8 +82,11 @@ class BookController extends Controller
         $canStoreBook = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
-
-            $user = Auth::user();
+        /**
+         * @var User $user  
+         */
+        
+        $user = Auth::user();
 
         $validationRules = [
             'tag' => 'min:3',
