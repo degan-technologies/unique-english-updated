@@ -16,4 +16,13 @@ class CourseContent extends Model {
     public function user() { return $this->belongsTo(User::class); }
     public function course() { return $this->belongsTo(Course::class); }
     public function courseContentProgress() { return $this->hasOne(CourseContentProgress::class); }
+
+    public static function timeToSeconds($time) {
+        if (!$time) {
+            return 0;
+        }
+
+        $timeParts = explode(':', $time);
+        return $timeParts[0] * 3600 + $timeParts[1] * 60 + $timeParts[2];
+    }
 }

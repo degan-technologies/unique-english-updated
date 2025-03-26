@@ -124,7 +124,6 @@ class CourseContentController extends Controller {
             'content_url' => $filePath,
             'thumbnail_url' => $imagePath,
             'hour' => $durarion,
-            'status' => PUBLISHED,
             'sequence' => $sequence,
             'isDownloadable' => false,
             'created_at' => Carbon::now(),

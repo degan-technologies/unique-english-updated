@@ -54,28 +54,44 @@ onMounted(() => {
                 </button>
             </div>
 
-            <div v-if="collapsModuleId == courseModule.id" class="ml-4 mt-2">
+            <div v-if="collapsModuleId == courseModule.id" class=" mt-2">
                 <ul class="list-none pl-0">
                     <li v-for="(courseContent, contentIndex) in courseModule?.courseContents" :key="contentIndex"
                         @click="openLesson(courseModule, courseContent)"
-                        class="flex items-center py-2 cursor-pointer rounded-lg transition-colors duration-300" :class="{
+                        class="flex items-center cursor-pointer mx-auto gap-2 my-1 rounded-lg transition-colors duration-300"
+                        :class="{
                             'bg-blue-100 text-blue-600 font-bold': selectedLessonId === courseContent.id,
                             'hover:bg-gray-200': selectedLessonId !== courseContent.id,
                         }">
-                        <!-- Always reserve space for the tick icon -->
-                        <span v-if="completedLessons.has(courseContent.id)"
-                            class="text-green-500 font-bold mr-2">✔</span>
-                        <span v-else class="text-green-500 font-bold mr-2" style="visibility: hidden;">✔</span>
 
                         <!-- Icon based on content type -->
-                        <i :class="{
-                            'fa-circle-play': courseContent.content_type == 1,
-                            'fa-file-lines': courseContent.content_type == 2,
-                            'fa-image': courseContent.content_type == 3,
-                        }" class="fa-solid text-lg w-5 h-5 mr-2" />
+                        <div>
+                            <div class="relative z-10 top-0">
+                                <div v-if="courseContent?.courseContentProgress?.max_progress > 90 "
+                                    class="absolute w-10 h-10 rounded-sm text-center bg-black  bg-opacity-25 py-2 ">
+                                    <i class=" fa-solid fa-check text-2xl font-extrabold text-white"> </i>
+                                </div>
+                            </div>
+                            <div v-if="courseContent.content_type !== 1"
+                                class="w-10 h-10 rounded-sm text-center self-center shadow-sm ">
+                                <i :class="{
+                                    'fa-file-lines': courseContent.content_type == 2,
+                                    'fa-image': courseContent.content_type == 3,
+                                }" class="fa-solid text-lg w-5 h-5  self-center py-2" />
+
+                            </div>
+                            <div v-else class="w-10 h-10 rounded-sm self-center shadow-sm">
+                                <img class="w-10 h-10 rounded object-cover" :src="courseContent.thumbnail_url"
+                                    alt="image">
+                            </div>
+                        </div>
 
                         <!-- Lesson title -->
-                        <span>{{ courseContent.title }}</span>
+                        <div>
+                            <span class="self-senter">{{ courseContent.title }}</span>
+                            <p v-if="courseContent.content_type == 1" class="text-sm font-bold text-blue-700 py-1">{{
+                                courseContent.hour }}</p>
+                        </div>
 
                     </li>
                     <!-- Quiz Items -->
@@ -104,11 +120,6 @@ onMounted(() => {
             <i class="fas fa-certificate text-teal-500 mr-2 ml-2"></i>
             <strong>Certificate of Completion</strong>
         </button>
-
-
-
-
-
     </div>
 </template>
 

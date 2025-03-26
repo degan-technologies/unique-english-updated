@@ -65,15 +65,6 @@ const contentType = computed(() => {
     return null;
 });
 
-// Resets the seek bar and current time to 0
-const resetSeekBar = () => {
-    if (video.value) {
-        video.value.currentTime = 0;
-    }
-    progress.value = 0;
-    currentTime.value = formatTime(0);
-};
-
 const togglePlayPause = () => {
     if (!video.value) return;
     if (video.value.paused) {
@@ -88,6 +79,7 @@ const togglePlayPause = () => {
 const handleSeekInput = (event) => {
     if (!video.value) return;
     const seekTime = (event.target.value / 100) * video.value.duration;
+
     if (isNaN(seekTime) || seekTime < 0 || seekTime > video.value.duration) return;
     if (video.value.readyState < 2) {
         video.value.addEventListener("loadeddata", () => {
@@ -95,13 +87,9 @@ const handleSeekInput = (event) => {
         }, { once: true });
         return;
     }
-    video.value.currentTime = seekTime; 
 
-    setTimeout(() => {
-        if (Math.abs(video.value.currentTime - seekTime) > 1) {
-            video.value.currentTime = seekTime;
-        }
-    }, 300);
+    video.value.currentTime = seekTime; 
+    progress.value = event.target.value;
 };
 
 const storageKey = computed(() => {
@@ -109,18 +97,6 @@ const storageKey = computed(() => {
         ? "videoSeek_" + btoa(video.value.src)
         : "videoSeek_default";
 });
-
-const updateProgress = () => {
-    if (!video.value || totalDuration.value === 0) return;
-    progress.value = video.value.currentTime;
-    watchedTime.value = current; 
-
-    if (!videoWatched.value && progress.value >= totalDuration.value * minWatchThreshold) {
-        videoWatched.value = true;
-        storeContentProgress();
-        localStorage.setItem(storageKey.value, current);
-    }
-};
 
 const handleVideoEnd = () => {
     if (watchedTime.value >= totalDuration.value * minWatchThreshold) {
@@ -150,7 +126,7 @@ const startControlsHideTimer = () => {
 const handlePlay = () => {
     isPlaying.value = true;
     resetControlsTimeout();
-    updateProgress();
+    storeContentProgress();
 };
 
 const handlePause = () => {
@@ -206,7 +182,6 @@ const changeQuality = (newQuality) => {
     if (video.value) {
         video.value.src = newUrl;  
         video.value.load(); 
-        resetSeekBar(); 
         video.value.play(); 
     } else {
     }
@@ -224,8 +199,8 @@ function openedLesson(module, lesson) {
     if (selectedLesson.value && video.value) {
         video.value.src = selectedLesson.value.course_content_url;
         video.value.load();
-        resetSeekBar();
         video.value.play();
+        
     }
 }
 
@@ -246,7 +221,12 @@ const updateTotalTime = () => {
 };
 
 function storeContentProgress() {
-    if (!selectedLesson.value) return;
+    if (!video.value || totalDuration.value === 0) return;
+    const current = video.value.currentTime;
+    const newPogress = new Date(current * 1000).toISOString().substr(11, 8);
+    watchedTime.value = current; 
+    currentTime.value = formatTime(current);
+    progress.value = (video.value.currentTime / video.value.duration) * 100;
 
     const currentLessonId = selectedLesson.value.id;
 
@@ -258,14 +238,12 @@ function storeContentProgress() {
 
     const payload = {
         course_content_id: currentLessonId,
-        progress: progress.value,  
+        progress: newPogress,  
     };
 
     Axios
         .post("/api/coursecontent/progress", payload)
-        .then(res => {
-            selectedModules.value = res.data.data;
-        })
+        .then(res => {})
 };
 
 function getCourseModules() {
@@ -298,7 +276,6 @@ watch(() => route.query.slug, () => {
 
 watch(selectedLesson.value, (newVal, oldVal) => {
     if (newVal && newVal !== oldVal && video.value) {
-        resetSeekBar();
     }
 });
 
@@ -355,7 +332,7 @@ onMounted(() => {
     video.value.volume = volume.value;
     video.value.playbackRate = parseFloat(playbackRate.value) || 1.0;
     video.value.addEventListener("loadedmetadata", updateTotalTime);
-    video.value.addEventListener("timeupdate", updateProgress);
+    video.value.addEventListener("timeupdate", storeContentProgress);
 
     // Attach keydown event listener to document instead of window
     document.addEventListener("keydown", handleKeyDown);
@@ -384,9 +361,20 @@ onBeforeUnmount(() => {
                 <div class="video-container relative bg-black rounded-lg overflow-hidden border-2 border-lime-700"
                     tabindex="0" @mousemove="resetControlsTimeout" @mouseleave="startControlsHideTimer"
                     @mouseenter="resetControlsTimeout" @click="togglePlayPause" @keydown="handleKeyDown">
+
+                    <div v-if="!isPlaying" class="relative w-full h-full cursor-pointer" @click="handlePlay">
+                        <img :src="selectedLesson?.thumbnail_url" alt="Course Thumbnail"
+                            class="w-full h-full object-cover transition-transform duration-300 rounded-t-lg shadow-lg hover:shadow-xl" />
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="p-4 bg-lime-500 rounded-full animate-breathe flex items-center justify-center">
+                                <i class="fas fa-play-circle text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Video Element: Remove pointer-events-none -->
-                    <video ref="video" class="w-full h-full object-cover" :src="selectedLesson?.course_content_url"
-                        @timeupdate="updateProgress" @loadedmetadata="updateTotalTime" @ended="handleVideoEnd"
+                    <video v-else ref="video" class="w-full h-full object-cover" :src="selectedLesson?.course_content_url"
+                        @timeupdate="storeContentProgress" @loadedmetadata="updateTotalTime" @ended="handleVideoEnd"
                         @play="handlePlay" @pause="handlePause" playsinline>
                         Your browser does not support the video tag.
                     </video>
@@ -518,14 +506,17 @@ onBeforeUnmount(() => {
                         <p class="text-lg text-gray-600 py-2">{{ selectedLesson?.title }}</p>
                         <p class="text-2xl text-blue-600">{{ selectedModule?.title }}</p>
                     </div>
- 
+
                     <div class="relative mt-2 flex items-center justify-center">
-                        <!-- Full Circle (Gray background) -->
-                        <div class="relative w-16 h-16">
-                            <div class="absolute w-full h-full rounded-full border border-lime-700" :style="{
-                                background: `conic-gradient(#00BFFF ${overallProgress}%, #e0e0e0 ${overallProgress}% 100%)`
-                            }"></div>
-                            <div class="absolute w-full h-full flex items-center justify-center">
+                        <div class="relative w-16 h-16 bg-gray-100 rounded-full border border-lime-700 overflow-hidden">
+                            <div class="absolute bottom-0 left-0 w-full" :style="{ 
+                                    height: overallProgress + '%', 
+                                    backgroundColor: '#00BFFF', 
+                                    transition: 'height 0.5s ease' 
+                                }">
+                            </div>
+
+                            <div class="absolute inset-0 flex items-center justify-center">
                                 <span class="text-lg font-bold text-black">
                                     {{ overallProgress }} %
                                 </span>
@@ -571,23 +562,16 @@ onBeforeUnmount(() => {
 
                 </div>
                 <div v-if="activeTab === 'reviews'" class="mt-4">
-                    <ReviewList 
-                        :feedBacks="selectedCourse?.feedBacks" 
-                        :averageRating="selectedCourse?.averageRating"
-                        :starDistribution="selectedCourse?.starDistribution"
-                        :showOnly="false" />
+                    <ReviewList :feedBacks="selectedCourse?.feedBacks" :averageRating="selectedCourse?.averageRating"
+                        :starDistribution="selectedCourse?.starDistribution" :showOnly="false" />
                 </div>
             </div>
         </div>
 
         <!-- Course List Section (now on the right side) -->
         <div class="sticky top-10 h-fit">
-            <CourseList v-if="selectedModules"  
-                :selectedModules="selectedModules"
-                @openedLesson="openedLesson" 
-                @openedQuiz="openedQuiz"
-                @downloadCertificate="handleDownloadCertificate" 
-                />
+            <CourseList v-if="selectedModules" :selectedModules="selectedModules" @openedLesson="openedLesson"
+                @openedQuiz="openedQuiz" @downloadCertificate="handleDownloadCertificate" />
         </div>
     </div>
 </template>

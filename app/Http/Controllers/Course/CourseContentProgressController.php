@@ -61,6 +61,12 @@ class CourseContentProgressController extends Controller {
             ], 404);
         }
 
+        if ($courseContent->content_type !== VIDEO) {
+            return response()->json([
+                'error' => 'Only video content can be marked as progress'
+            ], 400);
+        }
+
         $eligibleCourse = Course::checkEligibility($courseContent->course_id);
 
         if (!$eligibleCourse) {
@@ -70,7 +76,7 @@ class CourseContentProgressController extends Controller {
         }
         
         $validator = Validator::make($request->all(), [
-            'progress'          => 'required|numeric|min:0|max:100',
+            'progress' => ['required', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/'],
         ]);
 
         if ($validator->fails()) {
@@ -107,7 +113,7 @@ class CourseContentProgressController extends Controller {
 
 
         $progressRecord = $getProgress->update([
-            'progress' => $request->progress,
+            'progress' => $progress,
             'vedeo_progress' => $videoProgress,
             'course_id' => $courseContent->course_id,
         ]);
@@ -164,7 +170,7 @@ class CourseContentProgressController extends Controller {
             ->orderBy('id', 'desc')
             ->first();
 
-        $totalSeconds = $course->courseContents()->get()->reduce(function ($carry, $content) {
+        $totalSeconds = $course->courseContents()->where('content_type', VIDEO)->get()->reduce(function ($carry, $content) {
             $timeParts = explode(':', $content->hour);
             $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
             return $carry + $seconds;
@@ -182,7 +188,7 @@ class CourseContentProgressController extends Controller {
                 $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
                 return $carry + $seconds;
             }, 0);
-            $overAllPogress = $totalTimeInSeconds / $totalSeconds * 100;
+            $overAllPogress = round($totalTimeInSeconds / $totalSeconds * 100, 0);
         }
 
 

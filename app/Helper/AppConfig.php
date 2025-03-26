@@ -35,7 +35,7 @@ define('CONTENT_TYPE',[
 ]);
 
 define('VIDEO_EXTENTION',[
-    'mp4', 'avi', 'mpeg', 'mov', 'wmv', 'webm', 'ogg', 'flv'
+    'mp4', 'avi', 'mpeg', 'mov', 'wmv', 'webm', 'ogg', 'flv', 'mkv'
 ]);
 
 define('PDF_EXTENTION',[
