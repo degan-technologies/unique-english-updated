@@ -87,7 +87,7 @@ Route::middleware('auth:api')
     Route::resource('QMetaData', QMetaDataController::class);  
     Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
     Route::resource('tests', TestController::class);
-    Route::resource('results', ResultController::class);
+    Route::resource('/results', ResultController::class);
     Route::resource('plans', PlanController::class);
     Route::resource('QASection', QASectionController::class);
     Route::resource('answers', AnswerController::class);

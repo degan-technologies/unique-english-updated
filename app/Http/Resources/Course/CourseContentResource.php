@@ -27,7 +27,9 @@ class CourseContentResource extends JsonResource {
             'content_type' => $this->content_type,
             'note' => $this->note,
 
-            'hour' => $this->hour,
+            'hour' => $this->hour && strpos($this->hour, '00:') === 0 
+                ? substr($this->hour, 3) 
+                : $this->hour,
             'duration' =>$duration,
             'description' => $this->description,
             'content_type' => $this->content_type,

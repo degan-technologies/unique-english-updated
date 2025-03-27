@@ -151,6 +151,7 @@ class CourseContentProgressController extends Controller {
 
 
     public function currentProgress($slug) {
+        
         $user = Auth::user();
         $overAllPogress = 0;
 

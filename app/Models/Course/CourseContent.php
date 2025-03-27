@@ -21,7 +21,7 @@ class CourseContent extends Model {
         if (!$time) {
             return 0;
         }
-
+ 
         $timeParts = explode(':', $time);
         return $timeParts[0] * 3600 + $timeParts[1] * 60 + $timeParts[2];
     }

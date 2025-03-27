@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\ResultResource;
+use App\Models\Course\Course;
 use App\Models\Quiz\Result;
 use App\Services\LangService;
 
@@ -33,28 +34,39 @@ class ResultController extends Controller {
         ]);
     }
 
-    public function store(Request $request) {
-        // Use the authenticated user
+    public function store(Request $request) { 
+
+        /**
+         * @var User $user
+         */
+
         $user = Auth::user();
+        $examId = $request->exam_id;
+
         if (!$user) {
             return response()->json([
                 'message' => $this->langService->getLang('unauthenticated'),
             ], 401);
         }
-    
-        // Ensure the user ID in the request matches the authenticated user
-        if (isset($request->user_id) && $user->id != $request->user_id) {
+
+        $exam = $user->qMetaDatas()->find($examId);
+
+        if (!$exam) {
             return response()->json([
-                'message' => $this->langService->getLang('user_mismatch'),
+                'message' => $this->langService->getLang('exam_not_found'),
+            ], 404);
+        }
+
+        $checkEligibility = Course::checkEligibility($exam->course_id,);
+
+        if(!$checkEligibility) {
+            return response()->json([
+                'message' => $this->langService->getLang('not_eligible_for_exam'),
             ], 403);
         }
     
-        // Validate the input including quiz_id.
         $validationRules = [
             'result'           => 'required|integer',
-            'quiz_id'          => 'required|exists:quizzes,id',
-            'course_module_id' => 'required|exists:course_modules,id',
-            'course_id'        => 'required|exists:courses,id',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('Result'));
@@ -65,38 +77,24 @@ class ResultController extends Controller {
                 'errors'  => $validator->errors(),
             ], 422);
         }
-    
-        // Check if a result already exists for this user, quiz, module, and course
-        $existingResult = Result::where('user_id', $user->id)
-            ->where('q_meta_data_id', $request->quiz_id)
-            ->where('course_module_id', $request->course_module_id)
-            ->where('course_id', $request->course_id)
-            ->first();
-    
-        if ($existingResult) {
+
+        $checkResult = $user->results()->where('q_meta_data_id', $examId)->first();
+
+        if ($checkResult) {
+            $checkResult->update([
+                'result'=> $request->result,
+            ]);
+
             return response()->json([
-                'message' => $this->langService->getLang('result_already_exists'),
-                'data'    => new ResultResource($existingResult),
-            ], 409); // HTTP 409 Conflict
+                'message' => $this->langService->getLang('result_created_successfully'),
+                'data'    => new ResultResource($checkResult),
+            ]);
         }
     
-        // Find the quiz using the provided quiz_id from the request
-        $quiz = $user->quizzes()->find($request->quiz_id);
-    
-        if (!$quiz) {
-            return response()->json([
-                'message' => $this->langService->getLang('quiz_not_found'),
-            ], 404);
-        }
-    
-        // Create a new result entry
-        $result = Result::create([
+        $result = $user->results()->create([
             'slug'             => Str::uuid(),
-            'result'           => $request->result,
-            'user_id'          => $user->id, 
-            'q_meta_data_id'   => $quiz->id,
-            'course_module_id' => $request->course_module_id,
-            'course_id'        => $request->course_id
+            'result'           => $request->result, 
+            'q_meta_data_id'   => $examId, 
         ]);
     
         return response()->json([

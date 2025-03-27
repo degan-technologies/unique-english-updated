@@ -108,7 +108,6 @@ class User extends Authenticatable {
     public function quizzes() { return $this->hasMany(Quiz::class);}
     public function results() { return $this->hasMany(Result::class);}
     public function qaSections() { return $this->hasMany(QASection::class); }
-    public function quizMetaData() { return $this->hasMany(QMetaData::class); }
 
     public function books() { return $this->hasMany(Book::class); }
     public function qMetaDatas() { return $this->hasMany(QMetaData::class); }

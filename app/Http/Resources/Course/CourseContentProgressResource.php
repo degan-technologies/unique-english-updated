@@ -24,10 +24,11 @@ class CourseContentProgressResource extends JsonResource {
  
         return [
             'id' => $this->id,
-            'progress' => $this->progress,
+            'progress' => $this->formatTime($this->progress),
             'max_progress' => $this->progressInPercentage($this->parentData, $this->progress),
-            'vedeo_progress' => $this->vedeo_progress,
-            'max_vedeo_progress' => $this->progressInPercentage($this->parentData, $this->vedeo_progress),
+            'video_progress' => $this->formatTime($this->vedeo_progress),
+            'current_time' => CourseContent::timeToSeconds($this->vedeo_progress),
+            'max_video_progress' => $this->progressInPercentage($this->parentData, $this->vedeo_progress),
             'course_content_id' => $this->course_content_id,
         ];
     }
@@ -42,5 +43,11 @@ class CourseContentProgressResource extends JsonResource {
         return round(($progress / $durattion) * 100);
     }
 
+    public function formatTime($time) {
+         
+        return $time && strpos($time, '00:') === 0
+                ? substr($time, 3)
+                : $time;
+    }
    
 }
