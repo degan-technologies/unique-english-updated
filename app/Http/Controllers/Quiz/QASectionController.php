@@ -18,10 +18,8 @@ class QASectionController extends Controller {
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
-
-    // Optionally, you might want to show all QA Sections (or filter by course_id)
-    public function index(Request $request) {
-        // For example, fetch all questions for a given course:
+ 
+    public function index(Request $request) { 
         $qaSections = QASection::when($request->course_id, function($query, $courseId) {
             return $query->where('course_id', $courseId);
         })->paginate(10);
@@ -36,18 +34,23 @@ class QASectionController extends Controller {
     }
 
     public function store(Request $request) {
-        // Use the authenticated user (any user can ask a question)
+
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
-        if (!$user) {
+        $courseId = $request->course_id ?? null;
+
+        $course = $user->courses()->find($courseId);
+
+        if (!$course) {
             return response()->json([
-                'message' => $this->langService->getLang('unauthenticated'),
-            ], 401);
+                'message' => $this->langService->getLang('course_not_found'),
+            ], 404);
         }
         
-        // Validate the input including course_id (which must be provided)
         $validationRules = [
             'question'  => 'required|string',
-            'course_id' => 'required|exists:courses,id',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('QASection'));
@@ -59,11 +62,9 @@ class QASectionController extends Controller {
             ], 422);
         }
 
-        // Create the new QASection (question)
-        $newQASection = QASection::create([
+        $newQASection = $user->qaSections()->create([
             'question'  => $request->question,
-            'user_id'   => $user->id,
-            'course_id' => $request->course_id, 
+            'course_id' => $courseId, 
         ]);
     
         return response()->json([
@@ -73,7 +74,13 @@ class QASectionController extends Controller {
     }
     
     public function show($id) {
-        $qaSection = QASection::findOrFail($id);
+
+        $user = Auth::user(); 
+
+        $qaSection = QASection::query()
+            ->where('user_id', $user->id)
+            ->where('id', $id)
+            ->first();
 
         return response()->json([
             'data' => new QASectionResource($qaSection),
@@ -83,14 +90,17 @@ class QASectionController extends Controller {
     public function update(Request $request, $id) {
         // Use the authenticated user
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'message' => $this->langService->getLang('unauthenticated'),
-            ], 401);
-        }
 
-        // Only allow updating if the question belongs to the current user
-        $qaSection = QASection::where('user_id', $user->id)->findOrFail($id);
+        $qaSection = QASection::query()
+            ->where('user_id', $user->id)
+            ->where('id', $id)
+            ->first();
+
+        if(!$qaSection) {
+            return response()->json([
+                'message' => $this->langService->getLang('qa_section_not_found'),
+            ], 404);
+        }
 
         $validationRules = [
             'question' => 'required|string',

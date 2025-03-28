@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Comment;
 
+use App\Http\Resources\UserDataResource;
 use App\Http\Resources\userResource;
 use App\Models\Comment\FeedbackUserInteraction;
 use Illuminate\Http\Request;
@@ -19,13 +20,13 @@ class FeedBackResource extends JsonResource
     {
         return [
             'id'        => $this->id,
-            'rating'    => $this->rate, // mapping "rate" to "rating"
+            'rating'    => $this->rate, 
             'comment'   => $this->comment,
             'timestamp' => $this->created_at->toDateTimeString(),
             'likes'     => $this->getInteraction()['like'],
             'dislikes'  => $this->getInteraction()['dislike'],
             'reports'   => $this->reports,
-            'user'      => new userResource($this->user),
+            'user'      => new UserDataResource($this->user),
         ];
     }
 

@@ -139,13 +139,13 @@ onMounted(()=>{
 <template>
     <div class="w-full bg-white p-4 md:p-8 space-y-8"> 
         <div class="bg-white ">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            <h2 class="text-md font-semibold text-gray-800 mb-4">
                 Student Feedback
             </h2>
-            <div class="flex flex-col md:flex-row md:items-center md:space-x-6">
+            <div class="flex flex-row s items-center  space-x-6">
                 <!-- Average Rating -->
                 <div class="flex flex-col items-center text-center space-y-2 md:w-1/3">
-                    <div class="text-5xl font-extrabold text-yellow-500">
+                    <div class="text-xl md:text-5xl font-extrabold text-yellow-500">
                         {{ averageRating }}
                     </div>
                     <div>
@@ -223,11 +223,11 @@ onMounted(()=>{
                     <!-- Avatar/Initial -->
                     <div
                         class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-700">
-                        {{ getInitials(comment.user.first_name) }}
+                        {{ getInitials(comment.user.full_name) }}
                     </div>
                     <!-- Name, star rating, time -->
                     <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
-                        <span class="font-semibold text-gray-800">{{ comment.user.first_name }}</span>
+                        <span class="font-semibold text-gray-800">{{ comment.user.full_name }}</span>
                         <div class="flex items-center ml-1">
                             <div v-for="star in 5" :key="star" class="relative inline-block text-sm mr-1"
                                 style="width: 1em; height: 1em;">

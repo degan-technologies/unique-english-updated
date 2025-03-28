@@ -18,42 +18,26 @@ class AnswerController extends Controller {
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
-
-    // Fetch answers for a specific QA Section or course
-    public function index(Request $request) {
-        $answers = Answer::when($request->question_id, function($query, $questionId) {
-                return $query->where('question_id', $questionId);
-            })
-            ->when($request->course_id, function($query, $courseId) {
-                return $query->where('course_id', $courseId);
-            })
-            ->paginate(10);
     
-        $pagination = $answers->toArray();
-        unset($pagination['data']);
-    
-        return response()->json([
-            'pagination' => $pagination,
-            'data' => AnswerResource::collection($answers),
-        ]);
-    }
-    
-
-    // Store a new answer for a question
     public function store(Request $request) {
-        // Use the authenticated user
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
-        if (!$user) {
+        $qaSectionId  = $request->question_id ?? null;
+        
+        $qaSection = QASection::query()
+            ->where('id', $qaSectionId)
+            ->first();
+
+        if (!$qaSection) {
             return response()->json([
-                'message' => $this->langService->getLang('unauthenticated'),
-            ], 401);
+                'message' => $this->langService->getLang('qa_section_not_found'),
+            ], 404);
         }
 
-        // Validate the input, including question_id and course_id
         $validationRules = [
             'answer'      => 'required|string',
-            'question_id' => 'required|exists:q_a_sections,id',  // Reference to the question
-            'course_id'   => 'required|exists:courses,id',  // Reference to the course
         ];
 
         $validator = Validator::make($request->all(), $validationRules, (array)$this->langService->getLang('Answer'));
@@ -66,41 +50,32 @@ class AnswerController extends Controller {
             ], 422);
         }
 
-        // Create the new Answer
-        $newAnswer = Answer::create([
+        $newAnswer = $user->answers()->create([
             'answer'     => $request->answer,
-            'user_id'    => $user->id,
-            'question_id'=> $request->question_id,
-            'course_id'  => $request->course_id,
+            'question_id'=> $qaSectionId,
+            'course_id'  => $qaSection->course_id,
         ]);
 
         return response()->json([
             'message' => $this->langService->getLang('answer_created_successfully'),
             'data'    => new AnswerResource($newAnswer),
         ]);
-    }
-
-    // Show a specific answer
-    public function show($id) {
-        $answer = Answer::findOrFail($id);
-
-        return response()->json([
-            'data' => new AnswerResource($answer),
-        ]);
-    }
-
+    } 
+    
     // Update an answer (only by the user who created it)
     public function update(Request $request, $id) {
-        // Use the authenticated user
         $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'message' => $this->langService->getLang('unauthenticated'),
-            ], 401);
-        }
+        
+        $answer = Answer::query()
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
 
-        // Only allow updating if the answer belongs to the current user
-        $answer = Answer::where('user_id', $user->id)->findOrFail($id);
+        if (!$answer) {
+            return response()->json([
+                'message' => $this->langService->getLang('answer_not_found'),
+            ], 404);
+        }
 
         $validationRules = [
             'answer' => 'required|string',
@@ -116,7 +91,9 @@ class AnswerController extends Controller {
             ], 422);
         }
 
-        $answer->update($validator->validated());
+        $answer->update([
+            'answer' => $request->answer,
+        ]);
 
         return response()->json([
             'message' => $this->langService->getLang('answer_updated_successfully'),
@@ -126,17 +103,19 @@ class AnswerController extends Controller {
 
     // Delete an answer (only by the user who created it)
     public function destroy($id) {
-        // Use the authenticated user
         $user = Auth::user();
-        if (!$user) {
+
+        $answer = Answer::query()
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$answer) {
             return response()->json([
-                'message' => $this->langService->getLang('unauthenticated'),
-            ], 401);
+                'message' => $this->langService->getLang('answer_not_found'),
+            ], 404);
         }
-
-        // Only allow deletion if the answer belongs to the current user
-        $answer = Answer::where('user_id', $user->id)->findOrFail($id);
-
+        
         $answer->delete();
 
         return response()->json([

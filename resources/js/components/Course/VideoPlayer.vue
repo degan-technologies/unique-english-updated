@@ -54,9 +54,26 @@
         quizeId: null,
     });
     
-    const activeTab = ref("qa");
+    const qaSections = ref([]);
+    const qaTab = ref("qa");
+    const noteTab = ref("note");
+    const reviewTab = ref("review");
+
+    const activeTab = ref(qaTab.value);
 
     let hideControlsTimeout = null;
+
+    const feedBacks = computed(()=>{
+        return selectedCourse.value?.feedBacks;
+    })
+
+    const averageRating = computed(()=>{
+        return selectedCourse.value?.averageRating;
+    })
+
+    const starDistribution = computed(()=>{
+        return selectedCourse.value?.starDistribution;
+    })
 
     const handleDownloadCertificate = (status) => {
         downloadCertificate.value = status;
@@ -261,6 +278,7 @@
             .get(`/api/get-course-modules/${selectedCourseSlug.value}`)
             .then(res => {
                 selectedModules.value = res.data.data;
+                qaSections.value = res.data.qaSections;
             })
     }
 
@@ -494,13 +512,13 @@
             <div class="bg-white p-4 py-4 rounded-b-lg">
                 <div class="flex justify-between mt-2">
                     <div class="flex flex-row gap-2 self-center">
-                        <div class="relative w-16 h-16 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="relative w-12 h-12 bg-gray-100 rounded-full overflow-hidden">
                             <img 
                                 :src="selectedLesson?.thumbnail_url" 
-                                class="w-16 h-16 rounded-full" 
+                                class="w-12 h-12 rounded-full" 
                                 alt="tumbnai-image">
                         </div>
-                        <div class="flex flex-col">
+                        <div class="flex flex-col self-center">
                             <p class="text-md text-gray-600">{{ selectedLesson?.title }}</p>
                             <p class="text-xl text-blue-600">{{ selectedModule?.title }}</p>
                         </div>
@@ -525,24 +543,24 @@
                 </div>
 
                 <div class="flex justify-start mt-16 border-b-2 border-gray-200 gap-4">
-                    <button @click="setActiveTab('qa')"
+                    <button @click="setActiveTab(qaTab)"
                         class="tab-button  text-black px-4 py-2 text-md font-semibold" :class="{
-                            'border-lime-700 border-b-2 text-lime-700': activeTab === 'qa',
-                            'hover:border-lime-500': activeTab !== 'qa',
+                            'border-lime-700 border-b-2 text-lime-700': activeTab === qaTab,
+                            'hover:border-lime-500': activeTab !== qaTab,
                         }">
                         <i class="fas fa-question pr-2"></i> Q&A
                     </button>
-                    <button @click="setActiveTab('editor')"
+                    <button @click="setActiveTab(noteTab)"
                         class="tab-button  text-black px-4 py-2 text-md font-semibold" :class="{
-                            'border-lime-700 border-b-2 text-lime-700': activeTab === 'editor',
-                            'hover:border-lime-500': activeTab !== 'editor',
+                            'border-lime-700 border-b-2 text-lime-700': activeTab === noteTab,
+                            'hover:border-lime-500': activeTab !== noteTab,
                         }">
                         <i class="fas fa-pen pr-2"></i> Notes
                     </button>
-                    <button @click="setActiveTab('reviews')"
+                    <button @click="setActiveTab(reviewTab)"
                         class="tab-button  text-black px-4 py-2 text-md font-semibold" :class="{
-                            'border-lime-700 border-b-2 text-lime-700': activeTab === 'reviews',
-                            'hover:border-lime-500': activeTab !== 'reviews',
+                            'border-lime-700 border-b-2 text-lime-700': activeTab === reviewTab,
+                            'hover:border-lime-500': activeTab !== reviewTab,
                         }">
                         <i class="fas fa-star pr-2"></i> Reviews
                     </button>
@@ -550,18 +568,22 @@
 
                 <!-- Tab Content -->
                 <div class="mt-8">
-                    <div v-if="activeTab === 'qa'">
-                        <QA v-if="selectedCourse" :selectedCourse="selectedCourse" />
+                    <div v-if="activeTab === qaTab">
+                        <QA v-if="qaSections" 
+                            :qaSections="qaSections" 
+                            :courseId="selectedCourse?.id"/>
                     </div>
-                    <div v-if="activeTab === 'editor'">
-                        <div v-if="activeTab === 'editor'">
+                    <div v-if="activeTab === noteTab">
                             <TextEditor :selectedLesson="selectedLesson" :selectedCourse="selectedCourse"
                                 :openedLesson="openedLesson" />
                         </div>
-                    </div>
-                    <div v-if="activeTab === 'reviews'">
-                        <ReviewList :feedBacks="selectedCourse?.feedBacks" :averageRating="selectedCourse?.averageRating"
-                            :starDistribution="selectedCourse?.starDistribution" :showOnly="false" />
+                    <div v-if="activeTab === reviewTab">
+                        <ReviewList 
+                            v-if="feedBacks"
+                            :feedBacks="feedBacks" 
+                            :averageRating="averageRating"
+                            :starDistribution="starDistribution" 
+                            :showOnly="false" />
                     </div>
                 </div>
             </div>

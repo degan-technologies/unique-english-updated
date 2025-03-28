@@ -3,6 +3,7 @@
 namespace App\Models\Course;
 
 use App\Models\Comment\FeedBack;
+use App\Models\Quiz\QASection;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -22,8 +23,7 @@ class Course extends Model {
     public function transactions() { return $this->hasMany(Transaction::class); }
     public function feedBacks() { return $this->hasMany(FeedBack::class); }
     public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
-
-
+    public function qaSections() { return $this->hasMany(QASection::class); }
 
     public static function checkEligibility($courseId) {
         $user = Auth::guard('api')->user();

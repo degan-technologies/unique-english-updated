@@ -44,7 +44,7 @@ function enrollCourse(item) {
             name: "student",
             query: { tab: videoPlayerTab.value, slug: item.slug },
         });
-        selectedCourseSlug.value = slug;
+        selectedCourseSlug.value = item.slug;
         return;
     }
 

@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseModuleResource;
 use App\Models\Course\Course;
 use App\Models\Course\CourseModule;
-use App\Models\Transaction\Transaction;
+use App\Http\Resources\Quiz\QASectionResource;
+use App\Models\Quiz\QASection;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -54,9 +55,14 @@ class CourseModuleController extends Controller
         $courseModules = CourseModule::query()
             ->where('course_id', $courseId)
             ->get();
+        
+        $qaSections = QASection::query()
+            ->where('course_id', $courseId)
+            ->get();
 
         return response()->json([
             'data' => CourseModuleResource::collection($courseModules),
+            'qaSections' => QASectionResource::collection($qaSections),
         ]);
     }
 

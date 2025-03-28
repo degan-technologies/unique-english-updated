@@ -19,6 +19,6 @@ class QASection extends Model {
 
     public function user() { return $this->belongsTo(User::class); }
     public function course() { return $this->belongsTo(Course::class); }
-    public function replies() { return $this->hasMany(QASection::class,); }
-    public function parentSection() { return $this->belongsTo(QASection::class,); }
+    public function answers() { return $this->hasMany(Answer::class, 'question_id'); }
+    public function parentSection() { return $this->belongsTo(QASection::class); }
 }
