@@ -528,13 +528,13 @@
                         <div class="relative w-16 h-16 bg-gray-100 rounded-full border border-lime-700 overflow-hidden">
                             <div class="absolute bottom-0 left-0 w-full" :style="{
                                 height: overallProgress + '%',
-                                backgroundColor: '#00BFFF',
+                                backgroundColor: '#1E40AF',
                                 transition: 'height 0.5s ease'
                             }">
                             </div>
 
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <span class="text-lg font-bold text-black">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-lg font-bold text-lime-500">
                                     {{ overallProgress }} %
                                 </span>
                             </div>

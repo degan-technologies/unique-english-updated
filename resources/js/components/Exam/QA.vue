@@ -121,7 +121,7 @@ function deleteAnswer(replayId) {
                  <div 
                     @click="addQuestion()"
                     class="w-fit">
-                    <i class="fa-solid px-4 hover:text-sky-500 active:text-sky-500 cursor-pointer fa-paper-plane text-2xl font-bold text-sky-500"></i>
+                    <i class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"></i>
                 </div>
             </div> 
         </div>
@@ -183,7 +183,7 @@ function deleteAnswer(replayId) {
                             <div class="w-fit">
                                 <i 
                                     @click="saveQuestion()"
-                                    class="fa-solid px-4 hover:text-sky-500 active:text-sky-500 cursor-pointer fa-paper-plane text-2xl font-bold text-sky-500"></i>
+                                    class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"></i>
                             </div>
                         </div>
                     </div>
@@ -198,7 +198,7 @@ function deleteAnswer(replayId) {
                         <div class="w-fit">
                             <i 
                                 @click="actionEditReplay ? saveAnswer() : addAnswer(qa.id)"
-                                class="fa-solid px-4 hover:text-sky-500 active:text-sky-500 cursor-pointer fa-paper-plane text-2xl font-bold text-sky-500"></i>
+                                class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"></i>
                         </div>
                     </div>
         

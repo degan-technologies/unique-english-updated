@@ -88,17 +88,15 @@
                             <span class="self-senter">{{ courseContent.title }}</span>
                             <div 
                                 v-if="courseContent.content_type == 1"  
-                                class="mb-1 flex flex-row gap-2 items-center">
+                                class="mb-1 flex flex-row gap-2 justify-between items-center">
                                 <div>
-                                    <p class="text-sm font-bold text-blue-700 py-1">{{ courseContent.hour }}</p>
+                                    <p class="text-sm font-normal text-blue-700 py-1">{{ courseContent?.courseContentProgress?.video_progress }}/{{ courseContent.hour }}</p>
                                 </div>
                                 <!-- courseContent?.courseContentProgress?.max_progress -->
-                                <div class="w-full h-1 rounded-lg self-center bg-gray-200 hover:bg-white">
-                                    <div 
-                                        :style="{ width: courseContent?.courseContentProgress?.max_progress + '%' }"
-                                        :class="courseContent?.courseContentProgress?.max_progress > 90 ? 'bg-lime-500' : 'bg-blue-500'"
-                                        class="h-full rounded-lg">
-                                    </div>
+                                <div class=" rounded-lg self-center">
+                                    <p  
+                                        v-if="courseContent?.courseContentProgress?.max_progress > 90" 
+                                        class="text-sm p-1 font-normal text-lime-600 ">Completed</p>
                                 </div>
                             </div>
                         </div>
