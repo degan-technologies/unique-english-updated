@@ -46,14 +46,8 @@ class CourseContentController extends Controller {
     public function store(Request $request) {
         $user = User::query()->whereSystemAdminOrInstructor()->first();
         if (!$user) return;
-
-        $fileExtension = null;
-        $filePath = null;    
-        $durarion = null;
-        $moduleId = $request->course_module_id ?? null;
-        $fileType = null;
-        $imagePath = null;
     
+        $moduleId = $request->course_module_id ?? null;
         $courseModule = CourseModule::query()
             ->where('user_id', $user->id)
             ->find($moduleId);
@@ -71,27 +65,43 @@ class CourseContentController extends Controller {
     
         $sequence = $courseContent ? $courseContent->sequence + 1 : 1;
     
-        $validationRules = [
+        $rules = [
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
-            'description' => 'min:10',
-            'content_url' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
-            'thumbnail_url' => 'image', 
+            'description' => 'nullable|min:10',
+            'thumbnail_url' => 'nullable|image',
         ];
+  
+        if ($request->has('content_type')) {
+            $contentType = $request->content_type;
+            if ($contentType == VIDEO) {
+                $rules['content_url'] = 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv';
+            } elseif ($contentType == PDF) {
+                $rules['content_url'] = 'required|file|mimes:pdf|max:10240'; // max 10MB
+            } elseif ($contentType == IMAGE) {
+                $rules['content_url'] = 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5120'; // max 5MB
+            }
+        }
     
-        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courseContent'));
+        $validator = Validator::make($request->all(), $rules, $this->langService->getLang('courseContent'));
     
         if (!$validator->passes()) {
             return response()->json([
-            'message' => $validator->errors()->all()[0],
-            'errors' => $validator->errors()
+                'message' => $validator->errors()->all()[0],
+                'errors' => $validator->errors()
             ], 422);
         }
 
-        if($request->hasFile('content_url')) {
-             $fileExtension = $request->file('content_url')->getClientOriginalExtension();
-             $filePath = $request->file('content_url')->store('/course', 'public');
-
-             if (in_array($fileExtension, VIDEO_EXTENTION)) {
+        $fileExtension = null;
+        $filePath = null;    
+        $durarion = null;
+        $fileType = null;
+        $imagePath = null;
+    
+        if ($request->hasFile('content_url')) {
+            $fileExtension = $request->file('content_url')->getClientOriginalExtension();
+            $filePath = $request->file('content_url')->store('/course', 'public');
+    
+            if (in_array($fileExtension, VIDEO_EXTENTION)) {
                 $fileType = VIDEO;
                 $fileFullPath = storage_path('app/public/' . $filePath);
                 $getID3 = new \getID3();
@@ -99,21 +109,18 @@ class CourseContentController extends Controller {
                 if (isset($fileInfo['playtime_seconds'])) {
                     $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
                 }
-             }
-
-            if (in_array($fileExtension, PDF_EXTENTION)) {
+            } elseif (in_array($fileExtension, PDF_EXTENTION)) {
                 $fileType = PDF;
-            }
-
-            if (in_array($fileExtension, IMAGE_EXTENTION)) {
+            } elseif (in_array($fileExtension, IMAGE_EXTENTION)) {
                 $fileType = IMAGE;
             }
         } 
-
-        if($request->hasFile('thumbnail_url')) {
+    
+        if ($request->hasFile('thumbnail_url')) {
             $imagePath = $request->file('thumbnail_url')->store('/course', 'public');
         }
-    
+        
+        // Create the course content record
         $courseContent = $user->courseContents()->create([
             'course_module_id' => $moduleId,  
             'course_id' => $request->course_id,
@@ -134,6 +141,7 @@ class CourseContentController extends Controller {
             'data' => new CourseContentResource($courseContent),
         ]);
     }
+    
     
 
     /**
@@ -163,7 +171,6 @@ class CourseContentController extends Controller {
         $validationRules = [
             'title' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'min:4'],
             'description' => 'min:10', 
-            'content_url' =>'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv',
             'thumbnail_url' => 'image',   
         ];
     

@@ -12,6 +12,8 @@
     import ReviewList from "@/components/Course/ReviewList.vue";
     import certificate from "@/components/Course/certificate.vue";
     import Spinner from "@/components/Layout/Spinner.vue";
+    import LessonPdfReader from "@/components/Course/LessonPdfReader.vue";
+    import LessonImageViewer from "@/components/Course/LessonImageViewer.vue";
 
     const studentStore = UseStudentStore();
     const route = useRoute();
@@ -224,8 +226,8 @@
         selectedModule.value = module;
         selectedLesson.value = lesson;
         totalTime.value = selectedLesson.value.hour;
-        currentTime.value = selectedLesson.value.courseContentProgress.video_progress;
-        progress.value = selectedLesson.value.courseContentProgress.max_video_progress;
+        currentTime.value = selectedLesson.value?.courseContentProgress?.video_progress;
+        progress.value = selectedLesson.value?.courseContentProgress?.max_video_progress;
 
         contentType.value.type = lessonType.value;
         contentType.value.id = module.id;
@@ -352,7 +354,7 @@
         </div>
 
         <div v-else class="flex-1 flex mt-8 flex-col gap-4">
-            <template v-if="contentType.type === lessonType">
+            <template v-if="contentType.type === lessonType && selectedLesson?.content_type === 1">
                 <div class="video-container tabindex relative  bg-black h-96 rounded-lg overflow-hidden border-2 border-lime-700"
                     tabindex="0" 
                     @mousemove="resetControlsTimeout" 
@@ -504,7 +506,12 @@
                     </div>
                 </div>
             </template>
-
+            <template v-else-if="contentType.type === lessonType && selectedLesson?.content_type === 2">
+                <LessonPdfReader :selectedLesson="selectedLesson" />
+            </template>
+            <template v-else-if="contentType.type === lessonType && selectedLesson?.content_type === 3">
+                <LessonImageViewer :selectedLesson="selectedLesson" />
+            </template>
             <template v-else-if="contentType.type === quizType">
                 <QuizReader :quizData="selectedQuiz" />
             </template>

@@ -16,7 +16,7 @@
 
     const currentQuestionPage = ref(1);
     const questionsPerPage = 5;
-    
+
     const metaData = ref({
         title: "",
         instruction: "",
@@ -93,7 +93,7 @@
     }
 
     function toggleNewExam() {
-        isNewExamMode.value = true; 
+        isNewExamMode.value = true;
         selectedExam.value = null;
         oppenCollaps.value = true;
         selectedQuestion.value = null;
@@ -108,15 +108,15 @@
     function fetchExams() {
         Axios.get("/api/exams")
             .then((res) => {
-            const allExams = res.data.data;
-            console.log("All Exams:", allExams);
-            const filteredExams = allExams.filter(
-                (exam) => exam.course_id === props.courseID && exam.course_module_id === props.moduleID
-            );
-            qMetaDatas.value = filteredExams;
+                const allExams = res.data.data;
+                console.log("All Exams:", allExams);
+                const filteredExams = allExams.filter(
+                    (exam) => exam.course_id === props.courseID && exam.course_module_id === props.moduleID
+                );
+                qMetaDatas.value = filteredExams;
             })
             .catch(() => {
-            toast.error("Failed to fetch exams");
+                toast.error("Failed to fetch exams");
             });
     }
 
@@ -128,15 +128,15 @@
         const payload = {
             title: metaData.value.title,
             instruction: metaData.value.instruction,
-            module_id:props.moduleID,
-            course_id:props.courseID
+            module_id: props.moduleID,
+            course_id: props.courseID
         };
         Axios.post("/api/QMetaData", payload)
             .then((res) => {
                 selectedExam.value = res.data.data;
                 qMetaDatas.value.push(res.data.data);
                 oppenCollaps.value = true;
-                isNewExamMode.value = false; 
+                isNewExamMode.value = false;
                 toast.success("Exam created successfully");
             })
             .catch(() => {
@@ -229,28 +229,20 @@
 
 <template>
     <div class="container mx-auto p-4">
-        <div
-            v-if="confirmDialog.visible"
-            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-        >
+        <div v-if="confirmDialog.visible"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-                <h2
-                    class="text-xl font-semibold text-red-600 mb-4 flex items-center justify-center gap-2"
-                >
+                <h2 class="text-xl font-semibold text-red-600 mb-4 flex items-center justify-center gap-2">
                     <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
                 </h2>
                 <p class="mb-4">{{ confirmDialog.message }}</p>
                 <div class="flex justify-center space-x-4">
-                    <button
-                        @click="confirmDialog.onConfirm()"
-                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                    >
+                    <button @click="confirmDialog.onConfirm()"
+                        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
                         Delete
                     </button>
-                    <button
-                        @click="hideConfirm()"
-                        class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition"
-                    >
+                    <button @click="hideConfirm()"
+                        class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition">
                         Cancel
                     </button>
                 </div>
@@ -261,123 +253,79 @@
         <div class="grid grid-cols-1 md:grid-cols-3 rounded-lg">
             <!-- Left Panel: Exams List with Questions -->
             <div class="col-span-1 bg-white p-4 shadow-md">
-                <div
-                    class="flex justify-between items-center border-b border-gray-200 pb-2 mb-4"
-                >
+                <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-4">
                     <h1 class="font-bold text-lg">Exams</h1>
-                    <!-- Clicking the plus icon always toggles to new exam mode -->
-                    <i
-                        @click="toggleNewExam()"
-                        class="fa-solid fa-plus text-lg text-gray-800 cursor-pointer"
-                    ></i>
+                    <i @click="toggleNewExam()"
+                        class="fa-solid fa-plus text-lg text-gray-800 cursor-pointer"></i>
                 </div>
+
                 <div>
-                    <div
-                        v-for="qMetaData in qMetaDatas"
+                    <div v-for="qMetaData in qMetaDatas"
                         :key="qMetaData.id"
-                        class="mb-2"
-                    >
-                        <div
-                            class="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
-                            @click="onSelectExam(qMetaData)"
-                        >
+                        class="mb-2">
+
+                        <!-- Exam Item -->
+                        <div class="flex items-center justify-between p-2 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer group"
+                            @click="onSelectExam(qMetaData)">
                             <div class="flex items-center gap-1">
-                                <i
-                                    :class="{
-                                        'fa-chevron-down':
-                                            selectedExam &&
-                                            selectedExam.id === qMetaData.id,
-                                        'fa-chevron-right':
-                                            !selectedExam ||
-                                            selectedExam.id !== qMetaData.id,
-                                    }"
-                                    class="fa-solid text-sm text-gray-500"
-                                ></i>
+                                <i :class="{
+                                    'fa-chevron-down': selectedExam && selectedExam.id === qMetaData.id,
+                                    'fa-chevron-right': !selectedExam || selectedExam.id !== qMetaData.id,
+                                }"
+                                    class="fa-solid text-sm text-gray-500"></i>
+
                                 <h1 class="text-sm capitalize font-medium">
                                     {{ qMetaData.title }}
                                 </h1>
                             </div>
 
-                            <div class="flex items-center space-x-2">
-                                <button
-                                    @click.stop="deleteExam(qMetaData.id)"
-                                    class="text-red-500 hover:text-red-700"
-                                >
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
+                            <!-- Show delete icon only when hovering over the exam -->
+                            <button @click.stop="deleteExam(qMetaData.id)"
+                                class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
                         </div>
+
                         <!-- Questions List for Selected Exam -->
-                        <div
-                            v-if="
-                                selectedExam && selectedExam.id === qMetaData.id
-                            "
-                            class="mt-2 space-y-1 pl-4"
-                        >
-                            <div
-                                v-for="(question, index) in visibleQuestions"
+                        <div v-if="selectedExam && selectedExam.id === qMetaData.id"
+                            class="mt-2 space-y-1 pl-4">
+
+                            <div v-for="(question, index) in visibleQuestions"
                                 :key="question.id"
-                                class="flex items-center justify-between border-l border-gray-200 pl-3 py-1"
-                            >
+                                class="flex items-center justify-between border-l border-gray-200 pl-3 py-1 group"
+                                @mouseover="hoveredQuestion = question.id"
+                                @mouseleave="hoveredQuestion = null">
+
                                 <div class="flex items-center">
-                                    <span class="font-bold pr-3"
-                                        >{{
-                                            (currentQuestionPage - 1) *
-                                                questionsPerPage +
-                                            index +
-                                            1
-                                        }}.</span
-                                    >
-                                    <h1
-                                        @click="
-                                            onPrepareForUpdateQuestion(question)
-                                        "
-                                        class="text-sm capitalize cursor-pointer hover:text-lime-600"
-                                    >
+                                    <span class="font-bold pr-3">
+                                        {{ (currentQuestionPage - 1) * questionsPerPage + index + 1 }}.
+                                    </span>
+                                    <h1 @click="onPrepareForUpdateQuestion(question)"
+                                        class="text-sm capitalize cursor-pointer hover:text-lime-600">
                                         {{ question.question }}
                                     </h1>
                                 </div>
-                                <button
-                                    @click.stop="deleteQuestion(question.id)"
-                                    class="text-red-500 hover:text-red-700"
-                                >
+
+                                <!-- Show delete icon only for hovered question -->
+                                <button @click.stop="deleteQuestion(question.id)"
+                                    class="text-red-500 hover:text-red-700 opacity-0 transition-opacity duration-200"
+                                    :class="{ 'opacity-100': hoveredQuestion === question.id }">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
                             </div>
+
                             <!-- Pagination Controls for Questions -->
-                            <div
-                                v-if="
-                                    selectedExam &&
-                                    selectedExam.questions &&
-                                    selectedExam.questions.length >
-                                        questionsPerPage
-                                "
-                                class="mt-2 flex justify-center space-x-2"
-                            >
-                                <button
-                                    @click="
-                                        changeQuestionPage(
-                                            currentQuestionPage - 1
-                                        )
-                                    "
+                            <div v-if="selectedExam && selectedExam.questions.length > questionsPerPage"
+                                class="mt-2 flex justify-center space-x-2">
+                                <button @click="changeQuestionPage(currentQuestionPage - 1)"
                                     :disabled="currentQuestionPage === 1"
-                                    class="px-4 py-1 text-lime-700 rounded hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
+                                    class="px-4 py-1 text-lime-700 rounded hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-chevron-left"></i>
                                 </button>
 
-                                <button
-                                    @click="
-                                        changeQuestionPage(
-                                            currentQuestionPage + 1
-                                        )
-                                    "
-                                    :disabled="
-                                        currentQuestionPage ===
-                                        totalQuestionPages
-                                    "
-                                    class="px-4 py-1 text-lime-700 rounded hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
+                                <button @click="changeQuestionPage(currentQuestionPage + 1)"
+                                    :disabled="currentQuestionPage === totalQuestionPages"
+                                    class="px-4 py-1 text-lime-700 rounded hover:text-lime-800 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                             </div>
@@ -385,93 +333,71 @@
                     </div>
                 </div>
             </div>
-
             <!-- Right Panel: Exam Meta Data & Add/Update Question Form -->
             <div class="col-span-1 md:col-span-2 bg-gray-50 p-4 shadow-md">
                 <!-- Exam Header and Save Option for Existing Exams -->
-                <div
-                    v-if="selectedExam"
-                    class="flex items-center justify-between mb-4"
-                >
-                    <div
-                        @click="onCollapsExam()"
-                        class="flex items-center cursor-pointer"
-                    >
+                <div v-if="selectedExam"
+                    class="flex items-center justify-between mb-4">
+                    <div @click="onCollapsExam()"
+                        class="flex items-center cursor-pointer">
                         <h1 class="text-sm font-bold text-gray-500 capitalize">
                             {{ selectedExam.title }}
                         </h1>
                     </div>
-                    <div
-                        v-if="oppenCollaps && prepaireForUpdate"
+                    <div v-if="oppenCollaps && prepaireForUpdate"
                         @click="UpdateMetaData()"
-                        class="flex items-center gap-2"
-                    >
-                        <i
-                            class="fa-solid fa-save text-lg text-lime-600 hover:text-lime-800 cursor-pointer"
-                        ></i>
+                        class="flex items-center gap-2">
+                        <i class="fa-solid fa-save text-lg text-lime-600 hover:text-lime-800 cursor-pointer"></i>
                         <p class="text-sm text-gray-500">Save</p>
                     </div>
                 </div>
                 <!-- Exam Meta Data Form (visible only when open) -->
-                <form v-if="oppenCollaps" class="space-y-6">
+                <form v-if="oppenCollaps"
+                    class="space-y-6">
                     <div>
-                        <label
-                            class="block text-sm font-semibold text-gray-700"
-                        >
+                        <label class="block text-sm font-semibold text-gray-700">
                             Exam Title
                         </label>
-                        <input
-                            v-model="metaData.title"
+                        <input v-model="metaData.title"
                             @input="onPrepareForUpdate('title')"
                             type="text"
                             class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
-                            placeholder="Add Exam Title"
-                        />
+                            placeholder="Add Exam Title" />
                     </div>
                     <div>
-                        <label
-                            class="block text-sm font-semibold text-gray-700"
-                        >
+                        <label class="block text-sm font-semibold text-gray-700">
                             Exam Instruction (optional)
                         </label>
-                        <textarea
-                            v-model="metaData.instruction"
+                        <textarea v-model="metaData.instruction"
                             @input="onPrepareForUpdate('instruction')"
                             placeholder="Add exam instruction if necessary"
-                            class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"
-                        ></textarea>
+                            class="w-full mt-2 p-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-lime-700"></textarea>
                     </div>
                     <!-- Show Create Exam button only when in new exam mode -->
-                    <button
-                        type="button"
+                    <button type="button"
                         v-if="isNewExamMode"
                         @click="storeMetaData()"
-                        class="w-full py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 transition duration-200"
-                    >
+                        class="w-full py-2 bg-lime-700 text-white rounded-lg hover:bg-lime-800 transition duration-200">
                         Create Exam
                     </button>
                     <!-- For existing exams, show Add New Question button if meta form is open -->
-                    <div v-if="selectedExam && !isNewExamMode" class="mt-4">
-                        <button
-                            type="button"
+                    <div v-if="selectedExam && !isNewExamMode"
+                        class="mt-4">
+                        <button type="button"
                             @click="showAddQuestionForm"
-                            class="w-full py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition duration-200"
-                        >
+                            class="w-full py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition duration-200">
                             Add New Question
                         </button>
                     </div>
                 </form>
                 <!-- Add/Update Question Form (visible when meta form is collapsed) -->
-                <div v-if="selectedExam && !oppenCollaps" class="mt-6">
-                    <AddQuestion
-                        :selectedExam="selectedExam"
+                <div v-if="selectedExam && !oppenCollaps"
+                    class="mt-6">
+                    <AddQuestion :selectedExam="selectedExam"
                         :selectedQuestion="selectedQuestion"
-                        @quizAdded="fetchExams"
-                    />
+                        @quizAdded="fetchExams" />
                 </div>
             </div>
         </div>
     </div>
 </template>
-
-

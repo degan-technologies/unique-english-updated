@@ -178,6 +178,16 @@ class ErrorLangEnglish extends Lang {
                 'status.in' => 'Do you want to publish',
                 'note.min' => 'Note must have minmum ten characters',
             ],
+            'modules' => [
+                'title.required' => 'Module title is required',
+                'title.string'   => 'Module title must be a valid string',
+                'title.min'      => 'Module title must have at least 3 characters',
+                'description.required' => 'Module description is required',
+                'description.string'   => 'Module description must be a valid string',
+                'description.min'      => 'Module description must have at least 10 characters',
+                'course_id.required'   => 'Course ID is required',
+                'course_id.exists'     => 'The selected course does not exist',
+            ],
 
             'LiveResource'=>[
                 'resurce_url_required' => 'Resource URL is required',
