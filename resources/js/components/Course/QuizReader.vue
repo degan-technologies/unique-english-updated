@@ -240,7 +240,7 @@
 
             <!-- Result Section -->
             <div v-if="showResult"
-                class="bg-white p-6 h-96 rounded-lg shadow-lg border border-lime-500">
+                class="bg-white p-6 h-96 rounded-lg shadow-lg border border-lime-500 result-container relative mt-8 w-full h-96 mx-auto flex items-center justify-center overflow-hidden ">
                 <canvas ref="confettiCanvas" class="absolute inset-0 pointer-events-none w-full h-full"></canvas>
                 <transition name="fade">
                     <div class="z-10 text-center">

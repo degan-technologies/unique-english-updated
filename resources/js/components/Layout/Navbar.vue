@@ -3,7 +3,7 @@
     import { ref, onMounted, onUnmounted } from 'vue';
 
     import { useThemeStore } from '@/store/theme';
-    import appRouter from "../../routes/AppRouter";
+    import appRouter from '@/routes/AppRouter';
     import { useAppStore } from "@/store/useAppStore";
     import { useSidebarStore } from '@/store/useSidebarStore';
 
@@ -25,37 +25,10 @@
 
     const openProfile = () => selectedContent.value = 'profile';
 
-    const logout = async () => {
-        try {
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                appStore.logout();
-                localStorage.removeItem('authToken');
-                appRouter.navigate('/login');
-                return;
-            }
-
-            await Axios.post('/api/logout', {}, {
-                headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            });
-
-            appStore.logout();
-            localStorage.removeItem('authToken');
-            this.$router.push('/login');
-        } catch (error) {
-            console.error("Logout failed:", error);
-
-            if (error.response && error.response.status === 401) {
-                console.warn("Token invalid or expired. Clearing local state.");
-            }
-
-            appStore.logout();
-            localStorage.removeItem('authToken');
-            this.$appRouter.push('/login');
-    }
-    };
+    function signOut() {
+    appStore.setAuthToken('');
+    loggingIn.value = false;
+}
 </script>
 
 <template>
@@ -164,8 +137,8 @@
                             <div class="block px-4 py-2 hover:bg-gray-200" title="Settings">
                                 Settings
                             </div>
-                            <div @click="logout" class="block px-4 py-2 hover:bg-gray-200" title="Logout">
-                                Logout
+                            <div @click=signOut() class="block px-4 py-2 hover:bg-gray-200" title="Logout">
+                                SignOut
                             </div>
                         </div>
                     </div>

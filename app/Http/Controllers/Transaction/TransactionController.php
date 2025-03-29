@@ -133,7 +133,11 @@ class TransactionController extends Controller {
                     }
 
                     
-                    $cheTransactionExist = $order->transactions()->where('customer_id', $user->id)->where('product_type', $item['type'])->first();
+                    $cheTransactionExist = $order->transactions()
+                        ->where('customer_id', $user->id)
+                        ->where('product_type', $item['type'])
+                        ->where('status', TRANSACTION_SUCCESS)
+                        ->first();
 
                     if($cheTransactionExist) {
                         if ($cheTransactionExist->status === TRANSACTION_SUCCESS) {
