@@ -11,9 +11,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QMetaDataResource;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
-
+use App\Http\Resources\Quiz\QuizResource;
+use App\Models\Quiz\Quiz;
 class QMetaDataController extends Controller{
     protected $langService;
 
@@ -138,6 +137,18 @@ class QMetaDataController extends Controller{
 
         return response()->json([
             'message' => $this->langService->getLang('q_meta_data_deleted_successfully'),
+        ]);
+    }
+
+    public function checkAnswer($qmId) {
+        $user = Auth::user();
+
+        $quiz = Quiz::query()
+            ->where('q_meta_data_id', $qmId)
+            ->get();
+ 
+        return response()->json([
+            'data' => QuizResource::collection($quiz),
         ]);
     }
 }

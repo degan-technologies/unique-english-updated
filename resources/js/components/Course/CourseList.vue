@@ -4,7 +4,8 @@
     const props = defineProps({
         selectedModules: Object,
         contentType: Object,
-        completedLessons: Object
+        completedLessons: Object,
+        certify: Boolean
     });
 
     const emit = defineEmits(["openedLesson", "openedQuiz", "downloadCertificate"]);
@@ -28,6 +29,10 @@
         selectedQuizId.value = qMetaData.id;
         selectedLessonId.value = null;
         emit("openedQuiz", module, qMetaData);
+    }
+
+    function downloadCerteficate() {
+        emit('downloadCertificate');
     }
     
     watchEffect(()=>{
@@ -124,11 +129,15 @@
                 </ul>
             </div>
         </div>
-        <button @click="$emit('downloadCertificate', true)" :disabled="overallProgress < 100" :class="overallProgress === 100
+        <button @click="downloadCerteficate()" :disabled="certify" 
+            :class="certify
             ? 'text-blue-500 hover:underline'
-            : 'text-gray-400 cursor-not-allowed'" :title="overallProgress < 100
+            : 'text-gray-400 cursor-not-allowed'" 
+
+            :title="certify
             ? 'Complete all lessons and quizzes to download your certificate'
-            : 'Download your certificate'" class="leading-relaxed text-lg py-2 flex items-center">
+            : 'Download your certificate'"
+             class="leading-relaxed text-lg py-2 flex items-center">
             <i class="fas fa-certificate text-teal-500 mr-2 ml-2"></i>
             <strong>Certificate of Completion</strong>
         </button>

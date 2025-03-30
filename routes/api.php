@@ -65,7 +65,10 @@ Route::middleware('auth:api')
         Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
         Route::get('/contniue/progress/{slug}', [CourseContentProgressController::class, 'currentProgress']);
         Route::get('/coursecontent/progress/{courseContentId}', [CourseContentProgressController::class, 'show']);
-    });
+
+        Route::post('/answer/quiz', [ResultController::class, 'answerQuiz']);
+        Route::get('/check/answer/{qmId}', [QMetaDataController::class, 'checkAnswer']);
+});
     // Social Login Routes
 Route::middleware(['web'])->group(function () {
     Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider']);

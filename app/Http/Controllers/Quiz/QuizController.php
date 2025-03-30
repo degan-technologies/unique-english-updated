@@ -12,9 +12,7 @@ use App\Models\Quiz\QMetaData;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\Quiz\QuizResource;
-use Illuminate\Http\Response;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Http\Resources\Quiz\QuizResource; 
 
 class QuizController extends Controller
 {

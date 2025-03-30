@@ -8,6 +8,7 @@ use App\Models\Course\Course;
 use App\Models\Course\CourseModule;
 use App\Http\Resources\Quiz\QASectionResource;
 use App\Models\Quiz\QASection;
+use App\Models\Quiz\QMetaData;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -39,6 +40,7 @@ class CourseModuleController extends Controller
 
     public function getCourseModules($slug) {
         $user = Auth::user();
+        $certify = false;
 
         $courseId = Course::query()
             ->where('slug', $slug)
@@ -60,9 +62,29 @@ class CourseModuleController extends Controller
             ->where('course_id', $courseId)
             ->get();
 
+        $certificateCompletion = QMetaData::query()
+            ->where('course_id', $courseId)
+            ->where(function($query) use ($user) {
+                $query->has('results')
+                      ->whereHas('results', function($subQuery) use ($user) {
+                          $subQuery->where('user_id', $user->id)
+                                   ->where('result', '<', 70);
+                      });
+            })
+            ->orWhere(function ($query) use ($user) {
+                $query->whereDoesntHave('results');
+            })
+            ->first();
+
+        if(!$certificateCompletion) {
+            $certify = true;
+        }
+ 
+
         return response()->json([
             'data' => CourseModuleResource::collection($courseModules),
             'qaSections' => QASectionResource::collection($qaSections),
+            'certify' => $certify,
         ]);
     }
 

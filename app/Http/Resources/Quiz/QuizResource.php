@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Quiz;
 
+use App\Models\Quiz\QuizAnswer;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class QuizResource extends JsonResource {
   
@@ -18,7 +20,23 @@ class QuizResource extends JsonResource {
             'question_type' => $this->question_type,
             'exam_id' => $this->q_meta_data_id,
             'hint' => $this->hint,
-
+            'checkAnswer' => $this->quizAnswers ? $this->checkAnswer() : false,
         ];
+    }
+
+    public function checkAnswer() { 
+        $user = Auth::user(); 
+
+        $check = QuizAnswer::query()
+            ->where('user_id', $user->id)
+            ->where('quiz_id', $this->id)
+            ->where('answer', CORRECT)
+            ->first();
+
+        if ($check) {
+            return true;
+        }
+
+        return false;        
     }
 }

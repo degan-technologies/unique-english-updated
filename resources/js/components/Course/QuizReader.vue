@@ -1,14 +1,10 @@
 <script setup>
-    import { ref, computed, onMounted, nextTick, watch } from "vue";
     import Axios from "axios";
     import confetti from "canvas-confetti";
-    import Spinner from "../Layout/Spinner.vue";
+    import Spinner from "@/components/Layout/Spinner.vue";
     import { toast } from "vue3-toastify";
-    import 'vue3-toastify/dist/index.css';
-
-    import { useAppStore } from "@/store/useAppStore";
-    const appStore = useAppStore();
-    const authUser = appStore.authUser; 
+    import { ref, computed, onMounted, nextTick, watch } from "vue";
+    import 'vue3-toastify/dist/index.css'; 
 
     const props = defineProps({
         quizData: {
@@ -25,17 +21,13 @@
     const loading = ref(true);
     const confettiCanvas = ref(null);
     const questions = ref([]);
+    const chekIncorects = ref(false);
+    const scorePercentage = ref(0);
  
     const showHintForQuestion = ref(false);
 
     const totalQuestions = computed(() => questions.value.length);
     const quiz = computed(() => questions.value[currentQuestion.value - 1] || null);
-
-    const scorePercentage = computed(() =>
-        totalQuestions.value > 0
-            ? (correctAnswers.value / totalQuestions.value) * 100
-            : 0
-    );
 
     const parseChoice = (choiceData) => {
         if (Array.isArray(choiceData)) {
@@ -68,9 +60,6 @@
     );  
     
     const goToNext = () => {
-        if (quiz.value && quiz.value.answer.includes(answers.value[currentQuestion.value - 1])) {
-            correctAnswers.value += 1;
-        }
         showHintForQuestion.value = false;
         if (currentQuestion.value < totalQuestions.value) {
             currentQuestion.value += 1;
@@ -86,9 +75,6 @@
     };
 
     const submitQuiz = async () => {
-        if (quiz.value && quiz.value.answer.includes(answers.value[currentQuestion.value - 1])) {
-            correctAnswers.value += 1;
-        }
         showResult.value = true;
         await nextTick();
         if (scorePercentage.value >= 70) {
@@ -98,34 +84,25 @@
     };
 
     const retakeQuiz = () => {
-        currentQuestion.value = 1;
-        correctAnswers.value = 0;
+        currentQuestion.value = 1; 
         showResult.value = false;
         answers.value = new Array(quizData.value.length).fill(null);
         showHintForQuestion.value = false;
     };
 
-    const storeResult = async () => {
-        try {
-            const payload = {
-                result: correctAnswers.value,
+    function storeResult() {
+         const payload = {
                 exam_id: examData.value?.id,
             };
 
-            const response = await Axios.post("/api/results", payload);
-            console.log("Result saved:", response.data);
-            toast.success("Quiz result saved successfully!");
-        } catch (error) {
-            if (error.response && error.response.status === 409) {
-                console.log("Result already exists:", error.response.data);
-                toast.info("Your quiz result is already recorded.");
-            } else {
-                console.error("Error saving result:", error);
-                toast.error("There was an error saving your quiz result.");
-            }
-        }
+        Axios
+            .post("/api/results", payload)
+            .then(res=>{
+                scorePercentage.value =  res.data.mark;
+                correctAnswers.value = res.data.correctAnswers;
+                totalQuestions.value = res.data.totalQuation
+            })
     };
-
 
     const launchConfetti = () => {
         const myCanvas = confettiCanvas.value;
@@ -153,6 +130,35 @@
             toast.info("No hint available for this question.");
         }
     };
+
+    function submitAnswer(quizId, choice) {
+        const payload = {
+            quiz_id:quizId,
+            choice: choice
+        }
+        
+        Axios
+            .post("/api/answer/quiz", payload)
+            .then(res => {})
+    }
+
+    function checkAnswer() {
+        chekIncorects.value = true;
+        currentQuestion.value = 1;
+        correctAnswers.value = 0;
+        showResult.value = false;
+        showHintForQuestion.value = false;
+
+        Axios
+            .get(`/api/check/answer/${props.quizData.id}`)
+            .then(res => {
+                questions.value = res.data.data.map((q) => ({
+                    ...q,
+                    choice: parseChoice(q.choice),
+                }));
+            })
+    };
+
 </script>
 
 <template>
@@ -207,10 +213,19 @@
                                         answers[currentQuestion - 1] !== choice,
                                 },
                             ]">
-                                <input type="radio" v-model="answers[currentQuestion - 1]" :value="choice"
+                                <input
+                                 type="radio" 
+                                 v-model="answers[currentQuestion - 1]" 
+                                 :value="choice"
+                                 @input="submitAnswer(quiz.id, choice)"
                                     class="form-radio h-4 w-4 text-lime-500" />
                                 <span class="text-lg text-gray-700">{{ choice }}</span>
                             </label>
+                        </div>
+                        <div 
+                            v-if="chekIncorects && !quiz.checkAnswer"
+                            class="w-full bg-rose-300 text-gray-500 rounded-md">
+                            <p class="p-4">Incorrect Answer</p>
                         </div>
                     </div>
 
@@ -254,10 +269,16 @@
                             <span class="font-bold">{{ totalQuestions }}</span>
                             correctly.
                         </p>
-                        <button v-if="scorePercentage < 70" @click="retakeQuiz"
-                            class="mt-6 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105">
-                            Retake Quiz 🔄
-                        </button>
+                       <div class="flex gap-4 ">
+                            <button v-if="scorePercentage < 70" @click="retakeQuiz"
+                                class="mt-6 px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105">
+                                Retake Quiz 🔄
+                            </button>
+                            <button @click="checkAnswer()"
+                                class="mt-6 px-6 py-3 bg-lime-500 text-white rounded-lg hover:bg-red-600 transition-all transform hover:scale-105">
+                            check answer
+                            </button>
+                       </div>
                     </div>
                 </transition>
             </div>

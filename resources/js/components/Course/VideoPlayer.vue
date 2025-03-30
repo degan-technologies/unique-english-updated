@@ -60,6 +60,7 @@
     const qaTab = ref("qa");
     const noteTab = ref("note");
     const reviewTab = ref("review");
+    const certify = ref(false);
 
     const activeTab = ref(qaTab.value);
 
@@ -77,11 +78,8 @@
         return selectedCourse.value?.starDistribution;
     })
 
-    const handleDownloadCertificate = (status) => {
-        downloadCertificate.value = status;
-    };
-    const handleCancelCertificate = () => {
-        downloadCertificate.value = false;
+    const handleDownloadCertificate = () => {
+        downloadCertificate.value = !downloadCertificate.value;
     };
 
     const setActiveTab = (tab) => {
@@ -281,6 +279,7 @@
             .then(res => {
                 selectedModules.value = res.data.data;
                 qaSections.value = res.data.qaSections;
+                certify.value = res.data.certify;
             })
     }
 
@@ -348,10 +347,13 @@
 <template>
     <div v-if="selectedCourseSlug"
         class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[1.75fr_1fr] gap-4 relative mt-24 bg-slate-50">
-        <div v-if="downloadCertificate && overallProgress === 100">
-            <certificate :selectedCourse="selectedCourse" :overallProgress="overallProgress"
-                @cancelCertificate="handleCancelCertificate" />
-        </div>
+        
+        <div v-if="downloadCertificate && certify" class="w-full mt-8 overflow-x-auto scrollbar ">
+        <certificate 
+            :selectedCourse="selectedCourse" 
+            :overallProgress="overallProgress"
+            @backToHome="handleDownloadCertificate" />
+    </div>
 
         <div v-else class="flex-1 flex mt-8 flex-col gap-4">
             <template v-if="contentType.type === lessonType && selectedLesson?.content_type === 1">
@@ -602,6 +604,7 @@
                 v-if="selectedModules" 
                 :selectedModules="selectedModules" 
                 :contentType="contentType"
+                :certify="certify"
                 @openedLesson="openedLesson"
                 @openedQuiz="openedQuiz" 
                 @downloadCertificate="handleDownloadCertificate" />

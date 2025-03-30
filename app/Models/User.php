@@ -22,6 +22,7 @@ use App\Models\Quiz\Quiz;
 use App\Models\Quiz\Result;
 use App\Models\Quiz\QASection;
 use App\Models\Quiz\QMetaData;
+use App\Models\Quiz\QuizAnswer;
 use App\Models\System\PlatformComission;
 use App\Models\System\PlatformComissionHistory;
 use App\Models\Transaction\Transaction;
@@ -106,6 +107,7 @@ class User extends Authenticatable {
     public function transaction() { return $this->hasMany(Transaction::class); }
 
     public function quizzes() { return $this->hasMany(Quiz::class);}
+    public function quizAnswers() { return $this->hasMany(QuizAnswer::class);}
     public function results() { return $this->hasMany(Result::class);}
     public function qaSections() { return $this->hasMany(QASection::class); }
     public function answers() { return $this->hasMany(Answer::class); }

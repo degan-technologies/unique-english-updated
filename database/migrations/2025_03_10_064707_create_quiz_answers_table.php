@@ -11,19 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('answers', function (Blueprint $table) {
+        Schema::create('quiz_answers', function (Blueprint $table) {
             $table->id();
- 
-            $table->text('answer'); 
-            
-            $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
+
+            $table->string('answer')->default(INCORRECT);
+            $table->json('choice')->default('{}');
 
             $table->timestamps();
-            $table->softDeletes();
-            
-            $table->foreignId('question_id')->constrained('q_a_sections')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('course_id')->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
+
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('quiz_id')->constrained('quizzes')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 
@@ -32,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('answers');
+        Schema::dropIfExists('quiz_answers');
     }
 };

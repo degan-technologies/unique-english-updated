@@ -10,8 +10,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\ResultResource;
 use App\Models\Course\Course;
+use App\Models\Quiz\QMetaData;
+use App\Models\Quiz\Quiz;
+use App\Models\Quiz\QuizAnswer;
 use App\Models\Quiz\Result;
 use App\Services\LangService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ResultController extends Controller {
     protected $langService;
@@ -39,7 +44,6 @@ class ResultController extends Controller {
         /**
          * @var User $user
          */
-
         $user = Auth::user();
         $examId = $request->exam_id;
 
@@ -49,7 +53,10 @@ class ResultController extends Controller {
             ], 401);
         }
 
-        $exam = $user->qMetaDatas()->find($examId);
+        $exam =QMetaData::query()
+            ->where('id', $examId)
+            ->first();
+
 
         if (!$exam) {
             return response()->json([
@@ -64,42 +71,50 @@ class ResultController extends Controller {
                 'message' => $this->langService->getLang('not_eligible_for_exam'),
             ], 403);
         }
-    
-        $validationRules = [
-            'result'           => 'required|integer',
-        ];
-    
-        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('Result'));
-    
-        if (!$validator->passes()) {
-            return response()->json([
-                'message' => $validator->errors()->first(),
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
+
+        $correctAnswer = $exam->quizzes()
+            ->whereHas('quizAnswers', function($query) use ($user) {
+                $query->where('user_id', $user->id)
+                ->where('answer', CORRECT);
+            })
+            ->count();
+
+        $inCorrectAnswer = $exam->quizzes()
+            ->whereHas('quizAnswers', function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->where('answer', INCORRECT);
+            })
+            ->count();
+
+        $totalQuation = $correctAnswer + $inCorrectAnswer;
+
+        $mark = $correctAnswer / $totalQuation * 100;
 
         $checkResult = $user->results()->where('q_meta_data_id', $examId)->first();
+        
 
         if ($checkResult) {
             $checkResult->update([
-                'result'=> $request->result,
+                'result'=> $mark,
             ]);
 
             return response()->json([
-                'message' => $this->langService->getLang('result_created_successfully'),
-                'data'    => new ResultResource($checkResult),
+                'mark' => $mark,
+                'correctAnswers' => $correctAnswer,
+                'totalQuation' => $totalQuation,
             ]);
         }
     
         $result = $user->results()->create([
             'slug'             => Str::uuid(),
-            'result'           => $request->result, 
+            'result'           => $mark, 
             'q_meta_data_id'   => $examId, 
         ]);
     
-        return response()->json([
-            'message' => $this->langService->getLang('result_created_successfully'),
-            'data'    => new ResultResource($result),
+        return response()->json([ 
+            'mark' => $mark,
+            'correctAnswers' => $correctAnswer,
+            'totalQuation' => $totalQuation,
         ]);
     }
     
@@ -173,6 +188,61 @@ class ResultController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('result_deleted_successfully'),
+        ]);
+    }
+    
+    public function answerQuiz(Request $request) {
+        /**
+         * @var User $user
+         */ 
+        $user = Auth::user();
+        $quizId = $request->quiz_id ?? null;
+        
+        $quiz = Quiz::query()
+            ->where('id', $quizId)
+            ->first();
+
+        if(!$quiz) {
+            return response()->json([
+                'data' => $this->langService->getLang('quiz_not_found'),
+            ], 404);
+        }
+
+        $validationRules = [
+            'choice' => 'required|string',
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('Result'));
+
+        if (!$validator->passes()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $getAnswere = $quiz->answer[0] === $request->choice ? CORRECT : INCORRECT;
+
+        $checkAnswer = QuizAnswer::query()
+            ->where('user_id', $user->id)
+            ->where('quiz_id', $quizId)
+            ->first();
+
+        if ($checkAnswer) { 
+                $checkAnswer->update([
+                        'answer' => $getAnswere,
+                        'choice' => json_encode($request->choice),
+                    ]);
+        } else {
+            $user->quizAnswers()->insert([ 
+                'quiz_id' => $quizId,
+                'answer'  => $getAnswere,
+                'choice'  => json_encode($request->choice),
+            ]);
+        }
+
+        return response()->json([
+            'data' => $getAnswere,
         ]);
     }
 }
