@@ -39,14 +39,14 @@
 
     function enrollCourse(item) {
 
-    if (item.isMyCourse) {
-        router.push({
-            name: "student",
-            query: { tab: videoPlayerTab.value, slug: item.slug },
-        });
-        selectedCourseSlug.value = item.slug;
-        return;
-    }
+        if (item.isMyCourse) {
+            router.push({
+                name: "student",
+                query: { tab: videoPlayerTab.value, slug: item.slug },
+            });
+            selectedCourseSlug.value = item.slug;
+            return;
+        }
 
         const selectedItem = [{ type: "course", slug: item.slug }];
         Axios
@@ -219,10 +219,11 @@
                                 Course Overview
                             </h2>
                         </div>
-                        <p class="py-4 text-lg leading-9">
-                            {{ selectedCourse?.overview }}
-                        </p>
-                        <div class="flex items-left justify-between">
+                        <div>
+                            <div class="text-gray-600 text-lg mt-2 text-justify"
+                                v-html="selectedCourse?.overview"></div>
+                        </div>
+                        <div class="flex items-left justify-between mt-5">
                             <h2 class="text-3xl text-slate-600 font-semibold">
                                 What you will learn
                             </h2>
@@ -236,7 +237,7 @@
                                 class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300">
                                 <span class="font-semibold text-lg">{{
                                     courseModule.title
-                                    }}</span>
+                                }}</span>
                                 <i :class="[
                                     {
                                         'rotate-90':

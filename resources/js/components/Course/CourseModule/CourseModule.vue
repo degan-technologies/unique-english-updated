@@ -323,7 +323,6 @@
                                                     :selectedContent="selectedContent"
                                                     :selectedModule="null"
                                                     class="w-full max-w-[90%] sm:max-w-[80%] md:max-w-[90%] lg:max-w-[80%] mx-auto" />
-
                                             </transition>
                                         </div>
                                     </div>
