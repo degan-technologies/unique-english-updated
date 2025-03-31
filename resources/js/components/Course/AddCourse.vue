@@ -108,6 +108,7 @@
             .then(res => {
                 successMessage.value = res.data.message;
                 course.value = { course_name: '', overview: '', tag: '', skill_level_id: '', price: '', discount: '', credit_hour: '', thumbnail_url: '', intro_video: '', language: '' };
+                isStoringCourse.value = false;
             })
             .finally(() => {
                 loading.value = false;
@@ -139,7 +140,8 @@
                 selectedCourse.value = res.data.data;
                 console.log('Selected Course:', selectedCourse.value);
                 showNextButton.value = true;
-            })
+                isSavingDraft.value = false;
+            }) 
             .finally(() => {
                 loading.value = false;
             });
@@ -166,14 +168,11 @@
             .post(`/api/courses/update/${selectedCourse.value.id}`, formData)
             .then(res => {
                 successMessage.value = res.data.message;
-            })
+                isUpdatingCourse.value = false;
+            }) 
             .finally(() => {
                 loading.value = false;
             });
-    };
-
-    function goBack() {
-        router.back();
     };
 
     const updateOverview = (newOverview) => {
@@ -181,12 +180,12 @@
     };
 
     watch(
-        (successMessage, () => route.query.slug),
-        (newSuccessMessage,) => {
+        [() => successMessage.value, () => route.query.slug],
+        ([newSuccessMessage, newSlug]) => {
             if (newSuccessMessage) {
-                setTimeout(() => {
-                    successMessage.value = null;
-                }, 2000);
+            setTimeout(() => {
+                successMessage.value = null;
+            }, 2000);
             }
         },
         { immediate: true }
