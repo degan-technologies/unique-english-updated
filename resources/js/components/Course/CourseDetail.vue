@@ -214,20 +214,15 @@
                 </div>
                 <div class="bg-white p-4 py-8 rounded-b-lg">
                     <div class="text-left mb-6">
-                        <div class="flex items-left justify-between">
-                            <h2 class="text-3xl text-slate-600 font-semibold">
-                                Course Overview
-                            </h2>
+                        <h2 class="text-3xl text-slate-600 font-semibold mb-3">
+                            Course Overview
+                        </h2>
+                        <div 
+                            class="preview ql-editor max-w-full text-justify mt-5" 
+                            v-html="selectedCourse?.overview" 
+                            style="font-size: 1.1rem !important; line-height: 1.75rem !important; all: revert;">
                         </div>
-                        <div>
-                            <div class="text-gray-600 text-lg mt-2 text-justify"
-                                v-html="selectedCourse?.overview"></div>
-                        </div>
-                        <div class="flex items-left justify-between mt-5">
-                            <h2 class="text-3xl text-slate-600 font-semibold">
-                                What you will learn
-                            </h2>
-                        </div>
+                        <h2 class="text-3xl text-slate-600 font-semibold mt-5"> What you will learn </h2>
                     </div>
                     <div v-for="(courseModule, courseModuleIndex) in selectedCourse?.courseModules"
                         :key="courseModuleIndex"

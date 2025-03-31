@@ -226,9 +226,12 @@
             </div>
             <div class="p-3">
                 <div>
-                    <h2 class="text-xl font-semibold text-gray-800 mt-4">Course Overview</h2>
-                    <div class="text-gray-600 text-lg mt-2 text-justify"
-                        v-html="selectedCourse.overview"></div>
+                    <h2 class="text-2xl font-semibold text-gray-800 mt-4 mb-3">Course Overview</h2>
+                    <div 
+                        class="preview ql-editor max-w-full text-justify mt-5" 
+                        v-html="selectedCourse?.overview" 
+                        style="font-size: 1.1rem !important; line-height: 1.75rem !important; all: revert;">
+                    </div>
                 </div>
                 <AddCourseModule v-if="editCourseModule"
                     :actionType="actionType" />
