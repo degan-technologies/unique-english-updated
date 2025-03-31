@@ -1,11 +1,11 @@
 <script setup>
     import Axios from 'axios';
-    import Editor from 'primevue/editor';
     import { storeToRefs } from 'pinia';
     import { onUnmounted, ref, watch, toRaw, onMounted, onBeforeUnmount } from 'vue';
     import { useRouter, useRoute } from "vue-router";
     import videojs from 'video.js';
     import 'video.js/dist/video-js.css';
+    import overviewEditor from '@/components/Layout/overviewEditor.vue';
 
     import { useInstructorStore } from "@/store/useInstructorStore";
 
@@ -176,6 +176,10 @@
         router.back();
     };
 
+    const updateOverview = (newOverview) => {
+        course.value.overview = newOverview;
+    };
+
     watch(
         (successMessage, () => route.query.slug),
         (newSuccessMessage,) => {
@@ -262,14 +266,10 @@
                                 class="w-full border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-lime-700 text-sm" />
                         </div>
                     </div>
+
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Overview</label>
-                        <Editor v-model="course.overview"
-                            editorStyle="height: 200px"
-                            :class="{ 'border-red-500': errors.overview }"
-                            class="w-full border border-gray-300 rounded-md" />
-                        <p v-if="errors.overview"
-                            class="mt-1 text-red-500 text-sm">{{ errors.overview }}</p>
+                        <overviewEditor :selectedCourse="course"
+                            @update-overview="updateOverview" />
                     </div>
                 </div>
                 <div class="space-y-6">
