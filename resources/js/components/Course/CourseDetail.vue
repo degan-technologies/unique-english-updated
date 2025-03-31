@@ -105,24 +105,21 @@
 
     const playVideo = () => {
         if (isPlaying.value) {
-            console.log("Video is already playing.");
             return;
         }
         isPlaying.value = true;
 
         videoSource.value = selectedCourse.value.intro_video_url;
-        console.log("Selected video source:", videoSource.value);
         if (!videoSource.value || videoSource.value.trim() === '') {
-            console.error("Invalid video source!");
             return;
         }
+
         nextTick(() => {
-            if (player.value) {
-                console.log("Disposing existing player...");
+            if (player.value) { 
                 player.value.dispose();
                 player.value = null;
-            }
-            console.log("Initializing the video player...");
+            } 
+            
             player.value = videojs(videoPlayer.value, {
                 controls: true,
                 autoplay: true,
@@ -133,17 +130,10 @@
             player.value.src({
                 src: videoSource.value,
                 type: 'video/mp4',
-            });
-            console.log("Video source set successfully.");
+            }); 
             player.value.on('timeupdate', onTimeUpdate);
             player.value.on('loadedmetadata', onLoadedMetadata);
             player.value.on('progress', onProgress);
-            player.value.on('error', (e) => {
-                console.error("Video player error:", e);
-            });
-            player.value.on('seeked', () => {
-                console.log("Video seeked to:", player.value.currentTime());
-            });
         });
     };
 

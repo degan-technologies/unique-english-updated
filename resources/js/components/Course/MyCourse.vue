@@ -1,119 +1,97 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import Axios from "axios";
-import { fullUrl } from "../../utils/urlHelper.js";
-import CourseCard from "./CourseCard.vue";
-import { useRoute, useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
-import { UseStudentStore } from "@/store/UseStudentStore";
+    import Axios from "axios";  
+    import { storeToRefs } from "pinia"; 
+    import { useRouter } from "vue-router";
+    import { ref, onMounted, onBeforeUnmount } from "vue";
 
-const studentStore = UseStudentStore();
-const { videoPlayerTab, selectedCourseSlug } = storeToRefs(studentStore);
+    import { UseStudentStore } from "@/store/UseStudentStore";
+    import CourseCard from "@/components/Course/CourseCard.vue";
 
-const transactions = ref([]);
-const route = useRoute();
-const router = useRouter();
-const overallProgress = ref(0);
+    const studentStore = UseStudentStore();
+    const { videoPlayerTab, selectedCourseSlug } = storeToRefs(studentStore);
 
-const slug = ref(route.query.slug || "");
+    const myCourses = ref([]);
+    const router = useRouter();  
+    const isPlaying = ref(false); 
+    const player = ref(null);
+    const videoPlayer = ref(null);
 
-watch(
-    () => route.query.slug,
-    (newSlug) => {
-        slug.value = newSlug;
-        fetchTransactions();
+    function getMycourses() {
+        Axios
+            .get("/api/courses/my-courses")
+            .then(res => {
+                myCourses.value = res.data.data; 
+            })
     }
-);
-
-function getProgress() {
-    Axios
-        .get(`/api/contniue/progress/${selectedCourseSlug.value}`)
-        .then(res => {
-            overallProgress.value = res.data.overAllPogress;
-        })
-}
-
-const storedToken = localStorage.getItem("token") || "";
-console.log("Token from LS:", storedToken);
-const cleanedToken = storedToken.replace(/^Bearer\s+/i, "");
-console.log("Cleaned token:", cleanedToken);
-
-if (cleanedToken) {
-    Axios.defaults.headers.common["Authorization"] = `Bearer ${cleanedToken}`;
-} else {
-    console.warn("No token found in localStorage");
-}
-
-// Fetch transactions—include the slug as a query parameter if required.
-const fetchTransactions = async () => {
-    try {
-        const response = await Axios.get(`/api/courses/transactions/course?slug=${slug.value}`);
-        transactions.value = response.data;
-        console.log("Fetched transactions:", transactions.value);
-    } catch (error) {
-        console.error("Error fetching transactions:", error.response?.data || error);
+ 
+    function continueLearning(slugValue) {
+        router.push({
+            name: "student",
+            query: { 
+                tab: videoPlayerTab.value, 
+                slug: slugValue 
+            },
+        });
+        selectedCourseSlug.value = slugValue;
     }
-};
+  
 
-onMounted(fetchTransactions);
-
-// This function navigates to the student route with query parameters.
-// Make sure the route with name "student" exists in your router.
-function changeTabTemporaryFunction(slugValue) {
-    router.push({
-        name: "student",
-        query: { tab: videoPlayerTab.value, slug: slugValue },
+    onBeforeUnmount(() => {
+        if (player.value) {
+            player.value.dispose();
+            player.value = null;
+        }
     });
-    selectedCourseSlug.value = slugValue;
-}
-onMounted(() => {
-    getProgress();
-})
+
+    onMounted(() => { 
+        getMycourses();
+    })
 </script>
 
 <template>
     <div class="min-h-screen overflow-y-auto">
-        <!-- Main Content -->
         <main class="pt-10">
             <div class="container mx-auto p-8 max-w-6xl">
-                <!-- Message when no transactions are found -->
-                <div v-if="transactions.length === 0" class="text-center text-gray-500">
+                <div v-if="myCourses?.length === 0" 
+                    class="text-center text-gray-500">
                     No purchased Course found.
                 </div>
-                <div v-else class="flex flex-col md:flex-row gap-4">
-                    <!-- Left Column: List of Transactions -->
+                <div v-else class="flex flex-col md:flex-row gap-4"> 
                     <div class="md:w-2/3 space-y-6">
-                        <div v-for="transaction in transactions" :key="transaction.id"
-                            class="bg-white border border-gray-300 shadow-lg rounded-lg h-56 overflow-hidden p-4">
+                        <div v-for="myCourse in myCourses" :key="myCourse.id"
+                            class="bg-white border border-gray-300 shadow-lg rounded-lg h-fit overflow-hidden p-4">
                             <div class="flex flex-col md:flex-row">
                                 <div class="md:w-1/2">
-                                    <video class="w-full h-48 object-cover rounded-lg" controls
-                                        :poster="fullUrl(transaction.course?.thumbnail_url, '/images/course-thumbnail.jpg')">
-                                        <source
-                                            :src="fullUrl(transaction.course?.intro_video, 'https://www.w3schools.com/html/mov_bbb.mp4')"
-                                            type="video/mp4" />
-                                        Your browser does not support the video tag.
-                                    </video>
+
+                                    <div 
+                                        class="relative w-full h-56">
+                                        <video ref="videoPlayer"
+                                            id="videoPlayer"
+                                            class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border"
+                                            controls
+                                            :poster="myCourse?.thumbnail_url"
+                                            preload="auto">
+                                            <source :src="myCourse?.intro_video_url"
+                                                type="video/mp4" />
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
                                 </div>
                                 <div class="md:w-1/2 p-4 flex flex-col justify-center">
                                     <h2 class="text-xl font-semibold pb-2">
-                                        {{ transaction.course?.course_name || "Course Name" }}
+                                        {{ myCourse?.course_name}}
                                     </h2>
-                                    <div class="text-gray-600 text-sm">
-                                        <p class="line-clamp">
-                                            {{ transaction.course?.overview || "Course overview goes here." }}
-                                        </p>
-                                    </div>
+                                    
                                     <!-- Progress Bar -->
-                                    <div class="flex  flex-row items-center gap-2">
+                                    <div class="flex  flex-row items-center gap-2 mt-8">
                                         <div class="w-[90%] bg-gray-200 rounded-full h-2.5">
                                             <div class="bg-green-500 h-2.5 rounded-full" :style="{
-                                                width: `${overallProgress}%`
+                                                width: `${myCourse.progress}%`
                                             }"></div>
                                         </div>
-                                        <span class="text-sm font-medium text-gray-700 inline-flex">{{ overallProgress }} %</span>
+                                        <span class="text-sm font-medium text-gray-700 inline-flex">{{ myCourse.progress }} %</span>
                                     </div> 
-                                    <button @click="changeTabTemporaryFunction(transaction.course.slug)"
+                                    <button @click="continueLearning(myCourse.slug)"
                                         class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-colors">
                                         Continue
                                     </button>

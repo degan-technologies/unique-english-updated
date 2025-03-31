@@ -151,73 +151,32 @@ class CourseContentProgressController extends Controller {
 
 
     public function currentProgress($slug) {
-        
-        $user = Auth::user();
-        $overAllPogress = 0;
 
-        $course = Course::query()
-            ->where('slug', $slug)
-            ->first();
-
-        $eligibleCourse = Course::checkEligibility($course->id);
-
-        if (!$eligibleCourse) {
-            return response()->json(['message' => 'Course not found'], 404);
-        }
-
-        $progress = CourseContentProgress::query()
-            ->where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $totalSeconds = $course->courseContents()->where('content_type', VIDEO)->get()->reduce(function ($carry, $content) {
-            $timeParts = explode(':', $content->hour);
-            $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
-            return $carry + $seconds;
-        }, 0);
-
-        $courseHours = floor($totalSeconds / 3600);
-        $courseMinutes = floor(($totalSeconds % 3600) / 60);
-        $courseSeconds = $totalSeconds % 60;
-
-        $overAllCreditHour = sprintf('%02d:%02d:%02d', $courseHours, $courseMinutes, $courseSeconds);
-
-        if($progress) {
-            $totalTimeInSeconds = $progress->where('course_id', $course->id)->get()->reduce(function ($carry, $content) {
-                $timeParts = explode(':', $content->progress);
-                $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
-                return $carry + $seconds;
-            }, 0);
-            $overAllPogress = round($totalTimeInSeconds / $totalSeconds * 100, 0);
-        }
-
-
-        if(!$overAllPogress) {
-            $overAllPogress = 0;
-        }
-
-        if (!$progress) {
-            $courseModule = $course->courseModules()->first();
+        $checkProgress = Course::getCourseProgress($slug);
+ 
+        if (!$checkProgress['progress']) {
+            $courseModule = $checkProgress['course']->courseModules()->first();
             $courseContent = $courseModule->courseContents()->first();
 
             return response()->json([
                 'courseModule' => new CourseModuleResource($courseModule),
                 'courseContent' => new CourseContentResource($courseContent),
-                'overAllPogress' => $overAllPogress,
+                'overAllPogress' => $checkProgress['overAllPogress'],
             ], 200);
         }
+        
+        $courseContent = CourseContent::query()
+            ->where( 'id', $checkProgress['progress']->course_content_id)
+            ->first();
 
         $courseModule = CourseModule::query()
-            ->where('course_id', $course->id)
+            ->where('id', $courseContent->course_module_id)
             ->first();
             
-        $courseContent = $courseModule->courseContents()->where( 'id', $progress->course_content_id)->first();
-
         return response()->json([
             'courseModule' =>  new CourseModuleResource($courseModule),
             'courseContent' => new CourseContentResource($courseContent),
-            'overAllPogress' => $overAllPogress,
+            'overAllPogress' => $checkProgress['overAllPogress'],
         ], 200);
     }
 }

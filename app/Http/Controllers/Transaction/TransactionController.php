@@ -39,34 +39,6 @@ class TransactionController extends Controller {
         $this->langService = $langService;
         $this->chapaService = $chapaService;
     }
-    
-    public function index($type)
-    {
-        if (!in_array($type, ['course', 'book', 'live'])) {
-            return response()->json(['error' => 'Invalid type'], 400);
-        }
-
-        switch ($type) {
-            case 'course':
-                $transactions = Transaction::with('course')
-                    ->where('product_type', $type)
-                    ->get();
-                break;
-            case 'book':
-                $transactions = Transaction::with('book')
-                    ->where('product_type', $type)
-                    ->get();
-                break;
-            case 'live':
-                $transactions = Transaction::with('live')
-                    ->where('product_type', $type)
-                    ->get();
-                break;
-        }
-
-        return response()->json($transactions);
-    }
-
 
     public function initiatePayment(Request $request) {
         /**

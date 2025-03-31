@@ -230,8 +230,7 @@ class BookController extends Controller {
         ]);
     }
     
-    public function destroy(string $id)
-    {
+    public function destroy(string $id) {
 
 
         $user = User::query()

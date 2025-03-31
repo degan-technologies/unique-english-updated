@@ -32,6 +32,7 @@ use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
+use App\Models\Transaction\Transaction;
 
 Route::post('/registration', [UserController::class, 'store']);
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
@@ -98,7 +99,6 @@ Route::middleware('auth:api')
 
     });
 
-
 Route::middleware('auth:api')
     ->prefix('courses')
     ->group(function () {
@@ -108,8 +108,9 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
-        Route::get('/transactions/{type}', [TransactionController::class, 'index'])
-            ->where('type', 'course|book|live');
+        Route::get('/my-courses/', [CourseController::class, 'myCourse']);
+        Route::get('/my-books/', [BookController::class, 'myBooks']);
+             
         });
         
 Route::middleware('auth:api')

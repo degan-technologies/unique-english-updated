@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseResource;
+use App\Http\Resources\Course\MyCourseResource;
 use App\Http\Resources\StudentResources\StdCourse\StdCourseResource;
 use App\Models\Course\Course;
 use App\Models\User;
@@ -178,7 +179,7 @@ class CourseController extends Controller {
         $data = $validator->validated();
 
         if ($course->status === 'draft') {
-            $data['status'] = 'published'; // Set status to 'published'
+            $data['status'] = 'published';  
         }
 
         if ($request->hasFile('thumbnail_url')) {
@@ -203,8 +204,6 @@ class CourseController extends Controller {
             'data' => new CourseResource($course),
         ]);
     }
-
-
 
     public function certificateStatus(Request $request, $course_id)
     {
@@ -237,16 +236,6 @@ class CourseController extends Controller {
         if ($countExams && $countCompletedLesson === $countExams) {
             $allQuizzesCompleted = true;
         }
-
-        // foreach ($qMetaDataRecords as $qMeta) {
-        //     $result = Result::where('q_meta_data_id', $qMeta->id)
-        //         ->where('user_id', $user->id)
-        //         ->first();
-        //     if (!$result) {
-        //         $allQuizzesCompleted = false;
-        //         break;
-        //     }
-        // }
 
         return response()->json([
             'certificate_active' => $allContentsCompleted && $allQuizzesCompleted,
@@ -332,6 +321,27 @@ class CourseController extends Controller {
             'data'       => CourseResource::collection($courses)
         ]);
     }
-    
+
+
+    public function myCourse() {
+        $user = Auth::user();
+
+        $courses = Course::query()
+            ->whereHas('transactions', function ($query) use ($user) {
+                $query->where('status', TRANSACTION_SUCCESS)
+                    ->where('user_id', $user->id);
+            })
+            ->get();
+        
+        if(!$courses) {
+            return response()->json([
+                'message' => $this->langService->getLang('course_not_found'),
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => MyCourseResource::collection($courses)
+        ]);
+    }
     
 }

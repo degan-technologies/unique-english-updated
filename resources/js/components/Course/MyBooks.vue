@@ -1,154 +1,120 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import axios from "axios";
-import { useRouter } from "vue-router";
-import { fullUrl } from "../../utils/urlHelper.js";
-import Book from "../Book/Book.vue";
+    import Axios from "axios";
+    import { ref, onMounted } from "vue";
+    import { useRouter } from "vue-router";
+    import Book from "@/components/Book/Book.vue"; 
 
-// Import Pinia helpers and student store
-import { storeToRefs } from "pinia";
-import { UseStudentStore } from "@/store/UseStudentStore";
+    import { storeToRefs } from "pinia";
+    import { UseStudentStore } from "@/store/UseStudentStore";
 
-const router = useRouter();
-const studentStore = UseStudentStore();
-const { bookOverviewTab } = storeToRefs(studentStore);
+    const studentStore = UseStudentStore();
+    const { bookReadingTab } = storeToRefs(studentStore);
 
-const transactions = ref([]);
+    const myBooks = ref([]);
+    const router = useRouter();
 
-// Retrieve the token from localStorage
-const storedToken = localStorage.getItem("token") || "";
-console.log("Token from LS:", storedToken);
+    function changeTab(slug) {
+        router.push({
+            name: "student",
+            query: {
+                tab: bookReadingTab.value,
+                slug: slug
+            },
+        });
+    }
 
-const cleanedToken = storedToken.replace(/^Bearer\s+/i, "");
-console.log("Cleaned token:", cleanedToken);
+    function getMycourses() {
+        Axios
+            .get("/api/courses/my-books")
+            .then(res => {
+                myBooks.value = res.data.data;
+            })
+    }
 
-if (cleanedToken) {
-  axios.defaults.headers.common["Authorization"] = `Bearer ${cleanedToken}`;
-} else {
-  console.warn("No token found in localStorage");
-}
-
-function changeTab(slug) {
-  router.push({
-    name: "student",
-    query: { tab: bookOverviewTab.value, slug: slug },
-  });
-}
-
-const fetchTransactions = async () => {
-  try {
-    const response = await axios.get("/api/courses/transactions/book");
-    transactions.value = response.data;
-    console.log("Fetched transactions:", transactions.value);
-  } catch (error) {
-    console.error("Error fetching transactions:", error.response?.data || error);
-  }
-};
-
-onMounted(fetchTransactions);
+    onMounted(() => {
+        getMycourses();
+    });
 </script>
 
-
-
 <template>
-  <div>
-    <div class="min-h-screen overflow-y-auto">
-    <!-- Header
-    <header class="fixed top-0 left-0 w-full bg-lime-700 text-white p-4 z-10">
-      <h1 class="text-xl">My Courses</h1>
-    </header> -->
-   
-    <!-- Main Content -->
-    <main class="pt-10">
-      <div class="container mx-auto p-8 max-w-6xl">
-        <div v-if="transactions.length === 0" class="text-center text-gray-500">
-          No transactions found.
-        </div>
-        <div v-else class="flex flex-col md:flex-row gap-4">
-          <div class="md:w-2/3 space-y-6">
-            <div
-              v-for="transaction in transactions"
-              :key="transaction.id"
-              class="bg-white border border-gray-300 shadow-lg rounded-lg h-56 overflow-hidden p-4"
-            >
-              <div class="flex flex-col md:flex-row">
-                <div class="md:w-1/2">
-                  <video
-                    class="w-full h-48 object-cover rounded-lg"
-                    controls
-                    :poster="fullUrl(transaction.book?.cover_page_url, '/images/course-thumbnail.jpg')"
-                  >
-                    <source
-                      :src="fullUrl(transaction.book?.intro_vedio, 'https://www.w3schools.com/html/mov_bbb.mp4')"
-                      type="video/mp4"
-                    />
-                    Your browser does not support the video tag.
-                  </video>
+    <div>
+        <div class="min-h-screen overflow-y-auto">
+
+            <!-- Main Content -->
+            <main class="pt-10">
+                <div class="container mx-auto p-8 max-w-6xl">
+                    <div v-if="myBooks?.length === 0" 
+                        class="text-center text-gray-500">
+                        No transactions found.
+                    </div>
+                    <div v-else class="flex flex-col md:flex-row gap-4">
+                        <div class="md:w-2/3 space-y-6">
+                            <div v-for="myBook in myBooks" :key="myBook.id"
+                                class="bg-white border border-gray-300 shadow-lg rounded-lg h-56 overflow-hidden p-4">
+                                <div class="flex flex-col md:flex-row">
+                                    <div class="md:w-1/2">
+
+                                        <div 
+                                        class="relative w-full h-56">
+                                        <video ref="videoPlayer"
+                                            id="videoPlayer"
+                                            class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border"
+                                            controls
+                                            :poster="myBook?.cover_page_url"
+                                            preload="auto">
+                                            <source :src="myBook?.intro_video_url"
+                                                type="video/mp4" />
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+
+                                    </div>
+                                    <div class="md:w-1/2 p-4 flex flex-col justify-center">
+                                        <h2 class="text-xl font-semibold pb-2">
+                                            {{ myBook?.title}}
+                                        </h2>
+                                        <div class="text-gray-600 text-sm">
+                                            <p class="line-clamp">
+                                                {{ myBook?.description }}
+                                            </p>
+                                        </div> 
+
+                                        <!-- Continue Button -->
+                                        <button @click="changeTab(myBook?.slug)"
+                                            class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600  font-semibold text-sm rounded-md hover:bg-lime-700">
+                                            Continue
+                                        </button>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-                <div class="md:w-1/2 p-4 flex flex-col justify-center">
-                  <h2 class="text-xl font-semibold pb-2">
-                    {{ transaction.book?.title || "Book Name" }}
-                  </h2>
-                  <div class="text-gray-600 text-sm">
-                    <p class="line-clamp">
-                      {{ transaction.book?.description || "Book overview goes here." }}
-                    </p>
-                  </div>
-
-                  <!-- Progress Bar -->
-                  <div class="flex items-center gap-2 mt-3">
-  <div class="w-full bg-gray-200 rounded-full h-2.5">
-    <div class="bg-green-500 h-2.5 rounded-full" :style="{ width: '30%' }"></div>
-  </div>
-  <span class="text-sm font-medium text-gray-700">30%</span>
-</div>
-
-
-                  <!-- Continue Button -->
-                  <button @click="changeTab(transaction.book?.slug)"  class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600  font-semibold text-sm rounded-md hover:bg-lime-700">
-                     Continue
-                  </button>
-
+                <div class="mt-8">
+                    <Book />
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column: Course Outline Card (Fixed Height) -->
-          <div class="md:w-1/3 bg-gray-50 border border-gray-300 shadow-lg rounded-lg p-4 h-[400px] self-start overflow-y-auto">
-            <h3 class="text-xl font-semibold mb-4">Course Outline</h3>
-            <ul class="list-disc list-inside text-gray-700">
-              <li class="mb-2">Introduction & Setup</li>
-              <li class="mb-2">Understanding Vue 3 Fundamentals</li>
-              <li class="mb-2">Building Components</li>
-              <li class="mb-2">State Management with Vuex</li>
-              <li class="mb-2">Routing and Navigation</li>
-              <li class="mb-2">Advanced Patterns</li>
-              <li class="mb-2">Deployment & Optimization</li>
-            </ul>
-          </div>
+            </main>
         </div>
-      </div>
-      <div class="mt-8">
-         <Book/>
-      </div>
-    </main>
     </div>
-  </div>
 </template>
 
 <style>
 html,
 body {
-  overflow-y: auto;
-  height: auto;
+    overflow-y: auto;
+    height: auto;
 }
+
 .line-clamp {
-  display: -webkit-box;
-  -webkit-line-clamp: 2; /* Restrict to 2 lines */
-  line-clamp: 2; /* Restrict to 2 lines */
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Restrict to 2 lines */
+    line-clamp: 2;
+    /* Restrict to 2 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>
