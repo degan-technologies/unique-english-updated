@@ -133,31 +133,34 @@ class TransactionController extends Controller {
                     }
 
                     
-                    $cheTransactionExist = $order->transactions()
+                    $checkTransactionExist = $order->transactions()
                         ->where('customer_id', $user->id)
                         ->where('product_type', $item['type'])
-                        ->where('status', TRANSACTION_SUCCESS)
                         ->first();
 
-                    if($cheTransactionExist) {
-                        if ($cheTransactionExist->status === TRANSACTION_SUCCESS) {
+                    if($checkTransactionExist) {
+                        if ($checkTransactionExist->status === TRANSACTION_SUCCESS) {
                             return response()->json([
                                 'message' => $this->langService->getLang('aleready exist')
                             ], 404);
                         }
+ 
+                        $checkTransactionExist->update([ 
+                            'tx_ref' => $txRef, 
+                            'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
+                        ]);
+                    }else {
+                        $transaction = $order->transactions()->create([
+                            'slug' => Str::uuid(),
+                            'user_id' => $order->user_id,
+                            'tx_ref' => $txRef,
+                            'amount' => $order->price,
+                            'customer_id' => $user->id,
+                            'status' => TRANSACTION_PENDING,
+                            'product_type' => $item['type'],
+                            'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
+                        ]);
                     }
-                    
-                    $transaction = $order->transactions()->create([
-                         'slug' => Str::uuid(),
-                         'user_id' => $order->user_id,
-                         'tx_ref' => $txRef,
-                         'amount' => $order->price,
-                         'customer_id' => $user->id,
-                         'status' => TRANSACTION_PENDING,
-                         'product_type' => $item['type'],
-                         'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
-                     ]);
-
                 $totalPrice += $order->price;
                         
                 } 
