@@ -6,11 +6,18 @@
     import videojs from 'video.js';
     import 'video.js/dist/video-js.css';
 
+    import { useAuthStore } from '@/store/useAuthStore';
     import { UseStudentStore } from "@/store/UseStudentStore";
+    import { useAppStore } from '@/store/useAppStore';
 
     import ReviewList from "@/components/Course/ReviewList.vue";
 
+    const appStore = useAppStore();
+    const AuthStore = useAuthStore();
     const studentStore = UseStudentStore();
+
+    const { isLoggedIn } = storeToRefs(appStore);
+    const { showLoginForm } = storeToRefs(AuthStore);
     const { videoPlayerTab, courses, selectedCourseSlug } = storeToRefs(studentStore);
     const route = useRoute();
     const router = useRouter();
@@ -38,6 +45,11 @@
     }
 
     function enrollCourse(item) {
+
+        if(!isLoggedIn.value) {
+            showLoginForm.value = true;
+            return;
+        }
 
         if (item.isMyCourse) {
             router.push({

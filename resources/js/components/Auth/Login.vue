@@ -3,8 +3,10 @@ import Axios from 'axios';
 import { onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '@/store/useAppStore';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const appStore = useAppStore();
+const AuthStore = useAuthStore();
 
 const emailInput = ref("");
 const passwordInput = ref("");
@@ -14,6 +16,7 @@ const loggingIn = ref(false);
 const loginMessage = ref('');
 
 const { lang, frontLang } = storeToRefs(appStore);
+const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
 
 const toggleShowPassword = () => {
     showpasswordInput.value = !showpasswordInput.value;
@@ -33,6 +36,7 @@ function tryLogin() {
         .then(response => {
             appStore.setAuthToken(response.data.token);
             appStore.changeLoginStatus(true);
+            showLoginForm.value = false;
         })
         .catch(error => {
             appStore.setAuthToken('');
@@ -41,6 +45,15 @@ function tryLogin() {
             setTimeout(() => loginMessage.value = '', 2000);
         })
         .finally(() => loggingIn.value = false);
+}
+
+function closeLoginForm() {
+    showLoginForm.value = false;
+}
+
+function roteToLogin() {
+    showLoginForm.value = false;
+    showRegistrationForm.value = true;
 }
 
 onMounted(() => {
@@ -56,21 +69,13 @@ const socialLogin = (provider) => {
 </script>
 
 <template>
-    <div class="flex h-screen w-screen overflow-hidden bg-lime-200 relative scrollbar-thin scrollbar-thumb-lime-700 scrollbar-track-lime-300">
-        <!-- Image Section with Overlay -->
-        <div class="relative w-1/2 hidden lg:block">
-            <img src="images/signup.jpg" alt="Login" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center">
-                <h2 class="text-white text-5xl font-extrabold drop-shadow-lg">Welcome Back to Unique English!</h2>
-            </div>
-        </div>
-
+    <div  @click="closeLoginForm()"
+        class="flex h-screen w-screen overflow-hidden  relative scrollbar-thin scrollbar-thumb-lime-700 scrollbar-track-lime-300 items-center justify-center">
         <!-- Login Form Section -->
-        <div class="flex items-center justify-center w-full lg:w-1/2 p-8 relative z-10">
-            <div class="bg-white/30 backdrop-blur-lg p-10 rounded-2xl shadow-2xl w-full max-w-md">
-                <h1 class="text-4xl font-extrabold text-lime-700 text-center mb-6">Welcome Back!</h1>
+        <div  @click.stop  class="flex items-center h-fit justify-center w-full lg:w-1/2 p-8 relative z-10">
+            <div class="bg-white backdrop-blur-lg h-fit p-10 rounded-2xl shadow-2xl w-full max-w-md"> 
 
-                <p class="text-gray-600 text-center mb-8 text-lg">Please log in to your account</p>
+                <p class="text-lime-600 text-left font-bold mb-8 text-lg">Login To Your Account</p>
 
                 <div v-if="loginMessage" class="text-rose-500 text-center mb-4">{{ loginMessage }}</div>
 
@@ -96,7 +101,7 @@ const socialLogin = (provider) => {
                                 placeholder="Enter your password"
                                 required
                                 class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700" />
-                            <button type="button" @click="toggleShowPassword" class="absolute right-3 top-3 text-gray-500">
+                            <button type="button" @click="toggleShowPassword" class="absolute p-3 px-0 right-3 top-3 text-gray-500">
                                 <span v-if="showpasswordInput">🙈</span>
                                 <span v-else>👁️</span>
                             </button>
@@ -124,13 +129,12 @@ const socialLogin = (provider) => {
 
                 <!-- Register Link -->
                 <div class="mt-8 text-center">
-                    <a href="/register" class="text-lime-700 font-semibold hover:underline">Don't have an account? Register</a>
+                    <span @click="roteToLogin()" 
+                        class="text-lime-700 font-semibold hover:underline">Don't have an account? Register</span>
                 </div>
             </div>
         </div>
-
-        <!-- Bubble Animation Background -->
-        <div class="absolute inset-0 z-0 bubble-background"></div>
+ 
     </div>
 </template>
 

@@ -5,24 +5,29 @@ import { storeToRefs } from "pinia";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 
+import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from '@/store/useAuthStore';
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
-import { useAppStore } from "@/store/useAppStore";
 
 const router = useRouter();
 const appStore = useAppStore();
 const cartStore = useCartStore();
+const AuthStore = useAuthStore();
 const studentStore = UseStudentStore();
 
 const checkoutUrl = ref(null);
 
 const { items, itemCount, totalPrice } = storeToRefs(cartStore);
+const { showLoginForm, showRegistrationForm, } = storeToRefs(AuthStore);
 const { isLoggedIn, loggingIn, logoImage, authUser } = storeToRefs(appStore);
-const { landingPageTab, selectedCourseSlug } = storeToRefs(studentStore);
+const { landingPageTab, selectedCourseSlug, myCourseTab } = storeToRefs(studentStore);
 
 const isMenuOpen = ref(false);
 const isMenuVisible = ref(true);
 const dropDownOpen = ref(false);
+const actionTypeLogin = ref('login');
+const actionTypeRegister = ref('register');
 
 const toggleMenu = () => {
     isMenuOpen.value = !isMenuOpen.value;
@@ -49,14 +54,13 @@ function removeItem(item) {
     cartStore.removeFromCart(selectedItem);
 }
 
-function changeTab() {
+function changeTab(slug) {
     router.push({
-        name: "student",
+        name: 'student',
         query: {
-            tab: landingPageTab.value,
-        },
+            tab: myCourseTab.value,
+        }
     });
-    selectedCourseSlug.value = null;
 }
 
 function signOut() {
@@ -68,6 +72,17 @@ const getInitials = (name) => {
     if (!name) return "";
     return name.charAt(0).toUpperCase();
 };
+
+function toggleAuthActions(actionType) {
+
+    if(actionType == actionTypeLogin.value) {
+        showLoginForm.value = true;
+        showRegistrationForm.value = false;
+    } else {
+        showLoginForm.value = false;
+        showRegistrationForm.value = true;
+    }
+}
 
 </script>
 
@@ -145,10 +160,10 @@ const getInitials = (name) => {
                         class="bg-gray-50 absolute  top-16 right-0 text-black w-48 shadow-lg rounded p-2">
                         <ul>
                             <li>
-                                <router-link to="/my-course"
+                                <div @click="changeTab()"
                                     class="block px-2 py-2 hover:bg-gray-200 text-sm  items-center gap-2">
                                     <span class="block px-4 py-2 hover:bg-gray-200">My Courses</span>
-                                </router-link>
+                                </div>
                             </li>
                             <li>
                                 <a href="/certificate"
@@ -170,8 +185,12 @@ const getInitials = (name) => {
                 </div>
 
                 <div v-else class="flex gap-4">
-                    <router-link to="/login" class="btn-login">Login</router-link>
-                    <router-link to="/register" class="btn-register">Register</router-link>
+                    <div
+                        @click="toggleAuthActions(actionTypeLogin)"
+                        class="btn-login">Login</div>
+                    <div  
+                        @click="toggleAuthActions(actionTypeRegister)" 
+                        class="btn-register">Register</div>
                 </div>
                 <button
                     class="text-white h-fit w-fit text-sm px-2 py-1 rounded-md mt-3 border-2 border-yellow-400  font-bold hover:border-yellow-600">አማርኛ</button>

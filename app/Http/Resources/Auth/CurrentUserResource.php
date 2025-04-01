@@ -4,6 +4,7 @@ namespace App\Http\Resources\Auth;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 class CurrentUserResource extends JsonResource
 {
@@ -29,6 +30,34 @@ class CurrentUserResource extends JsonResource
             'bg_image' => $this->bg_image
                 ? Storage::disk('public')->url($this->bg_image)
                 : 'no-bg_image.png',
+
+            'role'=>$this->getRole(),
         ];
+    }
+
+    public function getRole() {
+
+        /**
+         * @var user 
+         */
+        $user = Auth::user();
+
+        $student = $user->student()->exists();
+
+        if($student) {
+            return 'student';
+        }
+
+        $instructor = $user->instructor()->exists();
+
+        if ($instructor) {
+            return 'instructor';
+        }
+
+        $systemAdmin = $user->systemAdmin()->exists();
+
+        if ($systemAdmin) {
+            return 'systemAdmin';
+        }
     }
 }

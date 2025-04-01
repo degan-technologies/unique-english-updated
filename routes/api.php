@@ -32,11 +32,12 @@ use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
-use App\Models\Transaction\Transaction;
-
-Route::post('/registration', [UserController::class, 'store']);
+ 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
+
+Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
+Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
 Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
 Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
@@ -46,7 +47,6 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
         Route::post('/add-student', [UserController::class, 'addStudent']);
-        Route::post('/register', [UserController::class, 'store']);
         Route::delete('/delete-instructor/{id}', [UserController::class, 'destroy']);
         Route::post('/update-profile', [UserController::class, 'profileUpdate']);
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
@@ -55,8 +55,6 @@ Route::middleware('auth:api')
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::resource('/delete-instructor', UserController::class );
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
-        Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
-        Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
         Route::get('/get-book/{slug}', [BookController::class, 'getBook']);

@@ -9,6 +9,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
     const bookOverviewTab = ref('bookOverview');
     const bookReadingTab = ref('bookReading');
     const liveSchedulTab = ref('liveSchedul');
+    const myCourseTab = ref('myCourse');
     
     const courses = ref(null);
     const selectedCourseSlug = ref(null); 
@@ -36,6 +37,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
         bookOverviewTab,
         bookReadingTab,
         liveSchedulTab,
+        myCourseTab,
 
         courses,
         fetchCourses,

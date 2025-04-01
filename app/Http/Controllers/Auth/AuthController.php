@@ -25,6 +25,9 @@ class AuthController extends Controller {
      * The token is then stored in an HTTP-only cookie.
      */
     public function login(Request $request) {
+        /**
+         * @var user $user
+         */
         $validation = [
             'email'    => ['required', 'email'],
             'password' => ['required']
@@ -50,18 +53,15 @@ class AuthController extends Controller {
             'password' => $request->password
         ];
 
-        // Authenticate using the web guard
         if (!Auth::guard('web')->attempt($credentials)) {
             return response()->json([
                 'message' => $this->langService->getLang('invalid_credentials')
             ], 422);
         }
 
-        // Generate a Passport token for API authentication
         $user = Auth::user();
         $token = $user->createToken('AuthToken')->accessToken;
 
-        // Store token in an HTTP-Only, Secure Cookie (valid for 7 days)
         $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
 
         return response()->json([

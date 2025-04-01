@@ -1,48 +1,91 @@
 <script setup>
-import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { UseStudentStore } from "@/store/UseStudentStore";
+    import { storeToRefs } from "pinia";
+    import { computed, onMounted, ref, watch } from "vue";
+    import { useRoute, useRouter } from "vue-router";
 
-import Hero from "@/components/Layout/Hero.vue";
-import Header from "@/components/Layout/Header.vue";
-import CourseCard from "@/components/Course/CourseCard.vue";
-import CourseDetail from "@/components/Course/CourseDetail.vue";
-import VideoPlayer from "@/components/Course/VideoPlayer.vue";
-import Footer from "@/components/Layout/Footer.vue";
-import AboutUs from "@/pages/common/AboutUs.vue";
-import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
-import Book from "@/components/Book/Book.vue";
-import BookDetails from "@/components/Book/BookDetails.vue";
-import Pdf from "@/components/Book/Pdf.vue";
-import Schedule from "@/components/Live/Schedule.vue";
+    import { useAppStore } from '@/store/useAppStore';
+    import { useAuthStore } from '@/store/useAuthStore';
+    import { UseStudentStore } from "@/store/UseStudentStore";
 
-const studentStore = UseStudentStore();
-const {
-    liveSchedulTab,
-    landingPageTab,
-    courseDetailTab,
-    videoPlayerTab,
-    bookOverviewTab,
-    bookReadingTab,
-} = storeToRefs(studentStore);
+    import Pdf from "@/components/Book/Pdf.vue";
+    import Book from "@/components/Book/Book.vue";
+    import Hero from "@/components/Layout/Hero.vue";
+    import AboutUs from "@/pages/common/AboutUs.vue";
+    import Header from "@/components/Layout/Header.vue";
+    import Footer from "@/components/Layout/Footer.vue";
+    import Schedule from "@/components/Live/Schedule.vue";
+    import BookDetails from "@/components/Book/BookDetails.vue";
+    import CourseCard from "@/components/Course/CourseCard.vue";
+    import VideoPlayer from "@/components/Course/VideoPlayer.vue";
+    import CourseDetail from "@/components/Course/CourseDetail.vue";
+    import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
+    import MyCourse from "@/components/Course/EnrolledManagement.vue";
 
-const route = useRoute();
+    const appStore = useAppStore();
+    const AuthStore = useAuthStore();
+    const studentStore = UseStudentStore();
+    
+    const { isLoggedIn } = storeToRefs(appStore);
+    const { showLoginForm, } = storeToRefs(AuthStore);
+    const {
+        liveSchedulTab,
+        landingPageTab,
+        courseDetailTab,
+        videoPlayerTab,
+        bookOverviewTab,
+        bookReadingTab,
+        myCourseTab,
 
-const currentTab = ref({
-    tab: route.query.tab,
-    slug: route.query.slug,
-});
+        courses,
+        selectedCourseSlug,
+    } = storeToRefs(studentStore);
 
-watch(
-    () => route.query.tab,
-    () => {
-        currentTab.value = {
-            tab: route?.query.tab,
-            slug: route?.query.slug,
-        };
+    const route = useRoute();
+    const router = useRouter();
+
+    const currentTab = ref({
+        tab: route.query.tab,
+        slug: route.query.slug,
+    });
+
+    selectedCourseSlug.value = route.query.slug;
+
+    const selectedCourse = computed(()=>{
+        return courses.value.find(item => item.slug === selectedCourseSlug.value)
+    })
+
+    function redirectRoute() {
+        if(!selectedCourse.value?.isMyCourse) {
+            router.push({
+                name: 'student',
+                query: {
+                    tab: landingPageTab.value, 
+                }
+            });
+        }
+
+        if(!isLoggedIn.value) {
+            showLoginForm.value = true;
+        }
+        return;
+    };
+
+    function redirectToLogin() {
+
+        if(!isLoggedIn.value) {
+            showLoginForm.value = true;
+        }
     }
-);
+
+    watch(
+        () => route.query.tab,
+        () => {
+            currentTab.value = {
+                tab: route?.query.tab,
+                slug: route?.query.slug,
+            };
+        }
+    );
 </script>
 
 <template>
@@ -60,21 +103,25 @@ watch(
                     </div>
                 </div>
 
-                <div v-if="currentTab.tab == videoPlayerTab && currentTab.slug">
+                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug">
+                    {{ redirectRoute() }}
                     <VideoPlayer />
                 </div>
-                <div
-                    v-if="currentTab.tab == bookOverviewTab && currentTab.slug"
-                >
+                <div v-else-if="currentTab.tab == myCourseTab">
+                    {{ redirectToLogin() }}
+                    <MyCourse />
+                </div>
+                <div v-else-if="currentTab.tab == bookOverviewTab && currentTab.slug" >
                     <BookDetails />
                 </div>
-                <div v-if="currentTab.tab == bookReadingTab && currentTab.slug">
+                <div v-else-if="currentTab.tab == bookReadingTab && currentTab.slug">
+                    {{ redirectRoute() }}
                     <Pdf/>
                 </div>
-                <div v-if="currentTab.tab == liveSchedulTab">
+                <div v-else-if="currentTab.tab == liveSchedulTab">
                     <Schedule />
                 </div>
-                <div v-if="currentTab.tab == clandingPageTab">
+                <div v-else-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard @mousemove="togglehover" />
                     <LiveStreamingVue />

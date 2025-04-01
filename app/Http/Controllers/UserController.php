@@ -21,8 +21,10 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cookie;
 
-class UserController extends Controller {
+class UserController extends Controller
+{
 
     /**
      * get error traslation and success beased on the language
@@ -31,7 +33,8 @@ class UserController extends Controller {
 
     protected $langService;
 
-    public function __construct(LangService $langService) {
+    public function __construct(LangService $langService)
+    {
         $this->langService = $langService;
     }
 
@@ -47,9 +50,9 @@ class UserController extends Controller {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
-                  ->orWhere('middle_name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('role', 'like', "%{$search}%");
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('role', 'like', "%{$search}%");
             });
         }
 
@@ -77,10 +80,10 @@ class UserController extends Controller {
             $query->where(function ($q) use ($progress) {
                 // For non-students, ignore the progress filter
                 $q->where('role', '!=', 'STUDENT_ROLE')
-                  // For students, use the student relation
-                  ->orWhereHas('student', function ($q2) use ($progress) {
-                      $q2->where('progress', '>=', $progress);
-                  });
+                    // For students, use the student relation
+                    ->orWhereHas('student', function ($q2) use ($progress) {
+                        $q2->where('progress', '>=', $progress);
+                    });
             });
         }
 
@@ -89,134 +92,160 @@ class UserController extends Controller {
         $users = $query->get();
 
         return response()->json([
-             'data' => userResource::collection($users)
+            'data' => userResource::collection($users)
         ]);
     }
 
 
-/**
- * Store a newly created user and send OTP.
- * @param \Illuminate\Http\Request $request
- * @return \Illuminate\Http\JsonResponse
- */
-public function store(Request $request) {
-    $validationRules = [
-        'email'      => 'required|email|unique:users',
-        'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-        'middle_name'=> ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-        'password'   => 'required|min:4',
-    ];
+    /**
+     * Store a newly created user and send OTP.
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function studentRegistration(Request $request)
+    {
+        $otp = random_int(100000, 999999);
 
+        $validationRules = [
+            'email'      => 'required|email',
+            'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'password'   => 'required|min:4',
+        ];
 
-    $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
 
-    if (!$validator->passes()) {
-        return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        if (!$validator->passes()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $user = new User();
+            $user->slug       = Str::uuid();
+            $user->email      = $request->email;
+            $user->first_name = $request->first_name;
+            $user->middle_name = $request->middle_name;
+            $user->password   = Hash::make($request->password);
+            $user->role       = STUDENT;
+
+            $user->otp = $otp;
+            $user->otp_expires_at = Carbon::now()->addMinutes(10);
+            $user->otp_attempts = 0;
+
+            $user->save();
+
+            $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
+
+            Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'User registered. OTP sent to your email.',
+                'data' => new userResource($user)
+            ], 201);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json(
+                [
+                    'message' => 'Registration failed.',
+                    'error' => $e->getMessage()
+                ],
+                500
+            );
+        }
     }
 
-    try {
-        DB::beginTransaction();
+    public function verifyEmailOTP(Request $request) {
+        $validationRules = [
+            'email' => 'required|email|exists:users,email',
+            'otp'   => 'required|digits:6',
+        ];
 
-        $user = new User();
-        $user->slug       = Str::uuid();
-        $user->email      = $request->email;
-        $user->first_name = $request->first_name;
-        $user->middle_name= $request->middle_name;
-        $user->password   = Hash::make($request->password);
-        $user->role       = STUDENT;
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otp_verification'));
 
-        // Generate OTP and Expiration (Valid for 10 minutes)
+        if (!$validator->passes()) {
+            return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.'
+            ], 404);
+        }
+
+        if (Carbon::now()->greaterThan($user->otp_expires_at)) {
+            return response()->json([
+                'message' => 'OTP has expired. Please request a new one.'
+            ], 422);
+        }
+
+        if ($user->otp !== intval(trim($request->otp))) {
+            return response()->json([
+                'message' => 'Invalid OTP.'
+            ], 422);
+        }
+
+        $user->email_verified_at = Carbon::now();
+        $user->otp = null;
+        $user->otp_expires_at = null;
+        $user->save();
+ 
+        $token = $user->createToken('AuthToken')->accessToken;
+
+        $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
+
+        return response()->json([
+            'message' => 'Login successful',
+            'token' => $token
+        ])->withCookie($cookie);
+    }
+
+    public function resendOTP(Request $request)
+    {
+
+        $request->validate(['email' => 'required|email|exists:users,email']);
+        $validationRules = [
+            'email' => 'required|email|exists:users,email',
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otpResend_verification'));
+
+        if (!$validator->passes()) {
+            return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        // Limit OTP resend (3 times max)
+        if ($user->otp_attempts >= 3) {
+            return response()->json(['message' => 'OTP resend limit reached. Please try later.'], 429);
+        }
+
         $otp = random_int(100000, 999999);
         $user->otp = $otp;
         $user->otp_expires_at = Carbon::now()->addMinutes(10);
-        $user->otp_attempts = 0;
-
+        $user->otp_attempts += 1;
         $user->save();
 
         $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
 
         Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
 
-        DB::commit();
-
-        return response()->json(['message' => 'User registered. OTP sent to your email.', 'data' => new UserResource($user)], 201);
-
-    } catch (Exception $e) {
-        DB::rollBack();
-        return response()->json(['message' => 'Registration failed.', 'error' => $e->getMessage()], 500);
+        return response()->json(['message' => 'A new OTP has been sent.'], 200);
     }
-}
-
-public function verifyEmailOTP(Request $request) {
-    $validationRules = [
-        'email' => 'required|email|exists:users,email',
-        'otp'   => 'required|digits:6',
-    ];
-
-    $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otp_verification'));
-
-    if (!$validator->passes()) {
-        return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
-    }
-
-    $user = User::where('email', $request->email)->first();
-
-    if (!$user) {
-        return response()->json(['message' => 'User not found.'], 404);
-    }
-
-    if (Carbon::now()->greaterThan($user->otp_expires_at)) {
-        return response()->json(['message' => 'OTP has expired. Please request a new one.'], 422);
-    }
-
-    if ($user->otp !== intval(trim($request->otp))) {
-        return response()->json(['message' => 'Invalid OTP.'], 422);
-    }
-
-    $user->email_verified_at = Carbon::now();
-    $user->otp = null;
-    $user->otp_expires_at = null;
-    $user->save();
-
-    return response()->json(['message' => 'Email verified successfully.'], 200);
-}
-
-public function resendOTP(Request $request) {
-
-    $request->validate(['email' => 'required|email|exists:users,email']);   
-    $validationRules = [
-        'email' => 'required|email|exists:users,email',
-            ];
-
-    $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otpResend_verification'));
-
-    if (!$validator->passes()) {
-        return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
-    }
-
-    $user = User::where('email', $request->email)->first();
-
-    if (!$user) {
-        return response()->json(['message' => 'User not found.'], 404);
-    }
-
-    // Limit OTP resend (3 times max)
-    if ($user->otp_attempts >= 3) {
-        return response()->json(['message' => 'OTP resend limit reached. Please try later.'], 429);
-    }
-
-    $otp = random_int(100000, 999999);
-    $user->otp = $otp;
-    $user->otp_expires_at = Carbon::now()->addMinutes(10);
-    $user->otp_attempts += 1;
-    $user->save();
-
-    $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
-
-    Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
-
-    return response()->json(['message' => 'A new OTP has been sent.'], 200);
-}
 
 
     /**
@@ -227,7 +256,8 @@ public function resendOTP(Request $request) {
      *
      * @return \Illuminate\Http\Response
      */
-    public function addInstructor(Request $request) {
+    public function addInstructor(Request $request)
+    {
         // Ensure that the current user is allowed to add an instructor
         $canAddinstructor = User::query()
             ->has('systemAdmin')
@@ -237,7 +267,7 @@ public function resendOTP(Request $request) {
         $validationRules = [
             'email'      => 'required|email|unique:users',
             'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'middle_name'=> ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
@@ -291,7 +321,8 @@ public function resendOTP(Request $request) {
         ]);
     }
 
-    public function addStudent(Request $request) {
+    public function addStudent(Request $request)
+    {
         $canAddinstructor = User::query()
             ->has('systemAdmin')
             ->findOrFail(Auth::id());
@@ -318,21 +349,21 @@ public function resendOTP(Request $request) {
 
         try {
             DB::beginTransaction();
-                $user = new User();
-                $user->user_id = $canAddinstructor->id;
-                $user->slug = Str::uuid();
-                $user->email = $request->email;
-                $user->first_name = $request->first_name;
-                $user->middle_name = $request->middle_name;
-                $user->password = Hash::make($request->password);
-                $user->phone = $request->phone;
-                $user->role = STUDENT;
-                $user->save();
-                $user->created_at = Carbon::now();
+            $user = new User();
+            $user->user_id = $canAddinstructor->id;
+            $user->slug = Str::uuid();
+            $user->email = $request->email;
+            $user->first_name = $request->first_name;
+            $user->middle_name = $request->middle_name;
+            $user->password = Hash::make($request->password);
+            $user->phone = $request->phone;
+            $user->role = STUDENT;
+            $user->save();
+            $user->created_at = Carbon::now();
 
-                $instructor = new Instructor();
-                $instructor->user_id = $user->id;
-                $instructor->save();
+            $instructor = new Instructor();
+            $instructor->user_id = $user->id;
+            $instructor->save();
 
             DB::commit();
         } catch (Exception $e) {
@@ -354,25 +385,27 @@ public function resendOTP(Request $request) {
      * @param int $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id) {
+    public function destroy($id)
+    {
         $canDeleteUser = User::query()
             ->has('systemAdmin')
             ->findOrFail(Auth::id());
 
         $user = User::findOrFail($id);
         $user->update([
-            'user_banned_at'=> Carbon::now(),
+            'user_banned_at' => Carbon::now(),
         ]);
 
         return response()->json([
-            'message' =>$this->langService->getLang('user_successfully_deleted')
+            'message' => $this->langService->getLang('user_successfully_deleted')
         ]);
     }
 
     /**
      * update profile
      */
-    public function profileUpdate(Request $request) {
+    public function profileUpdate(Request $request)
+    {
         /**
          * @var \App\Models\User $user
          */
@@ -383,7 +416,7 @@ public function resendOTP(Request $request) {
             'first_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
             'middle_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
             'last_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
-            'phone' => [ 'unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/' ],
+            'phone' => ['unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/'],
             'profile' => 'image',
             'bg_image' => 'image',
             'gender' => [Rule::in(GENDER)],
@@ -400,8 +433,8 @@ public function resendOTP(Request $request) {
             ], 422);
         }
 
-         $profilePath = null;
-         $bgPath = null;
+        $profilePath = null;
+        $bgPath = null;
 
         if ($request->hasFile('profile')) {
             $file = $request->file('profile');
@@ -414,10 +447,10 @@ public function resendOTP(Request $request) {
         }
 
         $user->update([
-            'email' =>$request->email ?? $user->email,
+            'email' => $request->email ?? $user->email,
             'phone' => $request->phone ?? $user->phone,
-            'gender' =>$request->gender ?? $user->gender,
-            'first_name' =>$request->first_name ?? $user->first_name ,
+            'gender' => $request->gender ?? $user->gender,
+            'first_name' => $request->first_name ?? $user->first_name,
             'middle_name' => $request->middle_name ?? $user->middle_name,
             'last_name' => $request->last_name ?? $user->last_name,
             'profile' => $profilePath ?? $user->profile,
@@ -436,7 +469,8 @@ public function resendOTP(Request $request) {
      * @param \Illuminate\Http\Request $request
      * @return mixed
      */
-    public function passwordReset(Request $request) {
+    public function passwordReset(Request $request)
+    {
 
         /**
          * @var \App\Models\User $user
@@ -473,36 +507,35 @@ public function resendOTP(Request $request) {
         ]);
     }
 
-/**
- * Bulk delete users.
- *
- * @param \Illuminate\Http\Request $request
- * @return \Illuminate\Http\Response
- */
-public function bulkDelete(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'ids'   => 'required|array',
-        'ids.*' => 'exists:users,id',
-    ]);
+    /**
+     * Bulk delete users.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'ids'   => 'required|array',
+            'ids.*' => 'exists:users,id',
+        ]);
 
-    if ($validator->fails()) {
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Invalid user IDs provided.',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        $userIds = $request->ids;
+
+        // Update each selected user's 'user_banned_at' field to mark them as "deleted"
+        User::whereIn('id', $userIds)->update([
+            'user_banned_at' => Carbon::now()
+        ]);
+
         return response()->json([
-            'message' => 'Invalid user IDs provided.',
-            'errors'  => $validator->errors()
-        ], 422);
+            'message' => $this->langService->getLang('user_successfully_deleted')
+        ]);
     }
-
-    $userIds = $request->ids;
-
-    // Update each selected user's 'user_banned_at' field to mark them as "deleted"
-    User::whereIn('id', $userIds)->update([
-        'user_banned_at' => Carbon::now()
-    ]);
-
-    return response()->json([
-        'message' => $this->langService->getLang('user_successfully_deleted')
-    ]);
-}
-
 }
