@@ -1,126 +1,126 @@
 <script setup>
-    import Axios from "axios";
-    import { storeToRefs } from "pinia";
-    import { useRoute, useRouter } from "vue-router"
-    import { ref, onMounted, watch, watchEffect } from "vue";
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { useRoute, useRouter } from "vue-router"
+import { ref, onMounted, watch, watchEffect } from "vue";
 
-    import { useInstructorStore } from "@/store/useInstructorStore";
+import { useInstructorStore } from "@/store/useInstructorStore";
 
-    import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
-    import Spinner from "@/components/Layout/Spinner";
+import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
+import Spinner from "@/components/Layout/Spinner";
 
-    const InstructorStore = useInstructorStore();
-    const { instructorCourses, analytics, selectedCourse, courseEditTab, courseModuleTab, courseId } = storeToRefs(InstructorStore);
+const InstructorStore = useInstructorStore();
+const { instructorCourses, analytics, selectedCourse, courseEditTab, courseModuleTab, courseId } = storeToRefs(InstructorStore);
 
-    const route = useRoute();
-    const router = useRouter();
-    const selectedCourseSlug = ref(route.query.slug);
+const route = useRoute();
+const router = useRouter();
+const selectedCourseSlug = ref(route.query.slug);
 
-    const loading = ref(true);
+const loading = ref(true);
 
-    const activeMenuId = ref(null);
-    const rowsPerPageOptions = [5, 10, 15, 20];
-    const rowsPerPage = ref(10)
-    const pagination = ref('');
-    const totalPages = ref('');
-    const currentPage = ref(1);
-    const skillLevelFilter = ref('');
+const activeMenuId = ref(null);
+const rowsPerPageOptions = [5, 10, 15, 20];
+const rowsPerPage = ref(10)
+const pagination = ref('');
+const totalPages = ref('');
+const currentPage = ref(1);
+const skillLevelFilter = ref('');
 
-    const editingCourseId = ref(null);
-    const actionType = ref('STORE');
+const editingCourseId = ref(null);
+const actionType = ref('STORE');
 
-    const props = defineProps({
-        searchQuery: String,
-    });
+const props = defineProps({
+    searchQuery: String,
+});
 
-    function filteredCourses(page = 1) {
-        Axios
-            .post(`/api/courses/search?page=${page}`, {
-                searchQuery: props.searchQuery,
-                rowsPerPageOptions: rowsPerPage.value,
-                skillLevel: skillLevelFilter.value
-            })
-            .then(res => {
-                instructorCourses.value = res.data.data
-                pagination.value = res.data.pagination;
-                totalPages.value = res.data.pagination.last_page;
-                currentPage.value = res.data.pagination.current_page;
-                analytics.value.total = res.data.total;
-                analytics.value.newToday = res.data.newToday;
-                loading.value = false;
-            })
+function filteredCourses(page = 1) {
+    Axios
+        .post(`/api/courses/search?page=${page}`, {
+            searchQuery: props.searchQuery,
+            rowsPerPageOptions: rowsPerPage.value,
+            skillLevel: skillLevelFilter.value
+        })
+        .then(res => {
+            instructorCourses.value = res.data.data
+            pagination.value = res.data.pagination;
+            totalPages.value = res.data.pagination.last_page;
+            currentPage.value = res.data.pagination.current_page;
+            analytics.value.total = res.data.total;
+            analytics.value.newToday = res.data.newToday;
+            loading.value = false;
+        })
+}
+
+function onNextPage() {
+    if (currentPage.value == totalPages.value) return;
+
+    filteredCourses(currentPage.value + 1);
+}
+
+function onPreviousPage() {
+    if (currentPage.value <= 1) return;
+
+    filteredCourses(currentPage.value - 1);
+}
+
+function coursePerPage(amount) {
+    rowsPerPage.value = amount;
+    filteredCourses(currentPage.value);
+}
+const toggleMenu = (id) => {
+    activeMenuId.value = activeMenuId.value === id ? null : id;
+};
+
+function handleClickOutside(event) {
+    if (!event.target.closest(".relative")) {
+        activeMenuId.value = null;
     }
+};
 
-    function onNextPage() {
-        if (currentPage.value == totalPages.value) return;
+function formatDate(dateString) {
+    if (!dateString) return '';
 
-        filteredCourses(currentPage.value + 1);
-    }
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+}
 
-    function onPreviousPage() {
-        if (currentPage.value <= 1) return;
+function openModuleForm(id) {
+    console.log(id);
+    courseId.value = id;
+};
 
-        filteredCourses(currentPage.value - 1);
-    }
+function getSelectedCourse(tab, course) {
 
-    function coursePerPage(amount) {
-        rowsPerPage.value = amount;
-        filteredCourses(currentPage.value);
-    }
-    const toggleMenu = (id) => {
-        activeMenuId.value = activeMenuId.value === id ? null : id;
-    };
-
-    function handleClickOutside(event) {
-        if (!event.target.closest(".relative")) {
-            activeMenuId.value = null;
-        }
-    };
-
-    function formatDate(dateString) {
-        if (!dateString) return '';
-
-        const date = new Date(dateString);
-        return date.toISOString().split('T')[0];
-    }
-
-    function openModuleForm(id) {
-        console.log(id);
-        courseId.value = id;
-    };
-
-    function getSelectedCourse(tab, course) {
-
-        router.push({
-            name: 'instructor',
-            query: {
-                currentTab: route.query.currentTab,
-                selectedAction: tab,
-                slug: course?.slug,
-            }
-        });
-
-        editingCourseId.value = course.id;
-        selectedCourse.value = course;
-    };
-
-    watchEffect(() => {
-        if (!selectedCourse.value) {
-            selectedCourse.value = instructorCourses.value.find(item => item?.slug == selectedCourseSlug.value);
+    router.push({
+        name: 'instructor',
+        query: {
+            currentTab: route.query.currentTab,
+            selectedAction: tab,
+            slug: course?.slug,
         }
     });
 
-    onMounted(() => {
-        filteredCourses();
-        document.addEventListener("click", handleClickOutside);
-    });
+    editingCourseId.value = course.id;
+    selectedCourse.value = course;
+};
 
-    watch(
-        [() => props.searchQuery, skillLevelFilter],
-        () => {
-            filteredCourses(1);
-        }
-    );
+watchEffect(() => {
+    if (!selectedCourse.value) {
+        selectedCourse.value = instructorCourses.value.find(item => item?.slug == selectedCourseSlug.value);
+    }
+});
+
+onMounted(() => {
+    filteredCourses();
+    document.addEventListener("click", handleClickOutside);
+});
+
+watch(
+    [() => props.searchQuery, skillLevelFilter],
+    () => {
+        filteredCourses(1);
+    }
+);
 
 </script>
 
@@ -152,16 +152,18 @@
                 class="text-center">No Courses Found</div>
 
             <div v-if="instructorCourses.length > 4">
-                <div class="border border-gray-300 rounded-lg horizontal-scroll">
-                    <table class="w-full text-left border-collapse">
+                <div class="overflow-x-auto">
+                    <table class="table-fixed w-full text-left border-collapse">
                         <thead class="bg-white rounded-t-lg">
                             <tr class="border-b border-gray-300 text-gray-600 text-sm">
-                                <th class="py-3 px-4 font-normal">COURSES</th>
-                                <th class="py-3 px-4 font-normal">RATING</th>
-                                <th class="py-3 px-4 font-normal">TOTAL ENROLL</th>
-                                <th class="py-3 px-4 font-normal">REVENUE</th>
-                                <th class="py-3 px-4 font-normal">CREATED DATE</th>
-                                <th class="py-3 px-4 font-normal">ACTIONS</th>
+                                <th class="py-3 px-4 font-normal text-center w-1/4">Courses</th>
+                                <th class="py-3 px-4 font-normal text-center w-1/8">Rating</th>
+                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">Total Enroll
+                                </th>
+                                <th class="py-3 px-4 font-normal text-center w-1/9">Revenue</th>
+                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">Created Date
+                                </th>
+                                <th class="py-3 px-4 font-normal text-center w-1/4">Actions</th>
                             </tr>
                         </thead>
 
@@ -170,11 +172,14 @@
                                 :key="course.id"
                                 class="border-b border-gray-200 hover:bg-gray-50 transition align-middle">
                                 <td class="py-3 px-4 flex items-center gap-3">
+                                    <!-- Thumbnail image only displays on sm and larger devices -->
                                     <img :src="course.thumbnail_url"
                                         alt="Course Image"
-                                        class="w-12 h-12 rounded-md object-cover" />
+                                        class="w-12 h-12 rounded-md object-cover hidden sm:block" />
                                     <div>
-                                        <h3 class="text-sm font-semibold text-gray-800">{{ course.course_name }}</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800">
+                                            {{ course.course_name }}
+                                        </h3>
                                         <p class="text-xs text-gray-500">
                                             Level: <span class="font-bold">{{ course.skill_level }}</span>
                                         </p>
@@ -192,15 +197,20 @@
                                         <span class="ml-1 text-center">{{ course.averageRating || 0 }}</span>
                                     </div>
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
+
+                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center hidden sm:table-cell">
                                     {{ course.total_enroll || 15 }}
                                 </td>
+
                                 <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
                                     ${{ course.revenue || 25 }}
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm text-center">
+
+                                <!-- "Created Date" cell hidden on mobile -->
+                                <td class="py-3 px-4 text-gray-700 text-sm text-center hidden sm:table-cell">
                                     {{ formatDate(course.created_at) || '2025-03-24' }}
                                 </td>
+
                                 <td class="py-3 px-4 h-full">
                                     <div class="flex items-center justify-center h-full gap-2">
                                         <button @click="getSelectedCourse(courseModuleTab, course)"
@@ -213,6 +223,7 @@
                         </tbody>
                     </table>
                 </div>
+
                 <!-- Pagination Footer -->
                 <div class="flex flex-wrap justify-between items-center mt-4 px-2 gap-2">
                     <!-- Rows Per Page Selector -->
@@ -300,41 +311,41 @@
 </template>
 
 <style scoped>
-    @keyframes orbit {
-        0% {
-            transform: rotate(0deg) translateX(20px) rotate(0deg);
-        }
-
-        100% {
-            transform: rotate(360deg) translateX(20px) rotate(-360deg);
-        }
+@keyframes orbit {
+    0% {
+        transform: rotate(0deg) translateX(20px) rotate(0deg);
     }
 
-    .st8 {
-        fill: #B7C7CEFF;
-        stroke: #D4C1C1FF;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-miterlimit: 10;
+    100% {
+        transform: rotate(360deg) translateX(20px) rotate(-360deg);
     }
+}
 
-    .horizontal-scroll {
-        overflow-x: auto;
-        overflow-y: hidden;
-        white-space: nowrap;
-    }
+.st8 {
+    fill: #B7C7CEFF;
+    stroke: #D4C1C1FF;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-miterlimit: 10;
+}
 
-    .horizontal-scroll::-webkit-scrollbar {
-        height: 8px;
-        display: block;
-    }
+.horizontal-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
 
-    .horizontal-scroll::-webkit-scrollbar-thumb {
-        background-color: #c1c1c1;
-        border-radius: 4px;
-    }
+.horizontal-scroll::-webkit-scrollbar {
+    height: 4px;
+    display: block;
+}
 
-    .horizontal-scroll::-webkit-scrollbar-track {
-        background: #f1f1f1;
+.horizontal-scroll::-webkit-scrollbar-thumb {
+    background-color: #c1c1c1;
+    border-radius: 4px;
+}
+
+.horizontal-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
 }
 </style>
