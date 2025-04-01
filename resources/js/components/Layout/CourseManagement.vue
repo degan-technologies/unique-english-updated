@@ -1,74 +1,74 @@
 <script setup>
-    import Axios from 'axios';
-    import { storeToRefs } from 'pinia';
-    import { useRoute, useRouter } from "vue-router";
-    import { ref, computed, onMounted, watch } from 'vue';
+import Axios from 'axios';
+import { storeToRefs } from 'pinia';
+import { useRoute, useRouter } from "vue-router";
+import { ref, computed, onMounted, watch } from 'vue';
 
-    import { useAppStore } from '@/store/useAppStore';
-    import { useInstructorStore } from '@/store/useInstructorStore';
+import { useAppStore } from '@/store/useAppStore';
+import { useInstructorStore } from '@/store/useInstructorStore';
 
-    import AddBook from '@/components/Book/AddBook.vue';
-    import courses from '@/components/Course/courses.vue';
-    import AddCourse from '@/components/Course/AddCourse.vue';
-    import bookmanagment from '@/components/Book/bookmanagment.vue';
-    import CourseModule from "@/components/Course/CourseModule/CourseModule.vue";
+import AddBook from '@/components/Book/AddBook.vue';
+import courses from '@/components/Course/courses.vue';
+import AddCourse from '@/components/Course/AddCourse.vue';
+import bookmanagment from '@/components/Book/bookmanagment.vue';
+import CourseModule from "@/components/Course/CourseModule/CourseModule.vue";
 
-    const route = useRoute();
-    const router = useRouter();
+const route = useRoute();
+const router = useRouter();
 
-    const appStore = useAppStore();
-    const InstructorStore = useInstructorStore();
-    const { analytics, selectedCourse, courseEditTab, courseModuleTab } = storeToRefs(InstructorStore);
-    const { authUser, frontLang } = storeToRefs(appStore);
+const appStore = useAppStore();
+const InstructorStore = useInstructorStore();
+const { analytics, selectedCourse, courseEditTab, courseModuleTab } = storeToRefs(InstructorStore);
+const { authUser, frontLang } = storeToRefs(appStore);
 
-    const bookTab = ref('Books');
-    const courseTab = ref('Courses');
-    const addcourseTab = ref('addcourse');
-    const addbookTab = ref('addbook');
+const bookTab = ref('Books');
+const courseTab = ref('Courses');
+const addcourseTab = ref('addcourse');
+const addbookTab = ref('addbook');
 
-    const activeTab = ref(courseTab.value);
+const activeTab = ref(courseTab.value);
 
-    const searchQuery = ref('');
-    const searchItem = ref(courseTab.value);
+const searchQuery = ref('');
+const searchItem = ref(courseTab.value);
 
-    const selectedAction = ref(route.query.selectedAction);
+const selectedAction = ref(route.query.selectedAction);
 
-    computed(() => {
+computed(() => {
+    activeTab.value = route?.query?.currentActiveTab ? route.query.currentActiveTab : courseTab.value;
+});
+
+watch(
+    () => route?.query,
+    () => {
         activeTab.value = route?.query?.currentActiveTab ? route.query.currentActiveTab : courseTab.value;
-    });
+        selectedAction.value = route?.query?.selectedAction;
+    },
+    { immediate: true }
+);
 
-    watch(
-        () => route?.query,
-        () => {
-            activeTab.value = route?.query?.currentActiveTab ? route.query.currentActiveTab : courseTab.value;
-            selectedAction.value = route?.query?.selectedAction;
-        },
-        { immediate: true }
-    );
-
-    onMounted(() => {
-        if (!route.query.currentActiveTab) {
-            activeTab.value = courseTab.value;
-        }
-    });
-
-    function selectedTab(tab) {
-        if (tab === courseTab.value || tab === addcourseTab.value) {
-            searchItem.value = courseTab.value;
-        } else {
-            searchItem.value = bookTab.value;
-        }
-
-        router.push({
-            name: 'instructor',
-            query: {
-                currentTab: route.query.currentTab,
-                currentActiveTab: tab,
-            }
-        });
-
-        activeTab.value = tab;
+onMounted(() => {
+    if (!route.query.currentActiveTab) {
+        activeTab.value = courseTab.value;
     }
+});
+
+function selectedTab(tab) {
+    if (tab === courseTab.value || tab === addcourseTab.value) {
+        searchItem.value = courseTab.value;
+    } else {
+        searchItem.value = bookTab.value;
+    }
+
+    router.push({
+        name: 'instructor',
+        query: {
+            currentTab: route.query.currentTab,
+            currentActiveTab: tab,
+        }
+    });
+
+    activeTab.value = tab;
+}
 </script>
 
 <template>
@@ -134,59 +134,65 @@
                     </nav>
                 </div>
                 <div v-if="!selectedCourse"
-                    class="grid mt-4 grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="lg:col-span-3">
-                        <div v-if="activeTab === courseTab">
-                            <courses :searchQuery="searchQuery" />
-                        </div>
-                        <div v-else-if="activeTab === bookTab">
-                            <bookmanagment :searchQuery="searchQuery" />
-                        </div>
-                        <!-- Add Course Page -->
-                        <div v-if="activeTab === addcourseTab"
-                            class="space-y-4">
-                            <AddCourse />
-                        </div>
-
-                        <!-- Add Book Page -->
-                        <div v-else-if="activeTab === addbookTab"
-                            class="space-y-4">
-                            <AddBook />
-                        </div>
-                    </div>
-                    <div>
-                        <div class="mb-6 flex justify-center space-x-4">
-                            <button @click="selectedTab(addcourseTab)"
-                                class="bg-lime-700 hover:bg-lime-800 text-white px-4 py-2 rounded transition">
-                                Add Course
-                            </button>
-                            <button @click="selectedTab(addbookTab)"
-                                class="bg-lime-700 hover:bg-lime-800 text-white px-4 py-2 rounded transition">
-                                Add Book
-                            </button>
-                        </div>
-                        <aside v-if="activeTab !== addcourseTab"
-                            class="bg-white shadow rounded-lg p-4 lg:col-span-1 h-fit">
-                            <h3 class="text-xl font-semibold text-center mb-4">Analytics Dashboard</h3>
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="p-4 bg-lime-50 rounded text-center">
-                                        <p class="text-sm">Total {{ searchItem }}</p>
-                                        <p class="text-2xl font-bold text-lime-700">{{ analytics.total }}</p>
-                                    </div>
-                                    <div class="p-4 bg-green-50 rounded text-center">
-                                        <p class="text-sm">New Today</p>
-                                        <p class="text-2xl font-bold">{{ analytics.newToday }}</p>
-                                    </div>
+                    class="max-w-7xl mx-auto mt-4">
+                    <!-- Header: Analytics Dashboard and Add Buttons in one row -->
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+                        <!-- Analytics Dashboard + Data -->
+                        <aside
+                            class="flex flex-col sm:flex-row items-center gap-4 bg-white shadow rounded-lg p-3 w-full md:w-2/3">
+                            <h3 class="text-lg font-semibold text-lime-700 whitespace-nowrap">
+                                Analytics Dashboard
+                            </h3>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center bg-lime-50 px-3 py-2 rounded">
+                                    <p class="text-xs font-medium text-gray-600 mr-1">Total {{activeTab}}</p>
+                                    <p class="text-lg font-bold text-lime-700">{{ analytics.total }}</p>
                                 </div>
-                                <div class="bg-gray-100 p-4 rounded">
-                                    <canvas id="analyticsChart"
-                                        class="w-full h-48"></canvas>
+                                <div class="flex items-center bg-green-50 px-3 py-2 rounded">
+                                    <p class="text-xs font-medium text-gray-600 mr-1">New Today</p>
+                                    <p class="text-lg font-bold">{{ analytics.newToday }}</p>
                                 </div>
                             </div>
                         </aside>
+
+                        <!-- Add Buttons -->
+                        <div class="flex flex-col sm:flex-row items-center gap-3">
+                            <button v-if="activeTab === courseTab"
+                                @click="selectedTab(addcourseTab)"
+                                class="bg-lime-700 hover:bg-lime-800 text-white px-3 py-2 rounded transition shadow text-sm">
+                                Add Course
+                            </button>
+                            <button v-if="activeTab === bookTab"
+                                @click="selectedTab(addbookTab)"
+                                class="bg-lime-700 hover:bg-lime-800 text-white px-3 py-2 rounded transition shadow text-sm">
+                                Add Book
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Content: Courses/Books/Forms Expand Fully -->
+                    <div class="rounded-lg w-full max-w-full">
+                        <div class="overflow-x-auto w-full">
+                            <div v-if="activeTab === courseTab"
+                                class="w-full">
+                                <courses :searchQuery="searchQuery" />
+                            </div>
+                            <div v-else-if="activeTab === bookTab"
+                                class="w-full">
+                                <bookmanagment :searchQuery="searchQuery" />
+                            </div>
+                            <div v-if="activeTab === addcourseTab"
+                                class="space-y-4 p-4 w-full">
+                                <AddCourse />
+                            </div>
+                            <div v-else-if="activeTab === addbookTab"
+                                class="space-y-4 p-4 w-full">
+                                <AddBook />
+                            </div>
+                        </div>
                     </div>
                 </div>
+
                 <div v-if="selectedCourse">
                     <div v-if="selectedAction === courseModuleTab"
                         class="bg-white p-6">
