@@ -11,8 +11,8 @@
     function getCurrentComission() {
         Axios
             .get('/api/get-comission')
-            .then(res=>{
-                commission.value = res.data.data.fees * 100;
+            .then(res => {
+                commission.value = res.data.fees * 100;
             })
     }
 
@@ -21,7 +21,7 @@
         Axios
             .post('/api/change-comission', {fees:commission.value})
             .then(res=>{
-                commission.value = res.data.data.fees * 100;
+                commission.value = res.data.fees * 100;
             })
     }
 

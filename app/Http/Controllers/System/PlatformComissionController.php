@@ -84,11 +84,9 @@ class PlatformComissionController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('comission_updated'),
-            'data' => [
-                'fees' => $platformComission->fees,
-                'created_at' => $platformComission->created_at,
-                'updated_at' => $platformComission->updated_at,
-            ]
+            'fees' => $platformComission->fees,
+            'created_at' => $platformComission->created_at,
+            'updated_at' => $platformComission->updated_at,
         ]);
     }
 
@@ -105,11 +103,9 @@ class PlatformComissionController extends Controller {
 
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'fees' => $platformComission->fees,
-                'created_at' => $platformComission->created_at,
-                'updated_at' => $platformComission->updated_at,
-            ]
+            'fees' => $platformComission->fees,
+            'created_at' => $platformComission->created_at,
+            'updated_at' => $platformComission->updated_at,
         ]);
     }
 

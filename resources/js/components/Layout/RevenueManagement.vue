@@ -147,80 +147,82 @@
                     </section>
         
                     <!-- Transactions Tab -->
-                    <section class="w-full" v-if="activeTab === 'transactions'">
-                        <div class="bg-white p-6 rounded shadow snap-x snap-mandatory">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">Transaction List</h2>
-                            <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <select v-model="filters.status" class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">All Status</option>
-                                    <option class="capitalize" :value="transactionStatus.success">{{ transactionStatus.success }}</option>
-                                    <option class="capitalize" :value="transactionStatus.pending">{{ transactionStatus.pending }}</option>
-                                    <option class="capitalize" :value="transactionStatus.failed">{{ transactionStatus.failed }}</option>
-                                </select>
+                    <div>
+                        <section  v-if="activeTab === 'transactions' ">
+                            <div class="bg-white p-6 rounded shadow overflow-hidden">
+                                <h2 class="text-xl font-semibold text-gray-800 mb-4">Transaction List</h2>
+                                <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <select v-model="filters.status" class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">All Status</option>
+                                        <option class="capitalize" :value="transactionStatus.success">{{ transactionStatus.success }}</option>
+                                        <option class="capitalize" :value="transactionStatus.pending">{{ transactionStatus.pending }}</option>
+                                        <option class="capitalize" :value="transactionStatus.failed">{{ transactionStatus.failed }}</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center">
+                                    <input
+                                    type="date"
+                                    v-model="filters.startDate"
+                                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <input
+                                    type="date"
+                                    v-model="filters.endDate"
+                                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ml-2"
+                                    />
+                                </div>
+                                </div>
+                                <div class="w-full overflow-x-auto scrollbar">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trf_id</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr
+                                            v-for="transaction in filteredTransactions"
+                                            :key="transaction.id"
+                                            class="hover:bg-gray-50" >
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.first_name }} {{ transaction?.customer?.middle_name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.ref_key }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.phone }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.email }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.date }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.type }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ transaction.amount }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <span
+                                                :class="{
+                                                    'text-green-500': transaction.status === transactionStatus.success,
+                                                    'text-yellow-500': transaction.status === transactionStatus.pending,
+                                                    'text-red-500': transaction.status === transactionStatus.failed
+                                                }"
+                                                >
+                                                {{ transaction.status }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <button class="text-blue-500 hover:underline" @click="processRefund(transaction)">
+                                                    Refund
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                </div>
                             </div>
-                            <div class="flex items-center">
-                                <input
-                                type="date"
-                                v-model="filters.startDate"
-                                class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <input
-                                type="date"
-                                v-model="filters.endDate"
-                                class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ml-2"
-                                />
-                            </div>
-                            </div>
-                            <div class="w-full  overflow-x-auto scrollbar">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead>
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trf_id</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr
-                                        v-for="transaction in filteredTransactions"
-                                        :key="transaction.id"
-                                        class="hover:bg-gray-50" >
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.full_name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.ref_key }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.phone }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.email }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.date }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.type }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ transaction.amount }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <span
-                                            :class="{
-                                                'text-green-500': transaction.status === transactionStatus.success,
-                                                'text-yellow-500': transaction.status === transactionStatus.pending,
-                                                'text-red-500': transaction.status === transactionStatus.failed
-                                            }"
-                                            >
-                                            {{ transaction.status }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                            <button class="text-blue-500 hover:underline" @click="processRefund(transaction)">
-                                                Refund
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
         
                     <!-- Payouts Tab -->
                     <section v-if="activeTab === 'payouts'">

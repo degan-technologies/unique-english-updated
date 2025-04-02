@@ -75,10 +75,8 @@ function setSelectedContent(contentId) {
         >
             <Navbar class="transition-all duration-300" />
 
-            <div
-                class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300"
-            >
-                <div class="flex-grow bg-gray-100">
+            <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300" >
+                <div class="w-full bg-gray-100">
                     <div v-if="selectedContent === profile">
                         <ProfileForm />
                     </div>
