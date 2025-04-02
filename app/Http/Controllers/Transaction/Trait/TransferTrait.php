@@ -11,15 +11,15 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 trait TransferTrait {
-    public function transferHistory($transaction, $status) {
+    public function transferHistory($transaction, $status, $totalPrice = null) {
 
         $bankInfo = BankInfo::query()
-            ->where('user_id', Auth::id())
+            ->where('user_id', $transaction->user_id)
             ->first();
 
         $transfer= Transfer::create([
             'account_number' => $bankInfo->account_number,
-            'amount' => $transaction->amount,
+            'amount' => $totalPrice,
             'currency' => 'ETB',
             'reference' => $transaction->reference ?? $transaction->tx_ref,
             'narration' => 'Transfer to bank account',

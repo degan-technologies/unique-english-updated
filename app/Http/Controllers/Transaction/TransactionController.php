@@ -9,6 +9,7 @@ use App\Models\Book\Book;
 use App\Models\Course\Course;
 use App\Models\Live\Live;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\Transfer;
 use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
@@ -247,7 +248,7 @@ class TransactionController extends Controller {
         }
 
         $transactions = Transaction::query()
-            ->where('user_id', $user->id)
+            ->where('customer_id', $user->id)
             ->where('tx_ref', $txRef)
             ->get();
 
@@ -285,8 +286,15 @@ class TransactionController extends Controller {
                     $date = $transaction->created_at->format('M d, Y, H:i:s');
                 }
 
+                $cheDepostitHistory = Transfer::query()
+                    ->where('reference', $txRef)
+                    ->first();
 
-                $this->transferHistory($transaction, DEPOSIT);
+                if( !$cheDepostitHistory) {
+                    $this->transferHistory($transaction, DEPOSIT, $totalPrice );
+                }
+ 
+
 
             DB::commit();
         } catch (\Exception $e) {
