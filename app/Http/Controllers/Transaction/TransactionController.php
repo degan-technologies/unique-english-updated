@@ -213,6 +213,14 @@ class TransactionController extends Controller {
         })->map(function ($transactionsByDate) {
             return $transactionsByDate->sum('amount');
         })->all();
+
+        $transactionToday = $transactions->where('created_at', '>=', Carbon::today())
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $transactionThisMonth = $transactions->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
  
         if($request->summryLength === 'true') {
 
@@ -236,7 +244,9 @@ class TransactionController extends Controller {
             'bookSell' => $bookSell,
             'liveSell' => $liveSell,
             'totalSell' => $totalSell,
-            'transactionSummary' => $transactionSummary
+            'transactionSummary' => $transactionSummary,
+            'transactionToday' => $transactionToday,
+            'transactionThisMonth' => $transactionThisMonth,
         ]);
     }
 

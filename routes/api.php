@@ -158,6 +158,7 @@ Route::middleware('auth:api')
 ->group(function () {
     Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
     Route::get('/transaction', [TransactionController::class, 'transactions']);
+    Route::get('/system-transaction', [TransactionController::class, 'systemTransaction']);
     Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoce']);
     Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);
     Route::get('/bank-lists', [TransactionController::class, 'getBankList']);

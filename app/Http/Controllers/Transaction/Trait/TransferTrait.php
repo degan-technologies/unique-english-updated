@@ -6,9 +6,11 @@ use App\Http\Resources\Bank\TransferResource;
 use App\Models\Bank\BankInfo;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\Transfer;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Request;
 
 trait TransferTrait {
     public function transferHistory($transaction, $status, $totalPrice = null) {
@@ -58,6 +60,40 @@ trait TransferTrait {
         return response()->json([
             'status' => 'success',
             'data' => $balance
+        ]);
+    }
+
+
+    public function systemTransaction() {
+        $user = User::query()
+            ->has('systemAdmin')
+            ->first();
+
+        if (!$user) return;
+
+        /**
+         * @var \Illuminate\Pagination\LengthAwarePaginator $transactions
+         */
+
+        $transactions = Transaction::query()
+            ->get();
+
+        $totalSell = $transactions
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $transactionToday = $transactions->where('created_at', '>=', Carbon::today())
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        $transactionThisMonth = $transactions->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('amount');
+
+        return response()->json([
+            'totalSell' => $totalSell,
+            'transactionToday' => $transactionToday,
+            'transactionThisMonth' => $transactionThisMonth,
         ]);
     }
 }
