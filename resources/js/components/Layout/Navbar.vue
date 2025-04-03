@@ -130,7 +130,7 @@
 
                         <div
                             v-if="dropDownOpen"
-                            class="absolute top-14 right-0 bg-white border border-gray-200 shadow-xl text-gray-700 rounded-lg w-48 transition-all duration-300">
+                            class="absolute top-14 right-0 bg-white border border-gray-200 shadow-xl text-gray-700 rounded-lg w-48 transition-all duration-300 cursor-pointer">
                             <div @click="openProfile" class="block px-4 py-2 hover:bg-gray-200" title="Account">
                                 Account
                             </div>

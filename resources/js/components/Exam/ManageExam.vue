@@ -67,7 +67,7 @@
             class="fixed inset-0 bg-gray-500 bg-opacity-50 flex items-center justify-center p-4"
         >
             <div
-                class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg md:max-w-xl max-h-[80vh] overflow-y-auto"
+                class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg md:max-w-xl max-height-80vh overflow-y-auto"
             >
                 <h2 class="text-xl font-bold text-center text-lime-700 mb-4">
                     Edit Question
@@ -234,7 +234,7 @@ const removeOption = (index) => {
 
 <style scoped>
 /* Make modal scrollable */
-.max-h-[80vh] {
+.max-height-80vh {
     max-height: 80vh;
 }
 </style>

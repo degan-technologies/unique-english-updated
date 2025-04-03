@@ -22,6 +22,8 @@ class TransactionResource extends JsonResource
             'payment_method' => $this->payment_method,
             'type' => $this->product_type,
             'ref_key' => $this->tx_ref,
+            'course_id' => $this->course_id,
+            'book_id' => $this->book_id,
 
             'customer' => new CustomerInfoResource($this->customer),
         ];
