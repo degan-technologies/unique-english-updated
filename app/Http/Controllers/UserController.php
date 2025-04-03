@@ -38,8 +38,7 @@ class UserController extends Controller
         $this->langService = $langService;
     }
 
-    public function index(Request $request)
-    {
+    public function index(Request $request) {
         // Start with all non-system-admin users who are not banned
         $query = User::query()
             ->where('role', '!=', SYSTEM_ADMIN)

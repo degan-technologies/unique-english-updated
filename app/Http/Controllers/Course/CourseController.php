@@ -297,12 +297,10 @@ class CourseController extends Controller {
 
     public function search(Request $request) {
         $courses = Course::where('user_id', Auth::id())
-        ->when($request->searchQuery, fn($q) => $q->where('course_name', 'like', "%{$request->searchQuery}%"))
-        ->when($request->skillLevel, fn($q) => $q->where('skill_level', $request->skillLevel))
-        ->paginate($request->rowsPerPageOptions);
-    
-    
-        // Get overall statistics (these are not filtered by search or skill level)
+            ->when($request->searchQuery, fn($q) => $q->where('course_name', 'like', "%{$request->searchQuery}%"))
+            ->when($request->skillLevel, fn($q) => $q->where('skill_level', $request->skillLevel))
+            ->paginate($request->rowsPerPageOptions);
+     
         $stats = Course::query()
             ->where('user_id', Auth::id())
             ->selectRaw(

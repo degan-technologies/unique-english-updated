@@ -213,6 +213,16 @@ class TransactionController extends Controller {
         })->map(function ($transactionsByDate) {
             return $transactionsByDate->sum('amount');
         })->all();
+ 
+        if($request->summryLength === 'true') {
+
+            $transactionSummary = $transactions->groupBy(function ($transaction) {
+                return $transaction->created_at->format('Y-m');
+            })->map(function ($transactionsByMonth) {
+                return $transactionsByMonth->sum('amount');
+            })->all(); 
+        }
+
 
 
         $pagination = $transactions->toArray();

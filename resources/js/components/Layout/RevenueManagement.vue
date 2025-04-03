@@ -28,6 +28,8 @@
         transactionSummary : null,
     })
 
+    const summryLength = ref(false);
+
     const toast = ref({
         show: false,
         message: '',
@@ -35,7 +37,11 @@
 
     function fetchTransactions() {
         Axios
-            .get('/api/transaction')
+            .get('/api/transaction', {
+                params:{
+                    summryLength: summryLength.value
+                }
+            })
             .then(res=>{
                 transactions.value = res.data.data;
                 revenue.value.courseSales = res.data.courseSell;
@@ -74,6 +80,11 @@
         setTimeout(() => {
             toast.value.show = false
         }, 3000)
+    }
+
+    function changeEarningType() {
+        summryLength.value = !summryLength.value;
+        fetchTransactions();
     }
     
     onMounted(()=>{
@@ -143,7 +154,11 @@
                 <div>
                     <!-- Overview Tab -->
                     <section v-if="activeTab === 'overview'"> 
-                        <TransactionOverview :revenue="revenue"/>              
+                        <div v-if="revenue?.transactionSummary">
+                            <TransactionOverview 
+                                :revenue="revenue"
+                                @changeEarningType="changeEarningType()"/> 
+                        </div>             
                     </section>
         
                     <!-- Transactions Tab -->
