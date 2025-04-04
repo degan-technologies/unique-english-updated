@@ -144,3 +144,7 @@ define('FEEDBACK_ACTIONS', [
 
 define('CORRECT', 'correct');
 define('INCORRECT', 'incorrect');
+
+define('TODAY', 'today');
+define('THIS_MONTH', 'month');
+define('ALL_TIME', 'allTime');

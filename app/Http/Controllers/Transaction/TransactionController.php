@@ -189,23 +189,20 @@ class TransactionController extends Controller {
          */
 
         $transactions = Transaction::query()
-                        ->where('user_id', $user->id) 
-                        ->get();
+                ->where('user_id', $user->id)
+                ->where('status', TRANSACTION_SUCCESS)
+                ->get();
                         
         $courseSell = $transactions->where('product_type', COURSE)
-                ->where('status', TRANSACTION_SUCCESS)
                 ->sum('amount');
 
         $bookSell = $transactions->where('product_type', BOOK)
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
 
         $liveSell = $transactions->where('product_type', LIVE)
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
 
         $totalSell = $transactions
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
 
         $transactionSummary = $transactions->groupBy(function ($transaction) {
@@ -215,11 +212,9 @@ class TransactionController extends Controller {
         })->all();
 
         $transactionToday = $transactions->where('created_at', '>=', Carbon::today())
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
 
         $transactionThisMonth = $transactions->where('created_at', '>=', Carbon::now()->startOfMonth())
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
  
         if($request->summryLength === 'true') {

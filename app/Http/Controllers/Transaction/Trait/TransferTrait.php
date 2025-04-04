@@ -6,11 +6,10 @@ use App\Http\Resources\Bank\TransferResource;
 use App\Models\Bank\BankInfo;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\Transfer;
-use App\Models\User;
-use Illuminate\Support\Str;
+use App\Models\User; 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 
 trait TransferTrait {
     public function transferHistory($transaction, $status, $totalPrice = null) {
@@ -64,7 +63,7 @@ trait TransferTrait {
     }
 
 
-    public function systemTransaction() {
+    public function systemTransaction(Request $request) {
         $user = User::query()
             ->has('systemAdmin')
             ->first();
@@ -75,22 +74,49 @@ trait TransferTrait {
          * @var \Illuminate\Pagination\LengthAwarePaginator $transactions
          */
 
+        $activeFilter = $request->activeFilter ?? null; 
+
         $transactions = Transaction::query()
+            ->where('status', TRANSACTION_SUCCESS)
             ->get();
 
         $totalSell = $transactions
-            ->where('status', TRANSACTION_SUCCESS)
             ->sum('amount');
 
-        $transactionToday = $transactions->where('created_at', '>=', Carbon::today())
-            ->where('status', TRANSACTION_SUCCESS)
+        $transactionToday = $transactions
+            ->where('created_at', '>=', Carbon::today())
             ->sum('amount');
 
-        $transactionThisMonth = $transactions->where('created_at', '>=', Carbon::now()->startOfMonth())
-            ->where('status', TRANSACTION_SUCCESS)
+        $transactionThisMonth = $transactions
+            ->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->sum('amount');
+
+        switch ($activeFilter) {
+            case TODAY:
+                $activeFilter = $transactions->where('created_at', '>=', Carbon::today());
+                break;
+            case THIS_MONTH:
+                $activeFilter = $transactions->where('created_at', '>=', Carbon::now()->startOfMonth());
+                break;
+            default:
+                $activeFilter = $transactions;
+                break;
+        }
+
+        $courseSell = $activeFilter->where('product_type', COURSE)
+            ->sum('amount');
+
+        $bookSell = $activeFilter->where('product_type', BOOK)
+            ->sum('amount');
+
+        $liveSell = $activeFilter->where('product_type', LIVE)
             ->sum('amount');
 
         return response()->json([
+            'courseSell' => $courseSell,
+            'bookSell' => $bookSell,
+            'liveSell' => $liveSell,
+
             'totalSell' => $totalSell,
             'transactionToday' => $transactionToday,
             'transactionThisMonth' => $transactionThisMonth,

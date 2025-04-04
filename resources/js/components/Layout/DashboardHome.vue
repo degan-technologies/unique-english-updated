@@ -8,16 +8,16 @@
     import LiveSessionsWidget from '@/components/widgets/LiveSessionsWidget.vue';
     import ReviewsRatingsWidget from '@/components/widgets/ReviewsRatingsWidget.vue'; 
     import RevenueModal from '@/components/widgets/RevenueModal.vue';
-    
-    // Reactive state for the dashboard
+     
     const activeFilter = ref('today');
-
-    // Dummy data for demonstration purposes
+ 
     const revenueData = ref({
         today: 0,
         month: 0,
-        total: 0, 
-        fetched: false
+        total: 0,
+        courseSell: 0,
+        bookSell: 0,
+        liveSell: 0,  
     });
 
     const courseData = ref({
@@ -98,19 +98,24 @@
  
     function fetchTransactions() {
         Axios
-            .get('/api/system-transaction')
+            .get('/api/system-transaction', {
+                params: {
+                    activeFilter:activeFilter.value,
+                }
+            })
             .then(res=>{
                 revenueData.value.today = res.data.transactionToday;
                 revenueData.value.month = res.data.transactionThisMonth;
                 revenueData.value.total = res.data.totalSell; 
-                revenueData.value.fetched = true;
+                revenueData.value.courseSell = res.data.courseSell;
+                revenueData.value.bookSell = res.data.bookSell;
+                revenueData.value.liveSell = res.data.liveSell;   
             })
-    }
+    } 
 
-    function buttonClass(isActive) {
-        return isActive
-            ? 'bg-lime-700 text-white'
-            : 'bg-gray-200 text-gray-900 hover:bg-lime-600 hover:text-white transition';
+    const filterCourse = (filterType) =>{
+        activeFilter.value = filterType;
+        fetchTransactions();
     }
 
     onMounted(()=>{
@@ -121,36 +126,12 @@
     <!-- Main container -->
     <div class="min-h-screen bg-gray-100 text-gray-900 transition-colors duration-300">
         <!-- Top Navigation Bar -->
-        <nav class="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white shadow-md">
-            <!-- Date/Time Filters -->
-            <div class="flex flex-wrap items-center justify-center space-x-0 sm:space-x-4 mb-2 sm:mb-0">
-                <button @click="setFilter('today')"
-                    :class="[buttonClass(activeFilter === 'today'), 'px-3 py-1 m-1 sm:m-0 rounded']">
-                    Today
-                </button>
-                <button @click="setFilter('month')"
-                    :class="[buttonClass(activeFilter === 'month'), 'px-3 py-1 m-1 sm:m-0 rounded']">
-                    This Month
-                </button>
-                <button @click="setFilter('all')"
-                    :class="[buttonClass(activeFilter === 'all'), 'px-3 py-1 m-1 sm:m-0 rounded']">
-                    All Time
-                </button>
-            </div>
-            <!-- Refresh Button -->
-            <div class="flex items-center justify-center">
-                <button @click="refreshData" class="p-2 bg-gray-200 rounded hover:bg-gray-300 transition"
-                    aria-label="Refresh Data">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-            </div>
-        </nav>
 
         <div class="">
             <div class="grid sm:grid-cols-2 gap-4 my-6">
                 <RevenueModal 
-                    v-if="revenueData?.fetched"
-                    :revenueData="revenueData"/>
+                    :revenueData="revenueData"
+                    @filterCourse="filterCourse"/>
 
                 <CoursePerformanceWidget 
                     :data="courseData" 
