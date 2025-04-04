@@ -325,7 +325,7 @@
                         <i class="fas fa-users text-indigo-500 mr-2"></i>
                         <strong>Lifetime access to the community</strong>
                     </div>
-                    <a class="text-blue-500 hover:underline leading-relaxed text-lg py-2">
+                    <a class="text-blue-500 leading-relaxed text-lg py-2">
                         <i class="fas fa-certificate text-teal-500 mr-2"></i>
                         <strong>Certificate of completion</strong>
                     </a>
