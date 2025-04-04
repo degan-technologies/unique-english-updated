@@ -1,6 +1,12 @@
 <script setup>
-    import { ref, computed, onMounted, onUnmounted } from 'vue';
+    import { ref, computed } from 'vue';
+    import { storeToRefs } from 'pinia';
     import PieChart from '@/components/PieChart.vue';
+    
+    import { useSidebarStore } from "@/store/useSidebarStore";
+
+    const sidebarStore = useSidebarStore();
+    const { sidebarCollapsed, } = storeToRefs(sidebarStore);
 
     const emit = defineEmits(['filterCourse'])
     const props = defineProps({
@@ -62,7 +68,11 @@
             <h3 class="text-xl font-bold text-lime-700">Revenue Summary</h3>
         </div>
  
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div 
+            :class="{
+                'sm:grid-cols-2':sidebarCollapsed
+            }"
+            class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div v-for="metric in revenueMetrics" :key="metric.title" 
                 @click="selectFilterType(metric.Type)" 
                 :class="{

@@ -1,7 +1,6 @@
-<script setup>
-import { ref } from "vue";
+<script setup> 
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 
 import { useSidebarStore } from "@/store/useSidebarStore";
 

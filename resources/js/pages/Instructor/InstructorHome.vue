@@ -18,7 +18,7 @@ import SystemAnalyticsReport from "@/components/Layout/SystemAnalyticsReport.vue
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
 import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
 import ExamManagement from "@/components/Layout/ExamManagement.vue";
-import ScheduleManagement from "../../components/Live/ScheduleManagment.vue";
+import ScheduleManagement from "@/components/Live/ScheduleManagment.vue";
 
 
 // Sidebar Store Setup
@@ -34,7 +34,7 @@ const {
     exams,
     schedule,
     payments,
-    liveSssions, // Fixed typo
+    liveSssions, 
     messaging,
 } = storeToRefs(sidebarStore);
 
