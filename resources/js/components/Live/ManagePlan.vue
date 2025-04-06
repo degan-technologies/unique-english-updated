@@ -87,29 +87,29 @@
             </button>
         </div>
 
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-white rounded-lg ">
             <div v-if="loading"
                 class="flex justify-center items-center h-64">
                 <Spinner />
             </div>
-            <table v-else
-                class="w-full border-collapse border">
-                <thead>
-                    <tr class="bg-gray-50">
-                        <th class="px-4 py-3 text-left">Name</th>
-                        <th class="px-4 py-3 text-left">Price</th>
-                        <th class="px-4 py-3 text-left">Duration</th>
-                        <th class="px-4 py-3 text-center">Actions</th>
+            <div v-else class="overflow-x-auto scrollbar">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-white rounded-t-lg">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                        <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="plan in plans"
                         :key="plan.id"
                         class="border-b">
-                        <td class="px-4 py-3">{{ plan.name }}</td>
-                        <td class="px-4 py-3">{{ plan.price }} Birr</td>
-                        <td class="px-4 py-3">{{ plan.duration }}</td>
-                        <td class="px-4 py-3 flex justify-center gap-3">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ plan.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ plan.price }} Birr</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ plan.duration }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex justify-center gap-3">
                             <button @click="editPlan(plan)"
                                 class="text-lime-700 hover:text-lime-600">
                                 <i class="fas fa-edit text-lg"></i>
@@ -123,10 +123,14 @@
                 </tbody>
             </table>
         </div>
-
+        </div>
+        <div v-if="showAddPlan"
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
+            <AddPlan @close="showAddPlan = false" />
+        </div>
         <!-- Edit Plan Modal -->
         <div v-if="showEditModal"
-            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
             <div class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
                 <h2 class="text-xl font-semibold text-lime-700 mb-4 flex items-center gap-2">
                     <i class="fas fa-pen"></i> Edit Plan
@@ -170,8 +174,8 @@
 
         <!-- Delete Confirmation Overlay -->
         <div v-if="showDeleteConfirmation"
-            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
-            <div class="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center  animate-fadeIn z-50">
+            <div class="bg-white p-6 rounded-lg w-80 text-center">
                 <h2 class="text-xl font-semibold text-red-600 mb-4 flex items-center justify-center gap-2">
                     <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
                 </h2>
@@ -193,10 +197,7 @@
         </div>
 
         <!-- Add Plan Overlay -->
-        <div v-if="showAddPlan"
-            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
-            <AddPlan @close="showAddPlan = false" />
-        </div>
+       
     </div>
 </template>
 

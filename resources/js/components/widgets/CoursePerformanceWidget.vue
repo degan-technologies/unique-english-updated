@@ -346,12 +346,7 @@
                 :class="buttonClass(activeChart === 'book')">
                 Book Enrollments
             </button>
-        </div>
-
-        <!-- Year Filter Dropdown -->
-        <div class="flex justify-end mb-4 items-center">
-            <label for="yearFilter"
-                class="mr-2 ">Select Year:</label>
+            <div class="flex justify-end mb-4 items-center">
             <select id="yearFilter"
                 v-model="selectedYear"
                 class="border rounded px-2 py-1">
@@ -362,32 +357,34 @@
                 </option>
             </select>
         </div>
-
+        </div>
         <!-- Chart Area -->
-        <div class="mb-4">
+        <div class="mb-3">
             <div class="relative w-full max-w-3xl mx-auto">
                 <canvas ref="chartCanvas"
                     class="block w-full h-full"></canvas>
             </div>
         </div>
-
         <!-- Top Courses/Books List -->
         <div v-if="activeChart === 'enrollment'">
             <h4 class="text-md sm:text-lg font-semibold mb-2">Top 5 Courses</h4>
             <div class="max-h-40 overflow-y-auto scrollable-container">
-                <ul class="space-y-4">
-                    <li v-for="course in topFiveCourses"
+                <ul class="space-y-2">
+                    <li
+                        v-for="course in topFiveCourses"
                         :key="course.id"
-                        class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition"
-                        @click="$emit('openCourse', course)">
-                        <img :src="course.thumbnail_url"
+                        class="flex items-center space-x-4 p-2 rounded cursor-pointer hover:bg-gray-100 transition border border-gray-100"
+                        >
+                        <img
+                            :src="course.thumbnail_url"
                             alt="Course Thumbnail"
-                            class="w-12 h-12 rounded object-cover" />
-                        <div class="flex-1 text-center sm:text-left">
-                            <div class="font-bold">{{ course.course_name }}</div>
+                            class="w-10 h-10 rounded object-cover"
+                        />
+                        <div class="flex flex-col justify-center">
+                            <div class="font-normal">{{ course.course_name }}</div>
                             <div class="text-sm text-gray-600">
-                                Enrollments: {{ course.totalEnrollments }} | Rating: {{ (course.averageRating ||
-                                0).toFixed(1) }}
+                            Enrollments: {{ course.totalEnrollments }} | Rating:
+                            {{ (course.averageRating || 0).toFixed(1) }}
                             </div>
                         </div>
                     </li>
@@ -397,16 +394,16 @@
         <div v-else-if="activeChart === 'book'">
             <h4 class="text-md sm:text-lg font-semibold mb-2">Top 5 Books</h4>
             <div class="max-h-40 overflow-y-auto scrollable-container">
-                <ul class="space-y-4">
+                <ul class="space-y-2">
                     <li v-for="book in topFiveBooks"
                         :key="book.id"
-                        class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition"
-                        @click="$emit('openBook', book)">
+                        class="flex items-center space-x-4 p-2 rounded cursor-pointer hover:bg-gray-100 transition border border-gray-100"
+                        >
                         <img :src="book.cover_page_url"
                             alt="Book Thumbnail"
-                            class="w-12 h-12 rounded object-cover" />
-                        <div class="flex-1 text-center sm:text-left">
-                            <div class="font-bold">{{ book.title || 'Unknown Book' }}</div>
+                            class="w-10 h-10 rounded object-cover" />
+                        <div class="flex flex-col justify-center">
+                            <div class="font-normal">{{ book.title || 'Unknown Book' }}</div>
                             <div class="text-sm text-gray-600">
                                 Enrollments: {{ book.totalEnrollments }} | Rating: {{ (book.averageRating ||
                                 0).toFixed(1) }}
@@ -425,7 +422,7 @@
     }
 
     .scrollable-container {
-        max-height: 100px;
+        max-height: 130px;
         overflow-y: auto;
     }
 
