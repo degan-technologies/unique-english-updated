@@ -95,7 +95,7 @@
                 <h4 class="text-sm font-semibold mb-4 text-lime-700">
                     Revenue Breakdown {{ breakdownType }}
                 </h4>
-                <pie-chart :data="revenueBreakdownCopy"></pie-chart>
+                <PieChart :data="revenueBreakdownCopy"/>
             </div>
         </div>
     </div>

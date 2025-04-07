@@ -108,24 +108,24 @@ onMounted(() => {
                 class="flex justify-center items-center h-64">
                 <Spinner />
             </div>
-            <div v-else>
-                <table class="w-full table-auto border-collapse">
+            <div v-else class="w-full  overflow-x-auto scrollbar">
+                <table class="min-w-full divide-y divide-gray-200">
                     <!-- Table Header -->
-                    <thead class="bg-gray-50 text-md">
+                    <thead class="bg-white rounded-t-lg">
                         <tr>
-                            <th class="p-4 text-left border-b">Day</th>
-                            <th class="p-4 text-left border-b">Time</th>
-                            <th class="p-4 text-center border-b">Actions</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Day</th>
+                            <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                            <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <!-- Table Body -->
-                    <tbody>
+                    <tbody class="bg-white divide-y divide-gray-200">
                         <tr v-for="schedule in schedules.data"
                             :key="schedule.id"
                             class="border-b">
-                            <td class="p-2">{{ schedule.day }}</td>
-                            <td class="p-2">{{ formatTime(schedule.time) }}</td>
-                            <td class="p-2 flex justify-center gap-4">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ schedule.day }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatTime(schedule.time) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex justify-center gap-4">
                                 <!-- Edit Button -->
                                 <button @click="editSchedule(schedule)"
                                     class="text-lime-600 hover:text-lime-500 p-2 transition-all"
@@ -161,8 +161,8 @@ onMounted(() => {
 
         <!-- Overlay: Add Schedule Form -->
         <div v-if="showAddSchedule"
-            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
-            <div class="bg-white p-4 rounded-lg shadow-xl w-full max-w-xl relative">
+            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn z-50">
+            <div class="bg-white p-4 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl relative">
                 <!-- Close Button -->
                 <button @click="showAddSchedule = false"
                     class="absolute top-2 right-2 text-gray-600 hover:text-gray-800 focus:outline-none"
@@ -175,7 +175,7 @@ onMounted(() => {
 
         <!-- Edit Modal -->
         <div v-if="showModal"
-            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 backdrop-blur-sm animate-fadeIn">
+            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn z-50">
             <div class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
                 <h2 class="text-xl font-bold mb-4 text-lime-700 flex items-center gap-2">
                     <i class="fas fa-edit"></i> Edit Schedule
@@ -212,8 +212,8 @@ onMounted(() => {
 
         <!-- Delete Confirmation Overlay -->
         <div v-if="showDeleteModal"
-            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center">
-            <div class="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+            class="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50  animate-fadeIn">
+            <div class="bg-white p-6 rounded-lg w-80 text-center">
                 <h2 class="text-xl font-semibold text-red-600 mb-4 flex items-center justify-center gap-2">
                     <i class="fas fa-exclamation-triangle"></i> Confirm Deletion
                 </h2>

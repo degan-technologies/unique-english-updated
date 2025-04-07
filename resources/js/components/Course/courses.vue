@@ -152,30 +152,27 @@ watch(
                 class="text-center">No Courses Found</div>
 
             <div v-if="instructorCourses.length > 4">
-                <div class="overflow-x-auto">
-                    <table class="table-fixed w-full text-left border-collapse">
+                <div class="w-full  overflow-x-auto scrollbar">
+                    <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-white rounded-t-lg">
-                            <tr class="border-b border-gray-300 text-gray-600 text-sm">
-                                <th class="py-3 px-4 font-normal text-center w-1/4">Courses</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/8">Rating</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">Total Enroll
-                                </th>
-                                <th class="py-3 px-4 font-normal text-center w-1/9">Revenue</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">Created Date
-                                </th>
-                                <th class="py-3 px-4 font-normal text-center w-1/4">Actions</th>
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Courses</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Total Enroll</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
-
-                        <tbody class="bg-white">
+                        <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="course in instructorCourses"
                                 :key="course.id"
-                                class="border-b border-gray-200 hover:bg-gray-50 transition align-middle">
-                                <td class="py-3 px-4 flex items-center gap-3">
+                                class="hover:bg-gray-50 ">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-2">
                                     <!-- Thumbnail image only displays on sm and larger devices -->
                                     <img :src="course.thumbnail_url"
                                         alt="Course Image"
-                                        class="w-12 h-12 rounded-md object-cover hidden sm:block" />
+                                        class="w-12 h-12 rounded-md object-cover" />
                                     <div>
                                         <h3 class="text-sm font-semibold text-gray-800">
                                             {{ course.course_name }}
@@ -186,7 +183,7 @@ watch(
                                     </div>
                                 </td>
 
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div class="flex items-center justify-center">
                                         <svg class="w-4 h-4 text-yellow-500 fill-current"
                                             xmlns="http://www.w3.org/2000/svg"
@@ -198,21 +195,21 @@ watch(
                                     </div>
                                 </td>
 
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center hidden sm:table-cell">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ course.total_enroll || 15 }}
                                 </td>
 
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     ${{ course.revenue || 25 }}
                                 </td>
 
                                 <!-- "Created Date" cell hidden on mobile -->
-                                <td class="py-3 px-4 text-gray-700 text-sm text-center hidden sm:table-cell">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ formatDate(course.created_at) || '2025-03-24' }}
                                 </td>
 
-                                <td class="py-3 px-4 h-full">
-                                    <div class="flex items-center justify-center h-full gap-2">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <div class="h-full gap-2">
                                         <button @click="getSelectedCourse(courseModuleTab, course)"
                                             class="bg-white border border-gray-200 px-3 py-1 rounded text-sm text-black hover:bg-gray-200 hover:text-gray-900 transition">
                                             Details

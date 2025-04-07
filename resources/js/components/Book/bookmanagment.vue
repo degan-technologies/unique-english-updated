@@ -314,43 +314,42 @@ const onFileChange = (field, event) => {
             </div>
             <!-- Table Layout -->
             <div v-if="computedViewMode === 'table'">
-                <div class="overflow-x-auto border border-gray-300 rounded-lg">
-                    <table class="table-fixed w-full text-left border-collapse">
-                        <thead class="bg-gray-100 rounded-t-lg">
-                            <tr class="border-b border-gray-300 text-gray-600 text-sm">
-                                <th class="py-3 px-4 font-normal text-center w-1/4">TITLE</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/9">PRICE</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/4">AUTHOR</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">PUBLISHED DATE
-                                </th>
-                                <th class="py-3 px-4 font-normal text-center w-1/6 hidden sm:table-cell">EDDITION</th>
-                                <th class="py-3 px-4 font-normal text-center w-1/3">ACTIONS</th>
+                <div class="w-full  overflow-x-auto scrollbar">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white rounded-t-lg">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">TITLE</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">PRICE</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">AUTHOR</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">PUBLISHED DATE</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">EDDITION</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">ACTIONS</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white">
+                        <tbody class="bg-white divide-y divide-gray-200">
                             <tr v-for="book in filteredBooksAdmin"
                                 :key="book.id"
                                 class="border-b border-gray-200 hover:bg-gray-50 transition">
-                                <td class="py-3 px-4 flex items-center gap-3">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-3">
                                     <img :src="book.cover_page_url"
                                         alt="Cover Page"
-                                        class="w-12 h-12 rounded-md object-cover hidden sm:table-cell" />
+                                        class="w-12 h-12 rounded-md object-cover" />
                                     <h3 class="text-sm font-semibold text-gray-800">{{ book.title }}</h3>
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     ${{ book.price || 4.6 }}
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{ book.auther || 'Unknown' }}
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center hidden sm:table-cell">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ">
                                     {{ book.publish_date || 'N/A' }}
                                 </td>
-                                <td class="py-3 px-4 text-gray-700 text-sm font-bold text-center hidden sm:table-cell">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 ">
                                     {{ book.eddition || '' }}
                                 </td>
-                                <td class="py-3 px-4 h-full">
-                                    <div class="flex items-center justify-center h-full gap-2">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <div class="flex h-full gap-2">
                                     <button @click="changeTab(book.slug)"
                                         class="text-black text-sm font-semibold hover:underline">
                                         Details
