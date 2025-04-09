@@ -2,6 +2,7 @@
 use App\Http\Controllers\Auth\SocialController;
 use App\Http\Controllers\Live\ChatController;
 use App\Http\Controllers\Live\MeetingController;
+// Removed duplicate import of ParticipantController
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
@@ -32,6 +33,9 @@ use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
+use App\Http\Controllers\Logo\LogoController;
+
+
  
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -79,10 +83,10 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::get('/current', [AuthController::class, 'currentUser']);
 
-        // Existing resource routes
-        Route::resource('live-sessions', LiveSessionController::class);
-        Route::resource('live-resources', LiveResourceController::class);
-        Route::resource('participants', ParticipantController::class);
+        // // Existing resource routes
+        // Route::resource('live-sessions', LiveSessionController::class);
+        // Route::resource('live-resources', LiveResourceController::class);
+        // Route::resource('participants', ParticipantController::class);
        
     Route::resource('quize',QuizController::class);
     Route::resource('schedules', ScheduleController::class);
@@ -135,16 +139,16 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
         });
 
-Route::middleware('auth:api')->group(function () {
-        Route::get('/chat/{meetingId}', [ChatController::class, 'index']);
-        Route::post('/chat', [ChatController::class, 'store']);
-        });
+// Route::middleware('auth:api')->group(function () {
+//         Route::get('/chat/{meetingId}', [ChatController::class, 'index']);
+//         Route::post('/chat', [ChatController::class, 'store']);
+//         });
 
-Route::middleware('auth:api')->group(function () {
-        Route::post('/meetings', [MeetingController::class, 'create']);
-        Route::post('/meetings/join', [MeetingController::class, 'join']);
-        Route::post('/meetings/end', [MeetingController::class, 'end']);
-    });
+// Route::middleware('auth:api')->group(function () {
+//         Route::post('/meetings', [MeetingController::class, 'create']);
+//         Route::post('/meetings/join', [MeetingController::class, 'join']);
+//         Route::post('/meetings/end', [MeetingController::class, 'end']);
+//     });
 
 
 Route::middleware('auth:api')
@@ -171,3 +175,14 @@ Route::middleware('auth:api')
     Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
     Route::post('/change-comission', [PlatformComissionController::class, 'store']);
 }); 
+
+Route::middleware(['auth:api'])->group(function () {
+
+    // Only system admins should be able to store new logos
+    Route::post('/logos', [LogoController::class, 'store']);
+
+    // All authenticated users can view logos
+    Route::get('/logos', [LogoController::class, 'index']);
+    Route::get('/logos/{logo}', [LogoController::class, 'show']);
+
+});

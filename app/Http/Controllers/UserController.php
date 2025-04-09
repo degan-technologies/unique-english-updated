@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\PhoneNumberHelper;
 use App\Http\Resources\Auth\CurrentUserResource;
+use App\Http\Resources\Transaction\CustomerInfoResource;
 use App\Mail\OTPVerificationMail;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -41,7 +42,10 @@ class UserController extends Controller
     public function index(Request $request) {
         // Start with all non-system-admin users who are not banned
         $query = User::query()
-            ->where('role', '!=', SYSTEM_ADMIN)
+            ->where(function($query) {
+                $query->has('student')
+                    ->orHas('instructor');
+            })
             ->whereNull('user_banned_at');
 
         // Search filter: looks in first_name, middle_name, email, or role
@@ -91,7 +95,7 @@ class UserController extends Controller
         $users = $query->get();
 
         return response()->json([
-            'data' => userResource::collection($users)
+            'data' => CustomerInfoResource::collection($users)
         ]);
     }
 

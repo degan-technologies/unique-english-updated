@@ -48,7 +48,6 @@
             const response = await Axios.get('/api/transaction');
         
             transactions.value = response.data.data || [];
-            console.log('Fetched Transactions:', transactions.value);
         } catch (error) {
             console.error('Error fetching transactions:', error);
         }
@@ -61,7 +60,6 @@
             const response = await Axios.get(`/api/all-books`); 
             books.value = response.data.data || [];
 
-            console.log("Fetched Books:", books.value); 
         } catch (error) {
             console.error("Error fetching books:", error);
         }
@@ -112,8 +110,6 @@
 
         const courseEnrollments = {};
 
-        console.log("Transactions:", transactions.value);
-
         transactions.value.forEach(transaction => {
             if (transaction.type === 'course' && transaction.course_id) {
                 if (courseEnrollments[transaction.course_id]) {
@@ -130,9 +126,6 @@
                 totalEnrollments: courseEnrollments[course.id] || 0 
             };
         });
-
-        console.log("Courses with enrollments:", coursesWithEnrollments);
-
         return coursesWithEnrollments
             .sort((a, b) => b.totalEnrollments - a.totalEnrollments) 
             .slice(0, 5);

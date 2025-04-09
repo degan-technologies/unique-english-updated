@@ -1,11 +1,17 @@
 <script setup> 
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
+import Axios from 'axios';
+import { ref, onMounted, watch  } from 'vue'
 
 import { useSidebarStore } from "@/store/useSidebarStore";
+import { useAppStore } from '../../store/useAppStore'
+const appStore = useAppStore();
+const { profileUpdated } = storeToRefs(appStore);
 
 const router = useRouter();
 const emit = defineEmits(["selectContent"]);
+const logoUrl = ref(null); // Default logo URL
 
 const sidebarStore = useSidebarStore();
 const {
@@ -98,6 +104,33 @@ function selectContent(changeTab) {
 
     selectedContent.value = changeTab;
 }
+
+// Function to fetch logo from backend
+const fetchLogo = async () => {
+  try {
+    const res = await Axios.get('/api/logos')
+    if (res.data.data.length) {
+      logoUrl.value = res.data.data[0].file_url
+    }
+  } catch (error) {
+    console.error('Error fetching logo:', error)
+  }
+}
+
+// Call the function when component mounts
+onMounted(() => {
+  fetchLogo()
+})
+
+watch(profileUpdated, (updated) => {
+  if (updated) {
+    fetchLogo() // your logo fetching function
+    profileUpdated.value = false
+ // reset it
+  }
+})
+
+
 </script>
 
 <template>
@@ -124,10 +157,10 @@ function selectContent(changeTab) {
                     v-if="!sidebarCollapsed"
                     class="flex items-center animate-fadeIn"
                 >
-                    <img
-                        src="images/logo.jpg"
-                        alt="Full Logo"
-                        class="h-12 w-auto object-contain"
+                     <img
+                        :src="logoUrl "
+                        alt="Logo Abbreviation"
+                        class="h-10 w-auto object-contain"
                     />
                     <span class="ml-2 font-semibold text-xl text-lime-500"
                         >UniqueEnglish</span
