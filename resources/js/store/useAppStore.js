@@ -13,6 +13,7 @@ export const useAppStore = defineStore('useAppStore', () => {
     const lang = ref('en');
     const google = ref("/socialMediaIcons/google.png");
     const commission = ref(commission);
+    const profileUpdated = ref(false);
 
     // Use js-cookie to store token and login status
     const authToken = ref(Cookies.get('authToken') || '');
@@ -101,5 +102,7 @@ export const useAppStore = defineStore('useAppStore', () => {
 
         authToken,
         commission,
+
+        profileUpdated
     };
 });

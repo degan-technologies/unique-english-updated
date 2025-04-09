@@ -1,147 +1,185 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
+    import Axios from 'axios';
+    import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-const reviews = ref([]);
-const selectedRating = ref(null);
-const selectedReview = ref(null);
+    const transactions = ref([]);
 
-// Fetch reviews from the API endpoint
-const fetchReviews = async () => {
-    await axios
-        .get('/api/feedbacks')
-        .then((response) => {
-            reviews.value = response.data.data;
-        });
-};
+    const reviews = ref([]);
+    const selectedRating = ref(null);
+    const selectedReview = ref(null);
+    const topBestSellers = ref([]);
 
-// Toggle rating filter
-const filterByRating = (rating) => {
-    selectedRating.value = selectedRating.value === rating ? null : rating;
-};
 
-// Compute filtered reviews based on selected rating
-const filteredReviews = computed(() => {
-    return selectedRating.value
-        ? reviews.value.filter(review => review.rating === selectedRating.value)
-        : reviews.value;
-});
+    const fetchTransactions = async () => {
+        try {
+            const response = await Axios.get('/api/transaction');
+            const data = response.data.data;
 
-// Calculate rating percentage for the distribution chart
-const getRatingPercentage = (star) => {
-    if (reviews.value.length === 0) {
-        return 0;
-    }
-    const count = reviews.value.filter(review => review.rating === star).length;
-    return (count / reviews.value.length) * 100;
-};
+            transactions.value = data;
 
-// Open the review details modal
-const openReviewDetails = (review) => {
-    selectedReview.value = review;
-};
+            const productMap = {}; 
+            data.forEach(tx => {
+                let key = null;
+                let name = null;
+                let type = null;
+                let buyer = null;
+                let averageRating = null;
 
-// Format timestamp into a readable date
-const formatTime = (isoString) => {
-    return new Date(isoString).toLocaleDateString();
-};
+                if (tx.type === 'course' && tx.course_id != null) {
+                    key = `course-${tx.course_id}`;
+                    name = tx.course_name;
+                    type = 'course';
+                    buyer = tx.course_owner;
+                    averageRating = tx.course ? tx.course.averageRating : null;
+                } else if (tx.type === 'book' && tx.book_id != null) {
+                    key = `book-${tx.book_id}`;
+                    name = tx.book_name;
+                    type = 'book';
+                    buyer = tx.book_owner;
+                    averageRating = tx.book ? tx.book.averageRating : null;
+                }
 
-// Auto-refresh reviews every 15 seconds
-let intervalId = null;
-onMounted(() => {
-    fetchReviews();
-    intervalId = setInterval(fetchReviews, 15000);
-});
+                if (key && name) {
+                    if (!productMap[key]) {
+                        productMap[key] = {
+                            key,
+                            name,
+                            type,
+                            sales: 0,
+                            buyer,
+                            averageRating,
+                        };
+                    }
+                    productMap[key].sales += 1;
+                }
+            });
 
-onUnmounted(() => {
-    clearInterval(intervalId);
-});
+            const sorted = Object.values(productMap)
+                .sort((a, b) => b.sales - a.sales)
+                .slice(0, 10);
+
+            topBestSellers.value = sorted;
+
+            console.log("Top 10 Best Sellers:", topBestSellers.value);
+
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        }
+    };
+
+    const fetchReviews = async () => {
+        await Axios
+            .get('/api/feedbacks')
+            .then((response) => {
+                reviews.value = response.data.data;
+            });
+    };
+
+    const filterByRating = (rating) => {
+        selectedRating.value = selectedRating.value === rating ? null : rating;
+    };
+
+    // Compute filtered reviews based on selected rating
+    const filteredReviews = computed(() => {
+        return selectedRating.value
+            ? reviews.value.filter(review => review.rating === selectedRating.value)
+            : reviews.value;
+    });
+
+    // Calculate rating percentage for the distribution chart
+    const getRatingPercentage = (star) => {
+        if (reviews.value.length === 0) {
+            return 0;
+        }
+        const count = reviews.value.filter(review => review.rating === star).length;
+        return (count / reviews.value.length) * 100;
+    };
+
+    // Open the review details modal
+    const openReviewDetails = (review) => {
+        selectedReview.value = review;
+    };
+
+    // Auto-refresh reviews every 15 seconds
+    let intervalId = null;
+    onMounted(() => {
+        fetchReviews();
+        fetchTransactions();
+        intervalId = setInterval(fetchReviews, 15000);
+    });
+
+
+    onUnmounted(() => {
+        clearInterval(intervalId);
+    });
 </script>
 
 <template>
     <div class="bg-white rounded-lg shadow-lg w-full p-6 relative">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center space-x-2">
-                <i class="fas fa-star text-lime-700"></i>
-                <h3 class="text-lg font-bold">Recent Reviews & Ratings</h3>
-            </div>
-            <button @click="fetchReviews" class="text-gray-500 hover:text-gray-800" aria-label="Refresh Reviews">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-
-        <!-- Rating Filter Buttons -->
-        <div class="flex flex-wrap gap-2 mb-4">
-            <button v-for="star in [5, 4, 3, 2, 1]" :key="star" @click="filterByRating(star)"
-                :class="['px-3 py-1 rounded text-sm font-medium transition-all', selectedRating === star ? 'bg-lime-700 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300']">
-                {{ star }} ★
-            </button>
-        </div>
-
-        <!-- Reviews List -->
-        <div class="space-y-3 max-h-80 overflow-y-auto scrollbar">
-            <transition-group name="fade" tag="div">
-                <div v-for="review in filteredReviews" :key="review.id"
-                    class="p-4 border border-gray-200 rounded-lg hover:bg-gray-100 cursor-pointer transition-all"
-                    @click="openReviewDetails(review)">
-                    <div class="flex justify-between items-center">
-                        <h4 class="text-md font-semibold">{{ review.user.first_name }}</h4>
-                        <span class="text-sm text-gray-500">{{ formatTime(review.timestamp) }}</span>
-                    </div>
-                    <div class="flex items-center mt-1 space-x-1">
-                        <span v-for="n in review.rating" :key="'full' + n" class="text-lime-700">★</span>
-                        <span v-for="n in (5 - review.rating)" :key="'empty' + n" class="text-gray-300">★</span>
-                    </div>
-                    <p class="text-sm text-gray-600">{{ review.comment }}</p>
-                </div>
-            </transition-group>
-        </div>
-
-        <!-- No Reviews Placeholder -->
-        <div v-if="filteredReviews.length === 0" class="text-gray-500 text-center py-6">
-            No reviews available.
-        </div>
-
-        <!-- Rating Distribution Chart -->
-        <div class="mt-6">
-            <h4 class="text-sm font-semibold mb-2">Rating Distribution</h4>
-            <div class="flex items-end space-x-2">
-                <div v-for="star in [5, 4, 3, 2, 1]" :key="'bar' + star"
-                    class="relative w-10 bg-gray-200 rounded-lg overflow-hidden h-24 flex flex-col justify-end">
-                    <div class="bg-lime-700 transition-all duration-500"
-                        :style="{ height: getRatingPercentage(star) + '%' }"></div>
-                    <span class="absolute bottom-[-20px] text-xs text-gray-600">{{ star }}★</span>
-                </div>
+        <div v-if="topBestSellers.length"
+            class="">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                🏆 Top 10 Best Sellers
+            </h3>
+            <div class="overflow-y-auto scrollable-container max-h-[400px] overflow-y-auto space-y-2 pr-1">
+                <ul class="space-y-3 ">
+                    <li v-for="(item, index) in topBestSellers"
+                        :key="item.key"
+                        class="bg-white border border-gray-200 rounded-lg p-2 transition duration-200">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <div class="text-xs text-gray-500 font-medium">#{{ index + 1 }}</div>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                                :class="item.type === 'course' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'">
+                                {{ item.type === 'course' ? '🎓 Course' : '📚 Book' }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center mb-0.5">
+                            <h4 class="text-sm font-semibold text-gray-800">
+                                {{ item.name }}
+                            </h4>
+                            <p class="text-xs text-gray-600">
+                                ⭐ Rating:
+                                <span class="font-semibold text-gray-800">{{ item.averageRating }}</span>
+                            </p>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs text-gray-600">
+                                👤 By:
+                                <span class="font-medium text-gray-800">{{ item.buyer }}</span>
+                            </p>
+                            <p class="text-xs text-gray-600">
+                                🔢 Sales:
+                                <span class="font-semibold text-gray-800">{{ item.sales }}</span>
+                            </p>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
-
-        <!-- Review Details Modal -->
-        <teleport to="body">
-            <div v-if="selectedReview"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 ">
-                <div class="bg-white rounded-lg shadow-lg p-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-lg font-semibold">{{ selectedReview.name }}</h4>
-                        <button @click="selectedReview = null" class="text-gray-500 hover:text-gray-800"
-                            aria-label="Close Modal">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                        <span v-for="n in selectedReview.rating" :key="'modal-full' + n" class="text-lime-700">★</span>
-                        <span v-for="n in (5 - selectedReview.rating)" :key="'modal-empty' + n"
-                            class="text-gray-300">★</span>
-                    </div>
-                    <p class="mt-2">{{ selectedReview.comment }}</p>
-                    <div class="text-right mt-4">
-                        <button class="px-3 py-1 text-sm bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
-                            @click="selectedReview = null">
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </teleport>
     </div>
 </template>
+
+<style scoped>
+    .scrollable-container {
+        overflow-y: auto;
+    }
+
+    .scrollable-container {
+        scrollbar-width: thin;
+        scrollbar-color: #A0AEC0 #F7FAFC;
+
+    }
+
+    .scrollable-container::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .scrollable-container::-webkit-scrollbar-thumb {
+        background-color: #A0AEC0;
+        border-radius: 5px;
+    }
+
+    .scrollable-container::-webkit-scrollbar-track {
+        background-color: #F7FAFC;
+    }
+</style>

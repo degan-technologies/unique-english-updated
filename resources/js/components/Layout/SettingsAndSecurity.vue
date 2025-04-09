@@ -1,5 +1,12 @@
   <script setup>
     import { ref, computed } from 'vue'
+    import {storeToRefs} from 'pinia'
+    import Axios from 'axios'
+
+    import { useAppStore } from '../../store/useAppStore'
+    const appStore = useAppStore();
+    const { profileUpdated } = storeToRefs(appStore);
+
 
     import ChangeComission from '@/components/Transaction/ChangeComission.vue'
     
@@ -19,16 +26,24 @@
     })
     const fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Roboto, sans-serif']
     
-    function handleLogoUpload(event) {
-        const file = event.target.files[0]
-        if (file) {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            themeSettings.value.logoUrl = e.target.result
-        }
-        reader.readAsDataURL(file)
-        }
-    }
+    const logoUrl = ref('')
+
+    const handleLogoUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('logo', file)
+
+  try {
+    const response = await Axios.post('/api/logos', formData)
+    profileUpdated.value = true
+  } catch (error) {
+    console.error('Upload failed:', error.response?.data || error)
+    alert(error.response?.data?.message || 'Upload failed.')
+  }
+}
+
     function resetThemeSettings() {
         themeSettings.value = {
         primaryColor: '#3B82F6',
