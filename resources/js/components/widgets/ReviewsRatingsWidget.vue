@@ -118,42 +118,42 @@
     <div class="bg-white rounded-lg shadow-lg w-full p-6 relative">
         <div v-if="topBestSellers.length"
             class="">
-            <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                🏆 Top 10 Best Sellers
-            </h3>
-            <div class="overflow-y-auto scrollable-container max-h-[400px] overflow-y-auto space-y-2 pr-1">
-                <ul class="space-y-3 ">
-                    <li v-for="(item, index) in topBestSellers"
+            <div class="flex items-center space-x-2 mb-4">
+                <h3 class="text-lg font-bold text-gray-900"> 🏆 Top 10 Best Sellers </h3>
+            </div>
+            <div class="max-h-[400px] overflow-y-auto scrollable-container space-y-2 pr-1">
+                <div class="space-y-3 ">
+                    <div v-for="(item) in topBestSellers"
                         :key="item.key"
-                        class="bg-white border border-gray-200 rounded-lg p-2 transition duration-200">
+                        class="p-4 rounded-lg border border-gray-200 mb-3 cursor-pointer transition hover:bg-gray-100">
                         <div class="flex items-center justify-between mb-0.5">
-                            <div class="text-xs text-gray-500 font-medium">#{{ index + 1 }}</div>
+                            <div class="text-xs text-gray-500 font-medium flex flex-row justify-between">
+                                <p class="text-sm">Total Salse:</p>
+                                <p class="font-bold text-sm">{{item.sales}}</p>
+                            </div>
                             <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
                                 :class="item.type === 'course' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'">
                                 {{ item.type === 'course' ? '🎓 Course' : '📚 Book' }}
                             </span>
                         </div>
-                        <div class="flex justify-between items-center mb-0.5">
-                            <h4 class="text-sm font-semibold text-gray-800">
+                        <div class="flex justify-between items-center py-1">
+                            <h4 class="text-md font-semibold">
                                 {{ item.name }}
                             </h4>
+                            
+                        </div>
+                        <div class="flex justify-between items-center mt-1">
                             <p class="text-xs text-gray-600">
-                                ⭐ Rating:
+                                👤 
+                                <span class="font-medium text-gray-800">{{ item.buyer }}</span>
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                ⭐ 
                                 <span class="font-semibold text-gray-800">{{ item.averageRating }}</span>
                             </p>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs text-gray-600">
-                                👤 By:
-                                <span class="font-medium text-gray-800">{{ item.buyer }}</span>
-                            </p>
-                            <p class="text-xs text-gray-600">
-                                🔢 Sales:
-                                <span class="font-semibold text-gray-800">{{ item.sales }}</span>
-                            </p>
-                        </div>
-                    </li>
-                </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

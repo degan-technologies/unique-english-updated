@@ -328,16 +328,16 @@
     <div class="bg-white rounded-lg shadow p-6">
         <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 mb-4">
             <i class="fas fa-graduation-cap text-lime-700 text-2xl"></i>
-            <h3 class="text-lg sm:text-xl font-bold">Performance Indicator</h3>
+            <h3 class="text-lg sm:text-xl font-bold">Enrollments Indicator</h3>
         </div>
         <div class="mb-4 flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
             <button @click="setChart('enrollment')"
                 :class="buttonClass(activeChart === 'enrollment')">
-                Course Enrollments
+                Course 
             </button>
             <button @click="setChart('book')"
                 :class="buttonClass(activeChart === 'book')">
-                Book Enrollments
+                Book
             </button>
             <div class="flex justify-end mb-4 items-center">
             <select id="yearFilter"

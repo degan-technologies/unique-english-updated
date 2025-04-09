@@ -43,6 +43,11 @@
             })
     }  
 
+    const changeFilterType = (filterType) =>{
+        activeFilter.value = filterType;
+        fetchTransactions();
+    }
+
     onMounted(()=>{
         fetchTransactions();
     })
@@ -59,7 +64,8 @@
                     }"
                 class="grid lg:grid-cols-2 gap-4 my-6">
                 <RevenueModal 
-                    :revenueData="revenueData" />
+                    :revenueData="revenueData" 
+                    @filterCourse="changeFilterType"/>
 
                 <CoursePerformanceWidget />
             
