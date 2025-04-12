@@ -25,9 +25,11 @@ class CustomerInfoResource extends JsonResource
             'phone'       => $this->phone,
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)
-                : 'no-profile.png',
+                : 'images/no-profile.png',
 
             'role'=>$this->getRole(),
+            'engagement' => $this->transactions && $this->transactions->count() > 0 ? 'yes' : 'no',
+            'joinDate' => $this->created_at->diffForHumans(),
         ];
     }
 
@@ -44,19 +46,31 @@ class CustomerInfoResource extends JsonResource
         $student = $user->student()->exists();
 
         if($student) {
-            return 'student';
+            return [
+                'name' => 'student',
+                'text-color' => '#065f46',
+                'bg-color' => '#ecfccb',
+            ];
         }
 
         $instructor = $user->instructor()->exists();
 
         if ($instructor) {
-            return 'instructor';
+            return [
+                'name' => 'instructor',
+                'text-color' => '#7e22ce',
+                'bg-color' => '#e0e7ff',
+            ];
         }
 
         $systemAdmin = $user->systemAdmin()->exists();
 
         if ($systemAdmin) {
-            return 'systemAdmin';
+            return [
+                'name' => 'system admin',
+                'text-color' => '#dc2626',
+                'bg-color' => '#fee2e2',
+            ];
         }
     }
 }

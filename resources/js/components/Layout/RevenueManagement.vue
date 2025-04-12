@@ -177,14 +177,14 @@
                                 </div>
                                 <div class="flex items-center">
                                     <input
-                                    type="date"
-                                    v-model="filters.startDate"
-                                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        type="date"
+                                        v-model="filters.startDate"
+                                        class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
                                     <input
-                                    type="date"
-                                    v-model="filters.endDate"
-                                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ml-2"
+                                        type="date"
+                                        v-model="filters.endDate"
+                                        class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 ml-2"
                                     />
                                 </div>
                                 </div>

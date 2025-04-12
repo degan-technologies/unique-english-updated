@@ -1,12 +1,12 @@
 <script setup>
     import axios from 'axios'
-    import ActivityFeed from './ActivityFeed.vue'
+    import Popper from "vue3-popper";
     import { ref, computed, watch, onMounted } from 'vue'
-
-    // --- Data & States ---
+ 
     const users = ref([])
+    const selectedUsers = ref([]) 
+
     const searchQuery = ref('')
-    const selectedUsers = ref([])
     const masterSelected = ref(false)
     const showDeleteModal = ref(false)
     const showMessageModal = ref(false)
@@ -18,14 +18,12 @@
         first_name: '',
         middle_name: '',
         role: 'INSTRUCTOR_ROLE',
-    })
-    const expandedUser = ref(null)
+    }) 
     const currentPage = ref(1)
     const rowsPerPage = ref(10)
     const showActivityLogModal = ref(false)
     const activityLogDetails = ref([])
     const activityLogUser = ref({})
-    const showFilterModal = ref(false)
     const filters = ref({
         role: '',
         status: '',
@@ -33,8 +31,7 @@
         joinDateTo: '',
         progress: 0
     })
-
-    // --- Fetch Users ---
+ 
     async function fetchUsers() {
         try {
             const response = await axios.get('/api/users', {
@@ -91,25 +88,26 @@
     function onSearch() {
         currentPage.value = 1
     }
-    const toggleFilterModal = () => {
-        showFilterModal.value = !showFilterModal.value
-    }
-    const resetFilters = () => {
-        filters.value = {
-            role: '',
-            status: '',
-            joinDateFrom: '',
-            joinDateTo: '',
-            progress: 0
+
+    function toggleMark(id) {
+        if (!selectedUsers.value.includes(id)) {
+            selectedUsers.value.push(id);
+            return;
         }
+        selectedUsers.value = selectedUsers.value.filter(userId => userId !== id);
+        return;
     }
-    function toggleSelectAll() {
-        if (masterSelected.value) {
-            selectedUsers.value = filteredUsers.value.map(user => user.id)
-        } else {
-            selectedUsers.value = []
-        }
+
+    function toggleMarkAll() {
+        filteredUsers.value.map(user => {
+            selectedUsers.value.push(user.id);
+        });
     }
+
+    function toggleUnMarkAll() {
+        selectedUsers.value = []
+    }
+
     function clearSelection() {
         selectedUsers.value = []
         masterSelected.value = false
@@ -211,10 +209,8 @@
             console.error('Error in bulk delete:', error)
             alert('Error in bulk delete action')
         }
-    }
-    function toggleRowExpansion(user) {
-        expandedUser.value = expandedUser.value && expandedUser.value.id === user.id ? null : user
-    }
+    } 
+
     function prevPage() {
         if (currentPage.value > 1) {
             currentPage.value--
@@ -253,14 +249,9 @@
 
 <template>
     <div class="min-h-screen bg-gray-100 flex flex-col">
-        <!-- Header -->
         <header class="bg-white shadow py-4 px-6 flex flex-col md:flex-row items-start md:items-center justify-between">
             <div class="w-full md:w-auto">
                 <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
-                <p class="text-sm text-gray-600">
-                    Manage students and instructors with advanced search, filtering, and bulk actions.
-                </p>
-                <!-- Breadcrumb Navigation -->
                 <nav class="text-sm mt-2">
                     <ol class="list-reset flex text-gray-600">
                         <li>
@@ -274,7 +265,6 @@
 
             <!-- Search, Filter, and Add User -->
             <div class="mt-4 md:mt-0 flex items-center space-x-2 w-full md:w-auto">
-                <!-- Search Input -->
                 <div class="relative flex-1 md:flex-none">
                     <input v-model="searchQuery" @input="onSearch" type="text"
                         placeholder="Search by name, email, or role…"
@@ -286,132 +276,129 @@
                     </svg>
                 </div>
 
-                <!-- Filter Icon Button -->
-                <button @click="toggleFilterModal"
-                    class="bg-lime-700 text-white p-2 rounded-full hover:bg-lime-800 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 4h18M3 10h18M3 16h18" />
-                    </svg>
-                </button>
-
-                <!-- Add User Button -->
-                <button @click="openAddUserModal"
-                    class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 focus:outline-none">
-                    Add User
-                </button>
             </div>
         </header>
 
-        <!-- Main & Sidebar Container -->
-        <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
-            <!-- Main Content Area -->
-            <main class="flex-1 p-6 overflow-auto">
-                <!-- Bulk Actions Toolbar -->
-                <div v-if="selectedUsers.length"
-                    class="mb-4 bg-white p-4 rounded shadow flex flex-col sm:flex-row items-start sm:items-center justify-between">
-                    <div class="flex items-center space-x-2 mb-2 sm:mb-0">
-                        <span class="font-medium">{{ selectedUsers.length }} selected</span>
-                        <button @click="bulkDelete" class="bg-red-500 text-white p-2 rounded hover:bg-red-600"
-                            title="Delete">
-                            <span class="material-icons text-base">delete</span>
+        <div class="my-6">
+            <div class="flex border-b"> 
+                <button  
+                    class="p-2">
+                    Manage User
+                </button>
+            </div>
+        </div> 
+        <div class="flex flex-col md:flex-row flex-1 overflow-hidden"> 
+            <main class="flex-1 py-8 overflow-auto">  
+                <div class="bg-white p-6 rounded shadow overflow-hidden">
+                    <div class="w-full bg-white rounded border-b border-gray-200 p-2 flex flex-row justify-between gap-4">
+                        <div >
+                                <div v-if="selectedUsers.length" 
+                                    class="flex items-center space-x-2 ">
+                                    <span class="font-medium pr-4">{{ selectedUsers.length }} Selected </span>
+                                    <i 
+                                        @click="bulkDelete"
+                                        class="fa-solid fa-trash text-md font-bold text-gray-400"></i>
+                                    <i 
+                                        @click="openBulkMessageModal"
+                                        class="fa-solid fa-message text-md font-bold text-lime-400"></i>
+                                    <i 
+                                        @click="clearSelection"
+                                        class="fa-solid fa-arrow-rotate-left text-md font-bold text-blue-400"></i>
+                                </div>
+                            </div>
+ 
+                        <button @click="openAddUserModal"
+                            class="bg-blue-500 text-white px-4 py-2 h-fit rounded hover:bg-blue-600 focus:outline-none">
+                            Add User
                         </button>
-                        <button @click="openBulkMessageModal"
-                            class="bg-lime-600 text-white p-2 rounded hover:bg-lime-700" title="Message">
-                            <span class="material-icons text-base">chat</span>
-                        </button>
-                    </div>
-                    <button @click="clearSelection" class="text-gray-600 hover:underline">
-                        Clear selection
-                    </button>
-                </div>
-
-                <!-- Data Table Card -->
-                <div class="bg-white rounded shadow overflow-x-auto">
-                    <table v-if="users.length > 0" class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-4 py-2">
-                                    <input type="checkbox" v-model="masterSelected" @change="toggleSelectAll" />
-                                </th>
-                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">User</th>
-                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Email & Role</th>
-                                <th v-if="showTempPasswordColumn"
-                                    class="px-4 py-2 text-left text-sm font-medium text-gray-600">
-                                    Temp Password
-                                </th>
-                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Join Date</th>
-                                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Progress</th>
-                                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr v-for="user in paginatedUsers" :key="user.id" class="hover:bg-gray-50 cursor-pointer"
-                                @click="toggleRowExpansion(user)">
-                                <td class="px-4 py-3">
-                                    <input type="checkbox" :value="user.id" v-model="selectedUsers" @click.stop />
-                                </td>
-                                <td class="px-4 py-3 flex items-center">
-                                    <img :src="user.profile || './images/Avator.jpg'" alt="avatar"
-                                        class="w-8 h-8 rounded-full mr-3" />
-                                    <span class="font-medium">{{ user.first_name }} {{ user.middle_name }}</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <div class="text-sm text-gray-700">{{ user.email }}</div>
-                                    <span class="inline-block text-xs px-2 py-1 rounded-full" :class="{
-                                        'bg-lime-100 text-lime-800': user.role === 'INSTRUCTOR_ROLE',
-                                        'bg-green-100 text-green-800': user.role === 'STUDENT_ROLE',
-                                        'bg-purple-100 text-purple-800': user.role === 'SYSTEM_ADMIN_ROLE' }">
-                                        {{ user.role }}
-                                    </span>
-                                </td>
-                                <td v-if="showTempPasswordColumn" class="px-4 py-3 text-sm text-gray-600">
-                                    {{ user.role === 'INSTRUCTOR_ROLE' ? (user.temp_password ? user.temp_password : '-') : '-' }}
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-600">{{ user.joinDate }}</td>
-                                <td class="px-4 py-3">
-                                    <div v-if="user.role === 'INSTRUCTOR_ROLE'"
-                                        class="w-full bg-gray-200 rounded-full h-2.5">
-                                        <div class="h-2.5 rounded-full"
-                                            :class="user.progress >= 100 ? 'bg-green-500' : 'bg-lime-700'"
-                                            :style="{ width: user.progress + '%' }"></div>
-                                    </div>
-                                    <span v-else class="text-sm text-gray-600">-</span>
-                                </td>
-                                <td class="px-4 py-3 text-center space-x-2">
-                                    <button @click.stop="openDeleteModal(user)" class="text-red-500 hover:text-red-600"
-                                        title="Delete">
-                                        <span class="material-icons text-base">delete</span>
-                                    </button>
-                                    <button @click.stop="openMessageModal(user)"
-                                        class="text-lime-700 hover:text-lime-800" title="Message">
-                                        <span class="material-icons text-base">chat</span>
-                                    </button>
-                                    <button @click.stop="openActivityLogModal(user)"
-                                        class="text-blue-500 hover:text-blue-700" title="Activity Log">
-                                        <span class="material-icons text-base">history</span>
-                                    </button>
-                                </td>
-                            </tr>
-                            <!-- Expandable Row for More Details -->
-                            <tr v-if="expandedUser && expandedUser.id === user.id">
-                                <td colspan="7" class="bg-gray-50 p-4">
-                                    <div>
-                                        <strong>Recent Activity:</strong>
-                                        <ul class="list-disc pl-5 mt-2 text-sm text-gray-700">
-                                            <li v-for="(activity, index) in user.activity" :key="index">
-                                                {{ activity }}
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
+                    </div> 
+                    <div class="w-full overflow-x-auto scrollbar">
+                        <table class="w-full" v-if="users.length > 0">
+                            <thead>
+                                <tr class="bg-gray-100 py-2 border-b border-gray-400"> 
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email & Role</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Engagment</th>
+                                    <th v-if="showTempPasswordColumn"
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Temp Password
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th> 
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="user in paginatedUsers" :key="user.id" 
+                                    :class="{
+                                        'bg-blue-50': selectedUsers.includes(user.id),
+                                        'hover:bg-gray-50': selectedUsers.length == 0,
+                                    }"
+                                    class="cursor-pointer" >
+                                    
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-2">
+                                        <img :src="user.profile" alt="avatar"
+                                            class="w-8 h-8 rounded-full mr-3" />
+                                        <div class="flex flex-col">
+                                            <h1 class="font-medium capitalize">{{ user.first_name }} {{ user.middle_name }}</h1>
+                                            <p class="inline-block text-xs py-1 rounded-full w-fit px-2" 
+                                                :style="{
+                                                    backgroundColor: user?.role?.['bg-color'],
+                                                    text: user?.role?.['text-color'],
+                                                }">
+                                                {{ user.role?.name }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div class="text-sm text-gray-700">{{ user.email }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div class="text-sm text-gray-700">{{ user.engagement }}</div>
+                                    </td>
+                                    <td v-if="showTempPasswordColumn" class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        {{ user.role === 'INSTRUCTOR_ROLE' ? (user.temp_password ? user.temp_password : '-') : '-' }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ user.joinDate }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center space-x-2">
+                                        <Popper>
+                                            <i class="fa-solid fa-ellipsis-vertical text-lg font-bold w-6 h-6 p-1 rounded-full hover:bg-slate-200 "></i>
+                                            <template #content>
+                                                <div class="bg-gray-50 text-black w-48 shadow-lg rounded p-2">
+                                                    <div @click.stop="openMessageModal(user)"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Send message</span>
+                                                    </div>
+                                                    <div @click.stop="openActivityLogModal(user)"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Activity logs</span>
+                                                    </div>
+                                                    <div @click.stop="openDeleteModal(user)"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Ban User</span>
+                                                    </div>
+                                                    <div @click.stop="toggleMark(user.id)"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Mark</span>
+                                                    </div>
+                                                    <div @click.stop="toggleMarkAll()"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Mark all</span>
+                                                    </div>
+                                                    <div @click.stop="toggleUnMarkAll()"
+                                                        class="block hover:bg-gray-200 text-sm  text-left gap-2">
+                                                        <span class="block px-4 py-2 hover:bg-gray-200">Unmark all</span>
+                                                    </div>
+                                                </div> 
+                                            </template>
+                                        </Popper>
+                                    </td>
+                                </tr> 
+                            </tbody>
                     </table>
+                    </div>
 
                     <!-- Pagination Controls -->
-                    <div class="p-4 bg-gray-200 flex flex-col sm:flex-row items-center justify-between">
+                    <div class="p-4 bg-white flex flex-col sm:flex-row items-center justify-between">
                         <div class="flex items-center mb-2 sm:mb-0">
                             <span class="text-sm text-gray-600 mr-2">Rows per page:</span>
                             <select v-model.number="rowsPerPage"
@@ -438,9 +425,7 @@
                     </div>
                 </div>
             </main>
-
-            <!-- Right Sidebar: Activity Feed -->
-            <ActivityFeed />
+ 
         </div>
 
         <!-- Modals -->
@@ -455,10 +440,10 @@
                             }}</strong>?
                     </p>
                     <div class="flex justify-end space-x-2">
-                        <button @click="closeModal" class="px-4 py-2 border rounded hover:bg-gray-100">
+                        <button @click="closeModal" class="px-4 py-3 border rounded hover:bg-gray-100">
                             Cancel
                         </button>
-                        <button @click="confirmDelete" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                        <button @click="confirmDelete" class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
                             Delete
                         </button>
                     </div>
@@ -477,10 +462,10 @@
                     <textarea v-model="messageText" placeholder="Type your message here..."
                         class="w-full border border-gray-300 rounded p-2 mb-4 focus:outline-none" rows="4"></textarea>
                     <div class="flex justify-end space-x-2">
-                        <button @click="closeModal" class="px-4 py-2 border rounded hover:bg-gray-100">
+                        <button @click="closeModal" class="px-4 py-3 border rounded hover:bg-gray-100">
                             Cancel
                         </button>
-                        <button @click="sendMessage" class="px-4 py-2 bg-lime-700 text-white rounded hover:bg-lime-800">
+                        <button @click="sendMessage" class="px-4 py-3 bg-lime-700 text-white rounded hover:bg-lime-800">
                             Send
                         </button>
                     </div>
@@ -508,7 +493,7 @@
                         <div class="mb-4">
                             <label class="block text-gray-700 font-semibold mb-2" for="email">Email</label>
                             <input id="email" v-model="newUser.email" type="email" placeholder="example@degan.com"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
                                 required />
                         </div>
                         <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -516,14 +501,14 @@
                                 <label class="block text-gray-700 font-semibold mb-2" for="first_name">First
                                     Name</label>
                                 <input id="first_name" v-model="newUser.first_name" type="text" placeholder="John"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
                                     required />
                             </div>
                             <div>
                                 <label class="block text-gray-700 font-semibold mb-2" for="middle_name">Middle
                                     Name</label>
                                 <input id="middle_name" v-model="newUser.middle_name" type="text" placeholder="Doe"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500" />
                             </div>
                         </div>
                         <div class="mb-6">
@@ -536,11 +521,11 @@
                         </div>
                         <div class="flex justify-end space-x-4">
                             <button type="button" @click="closeAddUserModal"
-                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors duration-200">
+                                class="px-4 py-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 transition-colors duration-200">
                                 Cancel
                             </button>
                             <button type="submit"
-                                class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors duration-200">
+                                class="px-4 py-3 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors duration-200">
                                 Add User
                             </button>
                         </div>
@@ -568,7 +553,7 @@
                         No activity found.
                     </div>
                     <div class="mt-4 flex justify-end">
-                        <button @click="closeActivityLogModal" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                        <button @click="closeActivityLogModal" class="px-4 py-3 bg-gray-200 rounded hover:bg-gray-300">
                             Close
                         </button>
                     </div>

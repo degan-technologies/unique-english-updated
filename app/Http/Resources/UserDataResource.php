@@ -20,7 +20,7 @@ class UserDataResource extends JsonResource
             'full_name'   => $this->first_name . ' ' . $this->middle_name,
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)
-                : 'no-profile.png',
+                : 'images/no-profile.png',
         ];;
     }
 }

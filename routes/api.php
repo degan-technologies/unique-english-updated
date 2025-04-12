@@ -56,6 +56,7 @@ Route::middleware('auth:api')
         Route::post('/password-reset', [UserController::class, 'passwordReset']);
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/get-user/statistics', [UserController::class, 'getUserStatistics']);
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::resource('/delete-instructor', UserController::class );
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);

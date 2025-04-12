@@ -10,9 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Resources\userResource;
 use App\Models\Role\Instructor;
-use App\Models\Role\Student;
 use App\Services\LangService;
-use App\Services\SMSService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -24,8 +22,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cookie;
 
-class UserController extends Controller
-{
+class UserController extends Controller {
 
     /**
      * get error traslation and success beased on the language
@@ -39,16 +36,11 @@ class UserController extends Controller
         $this->langService = $langService;
     }
 
-    public function index(Request $request) {
-        // Start with all non-system-admin users who are not banned
+    public function index(Request $request) { 
         $query = User::query()
-            ->where(function($query) {
-                $query->has('student')
-                    ->orHas('instructor');
-            })
+            ->doesntHave('systemAdmin')
             ->whereNull('user_banned_at');
-
-        // Search filter: looks in first_name, middle_name, email, or role
+ 
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -57,18 +49,7 @@ class UserController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('role', 'like', "%{$search}%");
             });
-        }
-
-        // Role filter: exact match
-        if ($request->filled('role')) {
-            $query->where('role', $request->input('role'));
-        }
-
-        // Status filter: exact match (if a 'status' field exists)
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
+        } 
         // Join date range filter using the created_at field as the join date
         if ($request->filled('joinDateFrom')) {
             $query->whereDate('created_at', '>=', $request->input('joinDateFrom'));
@@ -76,26 +57,34 @@ class UserController extends Controller
         if ($request->filled('joinDateTo')) {
             $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
         }
-
-        // Progress filter: for students only, using the related student table
-        if ($request->filled('progress')) {
-            $progress = $request->input('progress');
-            $query->where(function ($q) use ($progress) {
-                // For non-students, ignore the progress filter
-                $q->where('role', '!=', 'STUDENT_ROLE')
-                    // For students, use the student relation
-                    ->orWhereHas('student', function ($q2) use ($progress) {
-                        $q2->where('progress', '>=', $progress);
-                    });
-            });
-        }
-
-        // Optional: if you want to paginate, you could do:
-        // $users = $query->paginate($request->input('perPage', 10));
+  
         $users = $query->get();
 
         return response()->json([
             'data' => CustomerInfoResource::collection($users)
+        ]);
+    }
+
+    /**
+     * get user sattistics
+     */
+    public function getUserStatistics() {
+        $user = User::query()
+            ->has('systemAdmin')
+            ->findOrFail(Auth::id());
+
+        $allUser = User::query()
+            ->doesntHave('systemAdmin')
+            ->get();
+
+        $userCount = $allUser->count();
+        $newRegistrations = $allUser->where('created_at', '>=', Carbon::now()->subMonth())->count();
+        $activeUsers = $allUser->where('last_login_at', '>=', Carbon::now()->subMonth())->count();
+
+        return response()->json([
+            'totalUsers' => $userCount,
+            'activeUsers' => $activeUsers, 
+            'newRegistrations' => $newRegistrations,
         ]);
     }
 
