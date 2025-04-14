@@ -12,7 +12,11 @@ use App\Services\LangService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Smalot\PdfParser\Parser;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
+
+
 
 class BookController extends Controller {
 
@@ -28,17 +32,30 @@ class BookController extends Controller {
     /**
      * Display a listing of the resource.
      */
-    public function index() {
+    public function index(Request $request) {
         $resources = Book::with(['user'])
             ->where('user_id', Auth::id())
-            ->paginate(10);
-
+            ->when($request->searchQuery, fn($q) => $q->where('title', 'like', "%{$request->searchQuery}%"))
+            ->when($request->language, fn($q) => $q->where('language', $request->language))
+            ->paginate($request->rowsPerPageOptions ?? 10);
+    
+        // Get book statistics
+        $stats = Book::query()
+            ->where('user_id', Auth::id())
+            ->selectRaw(
+                'COUNT(*) as total, SUM(CASE WHEN DATE(created_at) = ? THEN 1 ELSE 0 END) as newToday',
+                [Carbon::now()->format('Y-m-d')]
+            )
+            ->first();
+    
         $pagination = $resources->toArray();
         unset($pagination['data']);
-
+    
         return response()->json([
+            'newToday'   => $stats->newToday,
+            'total'      => $stats->total,
             'pagination' => $pagination,
-            'data' => BookResource::collection($resources),
+            'data'       => BookResource::collection($resources),
         ]);
     }
 
@@ -96,14 +113,10 @@ class BookController extends Controller {
             'eddition' => 'required|integer',
             'publish_date' => 'required',
             'description' => 'required|string',
-            'file_format' => 'required|string',
-            'page_number' => 'required|integer',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            // 'isDownloadable' => 'required|boolean',
-             'file_url' => 'mimes:pdf',
+            'file_url' => 'required|mimes:pdf',
             'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
-
             'cover_page_url' => 'image',
 
            
@@ -130,7 +143,31 @@ class BookController extends Controller {
             $videoPath = $request->file('intro_vedio')->store('/books/videos', 'public');
         }
 
-        $boks = $user->books()->create([
+        // ...
+$pageNumber = null;
+
+if ($request->hasFile('file_url')) {
+    $pdfFile = $request->file('file_url');
+    $fileFormat = $pdfFile->getClientOriginalExtension(); // returns 'pdf'
+
+    // ✅ Double-check format (security measure)
+    if (strtolower($fileFormat) !== 'pdf') {
+        return response()->json([
+            'message' => 'Only PDF files are allowed.',
+        ], 422);
+    }
+    $imagePath = $pdfFile->store('/books/images', 'public');
+
+    // Use PdfParser to get number of pages
+    $parser = new Parser();
+    $pdf = $parser->parseFile($pdfFile->getPathname());
+    $pages = $pdf->getPages();
+    $pageNumber = count($pages);
+    
+}
+
+
+        $books = $user->books()->create([
             'slug' => Str::uuid(),
             'title' => $request->title,
             'price' => $request->price,
@@ -138,10 +175,9 @@ class BookController extends Controller {
             'eddition' => $request->eddition,
             'discount' => $request->discount,
             'language' => $request->language,
-            'file_format' => $request->file_format,
+            'file_format' => $fileFormat,
             'publish_date' => $request->publish_date,
-            'page_number' =>$request->page_number,
-            // 'not_deleted' => 1,
+            'page_number' => $pageNumber,
             'description' => $request->description,
             'tag' => json_encode($request->tag),
             'file_url' => $imagePath,
@@ -153,7 +189,7 @@ class BookController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('book_created_successfully'),
-            'data' => new BookResource($boks),
+            'data' => new BookResource($books),
         ]);
     }
 
@@ -170,10 +206,7 @@ class BookController extends Controller {
 
     public function update(Request $request, $id)
     {
-        $user = User::query()
-            ->whereSystemAdminOrInstructor()
-            ->first();
-    
+        $user = Auth::user();
         $book = Book::query()->findOrFail($id);
     
         if (!$book) {
@@ -183,24 +216,22 @@ class BookController extends Controller {
         }
     
         $validationRules = [
-            'tag' => 'min:3',
+            'tag' => 'nullable|min:3',
             'price' => 'required|integer',
             'language' => 'required|string',
             'discount' => 'nullable|integer',
             'eddition' => 'required|integer',
             'publish_date' => 'required',
             'description' => 'required|string',
-            'file_format' => 'required|string',
-            'page_number' => 'required|integer',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            // 'isDownloadable' => 'required|boolean',
-            'intro_vedio' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg',
-            'file_url' => 'mimes:pdf',
-            'cover_page_url' => 'image',
+            'file_url' => 'nullable|mimes:pdf',
+            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
+            'cover_page_url' => 'nullable|image',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
+    
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
             return response()->json([
@@ -209,19 +240,44 @@ class BookController extends Controller {
             ], 422);
         }
     
-        // Get validated data
         $data = $validator->validated();
     
+        // Handle PDF file upload + format check + page count
         if ($request->hasFile('file_url')) {
-            $data['file_url'] = $request->file('file_url')->store('/books/images', 'public');
+            $pdfFile = $request->file('file_url');
+            $fileFormat = $pdfFile->getClientOriginalExtension();
+    
+            if (strtolower($fileFormat) !== 'pdf') {
+                return response()->json([
+                    'message' => 'Only PDF files are allowed.',
+                ], 422);
+            }
+    
+            $filePath = $pdfFile->store('/books/images', 'public');
+            $data['file_url'] = $filePath;
+    
+            // Use PdfParser
+            $parser = new Parser();
+            $pdf = $parser->parseFile($pdfFile->getPathname());
+            $pages = $pdf->getPages();
+            $data['page_number'] = count($pages);
         }
+    
+        // Cover image
         if ($request->hasFile('cover_page_url')) {
             $data['cover_page_url'] = $request->file('cover_page_url')->store('/books/images', 'public');
         }
-        if($request->hasFile('intro_vedio')) {
+    
+        // Intro video
+        if ($request->hasFile('intro_vedio')) {
             $data['intro_vedio'] = $request->file('intro_vedio')->store('/books/videos', 'public');
         }
-        
+    
+        // Encode tag to JSON if present
+        if ($request->has('tag')) {
+            $data['tag'] = json_encode($request->tag);
+        }
+    
         $book->update($data);
     
         return response()->json([
@@ -229,6 +285,7 @@ class BookController extends Controller {
             'data' => BookResource::make($book),
         ]);
     }
+    
     
     public function destroy(string $id) {
 

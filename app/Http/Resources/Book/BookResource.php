@@ -38,7 +38,9 @@ class BookResource extends JsonResource {
             'intro_vedio' => $this->intro_vedio 
             ? Storage::disk('public')->url($this->intro_vedio) 
             : 'no-video.mp4',
-
+            'intro_video_url' => $this->intro_vedio
+            ? url('/api/books/stream/video/' . basename($this->intro_vedio))
+            : 'no-intro_video.png',
             'cover_page_url' => $this->cover_page_url
             ? Storage::disk('public')->url($this->cover_page_url)
             : 'no-cover_page_url.png',

@@ -3,6 +3,7 @@ import { ref } from "vue";
 import Axios from "axios";
 // import Editor from "primevue/editor";
 import { useToast } from "vue-toastification";
+import AddBookDescription from "@/components/Book/AddBookDescription";
 
 const toast = useToast();
 
@@ -73,7 +74,7 @@ const addBook = async () => {
         formData.append("file_url", newBook.value.file_url);
     }
     if (newBook.value.intro_video) {
-        formData.append("intro_video", newBook.value.intro_video);
+        formData.append("intro_vedio", newBook.value.intro_video);
     }
     formData.append("tag", JSON.stringify(tagsArray));
 
@@ -132,17 +133,6 @@ function goBack() {
 
     <div class="max-w-4xl mx-auto p-4 bg-white">
         <h2 class="text-2xl font-bold text-center mb-4">Add New Book</h2>
-
-        <!-- Success & Error Messages -->
-        <div v-if="error"
-            class="bg-red-100 border border-red-400 text-red-700 p-2 mb-3 rounded text-xs">
-            {{ error }}
-        </div>
-        <div v-if="success"
-            class="bg-green-100 border border-green-400 text-green-700 p-2 mb-3 rounded text-xs">
-            {{ success }}
-        </div>
-
         <form @submit.prevent="addBook"
             class="space-y-4">
             <!-- Section 1: File Uploads & Previews -->
@@ -172,7 +162,8 @@ function goBack() {
                     <div class="relative border-dashed border-2 border-gray-300 rounded p-2 text-center cursor-pointer">
                         <input type="file"
                             @change="onFileChange('intro_video', $event)"
-                            class="absolute inset-0 opacity-0 cursor-pointer" />
+                            class="absolute inset-0 opacity-0 cursor-pointer"
+                            required />
                         <div v-if="videoPreview">
                             <video :src="videoPreview"
                                 controls
@@ -193,15 +184,9 @@ function goBack() {
                     class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
                     required />
             </div>
-
-            <div class="mt-7">
-                <label class="block text-gray-700 font-medium text-xs mb-1">Description</label>
-                <textarea v-model="newBook.description"
-                    :style="{ height: '120px' }"
-                    class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                    placeholder="Enter description here..."></textarea>
+            <div>
+                <AddBookDescription v-model="newBook.description" />
             </div>
-
             <!-- Section 3: Compact Other Inputs in 3-Column Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
@@ -264,7 +249,7 @@ function goBack() {
                         type="number"
                         placeholder="Page Number"
                         class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
+                     />
                 </div>
                 <div>
                     <label class="block text-gray-700 font-medium text-xs mb-1">File Format</label>

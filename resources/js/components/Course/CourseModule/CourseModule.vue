@@ -1,154 +1,161 @@
 <script setup>
-    import Axios from "axios";
-    import { storeToRefs } from "pinia";
-    import { onUnmounted, ref, onMounted, onBeforeUnmount } from "vue";
-    import { useRouter, useRoute } from "vue-router"
-    import videojs from 'video.js';
-    import 'video.js/dist/video-js.css';
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { onUnmounted, ref, onMounted, onBeforeUnmount } from "vue";
+import { useRouter, useRoute } from "vue-router"
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
 
-    import { useInstructorStore } from '@/store/useInstructorStore';
+import { useInstructorStore } from '@/store/useInstructorStore';
 
-    import ManageQuiz from "@/components/Exam/ManageQuiz.vue";
-    import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
-    import ModuleContent from "@/components/Course/CourseModule/ModuleContent/ModuleContent.vue";
-    import ExamManagement from "@/components/Layout/ExamManagement.vue";
+import ManageQuiz from "@/components/Exam/ManageQuiz.vue";
+import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
+import ModuleContent from "@/components/Course/CourseModule/ModuleContent/ModuleContent.vue";
+import ExamManagement from "@/components/Layout/ExamManagement.vue";
 
-    const InstructorStore = useInstructorStore();
-    const { selectedCourse, editCourseModule, courseEditTab, courseId, instructorCourses } = storeToRefs(InstructorStore);
+const InstructorStore = useInstructorStore();
+const { selectedCourse, editCourseModule, courseEditTab, courseId, instructorCourses } = storeToRefs(InstructorStore);
 
-    const route = useRoute();
-    const router = useRouter();
+const route = useRoute();
+const router = useRouter();
 
-    const isPlaying = ref(false);
+const isPlaying = ref(false);
 
-    const expandedModule = ref(null);
-    const selectedModule = ref(null);
+const expandedModule = ref(null);
+const selectedModule = ref(null);
 
-    const actionType = ref('');
-    const dropdownOpen = ref(null);
-    const showQuizPage = ref(false);
-    const editingCourseId = ref(null);
+const actionType = ref('');
+const dropdownOpen = ref(null);
+const showQuizPage = ref(false);
+const editingCourseId = ref(null);
 
-    const selectedContent = ref(null);
+const selectedContent = ref(null);
 
-    function startEditing(module) {
-        editCourseModule.value = module;
-        actionType.value = 'UPDATE';
-    };
+function startEditing(module) {
+    editCourseModule.value = module;
+    actionType.value = 'UPDATE';
+};
 
-    function openModuleForm(id) {
-        courseId.value = id;
-        actionType.value = 'STORE';
-    };
+function openModuleForm(id) {
+    courseId.value = id;
+    actionType.value = 'STORE';
+};
 
-    function deleteCourse(id) {
-        Axios
-            .delete(`/api/courses/course/${id}`)
-            .finally(res => {
-                instructorCourses.value = instructorCourses.value.filter(course => course.id !== id);
-                goBack();
-            });
-    };
-
-    function deleteCourseModule(moduleId) {
-        Axios
-            .delete(`/api/courses/module/${moduleId}`)
-            .finally(res => {
-                selectedCourse.value.courseModules = selectedCourse.value.courseModules.filter(item => item.id !== moduleId);
-            })
-    };
-
-    function addModuleContent(module) {
-        selectedContent.value = null;
-        selectedModule.value = module;
-        expandedModule.value = selectedModule.value?.id;
-    };
-    function addQuiz(module) {
-        selectedContent.value = null;
-        selectedModule.value = module;
-        showQuizPage.value = true;
-    };
-    function closeQuizPage() {
-        showQuizPage.value = false;
-    }
-
-    function actionExpandModule(module) {
-        selectedContent.value = null;
-        selectedModule.value = null;
-        expandedModule.value = expandedModule.value === module.id ? null : module.id;
-    };
-
-    function toggleDropdown(moduleId) {
-        dropdownOpen.value = dropdownOpen.value === moduleId ? null : moduleId;
-    };
-    function handleClickOutside(event) {
-        if (!event.target.closest(".relative")) {
-            dropdownOpen.value = null;
-        }
-    };
-
-    function handleCancelAddContent() {
-        selectedModule.value = null;
-    }
-
-
-    function selectContent(content) {
-        selectedModule.value = null;
-        selectedContent.value = content;
-    };
-
-    function getSelectedCourse(tab, selectedCourse) {
-
-        router.push({
-            name: 'instructor',
-            query: {
-                currentTab: route.query.currentTab,
-                selectedAction: tab,
-                slug: selectedCourse.slug,
-                reload: Date.now()
-            }
-        }).then(() => {
-            router.go(0);
+function deleteCourse(id) {
+    Axios
+        .delete(`/api/courses/course/${id}`)
+        .finally(res => {
+            instructorCourses.value = instructorCourses.value.filter(course => course.id !== id);
+            goBack();
         });
+};
 
-        editingCourseId.value = selectedCourse.id;
-        selectedCourse.value = selectedCourse;
-    };
+function deleteCourseModule(moduleId) {
+    Axios
+        .delete(`/api/courses/module/${moduleId}`)
+        .finally(res => {
+            selectedCourse.value.courseModules = selectedCourse.value.courseModules.filter(item => item.id !== moduleId);
+        })
+};
 
-    function goBack() {
-        router.back();
-    };
-    onMounted(() => {
-        document.addEventListener("click", handleClickOutside);
-    });
-    onUnmounted(() => {
-        selectedCourse.value = null;
-    });
-    const videoPlayer = ref(null);
-    let playerInstance = null;
-    onMounted(() => {
-        if (videoPlayer.value) {
-            playerInstance = videojs(videoPlayer.value, {
-                controls: true,
-                autoplay: false,
-                responsive: true,
-                fluid: true,
-            });
+function addModuleContent(module) {
+    selectedContent.value = null;
+    selectedModule.value = module;
+    expandedModule.value = selectedModule.value?.id;
+};
+function addQuiz(module) {
+    selectedContent.value = null;
+    selectedModule.value = module;
+    showQuizPage.value = true;
+};
+function closeQuizPage() {
+    showQuizPage.value = false;
+}
+
+function actionExpandModule(module) {
+    selectedContent.value = null;
+    selectedModule.value = null;
+    expandedModule.value = expandedModule.value === module.id ? null : module.id;
+};
+
+function toggleDropdown(moduleId) {
+    dropdownOpen.value = dropdownOpen.value === moduleId ? null : moduleId;
+};
+function handleClickOutside(event) {
+    if (!event.target.closest(".relative")) {
+        dropdownOpen.value = null;
+    }
+};
+
+function handleCancelAddContent() {
+    selectedModule.value = null;
+}
+
+
+function selectContent(content) {
+    selectedModule.value = null;
+    selectedContent.value = content;
+};
+
+function getSelectedCourse(tab, selectedCourse) {
+
+    router.push({
+        name: 'instructor',
+        query: {
+            currentTab: route.query.currentTab,
+            selectedAction: tab,
+            slug: selectedCourse.slug,
+            reload: Date.now()
         }
+    }).then(() => {
+        router.go(0);
     });
-    onBeforeUnmount(() => {
-        if (playerInstance) {
-            playerInstance.dispose();
-        }
-    });
+
+    editingCourseId.value = selectedCourse.id;
+    selectedCourse.value = selectedCourse;
+};
+
+function goBack() {
+    router.back();
+};
+onMounted(() => {
+    document.addEventListener("click", handleClickOutside);
+});
+onUnmounted(() => {
+    selectedCourse.value = null;
+});
+const videoPlayer = ref(null);
+let playerInstance = null;
+onMounted(() => {
+    if (videoPlayer.value) {
+        playerInstance = videojs(videoPlayer.value, {
+            controls: true,
+            autoplay: false,
+            responsive: true,
+            fluid: true,
+        });
+    }
+});
+onBeforeUnmount(() => {
+    if (playerInstance) {
+        playerInstance.dispose();
+    }
+});
 </script>
 
 <template>
     <div v-if="!showQuizPage">
         <button @click="goBack()"
             class="px-4 py-2 bg-gray-100 text-black rounded-md hover:bg-gray-200 transition mr-4 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M15 18l-6-6 6-6"/>
+            <svg xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 mr-2"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
             </svg>
         </button>
         <div class="grid gap-4 grid-cols-1 md:grid-cols-2 w-full md:w-3/4 mx-auto p-3">
@@ -160,11 +167,18 @@
                         <img :src="selectedCourse?.thumbnail_url"
                             alt="Course Thumbnail"
                             class="w-full h-full object-cover transition-transform duration-300 rounded-t-lg shadow-lg hover:shadow-xl">
+                        <!-- Play Button with Burst Animation -->
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="p-2 bg-lime-500 rounded-full animate-breathe flex items-center justify-center">
-                                <i class="fas fa-play-circle text-white text-md"></i>
+                            <!-- Animated Burst Ring -->
+                            <div class="absolute w-16 h-16 rounded-full bg-lime-500 opacity-50 animate-burst"></div>
+
+                            <!-- Actual Play Button -->
+                            <div class="p-2 bg-lime-500 rounded-full z-10 flex items-center justify-center shadow-md">
+                                <i
+                                    class="fas fa-play-circle text-white text-lg sm:text-lg md:text-xl lg:text-2xl xl:text-3xl"></i>
                             </div>
                         </div>
+
                     </div>
                     <div v-if="selectedCourse && selectedCourse.intro_video_url"
                         class="relative w-full h-full">
@@ -227,10 +241,9 @@
             <div class="p-3">
                 <div>
                     <h2 class="text-2xl font-semibold text-gray-800 mt-4 mb-3">Course Overview</h2>
-                    <div 
-                        class="preview ql-editor max-w-full text-justify mt-5" 
-                        v-html="selectedCourse?.overview" 
-                        style="font-size: 1.1rem !important; line-height: 1.75rem !important; all: revert;">
+                    <div class="prose prose-sm preview ql-editor max-w-full text-justify mt-5"
+                        v-html="selectedCourse?.overview"
+                        >
                     </div>
                 </div>
                 <AddCourseModule v-if="editCourseModule"
@@ -346,3 +359,24 @@
             @backToModule="closeQuizPage" />
     </div>
 </template>
+<style scoped>
+@keyframes burst {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    70% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.animate-burst {
+    animation: burst 1.8s ease-out infinite;
+}
+</style>

@@ -184,12 +184,20 @@
                             <span class="ml-2">Settings</span>
                         </a>
                         <a
-                            href="#"
+                            @click="openProfile" 
                             class="block px-4 py-2 hover:bg-gray-200 "
                             title="Profile"
                             >
                             <i class="fa-solid fa-circle-user text-xl"></i>
                             <span class="ml-2">Profile</span>
+                        </a>
+                        <a
+                            @click=signOut()
+                            class="block px-4 py-2 hover:bg-gray-200 "
+                            title="signOut"
+                            >
+                            <i class="fa-solid fa-circle-user text-xl"></i>
+                            <span class="ml-2">signOut</span>
                         </a>
                     </div>
                 </div>

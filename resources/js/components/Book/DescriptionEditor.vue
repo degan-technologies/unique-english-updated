@@ -4,7 +4,7 @@
     import 'quill/dist/quill.snow.css';
 
     const props = defineProps({
-        selectedCourse: {
+        selected: {
             type: Object,
             required: true,
         }
@@ -12,7 +12,7 @@
 
     const emit = defineEmits();
 
-    const courseOverview = ref(props.selectedCourse.overview || '');
+    const description = ref(props.selected.description || '');
 
     let quillEditor = null;
 
@@ -33,23 +33,23 @@
                     ['clean'],
                 ],
             },
-            placeholder: 'Write your course overview...',
+            placeholder: 'Write your book description...',
         });
 
-        quillEditor.root.innerHTML = courseOverview.value;
+        quillEditor.root.innerHTML = description.value;
 
         quillEditor.on('text-change', () => {
-            courseOverview.value = quillEditor.root.innerHTML;
-            emit('update-overview', courseOverview.value); 
+            description.value = quillEditor.root.innerHTML;
+            emit('update-description', description.value); 
         });
     };
 
     watch(
-        () => props.selectedCourse,
-        (newCourse) => {
-            courseOverview.value = newCourse.overview || '';
+        () => props.selected,
+        (newSelected) => {
+            description.value = newSelected.description || '';
             if (quillEditor) {
-                quillEditor.root.innerHTML = courseOverview.value;
+                quillEditor.root.innerHTML = description.value;
             }
         },
         { immediate: true }

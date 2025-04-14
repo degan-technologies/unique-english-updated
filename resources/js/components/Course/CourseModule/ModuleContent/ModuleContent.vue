@@ -1,115 +1,115 @@
 <script setup>
-    import Axios from 'axios';
-    import {ref,  nextTick,  } from 'vue';
-    import 'video.js/dist/video-js.css';
+import Axios from 'axios';
+import { ref, nextTick, } from 'vue';
+import 'video.js/dist/video-js.css';
 
-    const isPlaying = ref(false);
-    const editingContent = ref(false);
+const isPlaying = ref(false);
+const editingContent = ref(false);
 
-    const content_url = ref('content_url')
-    const thumbnail_url = ref('thumbnail_url')
-    const playerInstance = ref(null);
-    const videoPlayer = ref(null);
+const content_url = ref('content_url')
+const thumbnail_url = ref('thumbnail_url')
+const playerInstance = ref(null);
+const videoPlayer = ref(null);
 
-    const form = ref({
-        title: "",
-        description: "",
-        content_type: 1,
-        content_url: null,
-        thumbnail_url: null,
+const form = ref({
+    title: "",
+    description: "",
+    content_type: 1,
+    content_url: null,
+    thumbnail_url: null,
 
-    });
+});
 
-    const props = defineProps({
-        selectedContent: Object,
-        selectedModule: Object,
-    })
-    const emit = defineEmits(['cancelEdit']);
+const props = defineProps({
+    selectedContent: Object,
+    selectedModule: Object,
+})
+const emit = defineEmits(['cancelEdit']);
 
-    function editSelectedContent() {
-        if (!props.selectedContent?.id) return;
-        editingContent.value = true;
-        form.value = { ...props.selectedContent };
-    };
+function editSelectedContent() {
+    if (!props.selectedContent?.id) return;
+    editingContent.value = true;
+    form.value = { ...props.selectedContent };
+};
 
-    if (props.selectedModule) {
-        editingContent.value = true;
-    }
+if (props.selectedModule) {
+    editingContent.value = true;
+}
 
-    function cancelEdit() {
-        editingContent.value = false;
-        form.value = {};
-        emit('cancelEdit');
-    };
+function cancelEdit() {
+    editingContent.value = false;
+    form.value = {};
+    emit('cancelEdit');
+};
 
-    function handleFileUpload(field, event) {
-        const file = event.target.files[0];
-        if (file) {
-            if (field === 'thumbnail_url') {
-                form.value.thumbnail_url = file;
-                form.value.create_thumbnail_url = URL.createObjectURL(file);
-            } else if (field === 'content_url') {
-                form.value.content_url = file;
-                form.value.create_content_url = URL.createObjectURL(file);
+function handleFileUpload(field, event) {
+    const file = event.target.files[0];
+    if (file) {
+        if (field === 'thumbnail_url') {
+            form.value.thumbnail_url = file;
+            form.value.create_thumbnail_url = URL.createObjectURL(file);
+        } else if (field === 'content_url') {
+            form.value.content_url = file;
+            form.value.create_content_url = URL.createObjectURL(file);
 
-                if (file.type.includes('video')) {
-                    form.value.content_type = 1;
-                } else if (file.type.includes('pdf')) {
-                    form.value.content_type = 2;
-                } else if (file.type.includes('image')) {
-                    form.value.content_type = 3;
-                }
-                updateVideoPlayer();
+            if (file.type.includes('video')) {
+                form.value.content_type = 1;
+            } else if (file.type.includes('pdf')) {
+                form.value.content_type = 2;
+            } else if (file.type.includes('image')) {
+                form.value.content_type = 3;
             }
+            updateVideoPlayer();
         }
     }
-    
-    function updateVideoPlayer() {
-        nextTick(() => {
-            if (videoPlayer.value && form.value.create_content_url) {
-                videoPlayer.value.src = form.value.create_content_url; 
-                videoPlayer.value.load(); 
-                videoPlayer.value.play(); 
-            }
-        });
-    }
+}
 
-    function storeModuleContent() {
-        const formData = new FormData();
-        formData.append("course_id", props.selectedModule.course_id);
-        formData.append("course_module_id", props.selectedModule.id);
-        formData.append("title", form.value.title);
-        formData.append("description", form.value.description);
-        formData.append("content_url", form.value.content_url);
-        formData.append("thumbnail_url", form.value.thumbnail_url);
+function updateVideoPlayer() {
+    nextTick(() => {
+        if (videoPlayer.value && form.value.create_content_url) {
+            videoPlayer.value.src = form.value.create_content_url;
+            videoPlayer.value.load();
+            videoPlayer.value.play();
+        }
+    });
+}
 
-        Axios
-            .post("/api/courses/content", formData)
-            .then(res => { });
-    };
+function storeModuleContent() {
+    const formData = new FormData();
+    formData.append("course_id", props.selectedModule.course_id);
+    formData.append("course_module_id", props.selectedModule.id);
+    formData.append("title", form.value.title);
+    formData.append("description", form.value.description);
+    formData.append("content_url", form.value.content_url);
+    formData.append("thumbnail_url", form.value.thumbnail_url);
 
-    function updateSelectedContent() {
-        const formData = new FormData();
+    Axios
+        .post("/api/courses/content", formData)
+        .then(res => { });
+};
 
-        formData.append("title", form.value.title);
-        formData.append("description", form.value.description);
-        formData.append("content_url", form.value.content_url);
-        formData.append("thumbnail_url", form.value.thumbnail_url);
+function updateSelectedContent() {
+    const formData = new FormData();
 
-        Axios
-            .post(`/api/courses/update-content/${props.selectedContent.id}`, formData)
-            .then(res => {
-                editingContent.value = false;
-            })
-    };
+    formData.append("title", form.value.title);
+    formData.append("description", form.value.description);
+    formData.append("content_url", form.value.content_url);
+    formData.append("thumbnail_url", form.value.thumbnail_url);
 
-    function deleteSelectedContent(id) {
-        Axios
-            .delete(`/api/courses/content/${id}`)
-            .finally(() => {
-                props.selectedContent = null;
-            })
-    };
+    Axios
+        .post(`/api/courses/update-content/${props.selectedContent.id}`, formData)
+        .then(res => {
+            editingContent.value = false;
+        })
+};
+
+function deleteSelectedContent(id) {
+    Axios
+        .delete(`/api/courses/content/${id}`)
+        .finally(() => {
+            props.selectedContent = null;
+        })
+};
 
 </script>
 
@@ -124,9 +124,14 @@
                     <img :src="selectedContent.thumbnail_url"
                         alt="Content Thumbnail"
                         class="w-full h-full object-cover rounded-md shadow-md">
-                    <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-md">
-                        <div class="p-2 bg-lime-500 rounded-full animate-breathe flex items-center justify-center">
-                            <i class="fas fa-play-circle text-white text-md"></i>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <!-- Animated Burst Ring -->
+                        <div class="absolute w-16 h-16 rounded-full bg-lime-500 opacity-50 animate-burst"></div>
+
+                        <!-- Actual Play Button -->
+                        <div class="p-2 bg-lime-500 rounded-full z-10 flex items-center justify-center shadow-md">
+                            <i
+                                class="fas fa-play-circle text-white text-lg sm:text-lg md:text-xl lg:text-2xl xl:text-3xl"></i>
                         </div>
                     </div>
                 </div>
@@ -281,3 +286,24 @@
         </div>
     </div>
 </template>
+<style scoped>
+@keyframes burst {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    70% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.animate-burst {
+    animation: burst 1.8s ease-out infinite;
+}
+</style>

@@ -170,7 +170,7 @@ watch(profileUpdated, (updated) => {
                 <!-- Logo: Abbreviated Logo (if sidebarCollapsed) -->
                 <div v-else class="flex items-center animate-fadeIn">
                     <img
-                        src="images/logo.jpg"
+                        :src="logoUrl "
                         alt="Logo Abbreviation"
                         class="h-10 w-auto object-contain"
                     />
