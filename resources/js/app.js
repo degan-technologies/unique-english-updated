@@ -3,25 +3,29 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import Editor from "primevue/editor";
-
 import Toast from "vue-toastification";
 import "vue-toastification/dist/index.css";
-
 import "primeicons/primeicons.css";
-// PrimeVue Styles
-
-import "primevue/resources/primevue.min.css";
- // Theme of your choice
-import "primevue/resources/primevue.min.css"; // Core CSS
+import "primevue/resources/primevue.min.css"; 
 import "primevue/resources/themes/saga-blue/theme.css";
-
-// Quill Editor Styles
 import "quill/dist/quill.snow.css";
-
 import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
 import { useThemeStore } from "@/store/theme";
 import appRouter from "@/routes/AppRouter.js";
 import App from "@/app.vue";
+
+
+const originalAddEventListener = EventTarget.prototype.addEventListener;
+EventTarget.prototype.addEventListener = function (type, listener, options) {
+    if (type === "touchstart") {
+        if (options === undefined) {
+            options = { passive: true };
+        } else if (typeof options === "object" && options !== null) {
+            options.passive = true;
+        }
+    }
+    originalAddEventListener.call(this, type, listener, options);
+};
 
 const app = createApp(App);
 
@@ -29,7 +33,6 @@ app.use(createPinia());
 app.use(appRouter);
 
 app.use(Toast, {
-    // Optional: Add any plugin options here
     timeout: 3000,
     position: "top-right",
 });
@@ -39,6 +42,5 @@ app.component("Editor", Editor);
 
 app.mount("#app");
 
-// Apply theme on app load
 const themeStore = useThemeStore();
 themeStore.applyTheme();

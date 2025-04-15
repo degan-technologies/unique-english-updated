@@ -239,7 +239,7 @@ watch(
                     </div>
 
                     <!-- Pagination Controls -->
-                    <div class="flex flex-wrap items-center justify-center space-x-2 w-full sm:w-auto">
+                    <div class="flex items-center space-x-3">
                         <button @click="onPreviousPage()"
                             :disabled="currentPage === 1"
                             class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
