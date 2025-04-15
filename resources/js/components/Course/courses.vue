@@ -2,12 +2,13 @@
 import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router"
-import { ref, onMounted, watch, watchEffect } from "vue";
+import { ref, onMounted, watch, watchEffect, computed } from "vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
 import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
 import Spinner from "@/components/Layout/Spinner";
+import AnalyticsDashboard from "@/components/Layout/AnalyticsDashboard.vue";
 
 const InstructorStore = useInstructorStore();
 const { instructorCourses, analytics, selectedCourse, courseEditTab, courseModuleTab, courseId } = storeToRefs(InstructorStore);
@@ -26,11 +27,14 @@ const totalPages = ref('');
 const currentPage = ref(1);
 const skillLevelFilter = ref('');
 
+const viewMode = ref(localStorage.getItem('viewMode') || 'auto');
+
 const editingCourseId = ref(null);
 const actionType = ref('STORE');
 
 const props = defineProps({
     searchQuery: String,
+    activeTab: String,
 });
 
 function filteredCourses(page = 1) {
@@ -84,10 +88,17 @@ function formatDate(dateString) {
     return date.toISOString().split('T')[0];
 }
 
-function openModuleForm(id) {
-    console.log(id);
-    courseId.value = id;
-};
+const computedViewMode = computed(() => {
+    if (viewMode.value === 'auto') {
+        return instructorCourses.value.length <= 4 ? 'card' : 'table';
+    }
+    return viewMode.value;
+});
+
+function toggleView() {
+    viewMode.value = computedViewMode.value === 'card' ? 'table' : 'card';
+    localStorage.setItem('viewMode', viewMode.value);
+}
 
 function getSelectedCourse(tab, course) {
 
@@ -127,40 +138,113 @@ watch(
 <template>
     <div class="max-w-full mx-auto">
         <div v-if="loading"
-            class="flex flex-col justify-center items-center h-20 text-xl font-semibold">
-            <div class="relative w-12 h-12">
-                <div
-                    class="w-2 h-2 bg-blue-500 rounded-full absolute top-0 left-1/2 transform -translate-x-1/2 animate-[orbit_1.3s_linear_infinite]">
-                </div>
-            </div>
-            Loading...
+            class="flex flex-col justify-center items-center h-64 text-xl font-semibold">
             <Spinner />
         </div>
 
         <div v-if="!selectedCourse && !loading">
-            <div class="flex justify-end mb-4 mr-5">
-                <select v-model="skillLevelFilter"
-                    class="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Skill Levels</option>
-                    <option value="1">Beginner</option>
-                    <option value="2">Intermediate</option>
-                    <option value="3">Advance</option>
-                    <option value="4">Full Package</option>
-                </select>
-            </div>
-            <div v-if="instructorCourses.length === 0"
-                class="text-center">No Courses Found</div>
+            <div class="w-full bg-white p-4 py-2 rounded-lg space-y-2 md:space-y-0 md:flex md:flex-wrap md:items-center md:justify-between">
+                <!-- Analytics Dashboard Component -->
+                <div class="w-full md:w-auto flex-1">
+                    <AnalyticsDashboard :label="props.activeTab"
+                        :total="analytics.total"
+                        :newToday="analytics.newToday" />
+                </div>
 
-            <div v-if="instructorCourses.length > 4">
+                <!-- Skill Level Dropdown -->
+                <div class="w-full sm:w-auto flex items-center gap-2">
+                    <label for="skillLevelFilter"
+                        class="block text-sm font-medium text-gray-700 mb-1">
+                        Filter by Skill Level
+                    </label>
+                    <select id="skillLevelFilter"
+                        v-model="skillLevelFilter"
+                        class="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">All Skill Levels</option>
+                        <option value="1">Beginner</option>
+                        <option value="2">Intermediate</option>
+                        <option value="3">Advance</option>
+                        <option value="4">Full Package</option>
+                    </select>
+                </div>
+
+                <!-- View Toggle Button -->
+                <div class="w-full sm:w-auto flex justify-start sm:justify-end items-center gap-2 ml-2">
+                    <div class="relative group">
+                        <button @click="toggleView"
+                            class="text-black p-2 rounded-full transition duration-200">
+                            <i :class="computedViewMode === 'card' ? 'fa-solid fa-list' : 'fa-solid fa-th-large'"
+                                class="text-xl"></i>
+                        </button>
+                        <div
+                            class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
+                            {{ computedViewMode === 'card' ? 'Switch to list view' : 'Switch to card view' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- No Courses Found Message -->
+            <div v-if="instructorCourses.length === 0"
+                class="text-center">
+                No Courses Found
+            </div>
+
+            <div v-if="instructorCourses.length <= 4 || computedViewMode === 'card'"
+                class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 py-2">
+                <div v-for="course in instructorCourses"
+                    :key="course.id"
+                    class="bg-white rounded-lg border transition duration-300 overflow-hidden w-full max-w-xs mx-auto md:mx-0">
+                    <img :src="course.thumbnail_url"
+                        alt="Course Image"
+                        class="w-full h-36 object-cover" />
+                    <div class="p-3 space-y-2">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-800">{{ course.course_name }}</h3>
+                            <p class="text-xs text-gray-500">
+                                Level: <span class="font-semibold">{{ course.skill_level }}</span>
+                            </p>
+                        </div>
+                        <div class="text-gray-600 text-justify line-clamp-2"
+                            v-html="course.overview"></div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center text-xs text-gray-700">
+                                <svg class="w-3 h-3 text-yellow-500 fill-current"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 15l-5.878 3.09L5.244 12 .49 7.91l6.07-.88L10 2l2.44 5.03 6.07.88-4.754 4.09 1.122 5.99z" />
+                                </svg>
+                                <span class="ml-1 font-bold">{{ course.averageRating || 0 }}</span>
+                            </div>
+                            <div class="text-xs font-semibold text-gray-700">
+                                {{ course.total_enroll || 15 }} Enrolled
+                            </div>
+                            <div class="text-xs font-semibold text-gray-700">
+                                ${{ course.revenue || 25 }}
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <button @click="getSelectedCourse(courseModuleTab, course)"
+                                class="bg-white border border-gray-200 px-2 py-1 rounded text-xs text-black hover:bg-gray-200 transition">
+                                Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else="instructorCourses.length > 4 && computedViewMode === 'table'"
+                class="pt-3">
                 <div class="w-full  overflow-x-auto scrollbar">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-white rounded-t-lg">
                             <tr>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Courses</th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Total Enroll</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Total Enroll
+                                </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Created Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Created Date
+                                </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
@@ -257,49 +341,7 @@ watch(
                 </div>
 
             </div>
-            <div v-if="instructorCourses.length <= 4"
-                class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10 px-4 sm:px-6 lg:px-8">
-                <div v-for="course in instructorCourses"
-                    :key="course.id"
-                    class="bg-white rounded-lg border transition duration-300 overflow-hidden w-full max-w-xs mx-auto md:mx-0">
-                    <img :src="course.thumbnail_url"
-                        alt="Course Image"
-                        class="w-full h-36 object-cover" />
-                    <div class="p-3 space-y-2">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-800">{{ course.course_name }}</h3>
-                            <p class="text-xs text-gray-500">
-                                Level: <span class="font-semibold">{{ course.skill_level }}</span>
-                            </p>
-                        </div>
-                        <div class="text-gray-600 text-justify line-clamp-2"
-                            v-html="course.overview"></div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <div class="flex items-center text-xs text-gray-700">
-                                <svg class="w-3 h-3 text-yellow-500 fill-current"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M10 15l-5.878 3.09L5.244 12 .49 7.91l6.07-.88L10 2l2.44 5.03 6.07.88-4.754 4.09 1.122 5.99z" />
-                                </svg>
-                                <span class="ml-1 font-bold">{{ course.averageRating || 0 }}</span>
-                            </div>
-                            <div class="text-xs font-semibold text-gray-700">
-                                {{ course.total_enroll || 15 }} Enrolled
-                            </div>
-                            <div class="text-xs font-semibold text-gray-700">
-                                ${{ course.revenue || 25 }}
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between mt-2">
-                            <button @click="getSelectedCourse(courseModuleTab, course)"
-                                class="bg-white border border-gray-200 px-2 py-1 rounded text-xs text-black hover:bg-gray-200 transition">
-                                Details
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
         <AddCourseModule v-if="courseId"
             :courseId="courseId"

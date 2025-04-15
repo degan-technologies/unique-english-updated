@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from "vue";
 import Axios from "axios";
-// import Editor from "primevue/editor";
 import { useToast } from "vue-toastification";
 import AddBookDescription from "@/components/Book/AddBookDescription";
 
@@ -24,7 +23,6 @@ const newBook = ref({
     tag: "",
 });
 
-// Reactive variables for file previews
 const coverPreview = ref(null);
 const videoPreview = ref(null);
 
@@ -84,7 +82,6 @@ const addBook = async () => {
         });
         success.value = "Book added successfully!";
         toast.success("Book added successfully!", { position: "top-right" });
-        // Reset form fields
         newBook.value = {
             title: "",
             auther: "",
@@ -133,150 +130,107 @@ function goBack() {
 
     <div class="max-w-4xl mx-auto p-4 bg-white">
         <h2 class="text-2xl font-bold text-center mb-4">Add New Book</h2>
-        <form @submit.prevent="addBook"
-            class="space-y-4">
-            <!-- Section 1: File Uploads & Previews -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Cover Page Upload with Preview -->
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Upload Cover Page</label>
-                    <div class="relative border-dashed border-2 border-gray-300 rounded p-2 text-center cursor-pointer">
-                        <input type="file"
-                            @change="onFileChange('cover_page_url', $event)"
-                            class="absolute inset-0 opacity-0 cursor-pointer"
-                            required />
-                        <div v-if="coverPreview">
-                            <img :src="coverPreview"
-                                alt="Cover Preview"
-                                class="mx-auto max-h-32 object-contain" />
-                        </div>
-                        <div v-else>
-                            <p class="text-gray-500 text-xs">Click to select cover image</p>
-                        </div>
-                    </div>
-                </div>
+        <form @submit.prevent="addBook" class="space-y-6">
+  <!-- 60/40 layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <!-- LEFT: Uploads (3/5 = 60%) -->
+    <div class="lg:col-span-3 space-y-6">
+      <!-- Cover Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Cover Page</label>
+        <div v-if="coverPreview" class="mb-2">
+          <img :src="coverPreview"
+            alt="Cover Preview"
+            class="w-3/4 max-h-48 object-cover rounded-md shadow hover:scale-105 transition-transform" />
+        </div>
+        <div class="relative border border-gray-300 rounded-md text-center p-2 cursor-pointer hover:bg-gray-50 transition">
+          <span class="text-gray-500 text-sm">Click to select cover image</span>
+          <input type="file" @change="onFileChange('cover_page_url', $event)"
+            class="absolute inset-0 opacity-0 cursor-pointer" required />
+        </div>
+      </div>
 
-                <!-- Intro Video Upload with Preview -->
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Upload Intro Video</label>
-                    <div class="relative border-dashed border-2 border-gray-300 rounded p-2 text-center cursor-pointer">
-                        <input type="file"
-                            @change="onFileChange('intro_video', $event)"
-                            class="absolute inset-0 opacity-0 cursor-pointer"
-                            required />
-                        <div v-if="videoPreview">
-                            <video :src="videoPreview"
-                                controls
-                                class="mx-auto max-h-32 object-contain"></video>
-                        </div>
-                        <div v-else>
-                            <p class="text-gray-500 text-xs">Click to select intro video</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <!-- Intro Video Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Intro Video</label>
+        <div v-if="videoPreview" class="mb-2">
+          <video controls class="w-3/4 max-h-48 rounded-md shadow">
+            <source :src="videoPreview" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div class="relative border border-gray-300 rounded-md text-center p-2 cursor-pointer hover:bg-gray-50 transition">
+          <span class="text-gray-500 text-sm">Click to select intro video</span>
+          <input type="file" @change="onFileChange('intro_video', $event)"
+            accept="video/*"
+            class="absolute inset-0 opacity-0 cursor-pointer" required />
+        </div>
+      </div>
 
-            <!-- Section 2: File URL Upload -->
-            <div>
-                <label class="block text-gray-700 font-medium text-xs mb-1">Upload File URL</label>
-                <input type="file"
-                    @change="onFileChange('file_url', $event)"
-                    class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                    required />
-            </div>
-            <div>
-                <AddBookDescription v-model="newBook.description" />
-            </div>
-            <!-- Section 3: Compact Other Inputs in 3-Column Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Title</label>
-                    <input v-model="newBook.title"
-                        type="text"
-                        placeholder="Book Title"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Author</label>
-                    <input v-model="newBook.auther"
-                        type="text"
-                        placeholder="Author Name"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Price</label>
-                    <input v-model.number="newBook.price"
-                        type="number"
-                        placeholder="e.g. 20"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Edition</label>
-                    <input v-model.number="newBook.eddition"
-                        type="number"
-                        placeholder="e.g. 1"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Discount</label>
-                    <input v-model.number="newBook.discount"
-                        type="number"
-                        placeholder="Optional"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500" />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Publish Date</label>
-                    <input v-model="newBook.publish_date"
-                        type="date"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Language</label>
-                    <input v-model="newBook.language"
-                        type="text"
-                        placeholder="Language"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Page Number</label>
-                    <input v-model="newBook.page_number"
-                        type="number"
-                        placeholder="Page Number"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                     />
-                </div>
-                <div>
-                    <label class="block text-gray-700 font-medium text-xs mb-1">File Format</label>
-                    <select v-model="newBook.file_format"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500"
-                        required>
-                        <option value="pdf">PDF</option>
-                        <option value="word">Word</option>
-                    </select>
-                </div>
-                <div class="md:col-span-3">
-                    <label class="block text-gray-700 font-medium text-xs mb-1">Tags (comma separated)</label>
-                    <input v-model="newBook.tag"
-                        type="text"
-                        placeholder="e.g. Classic, Novel"
-                        class="w-full border border-gray-300 rounded-sm p-1 text-xs focus:outline-none focus:ring-1 focus:ring-lime-500" />
-                </div>
-            </div>
+      <!-- Book File Upload -->
+      <div>
+        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Book File</label>
+        <input type="file" @change="onFileChange('file_url', $event)"
+          class="w-full border border-gray-300 rounded-md p-2 text-sm" required />
+      </div>
+    </div>
 
-            <!-- Submit Button -->
-            <div class="mt-4">
-                <button type="submit"
-                    class="w-full bg-lime-700 text-white py-2 rounded-sm shadow transition hover:scale-105 text-xs">
-                    <span v-if="loading">Adding...</span>
-                    <span v-else>Add Book</span>
-                </button>
-            </div>
-        </form>
+    <!-- RIGHT: Fields (2/5 = 40%) -->
+    <div class="lg:col-span-2 space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Title</label>
+        <input v-model="newBook.title" type="text" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Author</label>
+        <input v-model="newBook.auther" type="text" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Price</label>
+        <input v-model.number="newBook.price" type="number" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Edition</label>
+        <input v-model.number="newBook.eddition" type="number" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Discount (%)</label>
+        <input v-model.number="newBook.discount" type="number" class="border border-gray-300 input w-full !py-1" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Publish Date</label>
+        <input v-model="newBook.publish_date" type="date" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Language</label>
+        <input v-model="newBook.language" type="text" class="border border-gray-300 input w-full !py-1" required />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+        <input v-model="tagInput" type="text" class="border border-gray-300 input w-full !py-1" />
+      </div>
+    </div>
+  </div>
+
+  <!-- DESCRIPTION (Full Width) -->
+  <div class="w-3/4">
+    <label class="block text-gray-700 font-medium text-sm mb-2">Book Description</label>
+    <AddBookDescription v-model="newBook.description" />
+  </div>
+
+  <!-- ACTION BUTTON -->
+  <div class="flex justify-end gap-4 pt-4">
+    <button type="button"
+      @click="cancelAdd"
+      class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition">
+      Cancel
+    </button>
+    <button type="submit"
+      class="bg-lime-500 text-white px-6 py-2 rounded hover:bg-lime-600 transition">
+      Add Book
+    </button>
+  </div>
+</form>
+
     </div>
 </template>

@@ -11,9 +11,10 @@ import { UseStudentStore } from "@/store/UseStudentStore";
 import { useInstructorStore } from "@/store/useInstructorStore";
 import EditBookForm from "@/components/Book/EditBook.vue";
 import BookDetail from "@/components/Book/AdminBookDetail.vue";
+import AnalyticsDashboard from "@/components/Layout/AnalyticsDashboard.vue";
 
 const InstructorStore = useInstructorStore();
-const {analytics} = storeToRefs(InstructorStore);
+const { analytics } = storeToRefs(InstructorStore);
 
 const toast = useToast();
 
@@ -21,6 +22,10 @@ const props = defineProps({
     searchQuery: {
         type: String,
         default: "",
+    },
+    activeTab: {
+        type: String,
+        default: "Books",
     },
 });
 
@@ -224,34 +229,41 @@ onUnmounted(() => {
 
 <template>
     <div class="max-w-full mx-auto">
-        <!-- Toggle Button -->
-        <div class="flex justify-end mb-4">
-            <div class="relative group">
-    <button @click="toggleView"
-            class="bg-lime-400 hover:bg-lime-500 text-black p-2 rounded-full">
-        <i :class="computedViewMode === 'card' ? 'fa-solid fa-list' : 'fa-solid fa-th-large'"
-           class="text-xl"></i>
-    </button>
-    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
-                px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 
-                group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
-        {{ computedViewMode === 'card' ? 'Switch to list view' : 'Switch to card view' }}
-    </div>
-</div>
+        <div class="w-full bg-white p-4 py-2 rounded-lg space-y-4 md:space-y-0 md:flex md:flex-wrap md:items-center md:justify-between">
+            <div class="w-full md:w-auto flex-1">
+                    <AnalyticsDashboard :label="props.activeTab"
+                        :total="analytics.total"
+                        :newToday="analytics.newToday" />
+                </div>
 
+            <!-- View Mode Toggle Button -->
+            <div class="w-full sm:w-auto flex justify-start sm:justify-end items-center gap-2 ml-2">
+                <div class="relative group">
+                    <button @click="toggleView"
+                        class="text-black p-2 rounded-full">
+                        <i :class="computedViewMode === 'card' ? 'fa-solid fa-list' : 'fa-solid fa-th-large'"
+                            class="text-xl"></i>
+                    </button>
+                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
+               px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 
+               group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap z-10">
+                        {{ computedViewMode === 'card' ? 'Switch to list view' : 'Switch to card view' }}
+                    </div>
+                </div>
+            </div>
         </div>
+
         <div v-if="loading"
             class="flex justify-center items-center h-64">
             <Spinner />
         </div>
-        <div v-if="error"
-            class="text-center text-red-500">{{ error }}</div>
         <div v-if="booksAdmin.length === 0"
-            class="text-gray-500">No books available.</div>
-        <div v-if="!selectedbook && !showPopularBooks">
+            class="text-gray-500">No books available.
+        </div>
+        <div v-if="!selectedbook && !showPopularBooks" class="pt-3">
             <!-- Card Layout -->
             <div v-if="computedViewMode === 'card'">
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-2 p-3">
+                <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 py-2">
                     <div v-for="book in filteredBooksAdmin"
                         :key="book.id"
                         class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 flex flex-col max-w-sm w-full mx-auto">
@@ -305,7 +317,8 @@ onUnmounted(() => {
             </div>
             <!-- Table Layout -->
             <div v-if="computedViewMode === 'table'">
-                <div class="w-full  overflow-x-auto scrollbar">
+                <div v-if="filteredBooksAdmin.length > 0"
+                    class="w-full  overflow-x-auto scrollbar">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-white rounded-t-lg">
                             <tr>
@@ -344,7 +357,7 @@ onUnmounted(() => {
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div class="flex h-full gap-2">
                                         <button @click="changeTab(book.slug)"
-                                            class="text-black text-sm font-semibold hover:underline">
+                                            class="bg-white border border-gray-200 px-3 py-1 rounded text-sm text-black hover:bg-gray-200 hover:text-gray-900 transition">
                                             Details
                                         </button>
                                         <div class="bg-white border border-gray-100 rounded-md p-1 relative">
@@ -388,45 +401,45 @@ onUnmounted(() => {
                         </tbody>
                     </table>
                 </div>
-           <!-- Pagination Footer -->
-<div v-if="pagination.last_page >= 1"
-    class="flex flex-wrap justify-between items-center mt-6 px-4 gap-4">
+                <!-- Pagination Footer -->
+                <div v-if="pagination.last_page >= 1"
+                    class="flex flex-wrap justify-between items-center mt-6 px-4 gap-4">
 
-    <!-- Rows Per Page Selector -->
-    <div class="flex items-center space-x-2">
-        <span class="text-sm text-gray-600">Books per page:</span>
-        <div v-for="option in rowsPerPageOptions"
-            :key="option"
-            @click="changeBooksPerPage(option)"
-            class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
-            :class="{
-                'bg-blue-500 text-white font-bold': rowsPerPage === option,
-                'bg-white text-gray-700 hover:bg-gray-200': rowsPerPage !== option
-            }">
-            {{ option }}
-        </div>
-    </div>
+                    <!-- Rows Per Page Selector -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">Books per page:</span>
+                        <div v-for="option in rowsPerPageOptions"
+                            :key="option"
+                            @click="changeBooksPerPage(option)"
+                            class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                            :class="{
+                                'bg-blue-500 text-white font-bold': rowsPerPage === option,
+                                'bg-white text-gray-700 hover:bg-gray-200': rowsPerPage !== option
+                            }">
+                            {{ option }}
+                        </div>
+                    </div>
 
-    <!-- Pagination Controls -->
-    <div class="flex items-center space-x-3">
-        <button :disabled="pagination.current_page <= 1"
-            @click="prevPage"
-            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Previous
-        </button>
+                    <!-- Pagination Controls -->
+                    <div class="flex items-center space-x-3">
+                        <button :disabled="pagination.current_page <= 1"
+                            @click="prevPage"
+                            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                            Previous
+                        </button>
 
-        <span class="text-sm text-gray-700">
-            Page <span class="font-semibold">{{ pagination.current_page }}</span> of 
-            <span class="font-semibold">{{ pagination.last_page }}</span>
-        </span>
+                        <span class="text-sm text-gray-700">
+                            Page <span class="font-semibold">{{ pagination.current_page }}</span> of
+                            <span class="font-semibold">{{ pagination.last_page }}</span>
+                        </span>
 
-        <button :disabled="pagination.current_page >= pagination.last_page"
-            @click="nextPage"
-            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
-            Next
-        </button>
-    </div>
-</div>
+                        <button :disabled="pagination.current_page >= pagination.last_page"
+                            @click="nextPage"
+                            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                            Next
+                        </button>
+                    </div>
+                </div>
 
             </div>
         </div>

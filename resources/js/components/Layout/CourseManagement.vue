@@ -136,25 +136,7 @@ function selectedTab(tab) {
                 <div v-if="!selectedCourse"
                     class="max-w-7xl mx-auto mt-4">
                     <!-- Header: Analytics Dashboard and Add Buttons in one row -->
-                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <!-- Analytics Dashboard + Data -->
-                        <aside
-                            class="flex flex-col sm:flex-row items-center gap-4 bg-white shadow rounded-lg p-3 w-full md:w-2/3">
-                            <h3 class="text-lg font-semibold text-lime-700 whitespace-nowrap">
-                                Analytics Dashboard
-                            </h3>
-                            <div class="flex items-center gap-4">
-                                <div class="flex items-center bg-lime-50 px-3 py-2 rounded">
-                                    <p class="text-xs font-medium text-gray-600 mr-1">Total {{activeTab}}</p>
-                                    <p class="text-lg font-bold text-lime-700">{{ analytics.total }}</p>
-                                </div>
-                                <div class="flex items-center bg-green-50 px-3 py-2 rounded">
-                                    <p class="text-xs font-medium text-gray-600 mr-1">New Today</p>
-                                    <p class="text-lg font-bold">{{ analytics.newToday }}</p>
-                                </div>
-                            </div>
-                        </aside>
-
+                    <div class="flex flex-col md:flex-row items-center justify-end gap-4">
                         <!-- Add Buttons -->
                         <div class="flex flex-col sm:flex-row items-center gap-3">
                             <button v-if="activeTab === courseTab"
@@ -171,11 +153,11 @@ function selectedTab(tab) {
                     </div>
 
                     <!-- Main Content: Courses/Books/Forms Expand Fully -->
-                    <div class="rounded-lg w-full max-w-full">
+                    <div class="rounded-lg w-full max-w-full mt-2">
                         <div class="w-full">
                             <div v-if="activeTab === courseTab"
                                 class="w-full">
-                                <courses :searchQuery="searchQuery" />
+                                <courses :searchQuery="searchQuery" :activeTab="activeTab" />
                             </div>
                             <div v-else-if="activeTab === bookTab"
                                 class="w-full">
