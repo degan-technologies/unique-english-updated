@@ -34,7 +34,7 @@ const {
     exams,
     schedule,
     payments,
-    liveSssions, 
+    liveSssions,
     messaging,
 } = storeToRefs(sidebarStore);
 
@@ -56,26 +56,19 @@ watch(
     { immediate: true } // Ensure it runs on component mount
 );
 
-// Function to Change Content
-function setSelectedContent(contentId) {
-    selectedContent.value = contentId;
-}
 </script>
 
 <template>
-    <div
-        class="bg-gray-200 leading-normal tracking-normal flex min-h-screen transition-all duration-300"
-    >
+    <div class="bg-gray-200 leading-normal tracking-normal flex min-h-screen transition-all duration-300">
         <div class="relative md:flex transition-all duration-300">
             <DashboardSidebar />
         </div>
 
         <div
-            class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300"
-        >
+            class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300">
             <Navbar class="transition-all duration-300" />
 
-            <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300" >
+            <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300">
                 <div class="w-full bg-gray-100">
                     <div v-if="selectedContent === profile">
                         <ProfileForm />

@@ -1,3 +1,6 @@
+<script setup>
+</script>
+
 <template>
     <div class="flex items-center justify-center min-h-screen">
         <div class="flex flex-col items-center">
@@ -14,9 +17,6 @@
         </div>
     </div>
 </template>
-
-<script setup>
-</script>
 
 <style scoped>
 @keyframes spin-slow {
