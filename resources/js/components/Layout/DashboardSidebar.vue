@@ -1,8 +1,8 @@
-<script setup> 
+<script setup>
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import Axios from 'axios';
-import { ref, onMounted, watch  } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from '../../store/useAppStore'
@@ -68,7 +68,7 @@ const mainItems = [
         description: "Track, join, schedule live classes.",
         icon: "video",
     },
-     {
+    {
         label: "Schedule",
         route: schedule.value,
         description: " schedule live classes.",
@@ -107,27 +107,27 @@ function selectContent(changeTab) {
 
 // Function to fetch logo from backend
 const fetchLogo = async () => {
-  try {
-    const res = await Axios.get('/api/logos')
-    if (res.data.data.length) {
-      logoUrl.value = res.data.data[0].file_url
+    try {
+        const res = await Axios.get('/api/logos')
+        if (res.data.data.length) {
+            logoUrl.value = res.data.data[0].file_url
+        }
+    } catch (error) {
+        console.error('Error fetching logo:', error)
     }
-  } catch (error) {
-    console.error('Error fetching logo:', error)
-  }
 }
 
 // Call the function when component mounts
 onMounted(() => {
-  fetchLogo()
+    fetchLogo()
 })
 
 watch(profileUpdated, (updated) => {
-  if (updated) {
-    fetchLogo() // your logo fetching function
-    profileUpdated.value = false
- // reset it
-  }
+    if (updated) {
+        fetchLogo() // your logo fetching function
+        profileUpdated.value = false
+        // reset it
+    }
 })
 
 
@@ -135,53 +135,38 @@ watch(profileUpdated, (updated) => {
 
 <template>
     <!-- Sidebar container: slides in/out on mobile -->
-    <aside
-        :class="[
-            'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
-            sideBarOpen ? 'translate-x-0' : '-translate-x-full',
-        ]"
-    >
+    <aside :class="[
+        'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
+        sideBarOpen ? 'translate-x-0' : '-translate-x-full',
+    ]">
         <!-- Sidebar panel: width changes when sidebarCollapsed -->
-        <div
-            :class="[
-                sidebarCollapsed ? 'w-16' : 'w-64',
-                'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
-            ]"
-        >
+        <div :class="[
+            sidebarCollapsed ? 'w-16' : 'w-64',
+            'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
+        ]">
             <!-- Header with logo and mobile close button (desktop: no close icon) -->
-            <div
-                class="flex items-center justify-between h-20 px-4 border-b border-lime-300"
-            >
+            <div class="flex items-center justify-between h-20 px-4 border-b border-lime-300">
                 <!-- Logo: Full Logo (if not sidebarCollapsed) -->
-                <div
-                    v-if="!sidebarCollapsed"
-                    class="flex items-center animate-fadeIn"
-                >
-                     <img
-                        :src="logoUrl "
+                <div v-if="!sidebarCollapsed"
+                    class="flex items-center animate-fadeIn">
+                    <img :src="logoUrl"
                         alt="Logo Abbreviation"
-                        class="h-10 w-auto object-contain"
-                    />
-                    <span class="ml-2 font-semibold text-xl text-lime-500"
-                        >UniqueEnglish</span
-                    >
+                        class="h-10 w-auto object-contain" />
+                    <span class="ml-2 font-semibold text-xl text-lime-500">UniqueEnglish</span>
                 </div>
 
                 <!-- Logo: Abbreviated Logo (if sidebarCollapsed) -->
-                <div v-else class="flex items-center animate-fadeIn">
-                    <img
-                        :src="logoUrl "
+                <div v-else
+                    class="flex items-center animate-fadeIn">
+                    <img :src="logoUrl"
                         alt="Logo Abbreviation"
-                        class="h-10 w-auto object-contain"
-                    />
+                        class="h-10 w-auto object-contain" />
                 </div>
 
                 <!-- Mobile Close Icon (only visible on mobile) -->
-                <button
-                    @click="sidebarStore.toggleSidebar()"
+                <button @click="sidebarStore.toggleSidebar()"
                     class="text-lime-500 hover:text-lime-600 md:hidden transition-colors"
-                    title="Close Sidebar"
-                >
+                    title="Close Sidebar">
                     <span class="material-icons animate-spinIn">close</span>
                 </button>
             </div>
@@ -190,45 +175,32 @@ watch(profileUpdated, (updated) => {
             <div class="flex-1 h-screen overflow-y-auto scrollbar">
                 <!-- MAIN Section -->
                 <div class="px-4 py-2">
-                    <p
-                        v-if="!sidebarCollapsed"
-                        class="text-sm font-semibold mb-2 text-lime-600 animate-fadeIn"
-                    >
+                    <p v-if="!sidebarCollapsed"
+                        class="text-sm font-semibold mb-2 text-lime-600 animate-fadeIn">
                         MAIN
                     </p>
                     <ul>
-                        <li
-                            v-for="(item, index) in mainItems"
+                        <li v-for="(item, index) in mainItems"
                             :key="index"
                             @click="selectContent(item?.route)"
                             class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-                            :title="item.description"
-                        >
-                            <i
-                                :class="{
-                                    ['fa-' + item.icon]: true,
-                                }"
-                                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"
-                            ></i>
-                            <span
-                                v-if="!sidebarCollapsed"
-                                class="text-gray-800 animate-fadeIn"
-                                >{{ item.label }}</span
-                            >
+                            :title="item.description">
+                            <i :class="{
+                                ['fa-' + item.icon]: true,
+                            }"
+                                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"></i>
+                            <span v-if="!sidebarCollapsed"
+                                class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
                         </li>
                     </ul>
                 </div>
             </div>
 
             <!-- Collapse/Expand Button at bottom right -->
-            <button
-                @click="sidebarStore.toggleCollapse()"
-                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 hover:bg-lime-200 transition-colors duration-200"
-            >
-                <i
-                    :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
-                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-lime-900 transform transition-transform duration-300"
-                ></i>
+            <button @click="sidebarStore.toggleCollapse()"
+                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 hover:bg-lime-200 transition-colors duration-200">
+                <i :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
+                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-lime-900 transform transition-transform duration-300"></i>
             </button>
         </div>
     </aside>
@@ -241,11 +213,13 @@ watch(profileUpdated, (updated) => {
         opacity: 0;
         transform: translateX(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
+
 .animate-fadeIn {
     animation: fadeIn 0.5s ease-in-out;
 }
@@ -255,11 +229,13 @@ watch(profileUpdated, (updated) => {
         transform: rotate(-90deg);
         opacity: 0;
     }
+
     to {
         transform: rotate(0deg);
         opacity: 1;
     }
 }
+
 .animate-spinIn {
     animation: spinIn 0.5s ease-in-out;
 }

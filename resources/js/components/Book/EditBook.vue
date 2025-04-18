@@ -116,7 +116,7 @@ onMounted(() => {
 <template>
     <div class="max-w-4xl mx-auto p-4 mt-6 bg-white shadow-lg rounded-lg border border-gray-200">
         <h2 class="text-2xl font-bold text-center mb-4">Edit Book</h2>
-            <form class="space-y-6">
+            <form class="space-y-6 mt-4">
                 <!-- 60/40 layout -->
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     <!-- LEFT: Uploads (3/5 = 60%) -->

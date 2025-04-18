@@ -114,7 +114,8 @@
             });
     }
 
-    onMounted(async () => {
+    onMounted( () => {
+        appStore.fetchFrontLanguages();
         fetchProfile();
     });
     

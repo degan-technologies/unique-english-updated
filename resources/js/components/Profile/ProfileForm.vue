@@ -1,17 +1,26 @@
-<script setup >
-    import { ref } from 'vue';
-    
-    import ProfileSettings from './profileSetting.vue';
-    import ChangePassword from './ChangePassword.vue';
-    import BankAccount from './Bank/BankAccount.vue';
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-    const activeTab = ref('profile');
-    function setActiveTab(tab) {
-        activeTab.value = tab;
+import ProfileSettings from './profileSetting.vue';
+import ChangePassword from './ChangePassword.vue';
+import BankAccount from './Bank/BankAccount.vue';
+
+const route = useRoute();
+const router = useRouter();
+
+const activeTab = ref('profile');
+
+onMounted(() => {
+    if (route.query.currentTab !== 'profile') {
+        router.replace({ name: route.name, query: { ...route.query, currentTab: 'profile' } });
     }
-  
-</script>
+});
 
+function setActiveTab(tab) {
+    activeTab.value = tab;
+}
+</script>
 <template>
     <div class="flex flex-col md:flex-row bg-gray-100">
         <section class="mt-5 w-full">
@@ -19,36 +28,33 @@
             <div class="flex flex-wrap gap-6">
                 <nav class="flex-none w-full md:w-64 bg-white p-4 rounded-lg shadow h-fit">
                     <ul>
-                        <li 
-                            @click="setActiveTab('profile')" 
+                        <li @click="setActiveTab('profile')"
                             :class="{
                                 'bg-lime-700 text-white': activeTab === 'profile',
                                 'hover:bg-lime-500': activeTab !== 'profile'
-                            }" 
+                            }"
                             class="py-2 px-3 cursor-pointer">
                             👤 Profile Settings
                         </li>
-                        <li 
-                            @click="setActiveTab('password')" 
+                        <li @click="setActiveTab('password')"
                             :class="{
                                 'bg-lime-700 text-white': activeTab === 'password',
                                 'hover:bg-lime-500': activeTab !== 'password'
-                            }" 
+                            }"
                             class="py-2 px-3 cursor-pointer">
                             🔒 Password
                         </li>
-                        <li 
-                            @click="setActiveTab('account')" 
+                        <li @click="setActiveTab('account')"
                             :class="{
                                 'bg-lime-700 text-white': activeTab === 'account',
                                 'hover:bg-lime-500': activeTab !== 'account'
-                            }" 
+                            }"
                             class="py-2 px-3 cursor-pointer">
-                            Add Account
+                            💳 Add Account
                         </li>
                     </ul>
                 </nav>
-            
+
                 <div class="flex-1 bg-white p-5 rounded-lg shadow">
                     <ProfileSettings v-if="activeTab === 'profile'" />
                     <ChangePassword v-if="activeTab === 'password'" />
