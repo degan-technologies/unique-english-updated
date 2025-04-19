@@ -26,10 +26,11 @@ class CurrentUserResource extends JsonResource
 
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)
-                : 'no-profile.png',
+                : 'images/no-profile.png',
+
             'bg_image' => $this->bg_image
                 ? Storage::disk('public')->url($this->bg_image)
-                : 'no-bg_image.png',
+                : 'images/background_gugut.jpg',
 
             'role'=>$this->getRole(),
         ];

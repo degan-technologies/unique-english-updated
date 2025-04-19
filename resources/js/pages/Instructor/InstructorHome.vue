@@ -98,9 +98,6 @@ watch(
                     <div v-else-if="selectedContent === messaging">
                         <NotificationManagement />
                     </div>
-                    <div v-else-if="selectedContent === 'reports'">
-                        <SystemAnalyticsReport />
-                    </div>
                     <div v-else-if="selectedContent === 'settings'">
                         <SettingsAndSecurity />
                     </div>

@@ -10,9 +10,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Resources\userResource;
 use App\Models\Role\Instructor;
+use App\Models\Role\Student;
 use App\Services\LangService;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Container\Attributes\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -94,14 +96,19 @@ class UserController extends Controller {
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function studentRegistration(Request $request)
-    {
+    public function studentRegistration(Request $request) {
+
+        $fullname = [];
         $otp = random_int(100000, 999999);
+
+        $fullname = explode(' ', $request->full_name);
+        $firstName = $fullname[0];
+        $middleName = isset($fullname[1]) ? $fullname[1] : null;
+        $lastName = isset($fullname[2]) ? $fullname[2] : null;
 
         $validationRules = [
             'email'      => 'required|email',
-            'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'middle_name' => ['not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
+            'full_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],            
             'password'   => 'required|min:4',
         ];
 
@@ -120,8 +127,9 @@ class UserController extends Controller {
             $user = new User();
             $user->slug       = Str::uuid();
             $user->email      = $request->email;
-            $user->first_name = $request->first_name;
-            $user->middle_name = $request->middle_name;
+            $user->first_name = $firstName;
+            $user->middle_name = $middleName;
+            $user->last_name  = $lastName; 
             $user->password   = Hash::make($request->password);
             $user->role       = STUDENT;
 
@@ -130,6 +138,8 @@ class UserController extends Controller {
             $user->otp_attempts = 0;
 
             $user->save();
+  
+            $user->student()->create();
 
             $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
 
@@ -388,6 +398,8 @@ class UserController extends Controller {
             'user_banned_at' => Carbon::now(),
         ]);
 
+        $user->delete();
+
         return response()->json([
             'message' => $this->langService->getLang('user_successfully_deleted')
         ]);
@@ -401,16 +413,21 @@ class UserController extends Controller {
         /**
          * @var \App\Models\User $user
          */
+
+         $fullname = [];
+
+            $fullname = explode(' ', $request->full_name);
+
+            $firstName = $fullname[0];
+            $middleName = isset($fullname[1]) ? $fullname[1] : null;
+            $lastName = isset($fullname[2]) ? $fullname[2] : null;
+
+
         $user = Auth::user();
 
         $validationRules = [
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'first_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
-            'middle_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
-            'last_name' => ['not_regex:/[\\\\\\/\\?\\%\\*\\:\\|\"<>]/', 'alpha_dash:ascii'],
-            'phone' => ['unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/'],
-            'profile' => 'image',
-            'bg_image' => 'image',
+            'email' => 'required|email|unique:users,email,' . $user->id, 
+            'phone' => ['unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/'], 
             'gender' => [Rule::in(GENDER)],
         ];
 
@@ -423,32 +440,96 @@ class UserController extends Controller {
                 'message' => $message,
                 'errors' => $validator->errors()
             ], 422);
-        }
-
-        $profilePath = null;
-        $bgPath = null;
-
-        if ($request->hasFile('profile')) {
-            $file = $request->file('profile');
-            $profilePath = $file->store('/user', 'public');
-        }
-
-        if ($request->hasFile('bg_image')) {
-            $file = $request->file('bg_image');
-            $bgPath = $file->store('/user', 'public');
-        }
+        } 
 
         $user->update([
             'email' => $request->email ?? $user->email,
             'phone' => $request->phone ?? $user->phone,
             'gender' => $request->gender ?? $user->gender,
-            'first_name' => $request->first_name ?? $user->first_name,
-            'middle_name' => $request->middle_name ?? $user->middle_name,
-            'last_name' => $request->last_name ?? $user->last_name,
-            'profile' => $profilePath ?? $user->profile,
-            'bg_image' => $bgPath ?? $user->bg_image,
+            'first_name' => $firstName,
+            'middle_name' => $middleName,
+            'last_name' => $lastName, 
             'updated_at' => Carbon::now(),
         ]);
+
+        return response()->json([
+            'message' => $this->langService->getLang('profile_successfully_updated'),
+            'data' => new CurrentUserResource($user),
+        ]);
+    }
+
+
+    public function profileImageUpdate(Request $request) {
+        
+        /**
+         * @var \App\Models\User $user
+         */ 
+        $user = Auth::user();
+
+        $validationRules = [   
+            'profile' => 'image',
+            'bg_image' => 'image', 
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+ 
+
+        if ($request->hasFile('profile')) { 
+            $file = $request->file('profile');
+            $profilePath = $file->store('/user', 'public');
+            $user->profile = $profilePath;
+        }
+
+        if ($request->hasFile('bg_image')) {
+            $file = $request->file('bg_image');
+            $bgPath = $file->store('/user', 'public');
+            $user->bg_image = $bgPath;
+        } 
+
+        $user->save();
+
+        return response()->json([
+            'message' => $this->langService->getLang('profile_successfully_updated'),
+            'data' => new CurrentUserResource($user),
+        ]);
+    }
+
+    public function profileImageRemove(Request $request) {
+        
+        /**
+         * @var \App\Models\User $user
+         */ 
+        $user = Auth::user();
+
+        $field = $request->input('field') ?? null;
+
+        $validationRules = [
+            'field' => 'required|in:profile,bg_image',
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+
+        if ($field && isset($user[$field])) {
+            $user[$field] = null;
+        }
+        $user->save();
 
         return response()->json([
             'message' => $this->langService->getLang('profile_successfully_updated'),

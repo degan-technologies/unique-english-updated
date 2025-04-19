@@ -45,7 +45,7 @@ function handleRegister() {
     }
     loading.value = true;
     const data = {
-        first_name: name.value,
+        full_name: name.value,
         email: email.value,
         password: password.value,
     };
