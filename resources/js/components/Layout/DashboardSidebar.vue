@@ -81,12 +81,6 @@ const mainItems = [
         icon: "envelope",
     },
     {
-        label: "System Reports",
-        route: "reports",
-        description: "View performance metrics.",
-        icon: "chart-simple",
-    },
-    {
         label: "Settings ",
         route: "settings",
         description: "Configure platform branding & security.",

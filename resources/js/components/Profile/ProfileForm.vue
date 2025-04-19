@@ -13,7 +13,9 @@ const activeTab = ref('profile');
 
 onMounted(() => {
     if (route.query.currentTab !== 'profile') {
-        router.replace({ name: route.name, query: { ...route.query, currentTab: 'profile' } });
+        router.replace({
+             name: route.name, 
+             query: { currentTab: 'profile' } });
     }
 });
 

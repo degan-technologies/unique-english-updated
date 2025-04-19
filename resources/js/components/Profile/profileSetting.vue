@@ -4,15 +4,14 @@
     import { ref, onMounted, computed } from 'vue';
 
     import { useAppStore } from '@/store/useAppStore';
-
+    import Spinner from '@/components/Layout/Spinner.vue';
     const appStore = useAppStore();
     const { authUser, frontLang } = storeToRefs(appStore);
     const fetchUserInfo = appStore.fetchUserInfo;
 
-    const form = ref({
+
+    const form = ref({ 
         first_name: '',
-        middle_name: '',
-        last_name: '',
         email: '',
         phone: '',
         gender: '',
@@ -26,11 +25,17 @@
 
     const profileInput = ref(null);
     const bgInput = ref(null);
+    const isDataLoaded = ref(false);
+    const hasFile = ref(false);
 
     function onFileChange(field, event) {
         const file = event.target.files[0];
+
         if (file) {
-        form.value[field] = file;
+            form.value[field] = file;
+            hasFile.value = true;
+
+            authUser.value[field] = URL.createObjectURL(file);
         }
     };
 
@@ -47,66 +52,68 @@
 
         if (authUser.value) {
         originalData.value = { ...authUser.value };
-
-        form.value.first_name = authUser.value.first_name || '';
-        form.value.middle_name = authUser.value.middle_name || '';
-        form.value.last_name = authUser.value.last_name || '';
-        form.value.email = authUser.value.email || '';
-        form.value.phone = authUser.value.phone || '';
-        form.value.gender = authUser.value.gender || '';
-        form.value.profile = null;
-        form.value.bg_image = null;
+        form.value = { ...authUser.value };
         }
     };
 
     async function removeImage(field) {
-        try {
-            let imageUrl = '';
-            if (field === 'profile') {
-                imageUrl = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
-            } else if (field === 'bg_image') {
-                imageUrl = 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?crop=entropy&cs=tinysrgb&fit=max&ixid=MnwzNjA2OXwwfDF8c2VhY2h8MXx8fGZvcmVzdHxlbnwwfHx8fDE2NzgwMzYzNTg&ixlib=rb-1.2.1&q=80&w=1080';
-            }
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
-            const file = new File([blob], `${field}.png`, { type: blob.type });
+        const formData = new FormData(); 
 
-            if (field === 'profile') {
-                form.value.profile = file;
-            } else if (field === 'bg_image') {
-                form.value.bg_image = file;
-            }
-            
-            submitForm(new Event('submit'));
-        } catch (error) {
-        }
+        formData.append('field', field);
+
+        Axios
+            .post('/api/remove-image', formData )
+            .then(res => {
+                authUser.value = res.data.data;  
+                message.value = res.data.message; 
+                form.value = { ...authUser.value };  
+                setTimeout(() => (message.value = ''), 2000);
+            })
+            .catch(error => {
+                errors.value = error.response?.data?.errors;
+            });
     }
 
-    function submitForm(event) {
-        event.preventDefault();
+
+    function updateProfileImage(field) {
+        const formData = new FormData();
+
+        if(!hasFile.value)  return;
+
+        formData.append(field, form.value[field]);
+        
+        Axios
+            .post('/api/profile-image/update', formData )
+            .then(res => {
+                authUser.value = res.data.data;  
+                message.value = res.data.message; 
+                form.value = { ...authUser.value };  
+                setTimeout(() => (message.value = ''), 2000);
+            })
+            .catch(error => {
+                errors.value = error.response?.data?.errors;
+            });
+    }
+
+    function submitForm() { 
         errors.value = {};
         message.value = '';
 
         const formData = new FormData();
 
-        formData.append('first_name', form.value.first_name);
-        formData.append('middle_name', form.value.middle_name);
-        formData.append('last_name', form.value.last_name);
+        formData.append('full_name', form.value.full_name); 
         formData.append('email', form.value.email);
         formData.append('phone', form.value.phone);
         formData.append('gender', form.value.gender);
-        form.value.profile && formData.append('profile', form.value.profile);
-        form.value.bg_image && formData.append('bg_image', form.value.bg_image);
 
         Axios
             .post('/api/update-profile', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             })
             .then(res => {
-                authUser.value = res.data.user;  
-                message.value = res.data.message;
-                appStore.authUser = { ...res.data.user };
-                fetchUserInfo();
+                authUser.value = res.data.data;  
+                message.value = res.data.message; 
+                form.value = { ...authUser.value };  
                 setTimeout(() => (message.value = ''), 2000);
             })
             .catch(error => {
@@ -114,17 +121,30 @@
             });
     }
 
-    onMounted( () => {
-        appStore.fetchFrontLanguages();
-        fetchProfile();
-    });
+// Fetch frontLang and set data loaded status
+onMounted(async () => {
+  try {
+    await appStore.fetchFrontLanguages();  // Assuming this fetches frontLang
+    isDataLoaded.value = true; // Data is loaded
+  } catch (error) {
+    console.error("Failed to fetch frontLang:", error);
+  }
+  fetchProfile();
+});
     
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div v-if="!isDataLoaded" class="flex items-center justify-center min-h-screen">
+        <Spinner />
+    </div>
+    <div v-else class="min-h-screen flex items-center justify-center p-4">
         <div class="w-full max-w-2xl bg-white rounded-lg p-4 space-y-8">
-            <h1 class="text-3xl font-bold text-center text-lime-700"> {{ frontLang.lang.updateProfile }} </h1>
+            <!-- Use optional chaining to safely access lang property -->
+            <h1 v-if="frontLang?.lang" class="text-3xl font-bold text-center text-lime-700"> 
+                {{ frontLang?.lang?.updateProfile }} 
+            </h1>
+            
             <!-- Background Image Container -->
             <div class="relative w-full h-64 rounded-lg overflow-hidden border border-gray-200 shadow-md">
                 <div
@@ -134,10 +154,10 @@
                 </div>
                 <!-- Group for Background Image Action -->
                 <div class="absolute top-4 right-4 z-10">
-                    <div class="relative group">
+                    <div class="relative group flex flex-col justify-end items-end">
                         <!-- Camera Button (always visible) -->
                         <button
-                            class="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
+                            class="bg-black bg-opacity-50 text-white p-2  w-10 h-10 rounded-full hover:bg-opacity-75 transition"
                             @click="triggerFileInput('bg_image')"
                             title="Change Background"
                         >
@@ -147,10 +167,19 @@
                         <button
                             v-if="authUser.bg_image"
                             @click="removeImage('bg_image')"
-                            class="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
+                            class=" transform  w-10 h-10 top-full mt-2 bg-red-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
                             title="Remove Background"
                         >
                             <i class="fas fa-trash-alt"></i>
+                        </button>
+
+                        <button
+                            v-if="authUser.bg_image"
+                            @click="updateProfileImage('bg_image')"
+                            class=" transform  w-10 h-10 top-full mt-2 bg-green-500 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
+                            title="save Background"
+                        >
+                            <i class="fas fa-save"></i>
                         </button>
                     </div>
                 </div>
@@ -164,11 +193,11 @@
                                 :src="authUser.profile || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'"
                                 alt="Profile Image"
                                 class="w-full h-full object-cover"
-                                />
+                            />
                             <div
                                 v-else
                                 class="w-full h-full flex items-center justify-center bg-gray-300 text-gray-700"
-                                >
+                            >
                                 No Image
                             </div>
                             <!-- Group for Profile Image Action -->
@@ -176,26 +205,32 @@
                                 <div class="relative group">
                                     <!-- Camera Button (always visible) -->
                                     <button
-                                        class="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition"
+                                        class="bg-black bg-opacity-50 text-white p-2 rounded-full w-10 h-10 hover:bg-opacity-75 transition"
                                         @click="triggerFileInput('profile')"
                                         title="Change Profile"
-                                        >
+                                    >
                                         <i class="fas fa-camera"></i>
                                     </button>
                                     <!-- Cancel (Remove) Button (appears above on hover) -->
                                     <button
                                         v-if="authUser.profile"
                                         @click="removeImage('profile')"
-                                        class="absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
-                                        title="Remove Profile"
-                                        >
+                                        class=" transform w-10 h-10 bottom-full mb-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
+                                        title="Remove Profile" >
                                         <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                    <button
+                                        v-if="authUser.profile"
+                                        @click="updateProfileImage('profile')"
+                                        class=" transform w-10 h-10 bottom-full mb-2 bg-green-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition duration-200"
+                                        title="Save Profile"
+                                    >
+                                        <i class="fas fa-save"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -205,80 +240,80 @@
                 capture="user"
                 ref="profileInput"
                 class="hidden"
-                @change="onFileChange('profile', $event)"/>
+                @change="onFileChange('profile', $event)"
+            />
             <input
                 type="file"
                 accept="image/*"
                 capture="environment"
                 ref="bgInput"
                 class="hidden"
-                @change="onFileChange('bg_image', $event)"/>
+                @change="onFileChange('bg_image', $event)"
+            />
 
             <form class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.firstName }}: </label>
+                        <label v-if="frontLang?.lang" class="block text-gray-700 font-medium mb-1"> 
+                            Full Name 
+                        </label>
                         <input
-                            v-model="form.first_name"
+                            v-model="form.full_name"
                             type="text"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"/>
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+                        />
                         <span v-if="errors.first_name" class="text-red-500 text-sm"> {{ errors.first_name }} </span>
-                    </div>
+                    </div>  
                     <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.middleName }}: </label>
-                        <input
-                            v-model="form.middle_name"
-                            type="text"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"/>
-                        <span v-if="errors.middle_name" class="text-red-500 text-sm"> {{ errors.middle_name }} </span>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.lastName }}: </label>
-                        <input
-                            v-model="form.last_name"
-                            type="text"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"/>
-                        <span v-if="errors.last_name" class="text-red-500 text-sm"> {{ errors.last_name }} </span>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.email }}: </label>
+                        <label class="block text-gray-700 font-medium mb-1"> 
+                            {{ frontLang?.lang?.email }}: 
+                        </label>
                         <input
                             v-model="form.email"
                             type="email"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"/>
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+                        />
                         <span v-if="errors.email" class="text-red-500 text-sm"> {{ errors.email }} </span>
                     </div>
                     <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.phone }}: </label>
+                        <label class="block text-gray-700 font-medium mb-1"> 
+                            {{ frontLang?.lang?.phone }}: 
+                        </label>
                         <input
                             v-model="form.phone"
                             type="text"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"/>
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+                        />
                         <span v-if="errors.phone" class="text-red-500 text-sm"> {{ errors.phone }} </span>
                     </div>
                     <div>
-                        <label class="block text-gray-700 font-medium mb-1"> {{ frontLang.lang.gender }}: </label>
+                        <label class="block text-gray-700 font-medium mb-1"> 
+                            {{ frontLang?.lang?.gender }}: 
+                        </label>
                         <select
                             v-model="form.gender"
-                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700">
-                            <option value="">{{ frontLang.lang.selectGender }}</option>
-                            <option value="1">{{ frontLang.lang.male }}</option>
-                            <option value="2">{{ frontLang.lang.female }}</option>
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+                        >
+                            <option value="">{{ frontLang?.lang?.selectGender }}</option>
+                            <option value="1">{{ frontLang?.lang?.male }}</option>
+                            <option value="2">{{ frontLang?.lang?.female }}</option>
                         </select>
                         <span v-if="errors.gender" class="text-red-500 text-sm"> {{ errors.gender }} </span>
                     </div>
                 </div>
                 <button
                     type="submit"
-                    @click="submitForm"
-                    class="w-full bg-lime-700 text-white p-3 rounded-lg hover:bg-lime-800 transition flex justify-center">
-                    {{ frontLang.lang.UpdateProfile }}
+                    @click="submitForm()"
+                    class="w-full bg-lime-700 text-white p-3 rounded-lg hover:bg-lime-800 transition flex justify-center"
+                >
+                    {{ frontLang?.lang?.updateProfile }}
                 </button>
                 <p v-if="message" class="text-center text-lime-700 text-sm font-medium mt-3"> {{ message }} </p>
             </form>
         </div>
     </div>
 </template>
+
 
 <style>
     .error {

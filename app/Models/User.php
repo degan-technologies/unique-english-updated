@@ -34,6 +34,10 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Notifications\DatabaseNotification;
+
+
 
 class User extends Authenticatable {
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
@@ -127,7 +131,9 @@ class User extends Authenticatable {
     public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
 
     public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
-
+    public function notifications() {
+        return $this->morphMany(DatabaseNotification::class, 'notifiable');
+    }
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){
             $userId = Auth::id();

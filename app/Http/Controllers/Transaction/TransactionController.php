@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Transaction;
 
+
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Transaction\Trait\TransferTrait;
 use App\Http\Resources\Transaction\TransactionResource;
+use App\Notifications\TransactionSuccessfulNotification;
+
 use App\Models\Book\Book;
 use App\Models\Course\Course;
 use App\Models\Live\Live;
@@ -312,6 +315,14 @@ class TransactionController extends Controller {
 
 
             DB::commit();
+
+            $user->notify(new TransactionSuccessfulNotification($txRef, $totalPrice));
+            $admins = User::whereHas('systemAdmin')->get();
+                foreach ($admins as $admin) {
+                    $admin->notify(new TransactionSuccessfulNotification($txRef, $totalPrice));
+                }
+
+                
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

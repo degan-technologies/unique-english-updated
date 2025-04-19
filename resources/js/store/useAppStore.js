@@ -25,6 +25,8 @@ export const useAppStore = defineStore('useAppStore', () => {
     const middleName = computed(() => authUser.value?.middle_name);
     const lastName = computed(() => authUser.value?.last_name);
 
+    const unreadNotifications = ref([]);
+
     const isLoggedIn = computed(() => loggedIn.value == true && authToken.value != '');
 
 
@@ -55,6 +57,7 @@ export const useAppStore = defineStore('useAppStore', () => {
             setAuthToken('');
         } else {
             fetchUserInfo();
+            fetchUnreadNotifications();
         }  
     }
 
@@ -82,6 +85,21 @@ export const useAppStore = defineStore('useAppStore', () => {
         authToken.value = '';
         loggedIn.value = false;
     }
+    // Function to fetch unread notifications from the backend
+    async function fetchUnreadNotifications() {
+        try {
+            Axios.defaults.headers.common['Authorization'] = `Bearer ${authToken.value}`;
+            const response = await Axios.get('/api/notifications/unread');
+            unreadNotifications.value = response.data;
+        } catch (error) {
+            console.error('Error fetching unread notifications:', error);
+        }
+    }
+    function markNotificationAsRead(id) {
+        return Axios.post(`api/notifications/${id}/read`)
+
+    }
+    
 
     return {
         logoImage,
@@ -103,6 +121,10 @@ export const useAppStore = defineStore('useAppStore', () => {
         authToken,
         commission,
 
-        profileUpdated
+        profileUpdated,
+
+        unreadNotifications,
+        fetchUnreadNotifications,
+        markNotificationAsRead
     };
 });

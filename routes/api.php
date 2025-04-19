@@ -34,6 +34,7 @@ use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
+use App\Http\Controllers\NotificationController;
 
 
  
@@ -60,6 +61,8 @@ Route::middleware('auth:api')
         Route::get('/users/{id}', [UserController::class, 'show']);
         Route::resource('/delete-instructor', UserController::class );
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
+        Route::post('/profile-image/update', [UserController::class, 'profileImageUpdate']);
+        Route::post('/remove-image', [UserController::class, 'profileImageRemove']);
 
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
         Route::get('/get-book/{slug}', [BookController::class, 'getBook']);
@@ -140,18 +143,6 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
         });
 
-// Route::middleware('auth:api')->group(function () {
-//         Route::get('/chat/{meetingId}', [ChatController::class, 'index']);
-//         Route::post('/chat', [ChatController::class, 'store']);
-//         });
-
-// Route::middleware('auth:api')->group(function () {
-//         Route::post('/meetings', [MeetingController::class, 'create']);
-//         Route::post('/meetings/join', [MeetingController::class, 'join']);
-//         Route::post('/meetings/end', [MeetingController::class, 'end']);
-//     });
-
-
 Route::middleware('auth:api')
     ->prefix('books')
     ->group(function(){
@@ -185,5 +176,10 @@ Route::middleware(['auth:api'])->group(function () {
     // All authenticated users can view logos
     Route::get('/logos', [LogoController::class, 'index']);
     Route::get('/logos/{logo}', [LogoController::class, 'show']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
 
 });
