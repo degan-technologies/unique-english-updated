@@ -10,12 +10,15 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Services\LangService;
 use App\Services\SMSService;
+use App\Traits\AdminActivityLog;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Response;
 class SMSController extends Controller
 {
+    use AdminActivityLog;
     protected $smsService;
     protected $langService;
 
@@ -29,8 +32,18 @@ class SMSController extends Controller
     /**
      * Send a single message (SMS or Email) based on user region.
      */
-    public function sendSMS(Request $request)
-    {
+    public function sendSMS(Request $request) {
+        $admin = User::query()
+            ->has('systemAdmin')
+            ->where('id', Auth::id())
+            ->first();
+        
+        if (!$admin) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
         $validationRules = [
             'user_id' => 'required|exists:users,id',
             'message' => 'required|string',
@@ -43,17 +56,13 @@ class SMSController extends Controller
                 'message' => $validator->errors()->all()[0],
                 'errors' => $validator->errors()
             ], 422);
-        }
-
-        // Retrieve the user
+        } 
         $user = User::findOrFail($request->user_id);
-
-        // Check if user has required contact info
+ 
         if (!$user->phone && !$user->email) {
             return response()->json(['error' => 'User does not have a valid phone number or email.'], 400);
         }
-
-        // Create a new message record with 'pending' status
+ 
         $messageRecord = Message::create([
             'user_id' => $user->id,
             'message' => $request->message,
@@ -62,10 +71,8 @@ class SMSController extends Controller
 
         $response = [];
         $newStatus = 'failed';
-
-        // Determine sending method based on region
+ 
         if ($user->phone && Str::startsWith($user->phone, '+251')) {
-            // Ethiopia: Send via SMS
             if (!$user->phone) {
                 $response = ['success' => false, 'error' => 'User does not have a valid phone number.'];
             } else {
@@ -73,7 +80,6 @@ class SMSController extends Controller
                 $newStatus = $response['success'] ? 'sent' : 'failed';
             }
         } else {
-            // Outside Ethiopia: Send via Email
             if (!$user->email) {
                 $response = ['success' => false, 'error' => 'User does not have a valid email.'];
             } else {
@@ -88,10 +94,9 @@ class SMSController extends Controller
                     $response = ['success' => false, 'error' => $e->getMessage()];
                 }
             }
-        }
-
-        // Update message status
+        } 
         $messageRecord->update(['status' => $newStatus]);
+        $this->adminActivities('send message');
 
         return response()->json([
             'message' => 'Message request processed',

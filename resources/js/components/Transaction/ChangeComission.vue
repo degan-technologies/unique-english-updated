@@ -28,7 +28,6 @@
     onMounted(()=>{
         getCurrentComission();
     })
-
 </script>
 
 <template>
@@ -37,7 +36,10 @@
             <div class="text-3xl text-purple-500 mr-2">
                 💲
             </div>
-            <h2 class="text-xl font-semibold">Commission Settings</h2>
+            <div>
+                <h2 class="text-xl font-semibold">Commission Settings</h2>
+                <p class="text-sm text-gray-500">the platform revenue can be collected by this rate so it is accountable for</p>
+            </div>
         </div>
         <div class="space-y-4">
             <div>

@@ -35,9 +35,9 @@ use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Notifications\EmailNotificationController;
+use App\Http\Controllers\System\HeroController;
 
-
- 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
 
@@ -135,12 +135,16 @@ Route::middleware('auth:api')
         Route::post('{id}/report', [FeedBackController::class, 'report']);
     });
 
-    // SMS endpoints added here
+// SMS endpoints added here 
 Route::middleware('auth:api')->group(function () {
+
         Route::post('/send-sms', [SMSController::class, 'sendSMS']);
         Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
         Route::post('/send-otp', [SMSController::class, 'sendOTP']);
         Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
+
+        Route::post('/email-notification', [EmailNotificationController::class, 'sedEmailNotification']);
+        Route::get('/created-announcements', [EmailNotificationController::class, 'getAnnouncements']);
         });
 
 Route::middleware('auth:api')
@@ -181,5 +185,9 @@ Route::middleware(['auth:api'])->group(function () {
     Route::post('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
+    //system information
+    Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
+    Route::get('/hero-section', [HeroController::class, 'index']);
+    Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
 
 });

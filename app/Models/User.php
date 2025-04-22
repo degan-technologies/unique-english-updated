@@ -17,12 +17,15 @@ use App\Models\Role\SystemAdmin;
 use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
+use App\Models\Logs\AdminActivityLog;
+use App\Models\Notifications\EmailNotification;
 use App\Models\Quiz\Answer;
 use App\Models\Quiz\Quiz;
 use App\Models\Quiz\Result;
 use App\Models\Quiz\QASection;
 use App\Models\Quiz\QMetaData;
 use App\Models\Quiz\QuizAnswer;
+use App\Models\System\Hero;
 use App\Models\System\PlatformComission;
 use App\Models\System\PlatformComissionHistory;
 use App\Models\Transaction\Transaction;
@@ -131,9 +134,11 @@ class User extends Authenticatable {
     public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
 
     public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
-    public function notifications() {
-        return $this->morphMany(DatabaseNotification::class, 'notifiable');
-    }
+    public function notifications() { return $this->morphMany(DatabaseNotification::class, 'notifiable'); }
+    public function hero() { return $this->hasOne(Hero::class); }
+    public function adminActivityLogs() { return $this->hasMany(AdminActivityLog::class); }
+    public function emailNotifications() { return $this->hasMany(EmailNotification::class); }
+
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){
             $userId = Auth::id();

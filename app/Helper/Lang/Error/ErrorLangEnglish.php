@@ -383,8 +383,21 @@ class ErrorLangEnglish extends Lang {
                 'fee.numeric' => 'fee must be a number',
             ],
 
+            'heroMessages' => [
+                'title.string' => 'Title must be a string',
+                'title.max' => 'Title cannot exceed 255 characters',
+                'description.string' => 'Description must be a string',
+                'description.max' => 'Description cannot exceed 1000 characters',
+                'logo.image' => 'Image must be an image file',
+                'banner.image' => 'Banner must be an image file', 
+            ],
 
-
+            'email_notification' => [
+                'subject.required' => 'Subject is required',
+                'subject.string' => 'Subject must be a string',
+                'message.required' => 'Message is required',
+                'message.string' => 'Message must be a string', 
+            ],
 
         ];
 

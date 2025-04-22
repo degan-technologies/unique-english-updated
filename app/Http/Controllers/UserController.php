@@ -12,6 +12,7 @@ use App\Http\Resources\userResource;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Services\LangService;
+use App\Traits\AdminActivityLog;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Container\Attributes\Storage;
@@ -25,6 +26,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cookie;
 
 class UserController extends Controller {
+
+    use AdminActivityLog;
 
     /**
      * get error traslation and success beased on the language
@@ -292,16 +295,12 @@ class UserController extends Controller {
             $user->email      = $request->email;
             $user->first_name = $request->first_name;
             $user->middle_name = $request->middle_name;
-
-            // Generate a random password and hash it
-            $randomPassword = Str::random(8); // Adjust length as needed
+ 
+            $randomPassword = Str::random(8); 
             $user->password = Hash::make($randomPassword);
-
-            // Store the plain text password temporarily for display purposes.
-            // Make sure you have a 'temp_password' column in your 'users' table.
+ 
             $user->temp_password = $randomPassword;
-
-            // Default role is Instructor
+ 
             $user->role = INSTRUCTOR;
             $user->save();
             $user->created_at = Carbon::now();
@@ -309,6 +308,8 @@ class UserController extends Controller {
             $instructor = new Instructor();
             $instructor->user_id = $user->id;
             $instructor->save();
+
+            $this->adminActivities('Add newn instractor name: ' . $user->first_name . 'and email ' . $user->email);
 
             DB::commit();
         } catch (Exception $e) {
@@ -399,6 +400,8 @@ class UserController extends Controller {
         ]);
 
         $user->delete();
+
+        $this->adminActivities('Delete user name: ' . $user->first_name . 'and email ' . $user->email);
 
         return response()->json([
             'message' => $this->langService->getLang('user_successfully_deleted')
@@ -575,6 +578,8 @@ class UserController extends Controller {
         $user->password = bcrypt($request->new_password);
         $user->save();
 
+        $this->adminActivities('password was changed');
+
         return response()->json([
             'message' => $this->langService->getLang('password_changed')
         ]);
@@ -586,8 +591,7 @@ class UserController extends Controller {
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function bulkDelete(Request $request)
-    {
+    public function bulkDelete(Request $request) {
         $validator = Validator::make($request->all(), [
             'ids'   => 'required|array',
             'ids.*' => 'exists:users,id',
@@ -600,12 +604,12 @@ class UserController extends Controller {
             ], 422);
         }
 
-        $userIds = $request->ids;
-
-        // Update each selected user's 'user_banned_at' field to mark them as "deleted"
+        $userIds = $request->ids; 
         User::whereIn('id', $userIds)->update([
             'user_banned_at' => Carbon::now()
         ]);
+
+        $this->adminActivities('Bulk banned ' . count($userIds) . ' users');
 
         return response()->json([
             'message' => $this->langService->getLang('user_successfully_deleted')

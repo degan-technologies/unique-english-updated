@@ -5,6 +5,7 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\LangService;
+use App\Traits\AdminActivityLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class PlatformComissionController extends Controller {
+
+    use AdminActivityLog;
     /**
      * get error traslation and success beased on the language 
      * localized 
@@ -72,6 +75,7 @@ class PlatformComissionController extends Controller {
                 ]);
 
                 $this->storeHistory($platformComission);
+                $this->adminActivities('Updated platform comission');
 
             DB::commit();
         } catch (\Exception $e) {

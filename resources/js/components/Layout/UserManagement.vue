@@ -119,13 +119,10 @@
     async function confirmDelete() {
         try {
             const response = await axios.delete(`/api/delete-instructor/${modalUser.value.id}`)
-            alert(response.data.message)
             console.log('Delete response:', response.data)
             fetchUsers()
             closeModal()
-        } catch (error) {
-            console.error('Error deleting user:', error)
-            alert('Error deleting user')
+        } catch (error) { 
         }
     }
     function openMessageModal(user) {
@@ -138,7 +135,6 @@
     }
     async function sendMessage() {
         if (messageText.value.trim() === '') {
-            alert("Message cannot be empty.")
             return
         }
         try {
@@ -147,25 +143,18 @@
                     user_id: modalUser.value.id,
                     message: messageText.value
                 }
-                const response = await axios.post('/api/send-sms', payload)
-                alert(`Message sent to ${modalUser.value.first_name} ${modalUser.value.middle_name}: ${messageText.value}`)
-                console.log('Single SMS response:', response.data)
+                const response = await axios.post('/api/send-sms', payload) 
             } else {
-                if (selectedUsers.value.length === 0) {
-                    alert("No users selected for bulk messaging.")
+                if (selectedUsers.value.length === 0) { 
                     return
                 }
                 const payload = {
                     user_ids: selectedUsers.value,
                     message: messageText.value
                 }
-                const response = await axios.post('/api/send-bulk-sms', payload)
-                alert(`Bulk message sent to ${selectedUsers.value.length} users.`)
-                console.log('Bulk SMS response:', response.data)
+                const response = await axios.post('/api/send-bulk-sms', payload)  
             }
-        } catch (error) {
-            console.error("Error sending SMS:", error)
-            alert("Error sending SMS. Please try again later.")
+        } catch (error) { 
         }
         messageText.value = ''
         showMessageModal.value = false
@@ -200,14 +189,10 @@
         const confirmAction = confirm(`Are you sure you want to delete ${selectedUsers.value.length} selected users?`)
         if (!confirmAction) return
         try {
-            const response = await axios.post('/api/users/bulk/delete', { ids: selectedUsers.value })
-            alert(response.data.message)
-            console.log('Bulk delete response:', response.data)
+            const response = await axios.post('/api/users/bulk/delete', { ids: selectedUsers.value })  
             fetchUsers()
             clearSelection()
-        } catch (error) {
-            console.error('Error in bulk delete:', error)
-            alert('Error in bulk delete action')
+        } catch (error) { 
         }
     } 
 
@@ -233,8 +218,7 @@
         try {
             const response = await axios.get(`/api/users/${user.id}/activity-log`)
             activityLogDetails.value = response.data.data || []
-        } catch (error) {
-            console.error('Error fetching activity log:', error)
+        } catch (error) { 
             activityLogDetails.value = user.activity || []
         }
         showActivityLogModal.value = true

@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Services\LangService;
+use App\Traits\AdminActivityLog;
 use Illuminate\Http\Request;
-
-use App\Traits\LogsActivity;
+ 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller {
 
     protected $langService;
-    use LogsActivity;
+    use AdminActivityLog;
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
@@ -64,6 +64,8 @@ class AuthController extends Controller {
 
         $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
 
+        $this->adminActivities('login');
+
         return response()->json([
             'message' => 'Login successful',
             'token' => $token
@@ -101,6 +103,8 @@ class AuthController extends Controller {
     public function logout(Request $request) {
         $request->user()->token()->revoke();
         $cookie = Cookie::forget('authToken');
+
+        $this->adminActivities('logout');
 
         return response()->json([
             'message' => $this->langService->getLang('logged_out')

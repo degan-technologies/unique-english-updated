@@ -18,6 +18,7 @@
     onMounted(() => { 
         appStore.fetchUserInfo();
         appStore.fetchFrontLanguages();
+        appStore.getHeroSection();
     })
 
 </script>

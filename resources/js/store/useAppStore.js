@@ -15,6 +15,10 @@ export const useAppStore = defineStore('useAppStore', () => {
     const commission = ref(commission);
     const profileUpdated = ref(false);
 
+    //hero section 
+
+    const hero = ref({});
+
     // Use js-cookie to store token and login status
     const authToken = ref(Cookies.get('authToken') || '');
     const loggedIn = ref(Cookies.get('loggedin') === 'true');  // Cookies store boolean as string
@@ -95,9 +99,20 @@ export const useAppStore = defineStore('useAppStore', () => {
             console.error('Error fetching unread notifications:', error);
         }
     }
+
     function markNotificationAsRead(id) {
         return Axios.post(`api/notifications/${id}/read`)
 
+    }
+
+    function getHeroSection() {
+        Axios
+        .get('/api/hero-section')
+        .then(res => {
+            hero.value = {...res.data.data}
+            logoImage.value = hero.value.logo;
+            return;
+        });
     }
     
 
@@ -125,6 +140,9 @@ export const useAppStore = defineStore('useAppStore', () => {
 
         unreadNotifications,
         fetchUnreadNotifications,
-        markNotificationAsRead
+        markNotificationAsRead,
+
+        hero,
+        getHeroSection,
     };
 });
