@@ -22,6 +22,7 @@ class CustomerInfoResource extends JsonResource
             'email'       => $this->email,
             'first_name'   => $this->first_name,
             'middle_name'       => $this->middle_name,
+            'temp_password' => $this->temp_password ?? null,
             'phone'       => $this->phone,
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)

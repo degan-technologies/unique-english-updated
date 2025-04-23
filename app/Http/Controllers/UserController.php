@@ -49,7 +49,7 @@ class UserController extends Controller {
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
+                $q->orWhere('first_name', 'like', "%{$search}%")
                     ->orWhere('middle_name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('role', 'like', "%{$search}%");

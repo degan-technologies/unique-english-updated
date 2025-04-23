@@ -48,6 +48,8 @@ Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 's
 Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
 Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 
+Route::get('/hero-section', [HeroController::class, 'index']);
+
 Route::middleware('auth:api')
     ->group(function () {
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
@@ -187,7 +189,6 @@ Route::middleware(['auth:api'])->group(function () {
 
     //system information
     Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
-    Route::get('/hero-section', [HeroController::class, 'index']);
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
-
+    
 });

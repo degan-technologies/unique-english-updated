@@ -5,6 +5,7 @@ namespace App\Traits;
 use App\Http\Resources\Logs\AdminActivityLogResource;
 use App\Models\ActivityFeed;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 trait AdminActivityLog {
@@ -34,6 +35,23 @@ trait AdminActivityLog {
         return;         
     }
 
+    public function studentActivities($activity) {
+
+        $user = User::query()
+            ->has('student')
+            ->where('id', Auth::id())
+            ->first();
+
+        if (!$user) {
+            return;
+        }
+
+        $user->adminActivityLogs()->create([
+            'activity' => $activity,
+        ]);
+
+        return;
+    }
 
     /**
      * Get the activity logs for the authenticated user.
@@ -41,13 +59,21 @@ trait AdminActivityLog {
      * @return \Illuminate\Database\Eloquent\Collection
      */
 
-    public function getActivityLogs() {
+    public function getActivityLogs(Request $request) {
 
+        $id = $request->query('id');
         /**
          * @var User User
          */
+        
 
-        $user =Auth::user();
+         if($id == null) {
+            $id = Auth::id();
+         }
+
+        $user = User::query()
+            ->where('id', $id)
+            ->first();
 
         $logs =  $user->adminActivityLogs()
             ->orderBy('created_at', 'desc')

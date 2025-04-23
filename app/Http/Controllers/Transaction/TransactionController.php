@@ -16,8 +16,8 @@ use App\Models\Transaction\Transfer;
 use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
-use Carbon\Carbon;
-use App\Traits\LogsActivity;
+use Carbon\Carbon; 
+use App\Traits\AdminActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +37,8 @@ class TransactionController extends Controller {
      */
     protected $langService;
     protected $chapaService;
-    use LogsActivity;
+    use AdminActivityLog
+    ;
 
     public function __construct(LangService $langService, ChapaService $chapaService) {
         $this->langService = $langService;
@@ -163,6 +164,14 @@ class TransactionController extends Controller {
                     'message' => $response['message']
                 ], 500);
                }
+
+               $this->studentActivities( $user->first_name . ' ' . $user->last_name . ' enrolled at'.Carbon::now()->format('Y-m-d H:i:s') . ' with transaction ID: ' . $txRef);
+                
+                $user->notify(new TransactionSuccessfulNotification($txRef, $totalPrice));
+                $admins = User::whereHas('systemAdmin')->get();
+                    foreach ($admins as $admin) {
+                        $admin->notify(new TransactionSuccessfulNotification($txRef, $totalPrice));
+                    }
         
             DB::commit();
         } catch (\Exception $e) {
@@ -171,8 +180,6 @@ class TransactionController extends Controller {
                 'message' => $e->getMessage()
             ], 500);
         }
-
-        $this->logActivity('enroll', 'User enrolled in course', 'User enrolled in course ID: ' . $request->course_id, $request->course_id);
         
         return response()->json([
             'message' => $this->langService->getLang('payment_initiated'),
@@ -311,8 +318,6 @@ class TransactionController extends Controller {
                 if( !$cheDepostitHistory) {
                     $this->transferHistory($transaction, DEPOSIT, $totalPrice );
                 }
- 
-
 
             DB::commit();
 

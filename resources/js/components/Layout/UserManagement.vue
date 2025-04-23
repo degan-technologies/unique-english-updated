@@ -54,40 +54,17 @@
         fetchUsers()
     })
 
-    // --- Computed Properties ---
-    const filteredUsers = computed(() => {
-        return users.value.filter((user) => {
-            const matchesSearch =
-                (`${user.first_name} ${user.middle_name || ''}`)
-                    .toLowerCase()
-                    .includes(searchQuery.value.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                user.role.toLowerCase().includes(searchQuery.value.toLowerCase())
-            const matchesRole = filters.value.role ? user.role === filters.value.role : true
-            const matchesStatus = filters.value.status ? user.status === filters.value.status : true
-            const matchesJoinDate =
-                (!filters.value.joinDateFrom || user.joinDate >= filters.value.joinDateFrom) &&
-                (!filters.value.joinDateTo || user.joinDate <= filters.value.joinDateTo)
-            const matchesProgress =
-                user.role !== 'Student' || user.progress >= filters.value.progress
-            return matchesSearch && matchesRole && matchesStatus && matchesJoinDate && matchesProgress
-        })
-    })
     const paginatedUsers = computed(() => {
         const start = (currentPage.value - 1) * rowsPerPage.value
-        return filteredUsers.value.slice(start, start + rowsPerPage.value)
+        return users.value.slice(start, start + rowsPerPage.value)
     })
     const totalPages = computed(() => {
-        return Math.ceil(filteredUsers.value.length / rowsPerPage.value) || 1
+        return Math.ceil(users.value.length / rowsPerPage.value) || 1
     })
     const showTempPasswordColumn = computed(() => {
         return users.value.some(user => user.role === 'INSTRUCTOR_ROLE')
     })
 
-    // --- Methods ---
-    function onSearch() {
-        currentPage.value = 1
-    }
 
     function toggleMark(id) {
         if (!selectedUsers.value.includes(id)) {
@@ -99,7 +76,7 @@
     }
 
     function toggleMarkAll() {
-        filteredUsers.value.map(user => {
+        users.value.map(user => {
             selectedUsers.value.push(user.id);
         });
     }
@@ -207,7 +184,7 @@
         }
     }
     watch(selectedUsers, () => {
-        masterSelected.value = filteredUsers.value.every(user => selectedUsers.value.includes(user.id))
+        masterSelected.value = users.value.every(user => selectedUsers.value.includes(user.id))
     })
     watch(rowsPerPage, () => {
         currentPage.value = 1
@@ -216,7 +193,11 @@
     async function openActivityLogModal(user) {
         activityLogUser.value = user
         try {
-            const response = await axios.get(`/api/users/${user.id}/activity-log`)
+            const response = await axios.get(`/api/activity-logs/`,{
+                params:{
+                    id:user.id
+                }
+            })
             activityLogDetails.value = response.data.data || []
         } catch (error) { 
             activityLogDetails.value = user.activity || []
@@ -250,7 +231,7 @@
             <!-- Search, Filter, and Add User -->
             <div class="mt-4 md:mt-0 flex items-center space-x-2 w-full md:w-auto">
                 <div class="relative flex-1 md:flex-none">
-                    <input v-model="searchQuery" @input="onSearch" type="text"
+                    <input v-model="searchQuery" @input="fetchUsers()" type="text"
                         placeholder="Search by name, email, or role…"
                         class="w-full border border-gray-300 rounded-full py-2 px-4 pl-10 focus:outline-none focus:border-lime-700" />
                     <svg class="w-5 h-5 absolute left-3 top-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -333,8 +314,9 @@
                                             </p>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap  text-sm text-gray-500"> 
                                         <div class="text-sm text-gray-700">{{ user.email }}</div>
+                                        <div class="text-xs text-lime-700 py-1"> <span class="font-bold text-gray-700">Generated Password:</span> {{ user.temp_password ? user.temp_password : 'Changed' }}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         <div class="text-sm text-gray-700">{{ user.engagement }}</div>
@@ -522,16 +504,27 @@
         <transition name="fade">
             <div v-if="showActivityLogModal"
                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-                <div class="bg-white rounded shadow-lg w-96 p-6">
+                <div class="bg-white rounded shadow-lg md:w-2xl p-6">
                     <h3 class="text-xl font-bold mb-4">
                         Activity Log for {{ activityLogUser.first_name }} {{ activityLogUser.middle_name }}
                     </h3>
-                    <div v-if="activityLogDetails.length">
-                        <ul class="list-disc pl-5 mt-2 text-sm text-gray-700">
-                            <li v-for="(log, index) in activityLogDetails" :key="index">
-                                {{ log }}
-                            </li>
-                        </ul>
+                    <div v-if="activityLogDetails.length"
+                        class="h-[50] overflow-hidden overflow-y-auto scrollbar">
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="py-2 text-left">Timestamp</th>
+                                    <th class="py-2 text-left">Activity</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(log, index) in activityLogDetails" :key="index"
+                                    class="border-b hover:bg-gray-50">
+                                    <td class="py-2 pr-6">{{ log.created_at }}</td>
+                                    <td class="py-2">{{ log.activity }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                     <div v-else class="text-sm text-gray-600">
                         No activity found.
