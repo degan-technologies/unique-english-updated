@@ -1,5 +1,6 @@
 const mix = require('laravel-mix');
 const path = require('path');
+const webpack = require('webpack');
 
 /*
  |--------------------------------------------------------------------------
@@ -11,6 +12,18 @@ const path = require('path');
  | file for the application as well as bundling up all the JS files.
  |
  */
+
+ mix.webpackConfig({
+  plugins: [
+    new webpack.DefinePlugin({
+      'process.env': {
+        MIX_JITSI_APP_ID: JSON.stringify(process.env.MIX_JITSI_APP_ID)
+      }
+    })
+  ]
+});
+
+
 mix.alias({
     '@': path.join(__dirname, 'resources/js'),
 });

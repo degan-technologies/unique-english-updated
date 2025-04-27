@@ -14,8 +14,12 @@ return [
     | To learn more: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     |
     */
-
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'jitsi/*'],
+    'allowed_origins' => [
+        env('APP_URL'),
+        'https://8x8.vc',
+        'https://*.8x8.vc'
+    ],
 
     'allowed_methods' => ['*'],
 

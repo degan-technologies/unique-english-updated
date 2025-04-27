@@ -65,6 +65,17 @@ return [
         'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
         'redirect'      => env('LINKEDIN_REDIRECT_URI'),
     ],
-    
+
+    'jitsi' => [
+        'app_id' => env('JITSI_APP_ID'),
+        'sub' => env('JITSI_SUB_DOMAIN'),
+        'private_key_path' => env('JITSI_PRIVATE_KEY_PATH', 'jaas_private_key.pk'),
+        'private_key_fullpath' => storage_path(
+            'app/keys/' . env('JITSI_PRIVATE_KEY_PATH', 'jaas_private_key.pk')
+        ),
+        'kid' => env('JITSI_KID'),
+        'algorithm' => 'RS256',
+        'aud'  => 'jitsi',
+    ],
 
 ];

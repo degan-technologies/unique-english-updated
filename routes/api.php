@@ -32,11 +32,13 @@ use App\Http\Controllers\Test\TestController;
 use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
+use App\Http\Controllers\JitsiController;
 use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
 use App\Http\Controllers\System\HeroController;
+use Firebase\JWT\JWT;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -192,3 +194,6 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
     
 });
+
+Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
+ 

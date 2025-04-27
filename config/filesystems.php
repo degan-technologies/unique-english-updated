@@ -57,6 +57,11 @@ return [
             'throw' => false,
         ],
 
+        'jitsi_keys' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/keys'),
+        ],
+
     ],
 
     /*

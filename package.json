@@ -17,6 +17,7 @@
         "@fortawesome/vue-fontawesome": "^3.0.8",
         "@heroicons/vue": "^2.2.0",
         "@icon-park/vue-next": "^1.4.2",
+        "@jitsi/web-sdk": "^0.2.0",
         "@tailwindcss/typography": "^0.5.16",
         "@videojs/http-streaming": "^3.17.0",
         "@vueuse/components": "^12.3.0",
