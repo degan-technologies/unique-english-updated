@@ -12,7 +12,19 @@ class ScheduleResource extends JsonResource {
             'day' => $this->day,
             'time' => $this->time,
             'user_id' => $this->user_id,
+            'status' => $this->status,
+            'schedule_time' => $this->schedule_time,
             'created_at' => $this->created_at->toDateTimeString(),
+            'color' => $this->sessionStatusClass($this->status),
         ];
     }
+
+    public function sessionStatusClass($status) {
+
+    if ($status === LIVE) return "bg-green-500 text-white";
+    if ($status === CANCELLED) return "bg-red-500 text-white";
+    if ($status === COMPLETED) return "bg-blue-500 text-white";
+
+    return "bg-yellow-500 text-white";
+}
 }

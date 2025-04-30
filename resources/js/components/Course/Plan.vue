@@ -21,7 +21,7 @@ const fetchPlans = async () => {
     } catch (err) {
         console.error("Error fetching plans:", err);
         error.value = "Failed to fetch plans.";
-    } finally {
+    } finally {p
         loading.value = false;
     }
 };

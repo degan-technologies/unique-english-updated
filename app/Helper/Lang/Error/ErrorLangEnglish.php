@@ -128,6 +128,8 @@ class ErrorLangEnglish extends Lang {
             'comission_added' => 'platform comission is added',
             'comission_error' => 'comission error',
 
+            'transaction_not_successful' => 'Transaction not successful',
+
             'registration' => [
                 'email.required' => 'Email is required',
                 'phone.required' => 'phone number is required',
@@ -397,6 +399,22 @@ class ErrorLangEnglish extends Lang {
                 'subject.string' => 'Subject must be a string',
                 'message.required' => 'Message is required',
                 'message.string' => 'Message must be a string', 
+            ],
+
+            'plans' => [
+                'name.required' => 'Name is required',
+                'name.string' => 'Name must be a string',
+                'name.unique' => 'Name must be unique',
+                'price.required' => 'Price is required',
+                'price.numeric' => 'Price must be a number',
+            ],
+
+            'schedules' => [
+                'day.required' => 'Day is required',
+                'day.string' => 'Day must be a string',
+                'time.required' => 'Time is required',
+                'time.string' => 'Time must be a string',
+                'time.unique' => 'Time must be unique',
             ],
 
         ];

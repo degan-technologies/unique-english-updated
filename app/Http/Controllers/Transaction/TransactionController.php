@@ -9,8 +9,8 @@ use App\Http\Resources\Transaction\TransactionResource;
 use App\Notifications\TransactionSuccessfulNotification;
 
 use App\Models\Book\Book;
-use App\Models\Course\Course;
-use App\Models\Live\Live;
+use App\Models\Course\Course; 
+use App\Models\Plan\Plan;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\Transfer;
 use App\Models\User;
@@ -94,11 +94,11 @@ class TransactionController extends Controller {
                         case BOOK:
                             $model = new  Book();
                             break;
-                        case LIVE:
-                            $model = new Live();
+                        case LIVE_CLASS:
+                            $model = new Plan();
                             break;
                     }
-
+                    
                     $order = $model->query()
                         ->where('slug', $item['slug'])
                         ->first();
@@ -135,6 +135,7 @@ class TransactionController extends Controller {
                             'customer_id' => $user->id,
                             'status' => TRANSACTION_PENDING,
                             'product_type' => $item['type'],
+                            'live_price_type' => $item['live_price_type'] ?? 'notLive',
                             'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
                         ]);
                     }

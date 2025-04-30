@@ -19,12 +19,14 @@ use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
 use App\Models\Logs\AdminActivityLog;
 use App\Models\Notifications\EmailNotification;
+use App\Models\Plan\Plan;
 use App\Models\Quiz\Answer;
 use App\Models\Quiz\Quiz;
 use App\Models\Quiz\Result;
 use App\Models\Quiz\QASection;
 use App\Models\Quiz\QMetaData;
 use App\Models\Quiz\QuizAnswer;
+use App\Models\Schedule\Schedule;
 use App\Models\System\Hero;
 use App\Models\System\PlatformComission;
 use App\Models\System\PlatformComissionHistory;
@@ -112,6 +114,7 @@ class User extends Authenticatable {
     public function courseContents() { return $this->hasMany(CourseContent::class); }
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function transaction() { return $this->hasMany(Transaction::class); }
+    public function plans() { return $this->hasMany(Plan::class); }
 
     public function quizzes() { return $this->hasMany(Quiz::class);}
     public function quizAnswers() { return $this->hasMany(QuizAnswer::class);}
@@ -138,6 +141,8 @@ class User extends Authenticatable {
     public function hero() { return $this->hasOne(Hero::class); }
     public function adminActivityLogs() { return $this->hasMany(AdminActivityLog::class); }
     public function emailNotifications() { return $this->hasMany(EmailNotification::class); }
+    public function schedules() { return $this->hasMany(Schedule::class); }
+
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){

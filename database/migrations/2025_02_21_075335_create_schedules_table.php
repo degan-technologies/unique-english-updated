@@ -8,9 +8,12 @@ return new class extends Migration {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
             $table->string('day');
-            $table->time('time');
-            $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->string('schedule_time');
+            $table->string('status')->default('scheduled');
             $table->timestamps();
+
+            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('assign_id')->nullable()->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

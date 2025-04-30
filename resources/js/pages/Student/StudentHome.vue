@@ -20,6 +20,7 @@
     import CourseDetail from "@/components/Course/CourseDetail.vue";
     import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
     import MyCourse from "@/components/Course/EnrolledManagement.vue";
+    import MeetingAction from "@/components/Live/MeetingAction.vue";
 
     const appStore = useAppStore();
     const AuthStore = useAuthStore();
@@ -119,12 +120,13 @@
                     <Pdf/>
                 </div>
                 <div v-else-if="currentTab.tab == liveSchedulTab">
-                    <Schedule />
+                    <!-- <Schedule /> -->
+                    <LiveStreamingVue />
                 </div>
                 <div v-else-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard @mousemove="togglehover" />
-                    <LiveStreamingVue />
+                    <MeetingAction/>
                     <Book />
                     <QuizReader />
                     <certificate/>

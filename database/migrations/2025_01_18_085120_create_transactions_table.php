@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('payment_method')->nullable();
             $table->string('product_type');
             $table->string('currency')->default('ETB');
+            $table->string('live_price_type')->default('notLive');
 
             $table->string('tx_ref');
             $table->string('payment_url')->nullable();
@@ -38,7 +39,7 @@ return new class extends Migration
 
             $table->foreignId('course_id')->nullable()->constrained('courses')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('book_id')->nullable()->constrained('books')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('live_id')->nullable()->constrained('lives')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('plan_id')->nullable()->constrained('plans')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

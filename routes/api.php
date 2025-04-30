@@ -33,6 +33,7 @@ use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\JitsiController;
+use App\Http\Controllers\Live\LiveController;
 use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
@@ -51,6 +52,7 @@ Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'strea
 Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 
 Route::get('/hero-section', [HeroController::class, 'index']);
+Route::get('/get-plans',[ PlanController::class, 'index']);
 
 Route::middleware('auth:api')
     ->group(function () {
@@ -105,8 +107,8 @@ Route::middleware('auth:api')
     Route::resource('plans', PlanController::class);
     Route::resource('QASection', QASectionController::class);
     Route::resource('answers', AnswerController::class);
-
-
+    Route::get('/my-schedule', [ScheduleController::class, 'getMySchedules']);  
+    Route::get('/my-participants', [LiveController::class, 'getParticipants']);   
     });
 
 Route::middleware('auth:api')
@@ -118,9 +120,8 @@ Route::middleware('auth:api')
         Route::post('/search', [CourseController::class, 'search']);
         Route::resource('/content', CourseContentController::class);
         Route::resource('/module', CourseModuleController::class);
-        Route::get('/my-courses/', [CourseController::class, 'myCourse']);
-        Route::get('/my-books/', [BookController::class, 'myBooks']);
-             
+        Route::get('/my-courses', [CourseController::class, 'myCourse']);
+        Route::get('/my-books', [BookController::class, 'myBooks']);
         });
         
 Route::middleware('auth:api')
@@ -141,7 +142,6 @@ Route::middleware('auth:api')
 
 // SMS endpoints added here 
 Route::middleware('auth:api')->group(function () {
-
         Route::post('/send-sms', [SMSController::class, 'sendSMS']);
         Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
         Route::post('/send-otp', [SMSController::class, 'sendOTP']);

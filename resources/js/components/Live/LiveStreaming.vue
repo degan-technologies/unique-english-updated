@@ -1,168 +1,134 @@
 <script setup>
-    import { ref } from "vue";
-    import { storeToRefs } from "pinia";
+import Axios from 'axios';
+import { ref } from 'vue';
+import { onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
+ 
+import { useAuthStore } from '@/store/useAuthStore';
+import { useAppStore } from '@/store/useAppStore';
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+import Spinner from "@/components/Layout/Spinner.vue";
+
+const loading = ref(true);
+const plans = ref([]);
+
+const appStore = useAppStore();
+const AuthStore = useAuthStore();
+const studentStore = UseStudentStore();
+
+const { liveSchedulTab } = storeToRefs(studentStore);
+const { isLoggedIn } = storeToRefs(appStore);
+const { showLoginForm } = storeToRefs(AuthStore);
+
+const fetchPlans = async () => { 
+     await Axios
+                .get("/api/get-plans")
+                .then(res=>{                        
+                    plans.value = res.data.data;
+                })  
+};
+
+function enrollCourse(item, price_type) {
     
-    import { useRoute, useRouter } from "vue-router";
+    if(!isLoggedIn.value) {
+        showLoginForm.value = true;
+        return;
+    }
 
-    import { UseStudentStore } from "@/store/UseStudentStore";
+    loading.value = true;
 
-    const studentStore = UseStudentStore();
-    
-    const {liveSchedulTab } = storeToRefs(studentStore);
-
-    const route = useRoute();
-    const router = useRouter()
-
-    function changeTab() {
-        console.log('fkldlkfjkjdfjdkf');
+    if (item.isMyLive) {
         router.push({
-            name: 'student',
-            query: {
-                tab:liveSchedulTab.value,
+            name: "student",
+            query: { tab: liveSchedulTab.value, slug: item.slug },
+        });
+        selectedCourseSlug.value = item.slug;
+        loading.value = false;
+        return;
+    }
+
+    const selectedItem = [{ type: "live", slug: item.slug, live_price_type:price_type }];
+    Axios
+        .post("/api/initiate-payment", { cartItems: selectedItem })
+        .then((res) => {
+            const newWindow = window.open("", "_blank");
+            if (newWindow) {
+                newWindow.location.href = res.data.checkout_url;
+            } else {
+                console.error("Popup blocked. Please allow popups for this site.");
             }
+            checkoutUrl.value = res.data.checkout_url;
+            loading.value = false;
+        })
+        .catch((error) => {
+            loading.value = false;
+            console.error("Payment initiation error:", error);
         });
     }
-</script>
+
+onMounted(()=>{
+    fetchPlans();
+    loading.value = false;
+})
+</script>   
 
 <template>
-    <div
-        class="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-gray-800"
-    >
-        <!-- Header Section -->
-        <header class="text-center mb-8 md:mb-12 px-4">
-            <h2 class="text-2xl md:text-4xl font-bold mb-4 text-lime-700">
-                Join Our Live Video Session
-            </h2>
-            <p class="text-base md:text-xl text-gray-600">
-                Experience real-time learning, discussions, and collaboration
-                from the comfort of your home.
-            </p>
-        </header>
-
-        <!-- Cards Section -->
-        <div
-            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-4 md:px-8 lg:px-16 w-full"
-        >
-            <!-- Card 1 -->
-            <div
-                class="relative bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300"
-            >
-                <div class="group relative overflow-hidden">
-                    <img
-                        src="/images/English-3.jpeg"
-                        alt="Basic English"
-                        class="w-full h-56 md:h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <!-- Always visible Live Badge -->
-                    <div
-                        class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1 bg-black text-white text-sm md:text-base font-semibold border-2 border-red-500 rounded-full animate-pulse"
-                    >
-                        <span
-                            class="w-3 h-3 bg-red-600 border border-white rounded-full"
-                        ></span>
-                        <span>Live</span>
-                    </div>
-                </div>
-                <div class="p-4 md:p-6">
-                    <h2 class="text-lg md:text-2xl font-semibold text-lime-700">
-                        Class Type: Private
-                    </h2>
-                    <p class="text-base md:text-lg text-gray-600 mb-4">
-                        Basic/Intermediate/Advanced English
-                    </p>
-                    <p class="text-lg font-bold text-lime-700 mb-4">
-                        Price: 12,000 Birr/Month
-                    </p>
-                    <button
-                        @click="changeTab"
-                        class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
-                    >
-                        Join Now
-                    </button>
-                </div>
+    <div class="w-[90%] my-24 mx-auto">
+        <div  v-if="loading"
+            class="flex justify-center items-center h-64">
+            <Spinner />
+        </div>
+        
+        <div v-if="!loading">
+            <div class="flex flex-col text-center py-4">
+                <h2 class="text-4xl text-gray-900 font-bold">Live Class Plan</h2>
+                <p class="text-gray-500 mb-6">Perfect for online learning sessions</p>
             </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3">
+                <div 
+                    v-for="plan in plans"
+                    :key="plan"
+                    class="flex flex-col items-center justify-center  my-8 px-4">
+                    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
+                        <div class="mb-6">
+                            <span class="text-4xl font-extrabold text-gray-900">{{ plan?.name }}</span> 
+                        </div>
 
-            <!-- Card 2 -->
-            <div
-                class="relative bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300"
-            >
-                <div class="group relative overflow-hidden">
-                    <img
-                        src="/images/English-4.webp"
-                        alt="Intermediate English"
-                        class="w-full h-56 md:h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <!-- Always visible Live Badge -->
-                    <div
-                        class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1 bg-black text-white text-sm md:text-base font-semibold border-2 border-red-500 rounded-full animate-pulse"
-                    >
-                        <span
-                            class="w-3 h-3 bg-red-600 border border-white rounded-full"
-                        ></span>
-                        <span>Live</span>
-                    </div>
-                </div>
-                <div class="p-4 md:p-6">
-                    <h2 class="text-lg md:text-2xl font-semibold text-lime-700">
-                        Class Type: Group
-                    </h2>
-                    <p class="text-base md:text-lg text-gray-600 mb-4">
-                        Basic/Intermediate/Advanced English
-                    </p>
-                    <p class="text-lg font-bold text-lime-700 mb-4">
-                        Price: 8,000 Birr/Month
-                    </p>
-                    <button
-                        @click="changeTab"
-                        class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
-                    >
-                        Join Now
-                    </button>
-                </div>
-            </div>
+                        <ul class="text-gray-600 mb-8 space-y-4">
+                            <li class="flex items-left justify-left gap-2">
+                                ✅ 10 Live Classes per Month
+                            </li> 
+                            <li class="flex items-left justify-left gap-2">
+                                ✅ Direct Chat with Instructor
+                            </li>
+                            <li class="flex items-left justify-left gap-2">
+                                ✅ Certificate upon Completion
+                            </li>
+                        </ul>
 
-            <!-- Card 3 -->
-            <div
-                class="relative bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300"
-            >
-                <div class="group relative overflow-hidden">
-                    <img
-                        src="/images/English-5.webp"
-                        alt="Advanced English"
-                        class="w-full h-56 md:h-64 object-cover transform group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <!-- Always visible Live Badge -->
-                    <div
-                        class="absolute top-4 left-4 flex items-center gap-2 px-3 py-1 bg-black text-white text-sm md:text-base font-semibold border-2 border-red-500 rounded-full animate-pulse"
-                    >
-                        <span
-                            class="w-3 h-3 bg-red-600 border border-white rounded-full"
-                        ></span>
-                        <span>Live</span>
+                        <span class="text-gray-500 text-lg font-bold">Join Our Live</span>
+                        <div class="flex flex-row gap-4 my-4 items-center justify-center w-full">
+                            <div class="w-full">
+                                <label class="block text-gray-700 font-medium py-2">{{ plan.one_to_one_price }} ETB</label>
+                                <button @click="enrollCourse(plan, 'individual')"
+                                    class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-3 rounded-full transition">
+                                    Individual
+                                </button>
+                            </div>
+                            <div class="w-full">
+                                <label class="block text-gray-700 font-medium py-2">{{ plan.group_price }} ETB</label>
+                                <button @click="enrollCourse(plan, 'group')"
+                                    class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-3 rounded-full transition">
+                                    Group
+                                </button>
+                            </div>
+                        <div>
+                        </div>
+                        </div>
                     </div>
-                </div>
-                <div class="p-4 md:p-6">
-                    <h2 class="text-lg md:text-2xl font-semibold text-lime-700">
-                        Class Type: All
-                    </h2>
-                    <p class="text-base md:text-lg text-gray-600 mb-4">
-                        Basic/Intermediate/Advanced English
-                    </p>
-                    <p class="text-lg font-bold text-lime-700 mb-4">
-                        Price: 15,000 Birr/Month
-                    </p>
-                    <button
-                        @click="changeTab()"
-                        class="w-full bg-lime-700 hover:bg-lime-800 text-white text-sm md:text-base font-medium px-4 py-2 rounded-lg shadow-lg transition-all duration-300"
-                    >
-                        Join Now
-                    </button>
                 </div>
             </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-/* No additional custom CSS required as Tailwind manages the animations and styles */
-</style>

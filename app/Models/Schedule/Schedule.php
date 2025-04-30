@@ -8,7 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Schedule extends Model {
     use HasFactory;
 
-    protected $fillable = ['day', 'time', 'user_id'];
+    protected $fillable = [
+        'day', 'time', 
+        'user_id', 'schedule_time'
+    ];
 
     public function user() {
         return $this->belongsTo(User::class);

@@ -22,7 +22,7 @@ const showModal = ref(false);
 const showDeleteModal = ref(false);
 const showAddSchedule = ref(false); 
 const selectedScheduleId = ref(null);
-const form = ref({ id: null, day: "", time: "" });
+const form = ref({ id: null, day: "", time: "", period: "AM" });
 const loading = ref(false);
 
 const currentPage = ref(1);
@@ -42,9 +42,24 @@ const fetchSchedules = async (url = "/api/schedules") => {
     }
 };
 
+const editSchedule = (schedule) => {
+    // Parse the time into hours, minutes, and period
+    const timeStr = schedule.schedule_time;
+    const [time, period] = timeStr.split(' ');
+    const [hours, minutes] = time.split(':');
+    
+    form.value = {
+        id: schedule.id,
+        day: schedule.day,
+        time: `${hours.padStart(2, '0')}:${minutes?.padStart(2, '0')}`,
+        period: period || 'AM'
+    };
+    showModal.value = true;
+};
+
 const updateSchedule = async () => {
-    const formattedTime = form.value.time.slice(0, 5);
     try {
+        const formattedTime = `${form.value.time} ${form.value.period}`;
         await Axios.put(`/api/schedules/${form.value.id}`, {
             day: form.value.day,
             time: formattedTime,
@@ -56,12 +71,6 @@ const updateSchedule = async () => {
         console.error("Error updating schedule:", error);
         toast.error("Error updating schedule!");
     }
-};
-
-const editSchedule = (schedule) => {
-    const timeValue = schedule.time.slice(0, 5);
-    form.value = { ...schedule, time: timeValue };
-    showModal.value = true;
 };
 
 const confirmDelete = (id) => {
@@ -80,14 +89,7 @@ const deleteSchedule = async () => {
         toast.error("Error deleting schedule!");
     }
 };
-
-const formatTime = (time) => {
-    const [hour, minute] = time.split(":");
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minute} ${ampm}`;
-};
-
+ 
 onMounted(() => {
     fetchSchedules();
 });
@@ -124,7 +126,7 @@ onMounted(() => {
                             :key="schedule.id"
                             class="border-b">
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ schedule.day }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatTime(schedule.time) }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{schedule.schedule_time }}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex justify-center gap-4">
                                 <!-- Edit Button -->
                                 <button @click="editSchedule(schedule)"
@@ -174,35 +176,71 @@ onMounted(() => {
         </div>
 
         <!-- Edit Modal -->
-        <div v-if="showModal"
-            class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn z-50">
+        <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn z-50">
             <div class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
                 <h2 class="text-xl font-bold mb-4 text-lime-700 flex items-center gap-2">
                     <i class="fas fa-edit"></i> Edit Schedule
                 </h2>
-                <label class="block mb-2 text-gray-700">Day:</label>
-                <select v-model="form.day"
-                    class="w-full border p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-lime-500">
-                    <option value=""
-                        disabled>Select a day</option>
-                    <option v-for="day in days"
-                        :key="day"
-                        :value="day">
-                        {{ day }}
-                    </option>
-                </select>
-                <label class="block mt-3 mb-2 text-gray-700">Time:</label>
-                <input v-model="form.time"
-                    type="time"
-                    class="w-full border p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-lime-500"
-                    step="3600" />
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700">Day</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                        <button
+                            v-for="day in days"
+                            :key="day"
+                            type="button"
+                            @click="form.day = day"
+                            :class="[
+                                'p-2 rounded-lg text-center transition-colors',
+                                form.day === day
+                                    ? 'bg-lime-700 text-white'
+                                    : 'bg-gray-100 hover:bg-lime-100'
+                            ]"
+                        >
+                            {{ day }}
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-gray-700">Time</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input
+                            v-model="form.time"
+                            type="text" 
+                            pattern="(0[0-9]|1[0-2]):[0-5][0-9]"
+                            placeholder="HH:MM"
+                            class="w-full border p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-lime-500"
+                        />
+                        <div class="flex gap-2">
+                            <button
+                                v-for="p in ['AM', 'PM']"
+                                :key="p"
+                                type="button"
+                                @click="form.period = p"
+                                :class="[
+                                    'flex-1 p-2 rounded-lg text-center transition-colors',
+                                    form.period === p
+                                        ? 'bg-lime-700 text-white'
+                                        : 'bg-gray-100 hover:bg-lime-100'
+                                ]"
+                            >
+                                {{ p }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="mt-4 flex justify-end gap-3">
-                    <button @click="showModal = false"
-                        class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all">
+                    <button
+                        @click="showModal = false"
+                        class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-all"
+                    >
                         Cancel
                     </button>
-                    <button @click="updateSchedule"
-                        class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-all">
+                    <button
+                        @click="updateSchedule"
+                        class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-all"
+                    >
                         Save
                     </button>
                 </div>

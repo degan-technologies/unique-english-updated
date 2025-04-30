@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Schedule;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Schedule\ScheduleResource;
 use App\Models\Schedule\Schedule;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Services\LangService;
-use Illuminate\Support\Facades\Auth;
+use App\Services\LangService; 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Auth;
 
 class ScheduleController extends Controller {
 
@@ -19,19 +20,27 @@ class ScheduleController extends Controller {
         $this->langService = $langService;
     }
 
-    public function index() {
-        // Fetch all schedules without filtering by user_id
+    public function index() { 
         $schedules = Schedule::all();
         return response()->json(['data' => ScheduleResource::collection($schedules)]);
     }
 
     public function store(Request $request) {
+
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return;
+        }
+
         $validationRules = [
             'day' => 'required',
             'time' => 'required',
         ];
 
-        $validator = Validator::make($request->all(), $validationRules);
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('schedules'));
 
         if ($validator->fails()) {
             return response()->json([
@@ -39,12 +48,11 @@ class ScheduleController extends Controller {
                 'errors' => $validator->errors(),
             ], 422);
         }
-
-        // Add the authenticated user's ID to the schedule
-        $schedule = Schedule::create([
+ 
+        $schedule = $user->schedules()->create([
             'day' => $request->day,
-            'time' => $request->time,
-            'user_id' => auth()->id(),  // Add user_id here
+            'time' => "10:00:00",
+            'schedule_time' => $request->time,
         ]);
 
         return response()->json([
@@ -54,8 +62,7 @@ class ScheduleController extends Controller {
     }
 
     public function show($id) {
-        try {
-            // Removed the user_id filter
+        try { 
             $schedule = Schedule::findOrFail($id);
             return response()->json(['data' => new ScheduleResource($schedule)]);
         } catch (ModelNotFoundException $e) {
@@ -66,28 +73,36 @@ class ScheduleController extends Controller {
     public function update(Request $request, $id) {
         try {
             // Removed the user_id filter
-            $schedule = Schedule::findOrFail($id);
+            $schedule = Schedule::query()
+                ->where('user_id', Auth::id())
+                ->where('schedule_time',  "!=", $request->time)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            if (!$schedule) {
+                return response()->json([
+                    'message' => $this->langService->getLang('schedules_not_found')
+                ], 404);
+            }
 
             $validationRules = [
                 'day' => 'required|string',
-                'time' => 'required|date_format:H:i',
+                'time' => 'required',
             ];
 
-            $validator = Validator::make($request->all(), $validationRules);
+            $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('schedules'));
 
             if ($validator->fails()) {
                 return response()->json([
                     'message' => $this->langService->getLang('validation_failed'),
                     'errors' => $validator->errors(),
                 ], 422);
-            }
-
-            if (Schedule::where('day', $request->day)->where('time', $request->time)->where('id', '!=', $id)->exists()) {
-                return response()->json(['message' => $this->langService->getLang('schedule_exists')], 409);
-            }
-
-            // Add the authenticated user's ID to the schedule during update (if needed)
-            $schedule->update(array_merge($request->only(['day', 'time']), ['user_id' => auth()->id()]));
+            } 
+ 
+            $schedule->update([
+                'day' => $request->day,
+                'schedule_time' => $request->time,
+            ]);
 
             return response()->json([
                 'message' => $this->langService->getLang('schedule_updated'),
@@ -108,5 +123,27 @@ class ScheduleController extends Controller {
         } catch (ModelNotFoundException $e) {
             return response()->json(['message' => $this->langService->getLang('schedules_not_found')], 404);
         }
+    }
+
+    public function getMySchedules() {
+        $user = Auth::user();
+
+        $schedules = Schedule::query()
+            ->where(function($query) use($user) {
+                $query->orWhere('user_id', $user->id)
+                    ->orWhere('user_id', $user->id);
+            })
+            ->where('status', '!=', COMPLETED)
+            ->get();        
+
+        if(!$schedules) {
+            return response()->json([
+                'data' => 'no Schedules found'
+            ]);
+        }
+
+        return response()->json([
+            'data' => ScheduleResource::collection($schedules)
+        ]);
     }
 }

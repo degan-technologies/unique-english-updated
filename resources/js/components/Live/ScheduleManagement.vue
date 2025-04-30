@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
-import ManagePlan from './ManagePlan.vue'
-import ManageSchedule from './ManageSchedule.vue'
+import ManagePlan from '@/components/Live/ManagePlan.vue'
+import ManageSchedule from '@/components/Live/ManageSchedule.vue'
 
 const selectedTab = ref('schedule')
 
