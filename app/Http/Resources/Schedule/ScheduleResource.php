@@ -16,6 +16,9 @@ class ScheduleResource extends JsonResource {
             'schedule_time' => $this->schedule_time,
             'created_at' => $this->created_at->toDateTimeString(),
             'color' => $this->sessionStatusClass($this->status),
+            'room_name' => $this->room_name,
+
+            'class_name' => $this->peredicTable?->liveRoom?->class_name,
         ];
     }
 

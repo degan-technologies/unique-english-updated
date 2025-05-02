@@ -5,7 +5,7 @@ namespace App\Http\Resources\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\User;
-
+use Illuminate\Support\Facades\Storage;
 
 class CustomerInfoResource extends JsonResource
 {

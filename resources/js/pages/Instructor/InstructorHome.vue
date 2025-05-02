@@ -2,6 +2,8 @@
 import { ref, computed, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
+
+import { useAppStore } from '@/store/useAppStore'
 import { useSidebarStore } from "@/store/useSidebarStore";
 
 // Import Components
@@ -13,18 +15,17 @@ import DashboardFooter from "@/components/Layout/DashboardFooter.vue";
 import DashboardSidebar from "@/components/Layout/DashboardSidebar.vue";
 import CourseManagement from "@/components/Layout/CourseManagement.vue";
 import RevenueManagement from "@/components/Layout/RevenueManagement.vue";
-import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue";
-import SystemAnalyticsReport from "@/components/Layout/SystemAnalyticsReport.vue";
+import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue"; 
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
 import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
 import ExamManagement from "@/components/Layout/ExamManagement.vue";
 import ScheduleManagement from "@/components/Live/ScheduleManagement.vue";
 
-
-// Sidebar Store Setup
+const appStore = useAppStore();
+const { authUser } = storeToRefs(appStore);
+ 
 const sidebarStore = useSidebarStore();
-const {
-    sidebarCollapsed,
+const { 
     sideBarOpen,
     selectedContent,
     profile,
@@ -37,15 +38,9 @@ const {
     liveSssions,
     messaging,
 } = storeToRefs(sidebarStore);
+ 
+const route = useRoute(); 
 
-// Vue Router Setup
-const route = useRoute();
-const router = useRouter();
-
-// Mobile Sidebar Computation
-const isMobileSidebarOpen = computed(() => sideBarOpen.value);
-
-// Ensure selectedContent updates dynamically
 watch(
     () => route.query.currentTab,
     (newTab) => {
@@ -70,37 +65,40 @@ watch(
 
             <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300">
                 <div class="w-full bg-gray-100">
-                    <div v-if="selectedContent === profile">
-                        <ProfileForm />
+                    <div v-if="authUser?.role !== 'instructor'">
+                        <div v-if="selectedContent === profile">
+                            <ProfileForm />
+                        </div>
+                        <div v-else-if="selectedContent === dashboard">
+                            <DashboardHome />
+                        </div>
+                        <div v-else-if="selectedContent === users">
+                            <UserManagement />
+                        </div>
+                        <div v-else-if="selectedContent === exams">
+                            <ExamManagement />
+                        </div>
+                        <div v-else-if="selectedContent === schedule">
+                            <ScheduleManagement />
+                        </div>
+                        <div v-else-if="selectedContent === messaging">
+                            <NotificationManagement />
+                        </div>
+                        <div v-else-if="selectedContent === 'settings'">
+                            <SettingsAndSecurity />
+                        </div>
                     </div>
-                    <div v-else-if="selectedContent === dashboard">
-                        <DashboardHome />
-                    </div>
-                    <div v-else-if="selectedContent === users">
-                        <UserManagement />
-                    </div>
-                    <div v-else-if="selectedContent === courses">
-                        <CourseManagement />
-                    </div>
-
-                    <div v-else-if="selectedContent === exams">
-                        <ExamManagement />
-                    </div>
-                    <div v-else-if="selectedContent === payments">
-                        <RevenueManagement />
-                    </div>
-                    <div v-else-if="selectedContent === liveSssions">
-                        <LiveSessionManagement />
-                    </div>
-                    <div v-else-if="selectedContent === schedule">
-                        <ScheduleManagement />
-                    </div>
-                    <div v-else-if="selectedContent === messaging">
-                        <NotificationManagement />
-                    </div>
-                    <div v-else-if="selectedContent === 'settings'">
-                        <SettingsAndSecurity />
-                    </div>
+                   <div>
+                        <div v-if="selectedContent === courses">
+                            <CourseManagement />
+                        </div>
+                        <div v-else-if="selectedContent === payments">
+                            <RevenueManagement />
+                        </div>
+                        <div v-else-if="selectedContent === liveSssions">
+                            <LiveSessionManagement />
+                        </div>
+                   </div>
                 </div>
             </div>
 

@@ -5,9 +5,9 @@ import Axios from 'axios';
 import { ref, onMounted, watch } from 'vue'
 
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { useAppStore } from '../../store/useAppStore'
+import { useAppStore } from '@/store/useAppStore'
 const appStore = useAppStore();
-const { profileUpdated } = storeToRefs(appStore);
+const { profileUpdated, authUser } = storeToRefs(appStore);
 
 const router = useRouter();
 const emit = defineEmits(["selectContent"]);
@@ -35,18 +35,21 @@ const mainItems = [
         route: dashboard.value,
         description: "Overview of revenue, users, courses, and system health.",
         icon: "home",
+        role: 'systemAdmin',
     },
     {
         label: "Users Management",
         route: users.value,
         description: "Manage students, instructors, and admins.",
         icon: "user-group",
+        role: 'systemAdmin',
     },
     {
         label: "Course Management",
         route: courses.value,
         description: "Manage courses and books.",
         icon: "book-open",
+        role: true,
     },
 
     {
@@ -54,6 +57,7 @@ const mainItems = [
         route: "exams",
         description: "Manage tests, quizzes, and questions.",
         icon: "clipboard-list",
+        role: 'systemAdmin',
     },
 
     {
@@ -61,30 +65,35 @@ const mainItems = [
         route: payments.value,
         description: "Transactions, earnings, payouts.",
         icon: "dollar-sign",
+        role: true,
     },
     {
         label: "Live Sessions",
         route: liveSssions.value,
         description: "Track, join, schedule live classes.",
         icon: "video",
+        role: true,
     },
     {
         label: "Schedule",
         route: schedule.value,
         description: " schedule live classes.",
         icon: "calendar",
+        role: 'systemAdmin',
     },
     {
         label: "Messaging ",
         route: messaging.value,
         description: "Send & manage messages.",
         icon: "envelope",
+        role: 'systemAdmin',
     },
     {
         label: "Settings ",
         route: "settings",
         description: "Configure platform branding & security.",
         icon: "gear",
+        role: 'systemAdmin',
     },
 ];
 
@@ -142,19 +151,14 @@ watch(profileUpdated, (updated) => {
             <div class="flex items-center justify-between h-20 px-4 border-b border-lime-300">
                 <!-- Logo: Full Logo (if not sidebarCollapsed) -->
                 <div v-if="!sidebarCollapsed"
-                    class="flex items-center animate-fadeIn">
-                    <img :src="logoUrl"
-                        alt="Logo Abbreviation"
-                        class="h-10 w-auto object-contain" />
+                    class="flex items-center animate-fadeIn"> 
                     <span class="ml-2 font-semibold text-xl text-lime-500">UniqueEnglish</span>
                 </div>
 
                 <!-- Logo: Abbreviated Logo (if sidebarCollapsed) -->
                 <div v-else
-                    class="flex items-center animate-fadeIn">
-                    <img :src="logoUrl"
-                        alt="Logo Abbreviation"
-                        class="h-10 w-auto object-contain" />
+                    class="flex items-center animate-fadeIn w-full justify-center">
+                      <i class="fa-solid w-6 fa-arrow-right font-extrabold text-lime-500 transition-colors duration-200 text-2xl"></i>
                 </div>
 
                 <!-- Mobile Close Icon (only visible on mobile) -->
@@ -168,25 +172,23 @@ watch(profileUpdated, (updated) => {
             <!-- Scrollable menu content -->
             <div class="flex-1 h-screen overflow-y-auto scrollbar">
                 <!-- MAIN Section -->
-                <div class="px-4 py-2">
-                    <p v-if="!sidebarCollapsed"
-                        class="text-sm font-semibold mb-2 text-lime-600 animate-fadeIn">
-                        MAIN
-                    </p>
-                    <ul>
-                        <li v-for="(item, index) in mainItems"
+                <div class="px-4 py-4"> 
+                    <div>
+                        <div v-for="(item, index) in mainItems"
                             :key="index"
-                            @click="selectContent(item?.route)"
-                            class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-                            :title="item.description">
-                            <i :class="{
-                                ['fa-' + item.icon]: true,
-                            }"
+                            @click="selectContent(item?.route)">
+                            <div v-if="item.role == true ? true :  (authUser?.role === item.role)" 
+                                class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
+                                :title="item.description">
+                                <i :class="{
+                                    ['fa-' + item.icon]: true,
+                                }"
                                 class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"></i>
-                            <span v-if="!sidebarCollapsed"
-                                class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
-                        </li>
-                    </ul>
+                                <span v-if="!sidebarCollapsed"
+                                    class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

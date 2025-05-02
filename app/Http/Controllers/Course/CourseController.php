@@ -38,6 +38,10 @@ class CourseController extends Controller {
      * Display a listing of the resource.
      */
     public function allCourses() {
+        /**
+         * @var mixed Course $course
+         */
+
         $courses = Course::query()
             ->where('status', PUBLISHED)
             ->paginate(10);

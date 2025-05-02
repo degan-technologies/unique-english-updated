@@ -2,22 +2,33 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 
-// Refs
+import Spinner from "@/components/Layout/Spinner.vue";
+
 const jitsiAPI = ref(null);
-const isLoading = ref(true);
+const loading = ref(true);
 const error = ref(null);
 
 const JITSI_DOMAIN = '8x8.vc';
 const JITSI_APP_ID = process.env.MIX_JITSI_APP_ID;
 
 const roomName = ref(`LiveClass_NewRoomToJoin`);
-const fullRoomName = `${JITSI_APP_ID}/${roomName.value}`;
+const fullRoomName = ref(`${JITSI_APP_ID}/${roomName.value}`);
 
 const jitsiContainer = ref(null);
 const participantCount = ref(0);
 const isInitialized = ref(false);
 
-// Configuration
+ const props = defineProps({
+   selectedRoom: Object,
+}); 
+
+const emit = defineEmits(['closeStream']);
+
+if(props.selectedRoom){
+    roomName.value = props.selectedRoom;
+    fullRoomName.value = `${JITSI_APP_ID}/${roomName.value}`;
+}
+
 
 // JWT Token Generation with enhanced error handling
 const getJitsiToken = async () => {
@@ -27,7 +38,7 @@ const getJitsiToken = async () => {
             user: {
                 name: "Host User",
                 email: "host@example.com",
-                avatar: "" // Add avatar URL if needed
+                avatar: ""  
             }
         });
 
@@ -48,7 +59,7 @@ const initializeJitsi = async () => {
         const token = await getJitsiToken();
 
         const options = {
-            roomName: fullRoomName,
+            roomName: fullRoomName.value,
             parentNode: jitsiContainer.value,
             width: '100%',
             height: 500,
@@ -93,6 +104,7 @@ const initializeJitsi = async () => {
         jitsiAPI.value.on('passwordRequired', handlePasswordRequired);
 
         isInitialized.value = true;
+        loading.value = false;
 
     } catch (err) {
         handleInitializationError(err);
@@ -101,7 +113,7 @@ const initializeJitsi = async () => {
 
 // Enhanced Event Handlers
 const handleConferenceJoined = () => {
-    isLoading.value = false;
+    loading.value = false;
     participantCount.value = 1;
     jitsiAPI.value.executeCommand('displayName', 'Host');
 };
@@ -136,7 +148,7 @@ const endSession = () => {
             console.error('Cleanup error:', err);
         }
     }
-    isLoading.value = false;
+    loading.value = false;
 };
 
 const handleSessionEnd = () => {
@@ -146,7 +158,7 @@ const handleSessionEnd = () => {
 
 const handleInitializationError = (err) => {
     error.value = err.message;
-    isLoading.value = false;
+    loading.value = false;
     endSession();
 };
 
@@ -170,6 +182,16 @@ onMounted(async () => {
     }
 });
 
+function closeStream() {
+    emit('closeStream');
+
+    if (jitsiAPI.value) {
+        jitsiAPI.value.dispose();
+        jitsiAPI.value = null;
+        isInitialized.value = false;
+    }
+}
+
 onBeforeUnmount(() => {
     endSession();
     const scripts = document.querySelectorAll('script[src*="8x8.vc"]');
@@ -178,105 +200,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="jitsi-container">
-        <div class="session-header">
-            <h2 class="session-title">Live Session: {{ roomName }}</h2>
-            <div class="participant-count">
-                Participants: {{ participantCount }}
+    <div class="w-full h-full min-h-96 bg-white relative">
+        <div class="w-full h-full flex flex-col">
+            <div   
+                v-show="isInitialized && !error" 
+                ref="jitsiContainer" 
+                class="video-container h-full w-full">
             </div>
-        </div>
-
-        <div v-if="isLoading" class="loading-state">
-            <div class="spinner"></div>
-            <p class="loading-text">Initializing session...</p>
-            <p class="loading-subtext">This may take a few moments</p>
-        </div>
-
-        <div v-else-if="error" class="error-state">
-            <p class="error-message">⚠️ {{ error }}</p>
-            <button @click="initializeJitsi" class="retry-button" :disabled="isLoading">
-                {{ isLoading ? 'Reconnecting...' : 'Retry Connection' }}
+            <button 
+                v-if="!loading"
+                @click="closeStream()"
+                class="bg-red-700 my-8 self-center text-white px-4 py-1 rounded hover:bg-red-800 transition">
+                Close Stream
             </button>
         </div>
-
-        <div v-show="isInitialized && !error" ref="jitsiContainer" class="video-container"></div>
-
-        <div v-if="isInitialized" class="controls">
-            <button @click="endSession" class="end-button" :disabled="isLoading">
-                {{ isLoading ? 'Ending...' : 'End Session' }}
-            </button>
-        </div>
+        <div  v-if="loading"
+            class="absolute bg-white w-full h-full flex justify-center items-center">
+            <div class="w-full h-full flex  justify-center items-center">
+                <Spinner />
+            </div>
+        </div> 
     </div>
 </template>
-
-<style>
-.jitsi-container {
-    @apply max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg;
-    min-height: 600px;
-}
-
-.session-header {
-    @apply flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2;
-}
-
-.session-title {
-    @apply text-xl font-semibold text-gray-800 truncate;
-}
-
-.participant-count {
-    @apply text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-md;
-}
-
-.video-container {
-    @apply w-full h-[500px] bg-gray-800 rounded-lg overflow-hidden;
-    min-height: 500px;
-}
-
-.loading-state {
-    @apply h-[500px] flex flex-col items-center justify-center gap-4;
-}
-
-.spinner {
-    @apply w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin;
-}
-
-.loading-text {
-    @apply text-gray-700 font-medium;
-}
-
-.loading-subtext {
-    @apply text-sm text-gray-500;
-}
-
-.error-state {
-    @apply h-[500px] flex flex-col items-center justify-center gap-4;
-}
-
-.error-message {
-    @apply text-red-600 text-lg font-medium text-center max-w-md;
-}
-
-.retry-button {
-    @apply px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors;
-}
-
-.controls {
-    @apply mt-4 text-center;
-}
-
-.end-button {
-    @apply px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors;
-
-    
-}
-
-@media (max-width: 640px) {
-    .jitsi-container {
-        @apply p-4;
-    }
-
-    .video-container {
-        height: 400px;
-    }
-}
-</style>

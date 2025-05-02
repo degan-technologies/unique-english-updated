@@ -1,9 +1,5 @@
 <?php
-use App\Http\Controllers\Auth\SocialController;
-use App\Http\Controllers\Live\ChatController;
-use App\Http\Controllers\Live\MeetingController;
-// Removed duplicate import of ParticipantController
-use Illuminate\Http\Request;
+use App\Http\Controllers\Auth\SocialController; 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
@@ -13,15 +9,11 @@ use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
 use App\Http\Controllers\Course\CourseController;
-use App\Http\Controllers\FeedBackController;
-use App\Http\Controllers\Live\ParticipantController;
+use App\Http\Controllers\FeedBackController; 
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\Quiz\QMetaDataController;
 use App\Http\Controllers\Quiz\ResultController;
-use App\Http\Controllers\Quiz\QASectionController;
-use App\Http\Controllers\Live\LiveSessionController;
-use App\Http\Controllers\Live\LiveResourceController;
-use App\Http\Controllers\Live\VirtualClassEnrollmentController;
+use App\Http\Controllers\Quiz\QASectionController; 
 use App\Http\Controllers\Message\SMSController;
 use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\UserController;
@@ -38,8 +30,7 @@ use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
-use App\Http\Controllers\System\HeroController;
-use Firebase\JWT\JWT;
+use App\Http\Controllers\System\HeroController; 
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -81,6 +72,14 @@ Route::middleware('auth:api')
 
         Route::post('/answer/quiz', [ResultController::class, 'answerQuiz']);
         Route::get('/check/answer/{qmId}', [QMetaDataController::class, 'checkAnswer']);
+ 
+        Route::get('/get-rooms', [LiveController::class, 'getAllRooms']);
+        Route::post('/rooms', [LiveController::class, 'store']);
+        Route::put('/rooms/{id}', [LiveController::class, 'update']);
+        Route::post('/assign-class/{id}', [LiveController::class, 'assignClass']);
+
+        Route::post('/assign-instructor/{id}', [LiveController::class, 'AssignInstructors']);
+        Route::get('/my-instructors', [LiveController::class, 'getMyInstructors']); 
 });
     // Social Login Routes
 Route::middleware(['web'])->group(function () {
@@ -98,17 +97,18 @@ Route::middleware('auth:api')
         // Route::resource('live-resources', LiveResourceController::class);
         // Route::resource('participants', ParticipantController::class);
        
-    Route::resource('quize',QuizController::class);
-    Route::resource('schedules', ScheduleController::class);
-    Route::resource('QMetaData', QMetaDataController::class);  
-    Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
-    Route::resource('tests', TestController::class);
-    Route::resource('/results', ResultController::class);
-    Route::resource('plans', PlanController::class);
-    Route::resource('QASection', QASectionController::class);
-    Route::resource('answers', AnswerController::class);
-    Route::get('/my-schedule', [ScheduleController::class, 'getMySchedules']);  
-    Route::get('/my-participants', [LiveController::class, 'getParticipants']);   
+        Route::resource('quize',QuizController::class);
+        Route::resource('schedules', ScheduleController::class);
+        Route::resource('QMetaData', QMetaDataController::class);  
+        Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::resource('tests', TestController::class);
+        Route::resource('/results', ResultController::class);
+        Route::resource('plans', PlanController::class);
+        Route::resource('QASection', QASectionController::class);
+        Route::resource('answers', AnswerController::class);
+        Route::get('/my-schedule', [ScheduleController::class, 'getMySchedules']);  
+        Route::get('/my-participants', [LiveController::class, 'getParticipants']);   
+        Route::get('/student-schedule', [ScheduleController::class, 'getStudentSchedules']); 
     });
 
 Route::middleware('auth:api')

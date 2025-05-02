@@ -9,7 +9,9 @@ return new class extends Migration {
             $table->id();
             $table->string('day');
             $table->string('schedule_time');
+            $table->string('type')->default('group');
             $table->string('status')->default('scheduled');
+            $table->string('room_name');  
             $table->timestamps();
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();

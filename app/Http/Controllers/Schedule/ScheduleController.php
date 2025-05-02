@@ -4,13 +4,19 @@ namespace App\Http\Controllers\Schedule;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Schedule\ScheduleResource;
+use App\Models\Live\GroupRoom;
+use App\Models\Live\LiveRooms;
+use App\Models\Live\PeredicTable;
 use App\Models\Schedule\Schedule;
+use App\Models\Transaction\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\LangService; 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ScheduleController extends Controller {
 
@@ -26,13 +32,24 @@ class ScheduleController extends Controller {
     }
 
     public function store(Request $request) {
-
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
 
         if (!$user) {
             return;
+        }
+
+        $liveRoomId = $request->live_room_id ?? null;
+
+        $liveRoom = LiveRooms::query() 
+            ->where('id', $liveRoomId)
+            ->first();
+
+        if(!$liveRoom) {
+            return response()->json([
+                'message' => $this->langService->getLang('live_room_not_found')
+            ], 422);
         }
 
         $validationRules = [
@@ -48,12 +65,30 @@ class ScheduleController extends Controller {
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        try{
+            DB::beginTransaction();
  
-        $schedule = $user->schedules()->create([
-            'day' => $request->day,
-            'time' => "10:00:00",
-            'schedule_time' => $request->time,
-        ]);
+            $schedule = $user->schedules()->create([
+                'day' => $request->day,
+                'time' => "10:00:00",
+                'schedule_time' => $request->time,
+                'room_name' => Str::uuid(),
+            ]);
+
+            $chedule = PeredicTable::create([
+                'schedule_id' => $schedule->id,
+                'live_room_id' => $liveRoomId,
+            ]);
+
+            DB::commit();
+        }catch(\Exception $e){
+            DB::rollBack();
+            return response()->json([
+               'message' => $this->langService->getLang('schedule_not_created'),
+                'errors' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'message' => $this->langService->getLang('schedule_created'),
@@ -71,8 +106,20 @@ class ScheduleController extends Controller {
     }
 
     public function update(Request $request, $id) {
-        try {
-            // Removed the user_id filter
+        try { 
+
+            $liveRoomId = $request->live_room_id ?? null;
+
+            $liveRoom = LiveRooms::query() 
+                ->where('id', $liveRoomId)
+                ->first();
+
+            if(!$liveRoom) {
+                return response()->json([
+                    'message' => $this->langService->getLang('live_room_not_found')
+                ], 422);
+            }
+
             $schedule = Schedule::query()
                 ->where('user_id', Auth::id())
                 ->where('schedule_time',  "!=", $request->time)
@@ -99,10 +146,27 @@ class ScheduleController extends Controller {
                 ], 422);
             } 
  
-            $schedule->update([
-                'day' => $request->day,
-                'schedule_time' => $request->time,
-            ]);
+            try{
+                DB::beginTransaction();
+
+                $schedule->update([
+                    'day' => $request->day,
+                    'schedule_time' => $request->time,
+                ]);
+
+                $chedule = PeredicTable::create([
+                    'schedule_id' => $schedule->id,
+                    'live_room_id' => $liveRoomId,
+                ]);
+
+                DB::commit();
+            }catch(\Exception $e){
+                DB::rollBack();
+                return response()->json([
+                  'message' => $this->langService->getLang('schedule_not_updated'),
+                    'errors' => $e->getMessage(),
+                ], 422);
+            }
 
             return response()->json([
                 'message' => $this->langService->getLang('schedule_updated'),
@@ -146,4 +210,30 @@ class ScheduleController extends Controller {
             'data' => ScheduleResource::collection($schedules)
         ]);
     }
+
+    public function getStudentSchedules() {
+    $user = Auth::user();
+ 
+    $groupRooms = GroupRoom::with('liveRoom.peredicTables')
+        ->where('user_id', $user->id)
+        ->get();
+
+    $scheduleIds = [];
+
+    foreach ($groupRooms as $groupRoom) {
+        if ($groupRoom->liveRoom && $groupRoom->liveRoom->peredicTables) {
+            foreach ($groupRoom->liveRoom->peredicTables as $peredicTable) {
+                $scheduleIds[] = $peredicTable->schedule_id;
+            }
+        }
+    }
+ 
+    $scheduleIds = array_unique($scheduleIds);
+ 
+    $schedules = Schedule::whereIn('id', $scheduleIds)->get();
+
+    return response()->json([
+        'data' => ScheduleResource::collection($schedules)
+    ]);
+}
 }

@@ -417,6 +417,13 @@ class ErrorLangEnglish extends Lang {
                 'time.unique' => 'Time must be unique',
             ],
 
+            'live_rooms' => [
+                'class_name.required' => 'Class name is required',
+                'class_name.string' => 'Class name must be a string',
+                'class_name.unique' => 'Class name must be unique',
+                'class_name.max' => 'Class name cannot exceed 255 characters',
+            ]
+
         ];
 
     }

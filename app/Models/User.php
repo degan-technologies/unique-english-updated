@@ -11,6 +11,7 @@ use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseContentProgress;
 use App\Models\Course\CourseModule;
+use App\Models\Live\GroupRoom;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
@@ -128,6 +129,7 @@ class User extends Authenticatable {
     // public function books() { return $this->hasMany(Book::class); }
     public function orderedBooks() { return $this->hasMany(OrderedBook::class); }
     public function transactions() { return $this->hasMany(Transaction::class); }
+    public function customerTransactions() { return $this->hasMany(Transaction::class, 'customer_id'); }
     public function bankInfos() { return $this->hasMany(BankInfo::class); }
     public function transfers() { return $this->hasMany(Transfer::class); }
 
@@ -142,6 +144,7 @@ class User extends Authenticatable {
     public function adminActivityLogs() { return $this->hasMany(AdminActivityLog::class); }
     public function emailNotifications() { return $this->hasMany(EmailNotification::class); }
     public function schedules() { return $this->hasMany(Schedule::class); }
+    public function groupRoom() { return $this->hasOne(GroupRoom::class);}
 
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {

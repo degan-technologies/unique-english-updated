@@ -1,12 +1,12 @@
 <script setup>
 import { ref, computed } from 'vue'
-import ManagePlan from '@/components/Live/ManagePlan.vue'
-import ManageSchedule from '@/components/Live/ManageSchedule.vue'
+import ManagePlan from '@/components/Live/ManagePlan.vue' 
+import LiveRooms from '@/components/Layout/LiveRooms.vue';
 
-const selectedTab = ref('schedule')
+const selectedTab = ref('room')
 
-const selectedTabComponent = computed(() => {
-    return selectedTab.value === 'schedule' ? ManageSchedule : ManagePlan
+const selectedTabComponent = computed(() => { 
+  return  selectedTab.value ==='plan' ? ManagePlan : LiveRooms;
 })
 </script>
 
@@ -20,12 +20,12 @@ const selectedTabComponent = computed(() => {
                 Manage Schedule & Plan
             </p>
         </div>
-        <div class="mb-6 flex space-x-2 border-b -mb-px flex space-x-8 mx-6">
-            <button @click="selectedTab = 'schedule'"
-                :class="selectedTab === 'schedule' ? 'border-b-2 border-lime-700 text-lime-700 font-bold' : 'text-gray-600 font-medium'"
-                class="px-1 ">
-                Schedules
-            </button>
+        <div class="mb-6 flex space-x-2 border-b mx-6">
+            <button @click="selectedTab = 'room'"
+                :class="selectedTab === 'room' ? 'border-b-2 border-lime-700 text-lime-700 font-bold' : 'text-gray-600 font-medium'"
+                class="px-4 py-2">
+                Rooms
+            </button> 
             <button @click="selectedTab = 'plan'"
                 :class="selectedTab === 'plan' ? 'border-b-2 border-lime-700 text-lime-700 font-bold' : 'text-gray-600 font-medium'"
                 class="px-4 py-2">
