@@ -36,45 +36,41 @@
                     </p>
                 </div>
 
-                <!-- Navigation Links -->
+                <!-- Contact Information -->
                 <div>
-                    <h3 class="text-lg font-bold mb-4">Quick Links</h3>
-                    <ul class="space-y-2">
-                        <li>
-                            <a
-                                href="#home"
-                                class="hover:text-lime-400 transition"
-                                >Home</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="#about"
-                                class="hover:text-lime-400 transition"
-                                >About</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="#services"
-                                class="hover:text-lime-400 transition"
-                                >Services</a
-                            >
-                        </li>
-                        <li>
-                            <a
-                                href="#contact"
-                                class="hover:text-lime-400 transition"
-                                >Contact</a
-                            >
-                        </li>
-                    </ul>
+                    <h3 class="text-lg font-bold mb-4">Contact Us</h3>
+                    <div
+                        class="flex justify-center md:justify-start items-center mb-3"
+                    >
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-start md:items-center gap-2">
+                                <i
+                                    class="fas fa-map-marker-alt text-lime-400 mt-1"
+                                ></i>
+                                <span> CMC, leultaz 5th and 8th floor</span>
+                            </li>
+                            <li class="flex items-start md:items-center gap-2">
+                                <i
+                                    class="fas fa-phone-alt text-lime-400 mt-1"
+                                ></i>
+                                <span>+251 94639 5752 </span>
+                            </li>
+                            <li class="flex items-start md:items-center gap-2">
+                                <i
+                                    class="fas fa-envelope text-lime-400 mt-1"
+                                ></i>
+                                <span>mehamek1990@gmail.com</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
 
                 <!-- Social Media Links -->
                 <div>
                     <h3 class="text-lg font-bold mb-4">Follow Us</h3>
-                    <div class="flex justify-center md:justify-start space-x-4">
+                    <div
+                        class="flex justify-center md:justify-start space-x-4 mb-5"
+                    >
                         <a
                             href="#"
                             aria-label="X"

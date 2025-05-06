@@ -12,16 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-         // Get instructor before schema creation
-        $user = User::query()
-            ->has('systemAdmin')
-            ->first();
-    
-        if (!$user) {
-            throw new \Exception('No system admin user found');
-        }
-
-        Schema::create('live_rooms', function (Blueprint $table) use ($user)  {
+        
+        Schema::create('live_rooms', function (Blueprint $table)   {
             $table->id();
 
             $table->string('class_name')->default('A');
@@ -32,7 +24,7 @@ return new class extends Migration
             $table->unique(['class_name', 'user_id']);
 
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('instructor_id')->default($user->id)->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('instructor_id')->default(1)->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
     }
 

@@ -23,7 +23,7 @@ class TestController extends Controller
     public function index()
     {
         
-        $tests = Test::where('user_id', Auth::id())->get();
+        $tests = Test::all();
         return response()->json(['data' => TestResource::collection($tests)]);
     }
 
