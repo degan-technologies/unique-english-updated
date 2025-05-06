@@ -1,92 +1,92 @@
 <script setup>
-    import { storeToRefs } from "pinia";
-    import { computed, onMounted, ref, watch } from "vue";
-    import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-    import { useAppStore } from '@/store/useAppStore';
-    import { useAuthStore } from '@/store/useAuthStore';
-    import { UseStudentStore } from "@/store/UseStudentStore";
+import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/store/useAuthStore";
+import { UseStudentStore } from "@/store/UseStudentStore";
 
-    import Pdf from "@/components/Book/Pdf.vue";
-    import Book from "@/components/Book/Book.vue";
-    import Hero from "@/components/Layout/Hero.vue";
-    import AboutUs from "@/pages/common/AboutUs.vue";
-    import Header from "@/components/Layout/Header.vue";
-    import Footer from "@/components/Layout/Footer.vue";
-    import Schedule from "@/components/Live/Schedule.vue";
-    import BookDetails from "@/components/Book/BookDetails.vue";
-    import CourseCard from "@/components/Course/CourseCard.vue";
-    import VideoPlayer from "@/components/Course/VideoPlayer.vue";
-    import CourseDetail from "@/components/Course/CourseDetail.vue";
-    import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
-    import MyCourse from "@/components/Course/EnrolledManagement.vue";
-    import MeetingAction from "@/components/Live/MeetingAction.vue";
+import Pdf from "@/components/Book/Pdf.vue";
+import Book from "@/components/Book/Book.vue";
+import Hero from "@/components/Layout/Hero.vue";
+import AboutUs from "@/pages/common/AboutUs.vue";
+import Header from "@/components/Layout/Header.vue";
+import Footer from "@/components/Layout/Footer.vue";
+import BookDetails from "@/components/Book/BookDetails.vue";
+import CourseCard from "@/components/Course/CourseCard.vue";
+import VideoPlayer from "@/components/Course/VideoPlayer.vue";
+import CourseDetail from "@/components/Course/CourseDetail.vue";
+import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
+import MyCourse from "@/components/Course/EnrolledManagement.vue";
+import MeetingAction from "@/components/Live/MeetingAction.vue";
+import WhatExpect from "@/components/Layout/WhatExpect.vue";
+import Test from "@/components/Course/Test.vue";
 
-    const appStore = useAppStore();
-    const AuthStore = useAuthStore();
-    const studentStore = UseStudentStore();
-    
-    const { isLoggedIn } = storeToRefs(appStore);
-    const { showLoginForm, } = storeToRefs(AuthStore);
-    const {
-        liveSchedulTab,
-        landingPageTab,
-        courseDetailTab,
-        videoPlayerTab,
-        bookOverviewTab,
-        bookReadingTab,
-        myCourseTab,
+const appStore = useAppStore();
+const AuthStore = useAuthStore();
+const studentStore = UseStudentStore();
 
-        courses,
-        selectedCourseSlug,
-    } = storeToRefs(studentStore);
+const { isLoggedIn } = storeToRefs(appStore);
+const { showLoginForm } = storeToRefs(AuthStore);
+const {
+    liveSchedulTab,
+    landingPageTab,
+    courseDetailTab,
+    videoPlayerTab,
+    bookOverviewTab,
+    bookReadingTab,
+    myCourseTab,
+    TestTab,
+    courses,
+    selectedCourseSlug,
+} = storeToRefs(studentStore);
 
-    const route = useRoute();
-    const router = useRouter();
+const route = useRoute();
+const router = useRouter();
 
-    const currentTab = ref({
-        tab: route.query.tab,
-        slug: route.query.slug,
-    });
+const currentTab = ref({
+    tab: route.query.tab,
+    slug: route.query.slug,
+});
 
-    selectedCourseSlug.value = route.query.slug;
+selectedCourseSlug.value = route.query.slug;
 
-    const selectedCourse = computed(()=>{
-        return courses.value.find(item => item.slug === selectedCourseSlug.value)
-    })
+const selectedCourse = computed(() => {
+    return courses.value.find((item) => item.slug === selectedCourseSlug.value);
+});
 
-    function redirectRoute() {
-        if(!selectedCourse.value?.isMyCourse) {
-            router.push({
-                name: 'student',
-                query: {
-                    tab: landingPageTab.value, 
-                }
-            });
-        }
-
-        if(!isLoggedIn.value) {
-            showLoginForm.value = true;
-        }
-        return;
-    };
-
-    function redirectToLogin() {
-
-        if(!isLoggedIn.value) {
-            showLoginForm.value = true;
-        }
+function redirectRoute() {
+    if (!selectedCourse.value?.isMyCourse) {
+        router.push({
+            name: "student",
+            query: {
+                tab: landingPageTab.value,
+            },
+        });
     }
 
-    watch(
-        () => route.query.tab,
-        () => {
-            currentTab.value = {
-                tab: route?.query.tab,
-                slug: route?.query.slug,
-            };
-        }
-    );
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+    }
+    return;
+}
+
+function redirectToLogin() {
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+    }
+}
+
+watch(
+    () => route.query.tab,
+    () => {
+        currentTab.value = {
+            tab: route?.query.tab,
+            slug: route?.query.slug,
+        };
+    }
+);
 </script>
 
 <template>
@@ -104,7 +104,11 @@
                     </div>
                 </div>
 
-                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug">
+                <div
+                    v-else-if="
+                        currentTab.tab == videoPlayerTab && currentTab.slug
+                    "
+                >
                     {{ redirectRoute() }}
                     <VideoPlayer />
                 </div>
@@ -112,12 +116,20 @@
                     {{ redirectToLogin() }}
                     <MyCourse />
                 </div>
-                <div v-else-if="currentTab.tab == bookOverviewTab && currentTab.slug" >
+                <div
+                    v-else-if="
+                        currentTab.tab == bookOverviewTab && currentTab.slug
+                    "
+                >
                     <BookDetails />
                 </div>
-                <div v-else-if="currentTab.tab == bookReadingTab && currentTab.slug">
+                <div
+                    v-else-if="
+                        currentTab.tab == bookReadingTab && currentTab.slug
+                    "
+                >
                     {{ redirectRoute() }}
-                    <Pdf/>
+                    <Pdf />
                 </div>
                 <div v-else-if="currentTab.tab == liveSchedulTab">
                     <!-- <Schedule /> -->
@@ -126,11 +138,16 @@
                 <div v-else-if="currentTab.tab == clandingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard @mousemove="togglehover" />
-                    <MeetingAction/>
+                    <MeetingAction />
                     <Book />
                     <QuizReader />
-                    <certificate/>
+                    <certificate />
                     <AboutUs />
+                    <WhatExpect />
+                </div>
+                <div v-else-if="currentTab.tab == TestTab">
+                    <h1 class="mt-6">Test Yourself</h1>
+                    <Test />
                 </div>
 
                 <div class="w-full bg-gray-900 text-white">

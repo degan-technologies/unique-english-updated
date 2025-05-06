@@ -34,7 +34,7 @@ use App\Http\Controllers\System\HeroController;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
-
+Route::resource('test', TestController::class);
 Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 

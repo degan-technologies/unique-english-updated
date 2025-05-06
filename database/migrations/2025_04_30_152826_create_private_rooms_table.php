@@ -12,23 +12,15 @@ return new class extends Migration
      */
     public function up(): void 
     {
-        // Get instructor before schema creation
-        $instructor = User::query()
-            ->has('systemAdmin')
-            ->first();
-    
-        if (!$instructor) {
-            throw new \Exception('No system admin instructor found');
-        }
-    
-        Schema::create('private_rooms', function (Blueprint $table) use ($instructor) { 
+        
+        Schema::create('private_rooms', function (Blueprint $table) { 
             $table->id();
             $table->string('class_name');
             $table->unsignedTinyInteger('is_active')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
             $table->softDeletes();
             $table->timestamps();
      
-            $table->foreignId('instructor_id')->default($instructor->id)->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('instructor_id')->default(1)->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
     }

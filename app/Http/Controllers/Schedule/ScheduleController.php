@@ -71,7 +71,6 @@ class ScheduleController extends Controller {
  
             $schedule = $user->schedules()->create([
                 'day' => $request->day,
-                'time' => "10:00:00",
                 'schedule_time' => $request->time,
                 'room_name' => Str::uuid(),
             ]);

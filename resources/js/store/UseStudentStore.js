@@ -1,33 +1,34 @@
-import Axios from 'axios';
+import Axios from "axios";
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 
-export const UseStudentStore = defineStore('UseStudentStore', ()=>{
+export const UseStudentStore = defineStore("UseStudentStore", () => {
     const landingPageTab = ref();
-    const courseDetailTab = ref('courseDetail');
-    const videoPlayerTab = ref('mylesson');
-    const bookOverviewTab = ref('bookOverview');
-    const bookReadingTab = ref('bookReading');
-    const liveSchedulTab = ref('liveSchedul');
-    const myCourseTab = ref('myCourse');
-    
+    const courseDetailTab = ref("courseDetail");
+    const videoPlayerTab = ref("mylesson");
+    const bookOverviewTab = ref("bookOverview");
+    const bookReadingTab = ref("bookReading");
+    const liveSchedulTab = ref("liveSchedul");
+    const myCourseTab = ref("myCourse");
+    const TestTab = ref("testTab");
+
     const courses = ref(null);
-    const selectedCourseSlug = ref(null); 
+    const selectedCourseSlug = ref(null);
 
     const books = ref(null);
     const selectedbookslug = ref(null);
     const completedLessons = ref(new Set());
 
-   async function fetchCourses() {
-       await Axios
-            .get('/api/all-couses')
-            .then(res => courses.value = res.data.data)
+    async function fetchCourses() {
+        await Axios.get("/api/all-couses").then(
+            (res) => (courses.value = res.data.data)
+        );
     }
 
     async function fetchBooks() {
-       await Axios
-            .get('/api/all-books')
-            .then(res => books.value = res.data.data)
+        await Axios.get("/api/all-books").then(
+            (res) => (books.value = res.data.data)
+        );
     }
 
     return {
@@ -47,6 +48,7 @@ export const UseStudentStore = defineStore('UseStudentStore', ()=>{
         fetchBooks,
         selectedbookslug,
 
-        completedLessons
-    }
+        completedLessons,
+        TestTab,
+    };
 });

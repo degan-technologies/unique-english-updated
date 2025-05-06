@@ -1,17 +1,16 @@
-
 <script setup>
-    import { ref } from "vue";
+import { ref } from "vue";
 
-    // State for expandable text
-    const isExpanded = ref(false);
+// State for expandable text
+const isExpanded = ref(false);
 
-    const toggleExpanded = () => {
-        isExpanded.value = !isExpanded.value;
-    };
+const toggleExpanded = () => {
+    isExpanded.value = !isExpanded.value;
+};
 </script>
 
 <template>
-    <section class="bg-gray-50 py-12 px-4">
+    <section class="bg-gray-50 py-12 px-4" id="about">
         <div
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >
@@ -70,11 +69,11 @@
                 </button>
 
                 <!-- Call to Action Button -->
-                <button
+                <!-- <button
                     class="bg-lime-700 text-white px-5 py-2 rounded-md text-sm shadow hover:bg-lime-800 transition duration-300"
                 >
                     Learn More
-                </button>
+                </button> -->
             </div>
         </div>
     </section>

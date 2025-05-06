@@ -177,7 +177,7 @@ const setLevel = (level, icon, levelClass, feedback) => {
 
 const fetchQuizzes = async () => {
     try {
-        const response = await axios.get("/api/tests");
+        const response = await axios.get("/api/test");
         quizzes.value = response.data.data.map((quiz) => ({
             ...quiz,
             choices: Array.isArray(quiz.choices)
