@@ -1,15 +1,15 @@
 <script setup>
+    import Axios from "axios";
     import { storeToRefs } from 'pinia';
     import { ref, onMounted, onUnmounted } from 'vue';
 
-    import { useThemeStore } from '@/store/theme';
-    import appRouter from '@/routes/AppRouter';
+    import { useThemeStore } from '@/store/theme'; 
     import { useAppStore } from "@/store/useAppStore";
     import { useSidebarStore } from '@/store/useSidebarStore';
 
     const appStore = useAppStore();
     const sidebarStore = useSidebarStore();
-    const { authUser, unreadNotifications  } = storeToRefs(appStore);
+    const { authUser, unreadNotifications, isLoggedIn  } = storeToRefs(appStore);
     const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
 
     const searchOpen = ref(false);
@@ -40,8 +40,15 @@ const toggleProfile = () => {
     const openProfile = () => selectedContent.value = 'profile';
 
     function signOut() {
-        appStore.setAuthToken('');
-        loggingIn.value = false;
+        Axios.post('/api/log-out')
+            .then(response => {
+                authUser.value = null;
+                appStore.setAuthToken('');
+                isLoggedIn.value = false;
+            })
+            .catch(error => {
+                console.error('Logout failed:', error);
+            });
     }
 
     function markAsRead(notificationId) {

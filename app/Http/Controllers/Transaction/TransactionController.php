@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Transaction;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Transaction\Trait\TransferTrait;
-use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\Bank\TransactionHistoryResource;
 use App\Notifications\TransactionSuccessfulNotification;
 
 use App\Models\Book\Book;
@@ -21,8 +21,10 @@ use App\Traits\AdminActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class TransactionController extends Controller {
@@ -37,12 +39,60 @@ class TransactionController extends Controller {
      */
     protected $langService;
     protected $chapaService;
-    use AdminActivityLog
-    ;
+    use AdminActivityLog ;
 
     public function __construct(LangService $langService, ChapaService $chapaService) {
         $this->langService = $langService;
         $this->chapaService = $chapaService;
+    }
+
+    public function handleTransferApproval(Request $request) {
+        // Verify the incoming request from Chapa
+        $isValid = $this->chapaService->verifyWebhook($request);
+
+        if (!$isValid) {
+            Log::warning('Invalid Chapa transfer approval attempt', [
+                'ip' => $request->ip(),
+                'data' => $request->all()
+            ]);
+
+            return response()->json(['message' => 'Invalid request'], 400);
+        }
+
+        $transferData = $request->all();
+
+        // Process the transfer approval
+        try {
+            DB::beginTransaction();
+
+            // Find the transfer by reference
+            $transfer = Transfer::where('reference', $transferData['reference'])->first();
+
+            if (!$transfer) {
+                return response()->json(['message' => 'Transfer not found'], 404);
+            }
+
+            // Update transfer status based on Chapa's response
+            $transfer->update([
+                'status' => $transferData['status'] === 'success' ? TRANSACTION_SUCCESS : TRANSACTION_FAILED,
+                'updated_at' => now(),
+            ]);
+
+            // If failed, return the amount to user's balance
+            if ($transferData['status'] !== 'success') {
+                $user = $transfer->user;
+                $user->balance += $transfer->amount;
+                $user->save();
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Transfer processed'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Transfer approval processing failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Processing failed'], 500);
+        }
     }
 
     public function initiatePayment(Request $request) {
@@ -54,7 +104,7 @@ class TransactionController extends Controller {
         $model = null;
         $txRef = 'TX-' . uniqid();
         $totalPrice = 0;
-        $tax = 0;
+        $tax = 0; 
          
         if(!$cartItems) {
             return response()->json([
@@ -126,6 +176,8 @@ class TransactionController extends Controller {
                             'tx_ref' => $txRef, 
                             'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
                         ]);
+
+                        $this->createDeposit($checkTransactionExist);
                     }else {
                         $transaction = $order->transactions()->create([
                             'slug' => Str::uuid(),
@@ -138,6 +190,8 @@ class TransactionController extends Controller {
                             'live_price_type' => $item['live_price_type'] ?? 'notLive',
                             'enrolled_at' => Carbon::now()->format('Y-m-d H:i:s')
                         ]);
+
+                        $this->createDeposit($transaction);
                     }
                 $totalPrice += $order->price;
                         
@@ -159,12 +213,12 @@ class TransactionController extends Controller {
         
                 $response = $this->chapaService->initializePayment($data);    
 
-               if($response['status'] == 'failed') {
-                DB::rollBack();
-                return response()->json([
-                    'message' => $response['message']
-                ], 500);
-               }
+               if (!isset($response['status'])) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Payment gateway error'
+                    ], 500);
+                }
 
                $this->studentActivities( $user->first_name . ' ' . $user->last_name . ' enrolled at'.Carbon::now()->format('Y-m-d H:i:s') . ' with transaction ID: ' . $txRef);
                 
@@ -199,10 +253,18 @@ class TransactionController extends Controller {
          * @var \Illuminate\Pagination\LengthAwarePaginator $transactions
          */
 
-        $transactions = Transaction::query()
-                ->where('user_id', $user->id)
-                ->where('status', TRANSACTION_SUCCESS)
+        $transactions = null;
+
+        if ($user->has('systemAdmin')) {
+            $transactions = Transaction::query()
                 ->get();
+        }
+
+        if($user->has('instructor')){
+            $transactions = Transaction::query()
+                ->where('user_id', $user->id)
+                ->get();
+        }       
                         
         $courseSell = $transactions->where('product_type', COURSE)
                 ->sum('amount');
@@ -237,15 +299,12 @@ class TransactionController extends Controller {
             })->all(); 
         }
 
-
-
         $pagination = $transactions->toArray();
         unset($pagination['data']);
 
         return response()->json([
-            'data' => TransactionResource::collection($transactions),
+            'data' => TransactionHistoryResource::collection($transactions),
             'pagination' => $pagination,
-            
             'courseSell' => $courseSell,
             'bookSell' => $bookSell,
             'liveSell' => $liveSell,
@@ -256,7 +315,24 @@ class TransactionController extends Controller {
         ]);
     }
 
-    public function transactionInvoce($txRef) {
+    public function transactionInvoce(String $txRef) {
+
+        /**
+         * @var App\Models\user $user
+         */
+        $validation = [
+            'tx_ref' => ['required', 'string'],
+        ];
+        $validator = Validator::make(['tx_ref' => $txRef], $validation, $this->langService->getLang('transactions'));
+        
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        } 
 
         $user = Auth::user();
         $cartItems = [];
@@ -266,30 +342,44 @@ class TransactionController extends Controller {
 
         $transactionStatus = $this->chapaService->verifyPayment($txRef);
 
+        
 
         if ($transactionStatus['status'] !== 'success') {
             return response()->json([
                 'message' => $this->langService->getLang('transaction_not_successful')
-            ], 400);
-        }
+            ], 404);
+        } 
 
         $transactions = Transaction::query()
             ->where('customer_id', $user->id)
             ->where('tx_ref', $txRef)
-            ->get();
-
+            ->get(); 
+        
         if (!$transactions) {
             return response()->json([
                 'message' => $this->langService->getLang('transaction_not_found')
             ], 404);
         }
+
         $totalPrice = $transactions->sum('amount');
 
+        if($transactionStatus['data']['amount'] !== $totalPrice) {
+            
+            return response()->json([
+                'message' => 'somthing went wrong',
+            ], 404);
+        }
+    
         try{
             DB::beginTransaction();
                 foreach ($transactions as $transaction) {
+ 
                     $transaction->update([
                         'status' => TRANSACTION_SUCCESS
+                    ]); 
+
+                    $transaction->transfer()->update([
+                        'status' => TRANSACTION_SUCCESS, 
                     ]);
         
                     switch ($transaction->product_type) {
@@ -310,15 +400,7 @@ class TransactionController extends Controller {
                         'quantity' => 1,
                     ];
                     $date = $transaction->created_at->format('M d, Y, H:i:s');
-                }
-
-                $cheDepostitHistory = Transfer::query()
-                    ->where('reference', $txRef)
-                    ->first();
-
-                if( !$cheDepostitHistory) {
-                    $this->transferHistory($transaction, DEPOSIT, $totalPrice );
-                }
+                } 
 
             DB::commit();
 
@@ -327,7 +409,6 @@ class TransactionController extends Controller {
                 foreach ($admins as $admin) {
                     $admin->notify(new TransactionSuccessfulNotification($txRef, $totalPrice));
                 }
-
                 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -391,58 +472,147 @@ class TransactionController extends Controller {
     }
 
     public function transferToBank(Request $request) {
+        dd($this->checkTransferStatus());
         $user = User::query()
-            ->where('id', Auth::id())
-            ->has('systemAdmin')
+            ->whereSystemAdminOrInstructor()
             ->first();
 
         $txRef = 'Trf-' . uniqid();
 
         $validation = [
-            'amount' => ['required', 'numeric'],
+            'amount' => ['required', 'numeric', 'min:1'],
         ];
 
         $validator = Validator::make($request->all(), $validation, $this->langService->getLang('transfers'));
 
         if (!$validator->passes()) {
             $message = $validator->errors()->all()[0];
-
-            return response()->json([
-                'message' => $message,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['message' => $message], 422);
         }
 
         $bankInfo = $user->bankInfos()->first();
-        $withdralAmount = $request->amount ;
 
-        $data = (object) [
+        if (!$bankInfo) {
+            return response()->json(['message' => 'Bank account not found'], 404);
+        }
+
+        // Check balance
+        $balance = Transfer::query()
+            ->where('user_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('deposits')
+            - Transfer::query()
+            ->where('user_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('withdrawals');
+
+        if ($balance < $request->amount) {
+            return response()->json(['message' => $this->langService->getLang('insufficient_balance')], 400);
+        }
+
+        $data = [
             'account_number' => $bankInfo->account_number,
             'bank_code' => $bankInfo->bank_code,
             'amount' => $request->amount,
             'currency' => 'ETB',
             'reference' => $txRef,
+            'callback_url' => route('chapa.transfer.callback'), // Add this line
+        ];
+ 
+ 
+            DB::beginTransaction();
+
+            // Create transfer record
+            $transfer = $this->createWithdraw($request->amount); 
+            $response = $this->chapaService->transfer($data);
+
+            if ($response['status'] !== 'success') {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $response['message']
+                ], 400);
+            }
+
+            dd($response);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => $this->langService->getLang('transfer_initiated'),
+                'data' => $response,
+                'transfer' => $transfer,
+            ]);
+       
+    }
+
+    public function testTransferApproval(Request $request) {
+        
+
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        $txRef = 'Trf-' . uniqid();
+
+        $validation = [
+            'amount' => ['required', 'numeric', 'min:1'],
         ];
 
-        $balance = $this->getBalance()->getData()->data; 
+        $validator = Validator::make($request->all(), $validation, $this->langService->getLang('transfers'));
+
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json(['message' => $message], 422);
+        }
+
+        $bankInfo = $user->bankInfos()->first();
+
+        if (!$bankInfo) {
+            return response()->json(['message' => 'Bank account not found'], 404);
+        }
+
+        // Check balance
+        $balance = Transfer::query()
+            ->where('user_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->orderBy('id', 'desc')
+            ->first()->balance ?? 0;
+
 
         if ($balance < $request->amount) {
-            return response()->json([
-                'message' => $this->langService->getLang('insufficient_balance')
-            ], 400);
+            return response()->json(['message' => $this->langService->getLang('insufficient_balance')], 400);
         }
-   
-        $response = $this->chapaService->transfer($data);
 
-        $this->transferHistory($data, WITHDRAWAL);
+        $data = [
+            'account_number' => $bankInfo->account_number,
+            'bank_code' => $bankInfo->bank_code,
+            'amount' => $request->amount,
+            'currency' => 'ETB',
+            'reference' => $txRef,
+            'status' => 'success',
+            'timestamp' => now()->toDateTimeString(),
+            'callback_url' => route('chapa.transfer.callback'),  
+        ];
 
-        if($response['status'] === 'success') {
-            $this->transferHistory($data, WITHDRAWAL);
-        }
+        $signature = hash_hmac('sha256', json_encode($data), config('services.chapa.approval_secret'));
+ 
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'X-Chapa-Signature' => $signature
+        ])->post(url('/api/chapa/transfer/approval'), $data);
 
         return response()->json([
-            'message' => $response['message']
+            'message' => $this->langService->getLang('transfer_initiated'),
+            'data' => $response,
         ]);
+    }
 
+    // In your TransactionController
+    public function checkTransferStatus()
+    {
+        $response = Http::withToken(config('services.chapa.secret_key'))
+            ->get("https://api.chapa.co/v1/transfer/events/CTzAUrTZ1yVVm2");
+
+        dd($response);
+        return $response->json();
     }
 }

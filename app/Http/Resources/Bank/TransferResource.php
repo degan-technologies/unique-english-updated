@@ -13,14 +13,33 @@ class TransferResource extends JsonResource
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
-    {
+    { 
+
+ 
         return [
-            'amount' => $this->amount,
             'currency' => $this->currency,
-            'reference' => $this->reference,
-            'narration' => $this->narration,
+            'reference' => $this->transaction?->tx_ref,
+            'deposits' => $this->deposits,
+            'withdrawals' => $this->withdrawals,
             'status' => $this->status,
+            'transaction_id' => $this->transaction_id,
             'date' => $this->created_at->format('M d, Y', 'H:i:s'),
+
+            'color' => $this->getColor(),
         ];
+    }
+
+    public function getColor() {
+        if ($this->status === TRANSACTION_SUCCESS) {
+            return 'text-green-500';
+        } elseif ($this->status === TRANSACTION_PENDING) {
+            return 'text-yellow-500';
+        } elseif ($this->status === TRANSACTION_FAILED) {
+            return 'text-red-500';
+        } elseif ($this->status === TRANSACTION_REFUNDED) {
+            return 'text-blue-500';
+        } else {
+            return 'text-gray-500';
+        }
     }
 }

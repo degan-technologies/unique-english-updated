@@ -47,6 +47,7 @@ Route::get('/get-plans',[ PlanController::class, 'index']);
 
 Route::middleware('auth:api')
     ->group(function () {
+        Route::post('/log-out', [AuthController::class, 'logout']);
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
         Route::post('/add-student', [UserController::class, 'addStudent']);
         Route::delete('/delete-instructor/{id}', [UserController::class, 'destroy']);
@@ -168,9 +169,12 @@ Route::middleware('auth:api')
     Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
     Route::resource('/bank-info', BankInfoController::class);
     Route::get('/my-bank-info', [BankInfoController::class, 'myBankInfo']);
-    Route::post('/transfer', [TransactionController::class, 'transferToBank']);
+    Route::post('/transfer', [TransactionController::class, 'transferToBank']); 
+    Route::post('/chapa/approve-transfer', [TransactionController::class, 'testTransferApproval']);
     Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
     Route::get('/get-balance', [TransactionController::class, 'getBalance']);
+    Route::post('/chapa/transfer/approval', [TransactionController::class, 'handleTransferApproval'])
+        ->name('chapa.transfer.callback');
 
     Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
     Route::post('/change-comission', [PlatformComissionController::class, 'store']);

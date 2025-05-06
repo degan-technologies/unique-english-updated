@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use App\Models\Schedule\Schedule;
 use App\Models\User;
 use App\Services\LangService;
-
+use Illuminate\Support\Str;
 
 class ScheduleSeeder extends Seeder
 {
@@ -22,19 +22,16 @@ class ScheduleSeeder extends Seeder
 
          
         $schedules = [
-            ['day' => 'Monday',    'time' => '09:00'],
-            ['day' => 'Monday',    'time' => '14:00'],
-            ['day' => 'Tuesday',   'time' => '10:00'],
-            ['day' => 'Wednesday', 'time' => '11:00'],
-            ['day' => 'Thursday',  'time' => '13:00'],
-            ['day' => 'Friday',    'time' => '15:00'],
+            ['day' => 'Monday',    'schedule_time' => '09:00 AM', 'room_name' => Str::uuid()],
+            ['day' => 'Monday',    'schedule_time' => '14:00 AM', 'room_name' => Str::uuid()], 
         ];
  
         foreach ($schedules as $data) {
             Schedule::create([
                 'user_id' => $user->id,
                 'day'     => $data['day'],
-                'time'    => $data['time'], 
+                'schedule_time'    => $data['schedule_time'], 
+                'room_name'    => $data['room_name'], 
             ]);
         }
 

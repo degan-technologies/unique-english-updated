@@ -12,26 +12,35 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 trait TransferTrait {
-    public function transferHistory($transaction, $status, $totalPrice = null) {
+    public function createDeposit($transaction) {
 
-        $bankInfo = BankInfo::query()
+        $balance = Transfer::query()
             ->where('user_id', $transaction->user_id)
-            ->first();
+            ->where('status', TRANSACTION_SUCCESS)
+            ->orderBy('id', 'desc')
+            ->first()->balance ?? 0;
 
-        $transfer= Transfer::create([
-            'account_number' => $bankInfo->account_number,
-            'amount' => $totalPrice,
-            'currency' => 'ETB',
-            'reference' => $transaction->reference ?? $transaction->tx_ref,
-            'narration' => 'Transfer to bank account',
-            'status' => $status,
-            'user_id' =>Auth::id(),
-            'transaction_id' => $transaction->id ?? null
+        $balance = $balance + $transaction->amount;
+
+        if ($transaction->transfer) {
+            $transaction->transfer()->update([
+                'deposits' => $transaction->amount,
+                'user_id' => $transaction->user_id,
+                'transaction_id' => $transaction->id ?? null,
+                'balance' => $balance,
+            ]);
+            return;
+        }
+
+        $transaction->transfer()->create([  
+            'deposits' => $transaction->amount, 
+            'user_id' =>$transaction->user_id,
+            'transaction_id' => $transaction->id ?? null,
+            'balance' => $balance,
         ]);
 
         return;
     }
-
 
     public function getTransferHistory() {
 
@@ -46,20 +55,42 @@ trait TransferTrait {
     }
 
     public function getBalance() {
-        
-        $balancehistory = Transfer::query()
-            ->where('user_id', Auth::id() )
-            ->get();
 
-        $withdrawal = $balancehistory->where('status', WITHDRAWAL)->sum('amount');
-        $deposit = $balancehistory->where('status', DEPOSIT)->sum('amount');
-
-        $balance = $deposit - $withdrawal;
+        $balance = Transfer::query()
+            ->where('user_id', Auth::id())
+            ->where('status', TRANSACTION_SUCCESS)
+            ->orderBy('id', 'desc')
+            ->first()->balance ?? 0;
 
         return response()->json([
             'status' => 'success',
             'data' => $balance
         ]);
+    }
+
+    public function createWithdraw($amount) { 
+        $user = User::query()
+            ->where('id', Auth::id())
+            ->first();
+        if (!$user) return;
+
+        $balance = Transfer::query()
+            ->where('user_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('deposits')
+            - Transfer::query()
+            ->where('user_id', $user->id)
+            ->where('status', TRANSACTION_SUCCESS)
+            ->sum('withdrawals');
+
+         
+       $transfer = Transfer::create([
+            'withdrawals' => $amount,
+            'user_id' => $user->id,
+            'balance' => $balance,
+        ]);
+
+        return $transfer;
     }
 
 
@@ -116,7 +147,6 @@ trait TransferTrait {
             'courseSell' => $courseSell,
             'bookSell' => $bookSell,
             'liveSell' => $liveSell,
-
             'totalSell' => $totalSell,
             'transactionToday' => $transactionToday,
             'transactionThisMonth' => $transactionThisMonth,

@@ -70,7 +70,7 @@ class ScheduleController extends Controller {
             DB::beginTransaction();
  
             $schedule = $user->schedules()->create([
-                'day' => $request->day,
+                'day' => $request->day, 
                 'schedule_time' => $request->time,
                 'room_name' => Str::uuid(),
             ]);

@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('transfers', function (Blueprint $table) {
             $table->id();
 
-            $table->string('account_number');
-            $table->string('amount');
             $table->string('currency')->default('ETB');
-            $table->string('reference')->unique();
-            $table->string('narration')->nullable();
+            $table->string('reference')->unique()->nullable();
             $table->string('status')->default('pending');
+            $table->double('deposits')->nullable();
+            $table->double('withdrawals')->nullable();
+            $table->double('balance')->nullable();
 
             $table->timestamps();
 

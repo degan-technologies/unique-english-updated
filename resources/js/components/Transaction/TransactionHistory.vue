@@ -136,18 +136,20 @@
                 <thead>
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">transaction Id</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Platform Fee </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deposit ETB</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Withdrawals ETB</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <tr v-for="payout in payouts" :key="payout.id" class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.reference }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.status }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.currency }} {{ payout.amount }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.currency }} {{ calculatePayout(payout.amount) }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.deposits }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.withdrawals }}</td>
+                        <td 
+                            :class="payout.color"
+                            class="px-6 py-4 whitespace-nowrap text-sm">{{ payout.status }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.date }}</td>
                     </tr>
                 </tbody>

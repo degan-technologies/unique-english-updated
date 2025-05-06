@@ -11,16 +11,15 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void 
-    {
-        
-        Schema::create('private_rooms', function (Blueprint $table) { 
+    { 
+        Schema::create('private_rooms', function (Blueprint $table)  { 
             $table->id();
             $table->string('class_name');
             $table->unsignedTinyInteger('is_active')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");
             $table->softDeletes();
             $table->timestamps();
      
-            $table->foreignId('instructor_id')->default(1)->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('instructor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });
     }

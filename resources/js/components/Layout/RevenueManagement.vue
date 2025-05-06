@@ -198,7 +198,7 @@
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount  ETB</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                                         </tr>
@@ -214,15 +214,9 @@
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction?.customer?.email }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.date }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.type }}</td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{ transaction.amount }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ transaction.amount }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span
-                                                :class="{
-                                                    'text-green-500': transaction.status === transactionStatus.success,
-                                                    'text-yellow-500': transaction.status === transactionStatus.pending,
-                                                    'text-red-500': transaction.status === transactionStatus.failed
-                                                }"
-                                                >
+                                                <span :class="transaction.color" >
                                                 {{ transaction.status }}
                                                 </span>
                                             </td>

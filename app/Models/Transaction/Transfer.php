@@ -8,16 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Transfer extends Model {
 
     protected $fillable = [
-        'account_number',
-        'amount',
         'currency',
         'reference',
-        'narration',
         'status',
-        'user_id'
+        'deposits',
+        'withdrawals',
+        'user_id',
+        'transaction_id',
+        'balance',
     ];
 
-    public function user() {
-        return $this->belongsTo(User::class);
-    }
+    public function user() { return $this->belongsTo(User::class); }
+
+    public function transaction() { return $this->belongsTo(Transaction::class); }
 }
