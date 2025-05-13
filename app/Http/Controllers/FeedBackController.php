@@ -51,6 +51,7 @@ class FeedBackController extends Controller
         $eligibleCourse = false;
         $courseId = null;
         $bookId = null;
+        $columenNmae = null;
 
         /* @var \App\Models\User $user
         */
@@ -65,6 +66,7 @@ class FeedBackController extends Controller
                     ->first();
                 $courseId = $currentFeedback->id;
                 $eligibleCourse = Course::checkEligibility($currentFeedback->id);
+                $columenNmae = 'course_id';
                 break;
             case 'book':
                 $currentFeedback = Book::query()
@@ -72,19 +74,17 @@ class FeedBackController extends Controller
                     ->first();
                 $bookId = $currentFeedback->id;
                 $eligibleCourse = Book::checkEligibility($currentFeedback->id);
+                $columenNmae = 'book_id';
                 break;
             default:
                 return response()->json([
                     'message' => $this->langService->getLang('invalid_feedback_type')
                 ], 400);
         }
-
+ 
         $feedbackCompleted = FeedBack::query()
             ->where('user_id', $user->id)
-            ->where(function ($query) use ($courseId, $bookId) {
-                $query->orWhere('course_id', $courseId);
-                $query->orWhere('book_id', $bookId);
-            })
+            ->where("$columenNmae", $courseId)
             ->first();
 
         if($feedbackCompleted){

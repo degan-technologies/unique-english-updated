@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QASectionResource;
+use App\Models\Course\Course;
 use App\Services\LangService;
 
 class QASectionController extends Controller {
@@ -41,7 +42,7 @@ class QASectionController extends Controller {
         $user = Auth::user();
         $courseId = $request->course_id ?? null;
 
-        $course = $user->courses()->find($courseId);
+        $course =Course::find($courseId);
 
         if (!$course) {
             return response()->json([

@@ -65,7 +65,7 @@ class Course extends Model {
             ->where('course_id', $course->id)
             ->orderBy('id', 'desc')
             ->first();
-
+ 
         $totalSeconds = $course->courseContents()->where('content_type', VIDEO)->get()->reduce(function ($carry, $content) {
             $timeParts = explode(':', $content->hour);
             $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
@@ -84,9 +84,11 @@ class Course extends Model {
                 $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
                 return $carry + $seconds;
             }, 0);
-            $overAllPogress = round($totalTimeInSeconds / $totalSeconds * 100, 0);
+
+            $overAllPogress = $totalTimeInSeconds / $totalSeconds * 100; 
         }
 
+        
 
         if (!$overAllPogress) {
             $overAllPogress = 0;

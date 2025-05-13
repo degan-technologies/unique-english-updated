@@ -83,10 +83,12 @@ onMounted(() => {
         class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen relative"
         id="courses"
     >
-        <h1 class="text-2xl font-bold mb-6 text-center">Popular Courses</h1>
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">
+            Popular Courses
+        </h1>
         <div class="text-center mb-4">
             <h1
-                class="typing-text text-xl sm:text-2xl font-semibold text-blue-600"
+                class="typing-text text-xl sm:text-2xl font-semibold text-lime-700"
             >
                 {{ displayedText }}
                 <span class="cursor">|</span>
