@@ -130,6 +130,8 @@ class ErrorLangEnglish extends Lang {
 
             'transaction_not_successful' => 'Transaction not successful',
 
+            'invalid_file_type' => 'Invalid file type',
+
             'registration' => [
                 'email.required' => 'Email is required',
                 'phone.required' => 'phone number is required',
@@ -422,7 +424,17 @@ class ErrorLangEnglish extends Lang {
                 'class_name.string' => 'Class name must be a string',
                 'class_name.unique' => 'Class name must be unique',
                 'class_name.max' => 'Class name cannot exceed 255 characters',
-            ]
+            ],
+
+            'courseContents' => [
+                'title.required' => 'Title is required',
+                'title.string' => 'Title must be a string',
+                'title.min' => 'Title must have at least one characters',
+                'content_url.required' => 'Content type is required',
+                'content_url.file' => 'Content must be a file', 
+            ],
+
+
 
         ];
 

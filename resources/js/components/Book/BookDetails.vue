@@ -255,10 +255,10 @@ function playVideo() {
                                 >
                                     Book Description
                                 </h2>
+                            </div> 
+                            <div class="prose prose-sm sm:prose-base max-w-none ql-editor preview"
+                                v-html="selectedbook?.description">
                             </div>
-                            <p class="py-4 text-lg leading-9">
-                                {{ selectedbook?.description }}
-                            </p>
                         </div>
                     </div>
 

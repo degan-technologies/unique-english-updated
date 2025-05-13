@@ -18,6 +18,7 @@ const props = defineProps({
     averageRating: String,
     starDistribution: Object,
     showOnly: String,
+    addFeedbackType: String,
 });
 
 const newComment = ref("");
@@ -56,7 +57,7 @@ function getfeedbackTypes() {
         return (feedbackType.value = "book");
     }
 
-    return;
+    return feedbackType.value = props.addFeedbackType;
 }
 
 const handleHover = (event, starIndex) => {

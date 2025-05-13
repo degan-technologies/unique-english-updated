@@ -1,86 +1,97 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import Axios from "axios";
+import Axios from "axios"; 
 
-const props = defineProps({
-    qaSections: Array,
-    courseId: String,
+const props = defineProps({ 
+   courseId: String,
+   selectedCourseSlug: String,
 });
 
+const qaSections = ref([]);
+ 
 const questions = ref([]);
 const newQuestion = ref("");
 const questionError = ref("");
 
 const editableQa = ref({});
-const replayQaId = ref(null);
-const actionReplay = ref("replay");
-const actionEditReplay = ref(false);
+const replayQaId = ref(null); 
+const actionReplay = ref('replay')
+const actionEditReplay = ref(false)
 
 // For show more/less functionality
 const showAllQuestions = ref(false);
 const showAllAnswers = ref({});
 
-const updatedData = ref({
+const updatedData =ref( {
     question: null,
     qaSectionId: null,
     answer: null,
-    answerId: null,
-});
-
-// Initialize showAllAnswers for each question
-onMounted(() => {
-    props.qaSections.forEach((qa) => {
-        showAllAnswers.value[qa.id] = false;
-    });
-});
+    answerId:null,
+}); 
 
 function addQuestion() {
-    const payload = {
-        question: newQuestion.value.trim(),
-        course_id: props.courseId,
-    };
+     const payload = {
+            question: newQuestion.value.trim(),
+            course_id: props.courseId, 
+        }; 
 
-    Axios.post("/api/QASection", payload).then((res) => {
-        questions.value.push(res.data.data);
-        newQuestion.value = "";
-        questionError.value = "";
-    });
+        Axios
+            .post("/api/QASection", payload)
+            .then(res => {
+                questions.value.push(response.data.data);
+                newQuestion.value = "";
+                questionError.value = "";
+            })
+};
+
+function getQA() {
+    Axios
+        .get(`/api/get-course-qa/${props.selectedCourseSlug}`)
+        .then(res => { 
+            qaSections.value = res.data.data; 
+        })
 }
 
 function editQuestion(qa, type = null) {
     replayQaId.value = null;
 
-    if (actionReplay.value == type) {
+    if(actionReplay.value == type) {
         editableQa.value = {};
-        return (replayQaId.value = qa.id);
-    }
+        return replayQaId.value = qa.id;
+    } 
 
-    editableQa.value = { ...qa };
+    editableQa.value = {... qa};
     return;
-}
+};
 
 function saveQuestion() {
-    Axios.put(`/api/QASection/${editableQa.value?.id}`, {
-        question: editableQa.value?.question,
-    }).then((res) => {
-        editableQa.value = {};
-    });
-}
+    Axios
+        .put(`/api/QASection/${editableQa.value?.id}`, {question:editableQa.value?.question})
+        .then(res=>{
+            editableQa.value = {};
+        });
+};
 
-function deleteQuestion(id) {
-    Axios.delete(`/api/QASection/${id}}`).then((res) => {});
-}
-
-function addAnswer(questionId) {
+function deleteQuestion(id){
+    Axios
+        .delete(`/api/QASection/${id}}`)
+        .then(res=>{ });
+};
+ 
+function addAnswer(questionId){
     const payload = {
-        answer: updatedData.value.answer,
-        question_id: questionId,
-    };
+            answer: updatedData.value.answer,   
+            question_id: questionId,       
+        };
 
-    Axios.post("/api/answers", payload).then((res) => {});
-}
+    Axios
+        .post("/api/answers", payload).
+        then(res => {
 
-function editReplay(replay) {
+        })
+};
+
+function editReplay(replay){
     replayQaId.value = replay.question_id;
     updatedData.value.answer = replay.answer;
     updatedData.value.answerId = replay.id;
@@ -89,47 +100,50 @@ function editReplay(replay) {
 }
 
 function saveAnswer() {
-    const payload = {
-        answer: updatedData.value.answer,
+     const payload = { 
+        answer: updatedData.value.answer, 
     };
-    Axios.put(`/api/answers/${updatedData.value?.answerId}`, payload).then(
-        (res) => {
-            (updatedData.value.answer = null),
-                (replayQaId.value = null),
-                (actionEditReplay.value = false);
-        }
-    );
-}
+     Axios
+        .put(`/api/answers/${updatedData.value?.answerId }`, payload)
+        .then(res=>{
+            updatedData.value.answer = null,
+            replayQaId.value = null,
+            actionEditReplay.value = false;
+        }) 
+};
 
-function deleteAnswer(replayId) {
-    Axios.delete(`/api/answers/${replayId}`).then((res) => {});
-}
-
-// Computed property to handle showing limited or all questions
+ 
+function deleteAnswer(replayId) { 
+    Axios
+        .delete(`/api/answers/${replayId}`)
+        .then(res=>{});
+};
+ 
 const displayedQuestions = computed(() => {
-    if (showAllQuestions.value || props.qaSections.length <= 2) {
-        return props.qaSections;
+    if (showAllQuestions.value || qaSections.value.length <= 2) {
+        return qaSections.value;
     }
-    return props.qaSections.slice(0, 2);
+    return qaSections.value.slice(0, 2);
 });
-
-// Function to get displayed answers for a question
+ 
 function getDisplayedAnswers(answers, questionId) {
     if (showAllAnswers.value[questionId] || answers.length <= 2) {
         return answers;
     }
     return answers.slice(0, 2);
 }
-
-// Toggle show all questions
+ 
 function toggleShowAllQuestions() {
     showAllQuestions.value = !showAllQuestions.value;
 }
-
-// Toggle show all answers for a specific question
+ 
 function toggleShowAllAnswers(questionId) {
     showAllAnswers.value[questionId] = !showAllAnswers.value[questionId];
 }
+
+onMounted(()=>{
+    getQA();
+})
 </script>
 
 <template>
@@ -339,8 +353,7 @@ function toggleShowAllAnswers(questionId) {
                         <!-- Show More/Less Answers Button -->
                         <div
                             v-if="qa?.answers?.length > 2"
-                            class="text-center mt-2"
-                        >
+                            class="text-center mt-2" >
                             <button
                                 @click="toggleShowAllAnswers(qa.id)"
                                 class="text-lime-600 hover:underline text-sm"

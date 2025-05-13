@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->integer('eddition');
             $table->unsignedBigInteger('price');
             $table->unsignedBigInteger('discount')->nullable();
-            $table->string('description');
+            $table->longText('description');
 
             $table->string('language');
             $table->string('file_format');

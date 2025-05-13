@@ -136,11 +136,7 @@ watch(
                     <CourseDetail />
                 </div>
 
-                <div
-                    v-else-if="
-                        currentTab.tab == videoPlayerTab && currentTab.slug
-                    "
-                >
+                <div v-else-if=" currentTab.tab == videoPlayerTab && currentTab.slug ">
                     {{ redirectRoute() }}
                     <VideoPlayer />
                 </div>

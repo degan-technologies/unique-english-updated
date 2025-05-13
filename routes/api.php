@@ -62,7 +62,9 @@ Route::middleware('auth:api')
         Route::post('/profile-image/update', [UserController::class, 'profileImageUpdate']);
         Route::post('/remove-image', [UserController::class, 'profileImageRemove']);
 
+        Route::get('/show-course/{slug}', [CourseController::class, 'showCourse']);
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
+        Route::get('/get-course-qa/{slug}', [CourseModuleController::class, 'getCourseQandA']);
         Route::get('/get-book/{slug}', [BookController::class, 'getBook']);
         Route::get('/book-pdf/{filename}',[BookController::class, 'streamPdf']);
 
@@ -169,7 +171,7 @@ Route::middleware('auth:api')
     Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
     Route::resource('/bank-info', BankInfoController::class);
     Route::get('/my-bank-info', [BankInfoController::class, 'myBankInfo']);
-    Route::post('/transfer', [TransactionController::class, 'transferToBank']); 
+    Route::post('/transfer', [TransactionController::class, 'testTransferApproval']); 
     Route::post('/chapa/approve-transfer', [TransactionController::class, 'testTransferApproval']);
     Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
     Route::get('/get-balance', [TransactionController::class, 'getBalance']);

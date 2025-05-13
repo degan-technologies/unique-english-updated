@@ -56,11 +56,7 @@ class CourseModuleController extends Controller
 
         $courseModules = CourseModule::query()
             ->where('course_id', $courseId)
-            ->get();
-        
-        $qaSections = QASection::query()
-            ->where('course_id', $courseId)
-            ->get();
+            ->get(); 
 
         $certificateCompletion = QMetaData::query()
             ->where('course_id', $courseId)
@@ -82,9 +78,25 @@ class CourseModuleController extends Controller
  
 
         return response()->json([
-            'data' => CourseModuleResource::collection($courseModules),
-            'qaSections' => QASectionResource::collection($qaSections),
-            'certify' => $certify,
+            'data' => CourseModuleResource::collection($courseModules), 
+            'certify' => true,
+        ]);
+    }
+
+    public function getCourseQandA($slug) {
+        $user = Auth::user();
+        $certify = false;
+
+        $courseId = Course::query()
+            ->where('slug', $slug)
+            ->value('id'); 
+
+        $qaSections = QASection::query()
+            ->where('course_id', $courseId)
+            ->get(); 
+
+        return response()->json([ 
+            'data' => QASectionResource::collection($qaSections), 
         ]);
     }
 
@@ -109,7 +121,6 @@ class CourseModuleController extends Controller
 
         $validationRules = [
             'title' => 'required|string|min:3',
-            'description' => 'required|string|min:10',
             'course_id' => 'required|exists:courses,id',
         ];
 
@@ -126,7 +137,7 @@ class CourseModuleController extends Controller
             'slug' => Str::uuid(),
             'title' => $request->title,
             'sequence' =>$getSequence ? $getSequence->sequence + 1 : 1,
-            'description' => $request->description,
+            'description' => 'well described',
             'course_id' => $request->course_id,
             'user_id' => $user->id,
         ]);
@@ -183,7 +194,6 @@ class CourseModuleController extends Controller
     
         $validationRules = [
             'title' => 'required|string|min:3',
-            'description' => 'required|string|min:10',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('modules'));
@@ -197,7 +207,7 @@ class CourseModuleController extends Controller
     
         $courseModule->update([
             'title' => $request->title,
-            'description' => $request->description,
+            'description' => 'well described',
         ]);
     
         return response()->json([

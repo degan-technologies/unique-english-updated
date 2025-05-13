@@ -55,7 +55,9 @@ class FeedBackController extends Controller
 
         /* @var \App\Models\User $user
         */
-        $user = Auth::user();
+        $user = User::query()
+            ->where('id', Auth::id())
+            ->first();
 
         $feedbackCompleted = $user->feedBacks;
 
@@ -64,7 +66,7 @@ class FeedBackController extends Controller
                 $currentFeedback = Course::query()
                     ->where('slug', $courseSlug)
                     ->first();
-                $courseId = $currentFeedback->id;
+                $courseId = $currentFeedback->id; 
                 $eligibleCourse = Course::checkEligibility($currentFeedback->id);
                 $columenNmae = 'course_id';
                 break;
@@ -99,8 +101,8 @@ class FeedBackController extends Controller
             ], 404);
         }
 
-
-        if (!$eligibleCourse) {
+ 
+        if (!$eligibleCourse && !$user->systemAdmin) {
             return response()->json([
                 'message' => $this->langService->getLang('unauthorized_action')
             ], 403);

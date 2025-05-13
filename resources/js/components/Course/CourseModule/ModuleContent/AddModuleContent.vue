@@ -1,240 +1,253 @@
 <script setup>
-    import Axios from "axios";
-    import { useRoute, useRouter } from "vue-router";
-    import { ref, onMounted, defineProps  } from "vue";
+import Axios from 'axios';
+import { ref, computed, watch } from 'vue';
+import 'video.js/dist/video-js.css';
 
-    const route = useRoute();
-    const router = useRouter();
+const props = defineProps({
+    selectedModule: Object,
+});
 
-    const props = defineProps({
-    courseId: Number,
-    moduleId: Number
-    });
+const emit = defineEmits(['closeModal', 'onAddLesson']);
 
-    const form = ref({
-    title: "",
-    description: "",
+const videoPlayer = ref(null);
+const isLoading = ref(false);
+const errorMessage = ref('');
+const successMessage = ref('');
+
+const form = ref({
+    title: "", 
     content_type: 1,
     content_url: null,
     thumbnail_url: null,
-    hour: "",
-    status: 2, 
-    note: "",
-    });
+    create_content_url: null,
+    create_thumbnail_url: null,
+});
 
-    const errorMessage = ref("");
-    const content = ref([]);
-    const loading = ref(true);
+// Reset form when module changes
+watch(() => props.selectedModule, () => {
+    resetForm();
+});
 
-    const editingContent = ref(null);
+const contentTypeLabels = {
+    1: 'Video Content',
+    2: 'PDF Document',
+    3: 'Image Content',
+    4: 'Document'
+};
 
-    const handleFileUpload = (field, event) => {
-        form.value[field] = event.target.files[0];
-    };
-
-    function editContent(item) {
-        editingContent.value = item;
-        form.value = { ...item }; 
-    };
-
-    const cancelEdit = () => {
-        editingContent.value = null;  
-        form.value = {}; 
-    };
-
-    function submitModuleContent() {
-        const formData = new FormData();
-        formData.append("course_id", props.courseId); 
-        formData.append("course_module_id", props.moduleId);
-        formData.append("title", form.value.title);
-        formData.append("description", form.value.description);
-        formData.append("content_type", Number(form.value.content_type));
-        formData.append("content_url", form.value.content_url);
-        formData.append("thumbnail_url", form.value.thumbnail_url);
-        formData.append("hour", form.value.hour);
-        formData.append("status", Number(form.value.status));
-        formData.append("note", form.value.note);
-
-        Axios
-            .post("/api/courses/content", formData)
-        .then(res => {});
-    };
+const previewContent = computed(() => {
+    if (!form.value.create_content_url) return null;
     
-    function updateContent() { 
-        const formData = new FormData();
-        formData.append("_method", "PUT");
-        formData.append("title", form.value.title);
-        formData.append("description", form.value.description);
-        formData.append("content_type", form.value.content_type);
+    return {
+        url: form.value.create_content_url,
+        type: form.value.content_type,
+        name: form.value.content_url?.name || ''
+    };
+});
+
+function getContentType(file) {
+    if (!file) return 1; // default to video
+    
+    const type = file.type || '';
+    if (type.startsWith('video/')) return 1;
+    if (type.startsWith('application/pdf')) return 2;
+    if (type.startsWith('image/')) return 3;
+    return 4; // other
+}
+
+function handleFileUpload(field, event) {
+    errorMessage.value = '';
+    const file = event.target.files[0];
+    
+    if (!file) return;
+    
+    // Validate file size (e.g., 50MB max)
+    if (file.size > 50 * 1024 * 1024) {
+        errorMessage.value = 'File size must be less than 50MB';
+        return;
+    }
+    
+    if (field === 'content_url') {
+        form.value.content_url = file;
+        form.value.create_content_url = URL.createObjectURL(file);
+        form.value.content_type = getContentType(file);
+    }
+}
+
+async function storeModuleContent() {
+    if (!form.value.title) {
+        errorMessage.value = 'Title is required';
+        return;
+    }
+    
+    if (!form.value.content_url) {
+        errorMessage.value = 'Please select a file';
+        return;
+    }
+
+    isLoading.value = true;
+    errorMessage.value = '';
+    successMessage.value = '';
+
+    try {
+        const formData = new FormData(); 
+        formData.append("course_module_id", props.selectedModule.id);
+        formData.append("title", form.value.title); 
         formData.append("content_url", form.value.content_url);
-        formData.append("thumbnail_url", form.value.thumbnail_url);
-        formData.append("hour", form.value.hour);
-        formData.append("status", form.value.status);
-        formData.append("note", form.value.note);
+        formData.append("content_type", form.value.content_type);
 
-        Axios
-            .put(`/api/courses/content/${editingContent.value.id}`, formData)
-            .then(res => {});
+        const response = await Axios.post("/api/courses/content", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        
+        successMessage.value = 'Content added successfully!';
+        emit('onAddLesson', response.data.data);
+        
+        // Auto-close after success
+        setTimeout(() => {
+            closeModal();
+        }, 1500);
+    } catch (err) {
+        errorMessage.value = err.response?.data?.message || 'Failed to add content. Please try again.';
+    } finally {
+        isLoading.value = false;
+    }
+}
+
+function resetForm() {
+    form.value = {
+        title: "",
+        description: "",
+        content_type: 1,
+        content_url: null,
+        thumbnail_url: null,
+        create_content_url: null,
+        create_thumbnail_url: null,
     };
+    errorMessage.value = '';
+    successMessage.value = '';
+}
 
-    function deleteContent(id) {
-        Axios
-            .delete(`/api/courses/content/${id}`)
-            .then(res => {});
-    };
-
-</script>  
+function closeModal() {
+    resetForm();
+    emit('closeModal');
+}
+</script>
 
 <template>
-    <div class="w-full mx-auto p-2  mb-2 h-auto [-ms-overflow-style:'none'] [scrollbar-width:'none'] [&::-webkit-scrollbar]:hidden">
-        <h2 class="text-lg font-semibold mb-6 text-center text-black">Add Course Content</h2>
+    <div v-if="selectedModule" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xl font-semibold text-gray-800">
+                    Add Lesson to Module
+                </h4>
+                <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Success Message -->
+            <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+                {{ successMessage }}
+            </div>
+            
+            <!-- Error Message -->
+            <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+                {{ errorMessage }}
+            </div>
 
-        <form class="grid grid-cols-1 gap-4 p-4 bg-white rounded-lg ">
-            <div class="relative">
-                <label class="block text-md font-medium text-gray-600 mb-1">Title <span class="text-red-500">*</span></label>
-                <div class="relative">
-                    <input 
-                        v-model="form.title"
-                        type="text"
-                        placeholder="Enter course title..."
-                        class="w-full p-2 pl-10 border rounded-md  text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required />
-                    <i class="fas fa-heading absolute left-3 top-3 text-gray-400"></i>
+            <form @submit.prevent="storeModuleContent" class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Title <span class="text-red-500">*</span>
+                    </label>
+                    <input v-model="form.title" type="text"
+                        class="w-full border border-gray-300 p-2.5 text-sm rounded-md focus:ring-2 focus:ring-lime-500 focus:border-lime-500 focus:outline-none transition"
+                        placeholder="Enter lesson title"
+                        required>
+                </div> 
+
+                <div>  
+                    <!-- Preview Section -->
+                    <div v-if="previewContent" class="mb-3">                         
+                        <div class="w-full h-48 rounded-md border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                            <!-- Video Preview -->
+                            <video v-if="form.content_type === 1" 
+                                controls
+                                class="w-full h-full object-contain"
+                                preload="metadata">
+                                <source :src="previewContent.url" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+
+                            <!-- PDF Preview -->
+                            <div v-else-if="form.content_type === 2" class="p-4 text-center">
+                                <i class="fas fa-file-pdf text-5xl text-red-500 mb-2"></i>
+                                <p class="text-sm text-gray-600">PDF Document</p>
+                            </div>
+
+                            <!-- Image Preview -->
+                            <img v-else-if="form.content_type === 3" 
+                                :src="previewContent.url"
+                                class="w-full h-full object-contain"
+                                alt="Content preview">
+
+                            <!-- Other File Preview -->
+                            <div v-else class="p-4 text-center">
+                                <i class="fas fa-file-alt text-5xl text-blue-500 mb-2"></i>
+                                <p class="text-sm text-gray-600">Document File</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- File Upload -->
+                    <div class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600">
+                                <span class="font-medium text-lime-600">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Videos, PDFs, Images (Max 50MB)
+                            </p>
+                        </div>
+                        <input type="file" 
+                            @change="handleFileUpload('content_url', $event)" 
+                            accept="video/*,application/pdf,image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                            required />
+                    </div>
                 </div>
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Description (Min 10 characters)</label>
-                <textarea
-                    v-model="form.description"
-                    placeholder="Write a brief description..."
-                    class="w-full p-2 border rounded-md  text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    minlength="10" ></textarea>
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Content Type <span class="text-red-500">*</span></label>
-                <select 
-                    v-model="form.content_type"
-                    class="w-full p-2 border rounded-md text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required >
-                    <option :value="1">📹 Video</option>
-                    <option :value="2">📄 PDF</option>
-                    <option :value="3">🖼️ Image</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Upload Content</label>
-                <input
-                    type="file"
-                    @change="handleFileUpload('content_url', $event)"
-                    class="w-full p-2 border rounded-md text-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Upload Thumbnail</label>
-                <input
-                    type="file"
-                    @change="handleFileUpload('thumbnail_url', $event)"
-                    accept="image/*"
-                    class="w-full p-2 border rounded-md text-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Duration (HH:MM) <span class="text-red-500">*</span></label>
-                <input 
-                    v-model="form.hour"
-                    type="time"
-                    class="w-full p-2 border rounded-md text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required />
-            </div>
-            <div>
-                <label class="block text-md font-medium text-gray-600 mb-1">Add content note</label>
-                <textarea
-                    v-model="form.note"
-                    placeholder="Add any additional note..."
-                    class="w-full p-2 border rounded-md text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    minlength="10" ></textarea>
-            </div>
-            <div v-if="errorMessage" class="text-red-500 text-center text-md mt-2"> {{ errorMessage }} </div>
-            <div class="mt-4 flex justify-end">
-                <div class="flex space-x-4">
-                    <button
-                        type="submit"
-                        @click="submitModuleContent()"
-                        class="bg-lime-700 text-white text-xs px-3 py-2 rounded-md hover:bg-lime-600 transition duration-300" >
-                        Add
-                    </button>
-                    <button
-                        type="button"
-                        @click="resetForm"
-                        class="bg-gray-300 text-black text-xs px-3 py-2 rounded-md hover:bg-gray-600 transition duration-300" >
+
+                <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+                    <button type="button"
+                        @click="closeModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500">
                         Cancel
                     </button>
-            </div>
-            </div>
-        </form>
+                    <button type="submit"
+                        :disabled="isLoading"
+                        class="px-4 py-2 text-sm font-medium text-white bg-lime-600 border border-transparent rounded-md shadow-sm hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <span v-if="isLoading">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> Processing...
+                        </span>
+                        <span v-else>
+                            Add Lesson
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </template>
-                           
+
 <style scoped>
-    html, body {
-        height: 100%;
-        margin: 0;
-    }
-
-    body {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .max-w-3xl {
-        min-height: 100%;
-    }
-
-    h2 {
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
-    }
-
-    form {
-        display: grid;
-        grid-template-columns: 1fr;
-        grid-gap: 1rem;
-    }
-
-    form > div {
-        display: flex;
-        flex-direction: column;
-    }
-
-    form .col-span-2 {
-        grid-column: span 2;
-    }
-
-    @media (min-width: 768px) {
-        form {
-        grid-template-columns: 1fr 1fr;
-        }
-        .col-span-2 {
-        grid-column: span 2;
-        }
-    }
-
-    button {
-        width: 100%;
-    }
-
-    .bg-gray-100 {
-        background-color: #f7fafc;
-    }
-
-    .shadow-md {
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    p {
-        margin-bottom: 0.5rem;
-    }
-
-    img {
-        object-fit: cover;
-    }
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter, .fade-leave-to {
+  opacity: 0;
+}
 </style>
-            

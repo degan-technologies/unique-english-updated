@@ -30,11 +30,8 @@ class CourseContentResource extends JsonResource {
             'hour' => $this->hour && strpos($this->hour, '00:') === 0 
                 ? substr($this->hour, 3) 
                 : $this->hour,
-            'duration' =>$duration,
-            'description' => $this->description,
-            'content_type' => $this->content_type,
-            'status' => $this->status,
-            'note' => $this->note,
+            'duration' =>$duration, 
+            'status' => $this->status, 
             'content_url' => $this->content_url
                 ? Storage::disk('public')->url($this->content_url)
                 : 'no-content_url.png',
@@ -50,4 +47,4 @@ class CourseContentResource extends JsonResource {
             'courseContentProgress' => new CourseContentProgressResource($this->courseContentProgress, $duration),
         ]; 
     }
-}
+} 

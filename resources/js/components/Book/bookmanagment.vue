@@ -102,7 +102,7 @@ const rowsPerPage = ref(10);
 
 function changeBooksPerPage(amount) {
     rowsPerPage.value = amount;
-    fetchBooksAdmin(1); // Go to first page with new per-page setting
+    fetchBooksAdmin(1); 
 }
 
 const nextPage = () => {
@@ -116,7 +116,6 @@ const prevPage = () => {
         fetchBooksAdmin(currentPage.value - 1);
     }
 };
-
 
 const deleteCourse = async (id) => {
     if (!window.confirm("Are you sure you want to delete this book?")) return;
@@ -183,8 +182,7 @@ const toggleView = () => {
     } else {
         viewMode.value = viewMode.value === "card" ? "table" : "card";
     }
-    localStorage.setItem("viewMode", viewMode.value);
-    //toast.info(`View mode changed to ${viewMode.value}`, { position: "top-right" });
+    localStorage.setItem("viewMode", viewMode.value); 
 };
 
 watch(

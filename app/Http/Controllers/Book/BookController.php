@@ -55,7 +55,7 @@ class BookController extends Controller {
             'newToday'   => $stats->newToday,
             'total'      => $stats->total,
             'pagination' => $pagination,
-            'data'       => BookResource::collection($resources),
+            'data'       => StdBookResource::collection($resources),
         ]);
     }
 

@@ -1,525 +1,564 @@
 <script setup>
-import Axios from "axios";
-import { storeToRefs } from "pinia";
-import {
-    onUnmounted,
-    ref,
-    watch,
-    toRaw,
-    onMounted,
-    onBeforeUnmount,
-} from "vue";
-import { useRouter, useRoute } from "vue-router";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import overviewEditor from "@/components/Layout/overviewEditor.vue";
-
+import Axios from 'axios';
+import { storeToRefs } from 'pinia';
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import { useRoute } from "vue-router";
+import videojs from 'video.js';
+import 'video.js/dist/video-js.css';
+import OverviewEditor from '@/components/Layout/overviewEditor.vue';
 import { useInstructorStore } from "@/store/useInstructorStore";
 
-const InstructorStore = useInstructorStore();
-const { selectedCourse, courseModuleTab } = storeToRefs(InstructorStore);
+// Constants
+const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+const SUCCESS_MESSAGE_TIMEOUT = 3000;
 
-const router = useRouter();
+// Store and Router
+const InstructorStore = useInstructorStore();
+const { selectedCourse } = storeToRefs(InstructorStore);
 const route = useRoute();
 
-const thumbnail_url = ref("thumbnail_url");
-const intro_video = ref("intro_video");
+// Refs
+const thumbnail_url = ref('thumbnail_url');
+const intro_video = ref('intro_video');
+const videoPlayer = ref(null);
+const playerInstance = ref(null);
+const isProcessingThumbnail = ref(false);
+const isProcessingVideo = ref(false);
 
+// Form state
 const course = ref({
-    course_name: "",
-    overview: "",
-    tag: "",
-    skill_level_id: "",
-    price: "",
-    discount: "",
-    credit_hour: "",
+    course_name: '',
+    overview: '',
+    skill_level: '',
+    price: '',
+    discount: '',
     upload_thumbnail: null,
-    intro_video: null,
-    language: "",
+    upload_intro_video: null,
+    language: '',
+    create_thumbnail_url: null,
+    create_intro_video: null
 });
 
+// UI State
 const errors = ref({});
 const successMessage = ref("");
 const loading = ref(false);
-
-const showNextButton = ref(false);
 const isSavingDraft = ref(false);
 const isStoringCourse = ref(false);
 const isUpdatingCourse = ref(false);
 
-const videoPlayer = ref(null);
-let playerInstance = null;
+const props = defineProps({
+    editCourse: Boolean,
+});
 
-if (selectedCourse.value?.id) {
-    course.value = { ...selectedCourse.value };
+// Computed properties
+const isEditing = computed(() => !!selectedCourse.value?.id && props.editCourse);
+const formTitle = computed(() => isEditing.value ? 'Edit Course' : 'Create New Course');
+const submitButtonText = computed(() => {
+    if (isStoringCourse.value) return 'Creating...';
+    if (isUpdatingCourse.value) return 'Updating...';
+    return isEditing.value ? 'Update Course' : 'Publish Course';
+});
+
+// Initialize form if editing
+watch([() => selectedCourse.value, () => props.editCourse], ([course, editMode]) => {
+    if (course?.id && editMode) {
+        initializeFormFromSelectedCourse();
+    } else if (!editMode) {
+        selectedCourse.value = null;
+    }
+}, { immediate: true });
+
+// Methods
+function initializeFormFromSelectedCourse() {
+    course.value = {
+        ...selectedCourse.value,
+        upload_thumbnail: null,
+        upload_intro_video: null,
+        create_thumbnail_url: null,
+        create_intro_video: null
+    }; 
 }
 
-function handleFileUpload(field, event) {
-    const file = event.target.files[0];
-    if (file) {
-        if (field === thumbnail_url.value) {
-            course.value["upload_thumbnail"] = file;
-            course.value["create_thumbnail_url"] = URL.createObjectURL(file);
-            return;
-        }
-        course.value["upload_intro_video"] = file;
-        course.value["create_intro_video"] = URL.createObjectURL(file);
+function validateFile(file, field) {
+    const maxSize = field === thumbnail_url.value ? MAX_THUMBNAIL_SIZE : MAX_VIDEO_SIZE;
+    const maxSizeMB = maxSize / (1024 * 1024);
 
-        // Update the Video.js player with the new source:
-        if (playerInstance) {
-            playerInstance.src({
-                src: course.value["create_intro_video"],
-                type: "video/mp4",
-            });
-            playerInstance.play();
+    if (file.size > maxSize) {
+        errors.value[field] = `File size must be less than ${maxSizeMB}MB`;
+        return false;
+    }
+
+    if (field === thumbnail_url.value && !file.type.startsWith('image/')) {
+        errors.value[field] = 'Please upload an image file';
+        return false;
+    }
+
+    if (field === intro_video.value && !file.type.startsWith('video/')) {
+        errors.value[field] = 'Please upload a video file';
+        return false;
+    }
+
+    return true;
+}
+
+async function handleFileUpload(field, event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Clear any previous errors
+    errors.value[field] = '';
+
+    if (!validateFile(file, field)) return;
+
+    // Set processing state
+    if (field === thumbnail_url.value) {
+        isProcessingThumbnail.value = true;
+    } else {
+        isProcessingVideo.value = true;
+    }
+
+    // Simulate processing delay (in real app, this might be actual processing)
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    try {
+        if (field === thumbnail_url.value) {
+            course.value.upload_thumbnail = file;
+            course.value.create_thumbnail_url = URL.createObjectURL(file);
+        } else {
+            course.value.upload_intro_video = file;
+            course.value.create_intro_video = URL.createObjectURL(file);
+            updateVideoPlayer();
+        }
+    } finally {
+        if (field === thumbnail_url.value) {
+            isProcessingThumbnail.value = false;
+        } else {
+            isProcessingVideo.value = false;
         }
     }
 }
 
-function storeCourse() {
-    isStoringCourse.value = true;
-
-    const formData = new FormData();
-
-    formData.append("course_name", course.value.course_name);
-    formData.append("overview", course.value.overview);
-    formData.append("tag", course.value.tag);
-    formData.append("skill_level", Number(course.value.skill_level_id));
-    formData.append("price", Number(course.value.price));
-    formData.append("discount", Number(course.value.discount));
-    formData.append("credit_hour", Number(course.value.credit_hour));
-    formData.append("thumbnail_url", course.value.upload_thumbnail);
-    formData.append("intro_video", course.value.upload_intro_video);
-    formData.append("language", course.value.language);
-    formData.append("status", "published");
-
-    Axios.post("/api/courses/course", formData)
-        .then((res) => {
-            successMessage.value = res.data.message;
-            course.value = {
-                course_name: "",
-                overview: "",
-                tag: "",
-                skill_level_id: "",
-                price: "",
-                discount: "",
-                credit_hour: "",
-                thumbnail_url: "",
-                intro_video: "",
-                language: "",
-            };
-            isStoringCourse.value = false;
-        })
-        .finally(() => {
-            loading.value = false;
+function updateVideoPlayer() {
+    if (playerInstance.value && course.value.create_intro_video) {
+        playerInstance.value.src({
+            src: course.value.create_intro_video,
+            type: 'video/mp4'
         });
+        playerInstance.value.play();
+    }
 }
 
-function storeDraft() {
-    isSavingDraft.value = true;
+async function submitCourse(status) {
+    loading.value = true;
+    errors.value = {};
 
-    const formData = new FormData();
+    // Set appropriate loading state
+    if (status === 'draft') {
+        isSavingDraft.value = true;
+    } else if (isEditing.value) {
+        isUpdatingCourse.value = true;
+    } else {
+        isStoringCourse.value = true;
+    }
 
-    formData.append("course_name", course.value.course_name);
-    formData.append("overview", course.value.overview);
-    formData.append("tag", course.value.tag);
-    formData.append("skill_level", Number(course.value.skill_level_id));
-    formData.append("price", Number(course.value.price));
-    formData.append("discount", Number(course.value.discount));
-    formData.append("credit_hour", Number(course.value.credit_hour));
-    formData.append("thumbnail_url", course.value.upload_thumbnail);
-    formData.append("intro_video", course.value.upload_intro_video);
-    formData.append("language", course.value.language);
-    formData.append("status", "draft");
+    try {
+        const formData = createFormData(status);
+        const endpoint = isEditing.value
+            ? `/api/courses/update/${selectedCourse.value.id}`
+            : '/api/courses/course';
 
-    Axios.post("/api/courses/course", formData)
-        .then((res) => {
-            successMessage.value = res.data.message;
-            course.value = {
-                course_name: "",
-                overview: "",
-                tag: "",
-                skill_level_id: "",
-                price: "",
-                discount: "",
-                credit_hour: "",
-                thumbnail_url: "",
-                intro_video: "",
-                language: "",
-            };
-            selectedCourse.value = res.data.data;
-            console.log("Selected Course:", selectedCourse.value);
-            showNextButton.value = true;
-            isSavingDraft.value = false;
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+        const response = await Axios.post(endpoint, formData);
+        handleSuccessResponse(response, status);
+    } catch (error) {
+        handleSubmissionError(error);
+    } finally {
+        resetLoadingStates();
+    }
 }
 
-function updateCourse() {
-    isUpdatingCourse.value = true;
-
+function createFormData(status) {
     const formData = new FormData();
+    const { upload_thumbnail, upload_intro_video, ...rest } = course.value;
 
-    formData.append("course_name", course.value.course_name);
-    formData.append("overview", course.value.overview);
-    formData.append(
-        "tag",
-        JSON.stringify(course.value.tag.split(",").map((tag) => tag.trim()))
-    );
-    formData.append("skill_level", Number(course.value.skill_level_id));
-    formData.append("price", Number(course.value.price));
-    formData.append("discount", Number(course.value.discount));
-    formData.append("credit_hour", Number(course.value.credit_hour));
-    course.value.upload_thumbnail instanceof File &&
-        formData.append("thumbnail_url", course.value.upload_thumbnail);
-    course.value.upload_intro_video instanceof File &&
-        formData.append("intro_video", course.value.upload_intro_video);
-    formData.append("language", course.value.language);
-    formData.append("status", course.value.status || "published");
+    // Add all simple fields
+    Object.entries(rest).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+            formData.append(key, value);
+        }
+    });
 
-    Axios.post(`/api/courses/update/${selectedCourse.value.id}`, formData)
-        .then((res) => {
-            successMessage.value = res.data.message;
-            isUpdatingCourse.value = false;
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+    // Handle special fields
+    formData.append("status", status);
+ 
+
+    // Add files if they exist
+    if (upload_thumbnail instanceof File) {
+        formData.append('thumbnail_url', upload_thumbnail);
+    }
+    if (upload_intro_video instanceof File) {
+        formData.append('intro_video', upload_intro_video);
+    }
+
+    return formData;
+}
+
+function handleSuccessResponse(response, status) {
+    successMessage.value = response.data.message ||
+        (status === 'draft' ? 'Draft saved successfully' :
+            isEditing.value ? 'Course updated successfully' : 'Course published successfully');
+
+    if (!isEditing.value && status === 'published') {
+        selectedCourse.value = response.data.data;
+        resetForm();
+    }
+}
+
+function handleSubmissionError(error) {
+    if (error.response?.data?.errors) {
+        errors.value = error.response.data.errors;
+    } else {
+        errors.value.general = error.response?.data?.message || 'An error occurred. Please try again.';
+        console.error('Submission error:', error);
+    }
+}
+
+function resetForm() {
+    course.value = {
+        course_name: '',
+        overview: '',
+        skill_level: '',
+        price: '',
+        discount: '',
+        upload_thumbnail: null,
+        upload_intro_video: null,
+        language: '',
+        create_thumbnail_url: null,
+        create_intro_video: null
+    };
+
+    if (playerInstance.value) {
+        playerInstance.value.src({});
+    }
+}
+
+function resetLoadingStates() {
+    loading.value = false;
+    isSavingDraft.value = false;
+    isStoringCourse.value = false;
+    isUpdatingCourse.value = false;
 }
 
 const updateOverview = (newOverview) => {
     course.value.overview = newOverview;
 };
 
-watch(
-    [() => successMessage.value, () => route.query.slug],
-    ([newSuccessMessage, newSlug]) => {
-        if (newSuccessMessage) {
-            setTimeout(() => {
-                successMessage.value = null;
-            }, 2000);
-        }
-    },
-    { immediate: true }
-);
-
-onUnmounted(() => {
-    selectedCourse.value = null;
-});
-
+// Lifecycle Hooks
 onMounted(() => {
     if (videoPlayer.value) {
-        playerInstance = videojs(videoPlayer.value, {
+        playerInstance.value = videojs(videoPlayer.value, {
             controls: true,
-            autoplay: true,
+            autoplay: false,
             responsive: true,
             fluid: true,
+            aspectRatio: '16:9'
         });
     }
-    if (course.value.tag && typeof course.value.tag === "string") {
-        try {
-            const parsed = JSON.parse(course.value.tag);
-            if (Array.isArray(parsed)) {
-                course.value.tag = parsed.join(", ");
-            } else {
-                course.value.tag = course.value.tag.replace(/^"(.*)"$/, "$1");
-            }
-        } catch (e) {
-            course.value.tag = course.value.tag.replace(/^"(.*)"$/, "$1");
-        }
+});
+
+onBeforeUnmount(() => {
+    if (playerInstance.value) {
+        playerInstance.value.dispose();
+        playerInstance.value = null;
+    }
+
+    // Clean up object URLs
+    if (course.value.create_thumbnail_url) {
+        URL.revokeObjectURL(course.value.create_thumbnail_url);
+    }
+    if (course.value.create_intro_video) {
+        URL.revokeObjectURL(course.value.create_intro_video);
     }
 });
-onBeforeUnmount(() => {
-    if (playerInstance) {
-        playerInstance.dispose();
+
+// Watchers
+watch(successMessage, (newVal) => {
+    if (newVal) {
+        setTimeout(() => successMessage.value = '', SUCCESS_MESSAGE_TIMEOUT);
     }
 });
 </script>
 
 <template>
-    <div class="flex justify-center items-center min-h-screen p-6">
-        <div class="w-full max-w-5xl bg-white rounded-lg p-8">
+    <div class="flex justify-center items-start min-h-screen py-8">
+        <div class="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
             <h2 class="text-2xl font-bold text-lime-700 mb-6">
-                {{ selectedCourse ? "Edit Course" : "Add a New Course" }}
+                {{ formTitle }}
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="md:col-span-3 space-y-6">
+
+            <!-- Success Message -->
+            <transition name="fade">
+                <div v-if="successMessage"
+                    class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    {{ successMessage }}
+                </div>
+            </transition>
+
+            <!-- Error Message -->
+            <div v-if="errors.general" class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                {{ errors.general }}
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <!-- Main Content Column -->
+                <div class="lg:col-span-3 space-y-6">
+                    <!-- Course Name -->
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2"
-                            >Course Name <span class="text-red-500">*</span>
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            Course Name <span class="text-red-500">*</span>
                         </label>
-                        <input
-                            v-model="course.course_name"
-                            type="text"
-                            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                            :class="{ 'border-red-500': errors.course_name }"
-                            placeholder="Enter course name"
-                        />
-                        <p
-                            v-if="errors.course_name"
-                            class="mt-1 text-red-500 text-sm"
-                        >
-                            {{ errors.course_name }}
-                        </p>
+                        <input v-model.trim="course.course_name" type="text"
+                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                            :class="{ 'border-red-500': errors.course_name }" placeholder="Enter course name"
+                            maxlength="100" />
+                        <p v-if="errors.course_name" class="mt-1 text-red-500 text-sm">{{ errors.course_name }}</p>
                     </div>
+
+                    <!-- Media Uploads -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Thumbnail Upload -->
                         <div>
-                            <div
-                                v-if="
-                                    course.create_thumbnail_url ||
-                                    course?.thumbnail_url
-                                "
-                            >
-                                <img
-                                    :src="
-                                        course.create_thumbnail_url
-                                            ? course.create_thumbnail_url
-                                            : course?.thumbnail_url
-                                    "
-                                    alt="Course Thumbnail"
-                                    class="w-full h-40 object-cover rounded-md shadow-md transition transform hover:scale-105"
-                                />
+                            <div v-if="course.create_thumbnail_url || course?.thumbnail_url" class="mb-2 relative">
+                                <img :src="course.create_thumbnail_url || course.thumbnail_url" alt="Course Thumbnail"
+                                    class="w-full h-40 object-cover rounded-md shadow-md border border-gray-200" />
+                                <div v-if="isProcessingThumbnail"
+                                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
+                                    </div>
+                                </div>
                             </div>
-                            <label
-                                class="block text-gray-700 font-medium mt-2 mb-1 text-sm"
-                                >Upload Thumbnail</label
-                            >
-                            <input
-                                type="file"
-                                @change="
-                                    handleFileUpload(thumbnail_url, $event)
-                                "
-                                class="w-full border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-lime-700 text-sm"
-                            />
+                            <label class="block text-gray-700 font-medium mb-2">Course Thumbnail</label>
+                            <div class="relative">
+                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                    :class="{ 'border-lime-500 bg-lime-50': isProcessingThumbnail }">
+                                    <div class="flex flex-col items-center text-gray-500">
+                                        <template v-if="isProcessingThumbnail">
+                                            <div
+                                                class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                            </div>
+                                            <span class="text-sm">Processing thumbnail...</span>
+                                        </template>
+                                        <template v-else>
+                                            <i class="fas fa-image text-2xl mb-2"></i>
+                                            <span class="text-sm">Click to upload thumbnail</span>
+                                            <span class="text-xs mt-1">(Max 10MB, JPG/PNG)</span>
+                                        </template>
+                                    </div>
+                                    <input type="file" accept="image/jpeg, image/png"
+                                        @change="handleFileUpload(thumbnail_url, $event)"
+                                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        :disabled="isProcessingThumbnail" />
+                                </div>
+                                <p v-if="errors.thumbnail_url" class="mt-1 text-red-500 text-sm">{{ errors.thumbnail_url
+                                    }}</p>
+                            </div>
                         </div>
+
+                        <!-- Intro Video Upload -->
                         <div>
-                            <div
-                                v-if="
-                                    course.create_intro_video ||
-                                    (course.intro_video_url &&
-                                        course.intro_video_url !==
-                                            'no-intro_video.png')
-                                "
-                            >
-                                <!-- Video.js Player -->
-                                <video
-                                    ref="videoPlayer"
-                                    class="video-js vjs-default-skin w-full h-40 rounded-md shadow-md border"
-                                    controls
-                                    preload="auto"
-                                >
-                                    <source
-                                        :src="
-                                            course.create_intro_video
-                                                ? course.create_intro_video
-                                                : course.intro_video_url
-                                        "
-                                        type="video/mp4"
-                                    />
-                                    Your browser does not support the video tag.
+                            <div v-if="course.create_intro_video || course?.intro_video_url" class="mb-2 relative">
+                                <video ref="videoPlayer"
+                                    class="video-js w-full h-40 rounded-md border border-gray-200 bg-black" controls
+                                    preload="auto">
+                                    <source :src="course.create_intro_video || course.intro_video_url"
+                                        type="video/mp4" />
                                 </video>
+                                <div v-if="isProcessingVideo"
+                                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
+                                    </div>
+                                </div>
                             </div>
-                            <label
-                                class="block text-gray-700 font-medium mt-2 mb-1 text-sm"
-                                >Upload Intro Video</label
-                            >
-                            <input
-                                type="file"
-                                @change="handleFileUpload(intro_video, $event)"
-                                class="w-full border border-gray-300 rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-lime-700 text-sm"
-                            />
+                            <label class="block text-gray-700 font-medium mb-2">Intro Video</label>
+                            <div class="relative">
+                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                    :class="{ 'border-lime-500 bg-lime-50': isProcessingVideo }">
+                                    <div class="flex flex-col items-center text-gray-500">
+                                        <template v-if="isProcessingVideo">
+                                            <div
+                                                class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                            </div>
+                                            <span class="text-sm">Processing video...</span>
+                                        </template>
+                                        <template v-else>
+                                            <i class="fas fa-video text-2xl mb-2"></i>
+                                            <span class="text-sm">Click to upload video</span>
+                                            <span class="text-xs mt-1">(Max 50MB, MP4)</span>
+                                        </template>
+                                    </div>
+                                    <input type="file" accept="video/mp4"
+                                        @change="handleFileUpload(intro_video, $event)"
+                                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                        :disabled="isProcessingVideo" />
+                                </div>
+                                <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Course Overview -->
                     <div>
-                        <overviewEditor
-                            :selectedCourse="course"
-                            @update-overview="updateOverview"
-                        />
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            Course Overview <span class="text-red-500">*</span>
+                        </label>
+                        <OverviewEditor :selectedCourse="course" @update-overview="updateOverview" />
+                        <p v-if="errors.overview" class="mt-1 text-red-500 text-sm">{{ errors.overview }}</p>
                     </div>
                 </div>
+
+                <!-- Sidebar Column -->
                 <div class="space-y-6">
+                    <!-- Skill Level -->
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2"
-                            >Tags</label
-                        >
-                        <input
-                            v-model="course.tag"
-                            type="text"
-                            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                            :class="{ 'border-red-500': errors.tag }"
-                            placeholder="e.g. Programming, AI, Web Dev"
-                        />
-                        <p v-if="errors.tag" class="mt-1 text-red-500 text-sm">
-                            {{ errors.tag }}
-                        </p>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-medium mb-2">
+                        <label class="block text-gray-700 font-semibold mb-2">
                             Skill Level <span class="text-red-500">*</span>
                         </label>
-                        <select
-                            v-model="course.skill_level_id"
-                            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                            required
-                        >
-                            <option value="1">BEGINNER</option>
-                            <option value="2">INTERMEDIATE</option>
-                            <option value="3">ADVANCE</option>
-                            <option value="4">FULL PACKAGE</option>
+                        <select v-model="course.skill_level"
+                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                            :class="{ 'border-red-500': errors.skill_level }">
+                            <option value="" disabled>Select skill level</option>
+                            <option value="1">Beginner</option>
+                            <option value="2">Intermediate</option>
+                            <option value="3">Advanced</option>
+                            <option value="4">All Levels</option>
                         </select>
-                        <p
-                            v-if="errors.skill_level"
-                            class="mt-1 text-red-500 text-sm"
-                        >
-                            {{ errors.skill_level }}
+                        <p v-if="errors.skill_level" class="mt-1 text-red-500 text-sm">{{ errors.skill_level }}
                         </p>
                     </div>
+
+                    <!-- Pricing -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label
-                                class="block text-gray-700 font-semibold mb-2"
-                                >Price ($)</label
-                            >
-                            <input
-                                v-model="course.price"
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                                :class="{ 'border-red-500': errors.price }"
-                                placeholder="e.g. 99.99"
-                            />
-                            <p
-                                v-if="errors.price"
-                                class="mt-1 text-red-500 text-sm"
-                            >
-                                {{ errors.price }}
-                            </p>
+                            <label class="block text-gray-700 font-semibold mb-2">Price ($)</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-gray-500">$</span>
+                                <input v-model.number="course.price" type="number" min="0" step="0.01"
+                                    class="w-full border border-gray-300 rounded-md pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                                    placeholder="0.00" />
+                            </div>
+                            <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
                         </div>
                         <div>
-                            <label
-                                class="block text-gray-700 font-semibold mb-2"
-                                >Discount (%)</label
-                            >
-                            <input
-                                v-model="course.discount"
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                                :class="{ 'border-red-500': errors.discount }"
-                                placeholder="e.g. 10"
-                            />
-                            <p
-                                v-if="errors.discount"
-                                class="mt-1 text-red-500 text-sm"
-                            >
-                                {{ errors.discount }}
-                            </p>
+                            <label class="block text-gray-700 font-semibold mb-2">Discount (%)</label>
+                            <div class="relative">
+                                <span class="absolute right-3 top-3 text-gray-500">%</span>
+                                <input v-model.number="course.discount" type="number" min="0" max="100"
+                                    class="w-full border border-gray-300 rounded-md px-4 pr-8 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                                    placeholder="0" />
+                            </div>
+                            <p v-if="errors.discount" class="mt-1 text-red-500 text-sm">{{ errors.discount }}</p>
                         </div>
-                    </div>
+                    </div> 
+
+                    <!-- Language -->
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2"
-                            >Credit Hour</label
-                        >
-                        <input
-                            v-model="course.credit_hour"
-                            type="number"
-                            min="1"
-                            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                            :class="{ 'border-red-500': errors.credit_hour }"
-                            placeholder="e.g. 3"
-                        />
-                        <p
-                            v-if="errors.credit_hour"
-                            class="mt-1 text-red-500 text-sm"
-                        >
-                            {{ errors.credit_hour }}
-                        </p>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2"
-                            >Language</label
-                        >
-                        <input
-                            v-model="course.language"
-                            type="text"
-                            class="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lime-700"
-                            :class="{ 'border-red-500': errors.language }"
-                            placeholder="e.g.  amharic, english"
-                        />
-                        <p
-                            v-if="errors.language"
-                            class="mt-1 text-red-500 text-sm"
-                        >
-                            {{ errors.language }}
-                        </p>
+                        <label class="block text-gray-700 font-semibold mb-2">Language</label>
+                        <input v-model.trim="course.language" type="text"
+                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                            placeholder="e.g. English, Amharic" />
+                        <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
                     </div>
                 </div>
             </div>
-            <div class="space-y-4 mt-4">
-                <transition name="fade">
-                    <div
-                        v-if="successMessage"
-                        class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg text-center"
-                    >
-                        {{ successMessage }}
-                    </div>
-                </transition>
-                <div class="flex justify-end mt-8 space-x-4">
-                    <button
-                        v-if="!selectedCourse"
-                        type="button"
-                        @click="storeDraft()"
-                        :disabled="isSavingDraft"
-                        class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300 text-md"
-                    >
-                        <span v-if="isSavingDraft"> Saving Draft... </span>
-                        <span v-else> Save as Draft </span>
-                    </button>
-                    <button
-                        type="submit"
-                        @click="selectedCourse ? updateCourse() : storeCourse()"
-                        :disabled="isStoringCourse || isUpdatingCourse"
-                        class="bg-gradient-to-r from-lime-700 to-lime-600 text-white py-2 px-4 rounded-lg hover:opacity-90 transition duration-300 text-md"
-                    >
-                        <span v-if="isStoringCourse || isUpdatingCourse">
-                            {{
-                                selectedCourse
-                                    ? "Updating Course..."
-                                    : "Adding Course..."
-                            }}
-                        </span>
-                        <span v-else>
-                            {{
-                                selectedCourse ? "Update Course" : "Add Course"
-                            }}
-                        </span>
-                    </button>
-                </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end mt-8 space-x-4">
+                <button v-if="!isEditing" type="button" @click="submitCourse('draft')"
+                    :disabled="isSavingDraft || loading"
+                    class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+                    <span v-if="isSavingDraft">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
+                    </span>
+                    <span v-else>
+                        <i class="fas fa-save mr-2"></i> Save as Draft
+                    </span>
+                </button>
+
+                <button type="button" @click="submitCourse('published')"
+                    :disabled="isStoringCourse || isUpdatingCourse || loading"
+                    class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+                    <span v-if="isStoringCourse || isUpdatingCourse">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        {{ submitButtonText }}
+                    </span>
+                    <span v-else>
+                        <i class="fas fa-upload mr-2"></i>
+                        {{ submitButtonText }}
+                    </span>
+                </button>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-.form-group {
-    @apply flex flex-col gap-1;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
 }
 
-.form-group label {
-    @apply font-semibold text-gray-700;
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
-.form-input {
-    @apply w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 transition duration-200;
+/* Improved video player styling */
+.video-js {
+    height: 200px;
+    background-color: #000;
 }
 
-.error-text {
-    @apply text-red-600 text-sm mt-1;
+.video-js .vjs-big-play-button {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* File upload hover effect */
+.border-dashed:hover {
+    border-color: #84cc16;
+    background-color: #f7fee7;
+}
+
+/* Disabled button styling */
+button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Price input styling */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
 }
 </style>

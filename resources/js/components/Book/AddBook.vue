@@ -25,86 +25,187 @@ const newBook = ref({
 
 const coverPreview = ref(null);
 const videoPreview = ref(null);
+const tagInput = ref("");
+const loading = ref(false);
+const errors = ref({});
+
+const MAX_FILE_SIZE = {
+    COVER: 5 * 1024 * 1024, // 5MB
+    VIDEO: 50 * 1024 * 1024, // 50MB
+    BOOK: 100 * 1024 * 1024 // 100MB
+};
 
 const onFileChange = (field, event) => {
+    errors.value[field] = "";
     const file = event.target.files[0];
-    if (file) {
-        newBook.value[field] = file;
-        if (field === "cover_page_url") {
-            coverPreview.value = URL.createObjectURL(file);
-        }
-        if (field === "intro_video") {
-            videoPreview.value = URL.createObjectURL(file);
-        }
+    
+    if (!file) return;
+
+    // Validate file size
+    if (field === "cover_page_url" && file.size > MAX_FILE_SIZE.COVER) {
+        errors.value[field] = "Cover image must be less than 5MB";
+        return;
+    }
+    
+    if (field === "intro_video" && file.size > MAX_FILE_SIZE.VIDEO) {
+        errors.value[field] = "Video must be less than 50MB";
+        return;
+    }
+    
+    if (field === "file_url" && file.size > MAX_FILE_SIZE.BOOK) {
+        errors.value[field] = "Book file must be less than 100MB";
+        return;
+    }
+
+    // Validate file types
+    if (field === "cover_page_url" && !file.type.match(/image.*/)) {
+        errors.value[field] = "Please upload an image file";
+        return;
+    }
+    
+    if (field === "intro_video" && !file.type.match(/video.*/)) {
+        errors.value[field] = "Please upload a video file";
+        return;
+    }
+
+    newBook.value[field] = file;
+    
+    if (field === "cover_page_url") {
+        coverPreview.value = URL.createObjectURL(file);
+    }
+    if (field === "intro_video") {
+        videoPreview.value = URL.createObjectURL(file);
     }
 };
 
-const loading = ref(false);
-const error = ref("");
-const success = ref("");
+const validateForm = () => {
+    errors.value = {};
+    let isValid = true;
+
+    if (!newBook.value.title.trim()) {
+        errors.value.title = "Title is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.auther.trim()) {
+        errors.value.auther = "Author is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.price || newBook.value.price <= 0) {
+        errors.value.price = "Valid price is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.eddition || newBook.value.eddition <= 0) {
+        errors.value.eddition = "Valid edition number is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.publish_date) {
+        errors.value.publish_date = "Publish date is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.description.trim()) {
+        errors.value.description = "Description is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.page_number) {
+        errors.value.page_number = "Page number is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.cover_page_url) {
+        errors.value.cover_page_url = "Cover image is required";
+        isValid = false;
+    }
+
+    if (!newBook.value.file_url) {
+        errors.value.file_url = "Book file is required";
+        isValid = false;
+    }
+
+    return isValid;
+};
 
 const addBook = async () => {
-    error.value = "";
-    success.value = "";
-    loading.value = true;
+    if (!validateForm()) return;
 
-    const tagsArray = newBook.value.tag
+    loading.value = true;
+    
+    const tagsArray = tagInput.value
         .split(",")
-        .map((t) => t.trim())
-        .filter((t) => t !== "");
+        .map(t => t.trim())
+        .filter(t => t !== "");
 
     const formData = new FormData();
     formData.append("title", newBook.value.title);
     formData.append("auther", newBook.value.auther);
     formData.append("price", newBook.value.price);
     formData.append("eddition", newBook.value.eddition);
-    formData.append("discount", newBook.value.discount);
+    formData.append("discount", newBook.value.discount || 0);
     formData.append("publish_date", newBook.value.publish_date);
     formData.append("description", newBook.value.description);
     formData.append("page_number", newBook.value.page_number);
     formData.append("language", newBook.value.language);
     formData.append("file_format", newBook.value.file_format);
-
-    if (newBook.value.cover_page_url) {
-        formData.append("cover_page_url", newBook.value.cover_page_url);
-    }
-    if (newBook.value.file_url) {
-        formData.append("file_url", newBook.value.file_url);
-    }
+    formData.append("cover_page_url", newBook.value.cover_page_url);
+    formData.append("file_url", newBook.value.file_url);
+    
     if (newBook.value.intro_video) {
-        formData.append("intro_vedio", newBook.value.intro_video);
+        formData.append("intro_video", newBook.value.intro_video);
     }
+    
     formData.append("tag", JSON.stringify(tagsArray));
 
     try {
         await Axios.post("/api/books/books", formData, {
             headers: { "Content-Type": "multipart/form-data" },
         });
-        success.value = "Book added successfully!";
+        
         toast.success("Book added successfully!", { position: "top-right" });
-        newBook.value = {
-            title: "",
-            auther: "",
-            price: null,
-            eddition: null,
-            discount: null,
-            publish_date: "",
-            description: "",
-            page_number: "",
-            language: "English",
-            file_format: "pdf",
-            cover_page_url: null,
-            file_url: null,
-            intro_video: null,
-            tag: "",
-        };
-        coverPreview.value = null;
-        videoPreview.value = null;
+        resetForm();
     } catch (err) {
-        error.value = err.response?.data?.message || "Failed to add book.";
-        toast.error(error.value, { position: "top-right" });
+        const message = err.response?.data?.message || "Failed to add book";
+        toast.error(message, { position: "top-right" });
+        
+        if (err.response?.data?.errors) {
+            errors.value = { ...errors.value, ...err.response.data.errors };
+        }
     } finally {
         loading.value = false;
+    }
+};
+
+const resetForm = () => {
+    newBook.value = {
+        title: "",
+        auther: "",
+        price: null,
+        eddition: null,
+        discount: null,
+        publish_date: "",
+        description: "",
+        page_number: "",
+        language: "English",
+        file_format: "pdf",
+        cover_page_url: null,
+        file_url: null,
+        intro_video: null,
+        tag: "",
+    };
+    tagInput.value = "";
+    coverPreview.value = null;
+    videoPreview.value = null;
+    errors.value = {};
+};
+
+const cancelAdd = () => {
+    if (confirm("Are you sure you want to cancel? All changes will be lost.")) {
+        resetForm();
+        window.history.back();
     }
 };
 
@@ -114,157 +215,279 @@ function goBack() {
 </script>
 
 <template>
-    <button @click="goBack()"
-        class="px-4 py-2 bg-white text-black rounded-md hover:bg-slate-200 transition mr-4 flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg"
-            class="w-5 h-5 mr-2"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M15 18l-6-6 6-6" />
-        </svg>
-    </button>
+    <div class="max-w-6xl mx-auto p-4 md:p-6 bg-white rounded-lg shadow-sm">
+        <!-- Back Button -->
+        <button @click="goBack()"
+            class="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+            aria-label="Go back">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                class="w-5 h-5 mr-1"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+            <span class="text-sm font-medium">Back</span>
+        </button>
 
-    <div class="max-w-4xl mx-auto p-4 bg-white">
-        <h2 class="text-2xl font-bold text-center mb-4">Add New Book</h2>
-        <form @submit.prevent="addBook"
-            class="space-y-6 mt-4">
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Add New Book</h2>
+        
+        <form @submit.prevent="addBook" class="space-y-8">
             <!-- 60/40 layout -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <!-- LEFT: Uploads (3/5 = 60%) -->
-                <div class="lg:col-span-3 space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- LEFT: Uploads (2/3) -->
+                <div class="lg:col-span-2 space-y-6">
                     <!-- Cover Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Cover Page</label>
-                        <div v-if="coverPreview"
-                            class="mb-2">
+                        <label class="block text-gray-700 font-medium text-sm mb-2">
+                            Upload Cover Page <span class="text-red-500">*</span>
+                        </label>
+                        <div v-if="coverPreview" class="mb-3">
                             <img :src="coverPreview"
                                 alt="Cover Preview"
-                                class="w-3/4 max-h-48 object-cover rounded-md shadow hover:scale-105 transition-transform" />
+                                class="w-full max-w-md max-h-64 object-contain rounded-md border border-gray-200" />
                         </div>
-                        <div
-                            class="relative border border-gray-300 rounded-md text-center p-2 cursor-pointer hover:bg-gray-50 transition">
-                            <span class="text-gray-500 text-sm">Click to select cover image</span>
-                            <input type="file"
-                                @change="onFileChange('cover_page_url', $event)"
-                                class="absolute inset-0 opacity-0 cursor-pointer"
-                                required />
+                        <div class="relative">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{ 'border-red-500': errors.cover_page_url }">
+                                <div class="flex flex-col items-center text-gray-500">
+                                    <i class="fas fa-image text-3xl mb-2"></i>
+                                    <p class="text-sm font-medium">Click to upload cover image</p>
+                                    <p class="text-xs mt-1">JPG or PNG (Max 5MB)</p>
+                                </div>
+                                <input type="file"
+                                    @change="onFileChange('cover_page_url', $event)"
+                                    accept="image/jpeg,image/png"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                            </div>
+                            <p v-if="errors.cover_page_url" class="mt-1 text-red-500 text-sm">
+                                {{ errors.cover_page_url }}
+                            </p>
                         </div>
                     </div>
 
                     <!-- Intro Video Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Intro Video</label>
-                        <div v-if="videoPreview"
-                            class="mb-2">
-                            <video controls
-                                class="w-3/4 max-h-48 rounded-md shadow">
-                                <source :src="videoPreview"
-                                    type="video/mp4" />
+                        <label class="block text-gray-700 font-medium text-sm mb-2">
+                            Upload Intro Video
+                        </label>
+                        <div v-if="videoPreview" class="mb-3">
+                            <video controls class="w-full max-w-md max-h-64 rounded-md border border-gray-200 bg-black">
+                                <source :src="videoPreview" type="video/mp4" />
                                 Your browser does not support the video tag.
                             </video>
                         </div>
-                        <div
-                            class="relative border border-gray-300 rounded-md text-center p-2 cursor-pointer hover:bg-gray-50 transition">
-                            <span class="text-gray-500 text-sm">Click to select intro video</span>
-                            <input type="file"
-                                @change="onFileChange('intro_video', $event)"
-                                accept="video/*"
-                                class="absolute inset-0 opacity-0 cursor-pointer"
-                                required />
+                        <div class="relative">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{ 'border-red-500': errors.intro_video }">
+                                <div class="flex flex-col items-center text-gray-500">
+                                    <i class="fas fa-video text-3xl mb-2"></i>
+                                    <p class="text-sm font-medium">Click to upload intro video</p>
+                                    <p class="text-xs mt-1">MP4 (Max 50MB)</p>
+                                </div>
+                                <input type="file"
+                                    @change="onFileChange('intro_video', $event)"
+                                    accept="video/mp4"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                            </div>
+                            <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">
+                                {{ errors.intro_video }}
+                            </p>
                         </div>
                     </div>
 
                     <!-- Book File Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium text-sm mb-2">Upload Book File</label>
-                        <input type="file"
-                            @change="onFileChange('file_url', $event)"
-                            class="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            required />
+                        <label class="block text-gray-700 font-medium text-sm mb-2">
+                            Upload Book File <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{ 'border-red-500': errors.file_url }">
+                                <div class="flex flex-col items-center text-gray-500">
+                                    <i class="fas fa-file-pdf text-3xl mb-2"></i>
+                                    <p class="text-sm font-medium">Click to upload book file</p>
+                                    <p class="text-xs mt-1">PDF (Max 100MB)</p>
+                                </div>
+                                <input type="file"
+                                    @change="onFileChange('file_url', $event)"
+                                    accept=".pdf"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                            </div>
+                            <p v-if="errors.file_url" class="mt-1 text-red-500 text-sm">
+                                {{ errors.file_url }}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- RIGHT: Fields (2/5 = 40%) -->
-                <div class="lg:col-span-2 space-y-4">
+                <!-- RIGHT: Fields (1/3) -->
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Title</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Title <span class="text-red-500">*</span>
+                        </label>
                         <input v-model="newBook.title"
                             type="text"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                            :class="{ 'border-red-500': errors.title }"
+                            placeholder="Book title" />
+                        <p v-if="errors.title" class="mt-1 text-red-500 text-sm">{{ errors.title }}</p>
                     </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Author</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Author <span class="text-red-500">*</span>
+                        </label>
                         <input v-model="newBook.auther"
                             type="text"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                            :class="{ 'border-red-500': errors.auther }"
+                            placeholder="Author name" />
+                        <p v-if="errors.auther" class="mt-1 text-red-500 text-sm">{{ errors.auther }}</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Price</label>
-                        <input v-model.number="newBook.price"
-                            type="number"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Price (Birr) <span class="text-red-500">*</span>
+                            </label>
+                            <input v-model.number="newBook.price"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                                :class="{ 'border-red-500': errors.price }"
+                                placeholder="0.00" />
+                            <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Discount (Birr)
+                            </label>
+                            <input v-model.number="newBook.discount"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                                placeholder="0.00" />
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Edition</label>
-                        <input v-model.number="newBook.eddition"
-                            type="number"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Edition <span class="text-red-500">*</span>
+                            </label>
+                            <input v-model.number="newBook.eddition"
+                                type="number"
+                                min="1"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                                :class="{ 'border-red-500': errors.eddition }"
+                                placeholder="1" />
+                            <p v-if="errors.eddition" class="mt-1 text-red-500 text-sm">{{ errors.eddition }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Page Number <span class="text-red-500">*</span>
+                            </label>
+                            <input v-model.number="newBook.page_number"
+                                type="number"
+                                min="1"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                                :class="{ 'border-red-500': errors.page_number }"
+                                placeholder="100" />
+                            <p v-if="errors.page_number" class="mt-1 text-red-500 text-sm">{{ errors.page_number }}</p>
+                        </div>
                     </div>
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Discount (%)</label>
-                        <input v-model.number="newBook.discount"
-                            type="number"
-                            class="border border-gray-300 input w-full !py-1" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Publish Date</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Publish Date <span class="text-red-500">*</span>
+                        </label>
                         <input v-model="newBook.publish_date"
                             type="date"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                            :class="{ 'border-red-500': errors.publish_date }" />
+                        <p v-if="errors.publish_date" class="mt-1 text-red-500 text-sm">{{ errors.publish_date }}</p>
                     </div>
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Language</label>
-                        <input v-model="newBook.language"
-                            type="text"
-                            class="border border-gray-300 input w-full !py-1"
-                            required />
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Language <span class="text-red-500">*</span>
+                        </label>
+                        <select v-model="newBook.language"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500">
+                            <option value="English">English</option>
+                            <option value="Amharic">Amharic</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Tags (comma separated)
+                        </label>
                         <input v-model="tagInput"
                             type="text"
-                            class="border border-gray-300 input w-full !py-1" />
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                            placeholder="fiction, science, novel" />
                     </div>
                 </div>
             </div>
 
             <!-- DESCRIPTION (Full Width) -->
-            <div class="w-3/4">
-                <label class="block text-gray-700 font-medium text-sm mb-2">Book Description</label>
+            <div>
+                <label class="block text-gray-700 font-medium text-sm mb-2">
+                    Book Description <span class="text-red-500">*</span>
+                </label>
                 <AddBookDescription v-model="newBook.description" />
+                <p v-if="errors.description" class="mt-1 text-red-500 text-sm">{{ errors.description }}</p>
             </div>
 
-            <!-- ACTION BUTTON -->
-            <div class="flex justify-end gap-4 pt-4">
+            <!-- ACTION BUTTONS -->
+            <div class="flex justify-end gap-4 pt-6">
                 <button type="button"
                     @click="cancelAdd"
-                    class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 transition">
+                    class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium">
                     Cancel
                 </button>
                 <button type="submit"
-                    class="bg-lime-500 text-white px-6 py-2 rounded hover:bg-lime-600 transition">
-                    Add Book
+                    :disabled="loading"
+                    class="px-6 py-2.5 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+                    <span v-if="loading">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Processing...
+                    </span>
+                    <span v-else>
+                        <i class="fas fa-plus-circle mr-2"></i> Add Book
+                    </span>
                 </button>
             </div>
         </form>
     </div>
 </template>
+
+<style scoped>
+.border-dashed:hover {
+    border-color: #84cc16;
+    background-color: #f7fee7;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>

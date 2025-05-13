@@ -121,7 +121,6 @@ class ScheduleController extends Controller {
 
             $schedule = Schedule::query()
                 ->where('user_id', Auth::id())
-                ->where('schedule_time',  "!=", $request->time)
                 ->where('id', $id)
                 ->firstOrFail();
 

@@ -20,7 +20,7 @@ class LiveController extends Controller {
      * get error traslation and success beased on the language 
      * localized 
      */
-    protected $langService;
+    protected $langService;    
 
     public function __construct(LangService $langService) {
         $this->langService = $langService;

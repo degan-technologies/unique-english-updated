@@ -71,12 +71,10 @@ class CourseController extends Controller {
         
         $validationRules = [
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
-            'overview' => 'min:10',
-            'tag' => 'min:3',
+            'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
-            'discount' => 'numeric',
-            'credit_hour' => 'numeric',
+            'discount' => 'numeric', 
             'thumbnail_url' => 'image',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
         ];
@@ -103,11 +101,11 @@ class CourseController extends Controller {
             'slug' => Str::uuid(),
             'course_name' => $request->course_name,
             'overview' => $request->overview,
-            'tag' =>json_encode($request->tag),
+            'tag' =>json_encode(['courses']),
             'skill_level' => $request->skill_level,
             'price' => $request->price,
             'discount' => $request->discount,
-            'credit_hour' => $request->credit_hour,
+            'credit_hour' => 0,
             'thumbnail_url' => $imagePath,
             'intro_video' => $videoPath,
             'language' => $request->language,
@@ -126,6 +124,18 @@ class CourseController extends Controller {
     public function show(string $id)
     {
         $course = Course::with('courseModules')->where('id', $id)->first();
+        if (!$course) {
+            return response()->json(['error' => 'Course not found'], 404);
+        }
+    
+        return response()->json([
+            'data' => new CourseResource($course)
+        ]);
+    } 
+
+    public function showCourse(string $slug)
+    {
+        $course = Course::with('courseModules')->where('slug', $slug)->first();
         if (!$course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
@@ -158,13 +168,11 @@ class CourseController extends Controller {
         
        $validationRules = [
             'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
-            'overview' => 'min:10',
-            'tag' => 'min:3',
+            'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
-            'discount' => 'numeric',
-            'credit_hour' => 'numeric',
-            'thumbnail_url' => 'image',
+            'discount' => 'numeric', 
+            'thumbnail_url' => 'nullable',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
 
         ];

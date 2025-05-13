@@ -1,9 +1,9 @@
 <script setup>
-import { onMounted, computed, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import Axios from "axios";
 import { useToast } from "vue-toastification";
 
-const toast = useToast();
+const toast = useToast(); 
 const rooms = ref([]);
 const days = ref([
     "Monday",
@@ -61,38 +61,28 @@ watch(
                 period: "AM",
                 live_room_id: null,
             };
+            isEditing.value = false;
         }
     },
     { immediate: true }
 );
 
 const formatTime = () => {
-    if (form.value.hour && form.value.minute && form.value.period) {
-        return `${form.value.hour}:${form.value.minute} ${form.value.period}`;
-    }
-    return "";
+    return `${form.value.hour}:${form.value.minute} ${form.value.period}`;
 };
 
 const handleSubmit = async () => {
     errors.value = { day: "", time: "", room: "" };
 
-    if (!form.value.day) {
-        errors.value.day = "Please select a day.";
-    }
-    if (!form.value.hour || !form.value.minute) {
-        errors.value.time = "Please select a complete time.";
-    }
-    if (!form.value.live_room_id) {
-        errors.value.room = "Please select a room.";
-    }
-
-    if (errors.value.day || errors.value.time || errors.value.room) return;
+    if (!form.value.day) errors.value.day = "Please select a day.";
+    if (!form.value.hour || !form.value.minute) errors.value.time = "Please select a complete time.";
+    if (!form.value.live_room_id) errors.value.room = "Please select a room.";
+    if (Object.values(errors.value).some(e => e)) return;
 
     try {
-        const formattedTime = formatTime();
         const payload = {
             day: form.value.day,
-            time: formattedTime,
+            time: formatTime(),
             live_room_id: form.value.live_room_id,
         };
 
@@ -114,7 +104,7 @@ const handleSubmit = async () => {
                 } successfully!`
         );
 
-        // Reset form if not editing
+        // Reset form after creation
         if (!isEditing.value) {
             form.value = {
                 id: null,
@@ -141,11 +131,9 @@ const fetchRooms = async () => {
         console.error("Error fetching rooms:", error);
         toast.error("Failed to fetch rooms");
     }
-};
+}; 
 
-onMounted(() => {
-    fetchRooms();
-});
+onMounted(fetchRooms);
 </script>
 
 <template>
@@ -155,7 +143,7 @@ onMounted(() => {
         <h2 class="text-2xl font-bold text-center text-lime-700 mb-6">
             {{ isEditing ? "Edit" : "Add" }} Schedule
         </h2>
-        <form @submit.prevent="handleSubmit">
+        <form >
             <!-- Room Selection -->
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-gray-700">

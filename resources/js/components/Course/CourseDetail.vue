@@ -254,8 +254,7 @@ onBeforeUnmount(() => {
                             style="
                                 font-size: 1.1rem !important;
                                 line-height: 1.75rem !important;
-                                all: revert;
-                            "
+                                all: revert; "
                         ></div>
                         <h2 class="text-3xl text-slate-600 font-semibold mt-5">
                             What you will learn

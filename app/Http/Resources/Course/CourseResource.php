@@ -35,9 +35,7 @@ class CourseResource extends JsonResource {
             'discount' => $this->discount,
             'credit_hour' => $this->credit_hour,
             'created_at' => $this->created_at,
-            'status' => $this->status,
-            'user' => new userResource($this->user), 
-
+            'status' => $this->status,  
 
             'intro_video_url' => $this->intro_video
                     ? url('/api/courses/stream/video/' . basename($this->intro_video))
@@ -45,8 +43,7 @@ class CourseResource extends JsonResource {
 
             'feedBacks' => FeedBackResource::collection($this->feedbacks),
             'averageRating' => $review['averageRating'],
-            'starDistribution' => $review['starDistribution'],
-
+            'starDistribution' => $review['starDistribution'], 
 
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)

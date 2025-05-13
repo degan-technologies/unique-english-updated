@@ -16,8 +16,7 @@ return new class extends Migration
             $table->timestamps();
             
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('instractor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
-            $table->foreignId('vertual_enrollment_id')->constrained('virtual_class_enrollments')->cascadeOnUpdate()->restrictOnDelete();
+            $table->foreignId('instractor_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete(); 
         });
     }
 

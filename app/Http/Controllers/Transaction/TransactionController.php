@@ -524,16 +524,14 @@ class TransactionController extends Controller {
 
             // Create transfer record
             $transfer = $this->createWithdraw($request->amount); 
-            $response = $this->chapaService->transfer($data);
+            $response = $this->chapaService->transfer($data); 
 
             if ($response['status'] !== 'success') {
                 DB::rollBack();
                 return response()->json([
                     'message' => $response['message']
                 ], 400);
-            }
-
-            dd($response);
+            } 
 
             DB::commit();
 
@@ -546,8 +544,6 @@ class TransactionController extends Controller {
     }
 
     public function testTransferApproval(Request $request) {
-        
-
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
@@ -589,21 +585,24 @@ class TransactionController extends Controller {
             'amount' => $request->amount,
             'currency' => 'ETB',
             'reference' => $txRef,
-            'status' => 'success',
-            'timestamp' => now()->toDateTimeString(),
-            'callback_url' => route('chapa.transfer.callback'),  
+            'callback_url' => route('chapa.transfer.callback'),
         ];
 
-        $signature = hash_hmac('sha256', json_encode($data), config('services.chapa.approval_secret'));
- 
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-Chapa-Signature' => $signature
-        ])->post(url('/api/chapa/transfer/approval'), $data);
+        $response = Http::withToken(config('services.chapa.secret_key'))
+            ->timeout(60) // Increase timeout to 60s
+            ->post('https://api.chapa.co/v1/transfers', $data);
 
-        return response()->json([
-            'message' => $this->langService->getLang('transfer_initiated'),
-            'data' => $response,
-        ]);
+        if ($response->successful()) {
+            return response()->json([
+                'message' => 'Transfer initiated',
+                'data' => $response->json(),
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'Transfer failed',
+                'error' => $response->json(),
+            ], 400);
+        }
     }
 
     // In your TransactionController
