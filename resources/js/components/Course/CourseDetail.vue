@@ -34,8 +34,8 @@ const bufferProgress = ref(0);
 const videoPlayer = ref(null);
 const player = ref(null);
 const videoSource = ref("");
-
 selectedCourseSlug.value = route.query.slug;
+const isLoading = ref(false);
 
 function toggleModuleLesson(id) {
     if (collapsModuleId.value === id) {
@@ -51,12 +51,18 @@ function enrollCourse(item) {
         return;
     }
 
+    isLoading.value = true;
+
     if (item.isMyCourse) {
-        router.push({
-            name: "student",
-            query: { tab: videoPlayerTab.value, slug: item.slug },
-        });
         selectedCourseSlug.value = item.slug;
+        router
+            .push({
+                name: "student",
+                query: { tab: videoPlayerTab.value, slug: item.slug },
+            })
+            .finally(() => {
+                isLoading.value = false;
+            });
         return;
     }
 
@@ -68,6 +74,9 @@ function enrollCourse(item) {
         })
         .catch((error) => {
             console.error("Payment initiation error:", error);
+        })
+        .finally(() => {
+            isLoading.value = false;
         });
 }
 
@@ -165,9 +174,9 @@ onBeforeUnmount(() => {
         >
             <div class="">
                 <div class="text-left">
-                    <h1 class="text-4xl text-gray-900 font-bold">
+                    <h2 class="text-3xl text-gray-900 font-bold">
                         {{ selectedCourse?.course_name }}
-                    </h1>
+                    </h2>
                     <div class="flex my-2 gap-4">
                         <div>
                             <img
@@ -184,7 +193,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
                 </div>
-                <div class="w-full p-6 flex flex-col items-start relative">
+                <div class="w-full flex flex-col items-start relative">
                     <div
                         class="overflow-hidden w-full aspect-video rounded-t-lg mt-3 relative"
                     >
@@ -234,7 +243,7 @@ onBeforeUnmount(() => {
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-4 py-8 rounded-b-lg">
+                <div class="bg-white pt-2 rounded-b-lg">
                     <div class="text-left mb-6">
                         <h2 class="text-3xl text-slate-600 font-semibold mb-3">
                             Course Overview
@@ -345,14 +354,44 @@ onBeforeUnmount(() => {
                 <button
                     v-if="selectedCourse"
                     @click="enrollCourse(selectedCourse)"
-                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full"
+                    :disabled="isLoading"
+                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    {{
-                        selectedCourse?.isMyCourse
-                            ? "continue"
-                            : "Enolle Course"
-                    }}
+                    <!-- Clean inside-ring spinner -->
+                    <svg
+                        v-if="isLoading"
+                        class="animate-spin h-5 w-5 text-white"
+                        viewBox="0 0 50 50"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle
+                            class="text-white"
+                            cx="25"
+                            cy="25"
+                            r="20"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="5"
+                            stroke-linecap="round"
+                            stroke-dasharray="90,150"
+                            stroke-dashoffset="0"
+                        />
+                    </svg>
+
+                    <!-- Button text -->
+                    <span class="text-base font-medium">
+                        {{
+                            selectedCourse?.isMyCourse
+                                ? isLoading
+                                    ? "Loading..."
+                                    : "Continue"
+                                : isLoading
+                                ? "Processing..."
+                                : "Enroll Course"
+                        }}
+                    </span>
                 </button>
+
                 <h2 class="text-xl leading-9 font-semibold mb-4">
                     Course Details
                 </h2>

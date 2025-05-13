@@ -135,7 +135,8 @@ class LiveController extends Controller {
 
         $room = LiveRooms::create([
             'class_name' => $request->class_name, 
-            'user_id' => $user->id
+            'user_id' => $user->id,
+            'instructor_id' => $user->id,
         ]);
 
         return response()->json([

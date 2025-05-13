@@ -3,10 +3,10 @@ namespace App\Helper;
 
 define('DB_CONNECTION', 'mysql');
 define('DB_HOST', '127.0.0.1');
-define('DB_PORT', '3307');
+define('DB_PORT', '3306');
 define('DB_DATABASE', 'unique');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', 'qlarapass');
+define('DB_PASSWORD', '1234');
 
 define('MALE', 1);
 define('FEMALE', 2);
@@ -35,15 +35,18 @@ define('CONTENT_TYPE',[
 ]);
 
 define('VIDEO_EXTENTION',[
-    'mp4', 'avi', 'mpeg', 'mov', 'wmv', 'webm', 'ogg', 'flv', 'mkv'
+    'mp4', 'avi', 'mpeg', 'mov', 'wmv', 'webm', 'ogg', 'flv', 'mkv',
+    'MP4', 'AVI', 'MPEG', 'MOV', 'WMV', 'WEBM', 'OGG', 'FLV', 'MKV',
 ]);
 
 define('PDF_EXTENTION',[
-    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx'
+    'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx',
+    'PDF', 'DOC', 'DOCX', 'PPT', 'PPTX', 'XLS', 'XLSX',
 ]);
 
 define('IMAGE_EXTENTION',[
-    'jpg', 'jpeg', 'png', 'gif'
+    'jpg', 'jpeg', 'png', 'gif',
+    'JPG', 'JPEG', 'PNG', 'GIF',
 ]);
 
 define('PUBLISHED', 'published');

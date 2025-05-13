@@ -39,7 +39,7 @@ trait PdfReaderTrait {
         $books = Book::query()
             ->whereHas('transactions', function($query) use ($user) {
                 $query->where('status', TRANSACTION_SUCCESS)
-                    ->where('user_id', $user->id);
+                    ->where('customer_id', $user->id);
             })
             ->get();
         

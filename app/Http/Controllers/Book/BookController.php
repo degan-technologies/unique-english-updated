@@ -116,7 +116,7 @@ class BookController extends Controller {
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
             'file_url' => 'required|mimes:pdf',
-            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
+            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv   ',
             'cover_page_url' => 'image',
 
            

@@ -3,23 +3,29 @@ import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ref, onMounted, onBeforeUnmount } from "vue";
-
 import { UseStudentStore } from "@/store/UseStudentStore";
 import CourseCard from "@/components/Course/CourseCard.vue";
+import Spinner from "../Layout/Spinner.vue";
 
 const studentStore = UseStudentStore();
 const { videoPlayerTab, selectedCourseSlug } = storeToRefs(studentStore);
 
 const myCourses = ref([]);
+const isLoading = ref(false);
 const router = useRouter();
 const isPlaying = ref(false);
 const player = ref(null);
 const videoPlayer = ref(null);
 
 function getMycourses() {
-    Axios.get("/api/courses/my-courses").then((res) => {
-        myCourses.value = res.data.data;
-    });
+    isLoading.value = true;
+    Axios.get("/api/courses/my-courses")
+        .then((res) => {
+            myCourses.value = res.data.data;
+        })
+        .finally(() => {
+            isLoading.value = false;
+        });
 }
 
 function continueLearning(slugValue) {
@@ -46,89 +52,105 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen overflow-y-auto">
-        <main class="pt-10">
-            <div class="container mx-auto p-8 max-w-6xl">
+    <div class="min-h-screen overflow-y-auto bg-gray-50">
+        <main class="py-6">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <!-- Spinner centered -->
                 <div
-                    v-if="myCourses?.length === 0"
-                    class="text-center text-gray-500"
+                    v-if="isLoading"
+                    class="flex items-center justify-center h-[60vh]"
                 >
-                    No purchased Course found.
+                    <Spinner />
                 </div>
-                <div v-else class="flex flex-col md:flex-row gap-4">
-                    <div class="md:w-2/3 space-y-6">
-                        <div
-                            v-for="myCourse in myCourses"
-                            :key="myCourse.id"
-                            class="bg-white border border-gray-300 shadow-lg rounded-lg h-fit overflow-hidden p-4"
-                        >
-                            <div class="flex flex-col md:flex-row">
-                                <div class="md:w-1/2">
-                                    <div class="relative w-full h-56">
-                                        <video
-                                            ref="videoPlayer"
-                                            id="videoPlayer"
-                                            class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border"
-                                            controls
-                                            :poster="myCourse?.thumbnail_url"
-                                            preload="auto"
-                                        >
-                                            <source
-                                                :src="myCourse?.intro_video_url"
-                                                type="video/mp4"
-                                            />
-                                            Your browser does not support the
-                                            video tag.
-                                        </video>
-                                    </div>
-                                </div>
-                                <div
-                                    class="md:w-1/2 p-4 flex flex-col justify-center"
-                                >
-                                    <h2 class="text-xl font-semibold pb-2">
-                                        {{ myCourse?.course_name }}
-                                    </h2>
 
-                                    <!-- Progress Bar -->
+                <!-- No courses found -->
+                <div
+                    v-else-if="myCourses?.length === 0"
+                    class="text-center text-gray-500 py-12"
+                >
+                    No purchased course found.
+                </div>
+
+                <!-- Course list -->
+                <div v-else class="flex flex-col gap-6">
+                    <div
+                        v-for="myCourse in myCourses"
+                        :key="myCourse.id"
+                        class="bg-white border border-gray-200 shadow-md rounded-xl overflow-hidden"
+                    >
+                        <div class="flex flex-col md:flex-row">
+                            <!-- Video section -->
+                            <div class="w-full md:w-1/2">
+                                <div class="relative w-full h-56 md:h-64">
+                                    <video
+                                        ref="videoPlayer"
+                                        id="videoPlayer"
+                                        class="video-js vjs-default-skin w-full h-full object-cover rounded-t-sm md:rounded-none md:rounded-l-sm"
+                                        controls
+                                        :poster="myCourse?.thumbnail_url"
+                                        preload="auto"
+                                    >
+                                        <source
+                                            :src="myCourse?.intro_video_url"
+                                            type="video/mp4"
+                                        />
+                                        Your browser does not support the video
+                                        tag.
+                                    </video>
+                                </div>
+                            </div>
+
+                            <!-- Course info -->
+                            <div
+                                class="w-full md:w-1/2 p-6 flex flex-col justify-center"
+                            >
+                                <h2
+                                    class="text-xl font-semibold mb-2 text-gray-800"
+                                >
+                                    {{ myCourse?.course_name }}
+                                </h2>
+
+                                <!-- Progress Bar -->
+                                <div class="flex items-center gap-2 mt-4">
                                     <div
-                                        class="flex flex-row items-center gap-2 mt-8"
+                                        class="w-full bg-gray-200 rounded-full h-2.5"
                                     >
                                         <div
-                                            class="w-[90%] bg-gray-200 rounded-full h-2.5"
-                                        >
-                                            <div
-                                                class="bg-green-500 h-2.5 rounded-full"
-                                                :style="{
-                                                    width: `${myCourse.progress}%`,
-                                                }"
-                                            ></div>
-                                        </div>
-                                        <span
-                                            class="text-sm font-medium text-gray-700 inline-flex"
-                                            >{{ myCourse.progress }} %</span
-                                        >
+                                            class="bg-lime-600 h-2.5 rounded-full"
+                                            :style="{
+                                                width: `${myCourse.progress}%`,
+                                            }"
+                                        ></div>
                                     </div>
-                                    <button
-                                        @click="continueLearning(myCourse.slug)"
-                                        class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-colors"
+                                    <span
+                                        class="text-sm text-gray-700 font-medium"
                                     >
-                                        Continue
-                                    </button>
+                                        {{ myCourse.progress }}%
+                                    </span>
                                 </div>
+
+                                <!-- Continue button -->
+                                <button
+                                    @click="continueLearning(myCourse.slug)"
+                                    class="mt-6 px-4 py-2 w-full sm:w-32 border border-lime-700 bg-white text-lime-700 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-all duration-200"
+                                >
+                                    Continue
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <!-- Optional extra component below -->
-            <div class="mt-8 w-full">
-                <CourseCard />
+
+                <!-- Additional component -->
+                <div class="mt-12 w-full">
+                    <CourseCard />
+                </div>
             </div>
         </main>
     </div>
 </template>
 
-<style>
+<style scoped>
 html,
 body {
     overflow-y: auto;

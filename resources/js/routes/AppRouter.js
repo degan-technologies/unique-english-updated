@@ -3,7 +3,7 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import StudentHome from "@/pages/Student/StudentHome.vue";
 import InstructorHome from "@/pages/Instructor/InstructorHome.vue";
 import InvoicePage from "@/components/payment/InvoicePage.vue";
-import CourseCard from "../components/Course/CourseCard.vue";
+import Error from "@/components/Layout/Error.vue";
 
 const appRouter = createRouter({
     history: createWebHashHistory("/"),
@@ -19,6 +19,7 @@ const appRouter = createRouter({
             name: "InvoicePage",
             component: InvoicePage,
         },
+        { path: "/:pathMatch(.*)*", name: "Error", component: Error },
     ],
 });
 

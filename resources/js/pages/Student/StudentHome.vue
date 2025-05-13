@@ -13,6 +13,7 @@ import Hero from "@/components/Layout/Hero.vue";
 import AboutUs from "@/pages/common/AboutUs.vue";
 import Header from "@/components/Layout/Header.vue";
 import Footer from "@/components/Layout/Footer.vue";
+import Spinner from "@/components/Layout/Spinner.vue";
 import BookDetails from "@/components/Book/BookDetails.vue";
 import CourseCard from "@/components/Course/CourseCard.vue";
 import VideoPlayer from "@/components/Course/VideoPlayer.vue";
@@ -50,15 +51,17 @@ const currentTab = ref({
     slug: route.query.slug,
 });
 
+const isBookLoading = ref(false); // Specific loading state for book reading
+
 selectedCourseSlug.value = route.query.slug;
 
 const selectedCourse = computed(() => {
     return courses.value.find((item) => item.slug === selectedCourseSlug.value);
 });
 
-function redirectRoute() {
+async function redirectRoute() {
     if (!selectedCourse.value?.isMyCourse) {
-        router.push({
+        await router.push({
             name: "student",
             query: {
                 tab: landingPageTab.value,
@@ -80,12 +83,22 @@ function redirectToLogin() {
 
 watch(
     () => route.query.tab,
-    () => {
+    async (newTab) => {
+        // Special handling for book reading tab
+        if (newTab === bookReadingTab.value) {
+            isBookLoading.value = true;
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading
+        }
+
         currentTab.value = {
             tab: route?.query.tab,
             slug: route?.query.slug,
         };
-    }
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        isBookLoading.value = false;
+    },
+    { immediate: true }
 );
 </script>
 
@@ -94,14 +107,33 @@ watch(
         <div class="sticky top-0 z-50 shadow bg-white w-full">
             <Header />
         </div>
-        <div class="h-screen overflow-y-auto scrollbar">
-            <div class="w-full mt-18">
+
+        <!-- Loading State for general content -->
+        <div
+            v-if="isLoading && !isBookLoading"
+            class="flex-grow flex items-center justify-center"
+        >
+            <Spinner class="h-12 w-12" />
+        </div>
+
+        <!-- Special Loading State for book reading -->
+        <div
+            v-else-if="isBookLoading"
+            class="flex-grow flex items-center justify-center"
+        >
+            <div class="text-center">
+                <Spinner class="text-lime-700 mx-auto" />
+                <p class="text-lg text-gray-600">Loading your book...</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div v-else class="flex-grow overflow-y-auto scrollbar">
+            <div class="w-full mt-18 min-h-[calc(100vh-144px)]">
                 <div
                     v-if="currentTab.tab == courseDetailTab && currentTab.slug"
                 >
-                    <div>
-                        <CourseDetail />
-                    </div>
+                    <CourseDetail />
                 </div>
 
                 <div
@@ -112,10 +144,12 @@ watch(
                     {{ redirectRoute() }}
                     <VideoPlayer />
                 </div>
+
                 <div v-else-if="currentTab.tab == myCourseTab">
                     {{ redirectToLogin() }}
                     <MyCourse />
                 </div>
+
                 <div
                     v-else-if="
                         currentTab.tab == bookOverviewTab && currentTab.slug
@@ -123,37 +157,36 @@ watch(
                 >
                     <BookDetails />
                 </div>
+
                 <div
                     v-else-if="
                         currentTab.tab == bookReadingTab && currentTab.slug
                     "
                 >
-                    {{ redirectRoute() }}
                     <Pdf />
                 </div>
+
                 <div v-else-if="currentTab.tab == liveSchedulTab">
-                    <!-- <Schedule /> -->
                     <LiveStreamingVue />
                 </div>
-                <div v-else-if="currentTab.tab == clandingPageTab">
+
+                <div v-else-if="currentTab.tab == landingPageTab">
                     <Hero class="w-full mb-10" />
-                    <CourseCard @mousemove="togglehover" />
+                    <CourseCard />
                     <MeetingAction />
                     <Book />
-                    <QuizReader />
-                    <certificate />
                     <AboutUs />
                     <WhatExpect />
                 </div>
+
                 <div v-else-if="currentTab.tab == TestTab">
-                    <h1 class="mt-6">Test Yourself</h1>
                     <Test />
                 </div>
-
-                <div class="w-full bg-gray-900 text-white">
-                    <Footer />
-                </div>
             </div>
+        </div>
+
+        <div class="w-full bg-gray-900 text-white">
+            <Footer />
         </div>
     </div>
 </template>

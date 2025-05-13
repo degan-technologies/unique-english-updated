@@ -76,7 +76,7 @@
                     <div class="text-center mt-4">
                         <button
                             @click="isEditing ? saveEdit() : scheduleClass()"
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                            class="bg-lime-600 hover:bg-lime-700 text-white px-6 py-2 rounded-lg"
                         >
                             {{ isEditing ? "Save Changes" : "Schedule Class" }}
                         </button>
@@ -98,7 +98,7 @@
 
                         <div
                             v-if="group.classes.length === 0"
-                            class="text-blue-500"
+                            class="text-lime-600"
                         >
                             No schedule for this day.
                         </div>
@@ -127,7 +127,7 @@
                                                 'text-gray-500':
                                                     classItem.status ===
                                                     'Finished',
-                                                'text-blue-500':
+                                                'text-lime-600':
                                                     classItem.status ===
                                                     'Upcoming',
                                             }"
@@ -149,7 +149,7 @@
                                             @click="editClass(classItem.index)"
                                         ></i>
                                         <i
-                                            class="fas fa-video text-blue-500 text-xl cursor-pointer hover:text-blue-700"
+                                            class="fas fa-video text-lime-600 text-xl cursor-pointer hover:text-lime-700"
                                             v-if="
                                                 classItem.status === 'Upcoming'
                                             "

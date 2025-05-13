@@ -220,8 +220,9 @@ class ResultController extends Controller {
                 'errors' => $validator->errors(),
             ], 422);
         }
-
-        $getAnswere = $quiz->answer[0] === $request->choice ? CORRECT : INCORRECT;
+ 
+ 
+        $getAnswere = $quiz->answer === $request->choice ? CORRECT : INCORRECT;
 
         $checkAnswer = QuizAnswer::query()
             ->where('user_id', $user->id)
@@ -233,8 +234,8 @@ class ResultController extends Controller {
                         'answer' => $getAnswere,
                         'choice' => json_encode($request->choice),
                     ]);
-        } else {
-            $user->quizAnswers()->insert([ 
+        } else { 
+            $user->quizAnswers()->create([ 
                 'quiz_id' => $quizId,
                 'answer'  => $getAnswere,
                 'choice'  => json_encode($request->choice),

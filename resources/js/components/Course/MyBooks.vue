@@ -1,106 +1,130 @@
 <script setup>
-    import Axios from "axios";
-    import { ref, onMounted } from "vue";
-    import { useRouter } from "vue-router";
-    import Book from "@/components/Book/Book.vue"; 
+import Axios from "axios";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import Book from "@/components/Book/Book.vue";
+import { storeToRefs } from "pinia";
+import { UseStudentStore } from "@/store/UseStudentStore";
+import Spinner from "../Layout/Spinner.vue";
 
-    import { storeToRefs } from "pinia";
-    import { UseStudentStore } from "@/store/UseStudentStore";
+const studentStore = UseStudentStore();
+const { bookReadingTab } = storeToRefs(studentStore);
 
-    const studentStore = UseStudentStore();
-    const { bookReadingTab } = storeToRefs(studentStore);
+const myBooks = ref([]);
+const isLoading = ref(false); // <-- Spinner state
+const router = useRouter();
 
-    const myBooks = ref([]);
-    const router = useRouter();
-
-    function changeTab(slug) {
-        router.push({
-            name: "student",
-            query: {
-                tab: bookReadingTab.value,
-                slug: slug
-            },
-        });
-    }
-
-    function getMycourses() {
-        Axios
-            .get("/api/courses/my-books")
-            .then(res => {
-                myBooks.value = res.data.data;
-            })
-    }
-
-    onMounted(() => {
-        getMycourses();
+function changeTab(slug) {
+    router.push({
+        name: "student",
+        query: {
+            tab: bookReadingTab.value,
+            slug: slug,
+        },
     });
+}
+
+function getMycourses() {
+    isLoading.value = true;
+    Axios.get("/api/courses/my-books")
+        .then((res) => {
+            myBooks.value = res.data.data;
+        })
+        .finally(() => {
+            isLoading.value = false;
+        });
+}
+
+onMounted(() => {
+    getMycourses();
+});
 </script>
 
 <template>
-    <div>
-        <div class="min-h-screen overflow-y-auto">
+    <div class="min-h-screen overflow-y-auto bg-gray-50">
+        <main class="py-6">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <!-- Spinner centered -->
+                <div
+                    v-if="isLoading"
+                    class="flex items-center justify-center h-[60vh]"
+                >
+                    <Spinner />
+                </div>
 
-            <!-- Main Content -->
-            <main class="pt-10">
-                <div class="container mx-auto p-8 max-w-6xl">
-                    <div v-if="myBooks?.length === 0" 
-                        class="text-center text-gray-500">
-                        No transactions found.
-                    </div>
-                    <div v-else class="flex flex-col md:flex-row gap-4">
-                        <div class="md:w-2/3 space-y-6">
-                            <div v-for="myBook in myBooks" :key="myBook.id"
-                                class="bg-white border border-gray-300 shadow-lg rounded-lg h-56 overflow-hidden p-4">
-                                <div class="flex flex-col md:flex-row">
-                                    <div class="md:w-1/2">
+                <!-- No books -->
+                <div
+                    v-else-if="myBooks?.length === 0"
+                    class="text-center text-gray-500 py-12"
+                >
+                    No transactions found.
+                </div>
 
-                                        <div 
-                                        class="relative w-full h-56">
-                                        <video ref="videoPlayer"
-                                            id="videoPlayer"
-                                            class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border"
-                                            controls
-                                            :poster="myBook?.cover_page_url"
-                                            preload="auto">
-                                            <source :src="myBook?.intro_video_url"
-                                                type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    </div>
-
-                                    </div>
-                                    <div class="md:w-1/2 p-4 flex flex-col justify-center">
-                                        <h2 class="text-xl font-semibold pb-2">
-                                            {{ myBook?.title}}
-                                        </h2>
-                                        <div class="text-gray-600 text-sm">
-                                            <p class="line-clamp">
-                                                {{ myBook?.description }}
-                                            </p>
-                                        </div> 
-
-                                        <!-- Continue Button -->
-                                        <button @click="changeTab(myBook?.slug)"
-                                            class="mt-9 px-3 py-2 w-28 border border-lime-700 bg-white text-lime-600  font-semibold text-sm rounded-md hover:bg-lime-700">
-                                            Continue
-                                        </button>
-
-                                    </div>
+                <!-- Book list -->
+                <div v-else class="flex flex-col gap-6">
+                    <div
+                        v-for="myBook in myBooks"
+                        :key="myBook.id"
+                        class="bg-white border border-gray-300 shadow-md rounded-lg overflow-hidden"
+                    >
+                        <div class="flex flex-col md:flex-row">
+                            <!-- Video -->
+                            <div class="w-full md:w-1/2">
+                                <div class="relative w-full h-56 md:h-64">
+                                    <video
+                                        ref="videoPlayer"
+                                        id="videoPlayer"
+                                        class="video-js vjs-default-skin w-full h-full object-cover rounded-t-md md:rounded-none md:rounded-l-md"
+                                        controls
+                                        :poster="myBook?.cover_page_url"
+                                        preload="auto"
+                                    >
+                                        <source
+                                            :src="myBook?.intro_video_url"
+                                            type="video/mp4"
+                                        />
+                                        Your browser does not support the video
+                                        tag.
+                                    </video>
                                 </div>
                             </div>
-                        </div>
 
+                            <!-- Book info -->
+                            <div
+                                class="w-full md:w-1/2 p-6 flex flex-col justify-center"
+                            >
+                                <h2
+                                    class="text-lg sm:text-xl font-semibold mb-2"
+                                >
+                                    {{ myBook?.title }}
+                                </h2>
+                                <p
+                                    class="text-gray-600 text-sm line-clamp mb-4"
+                                >
+                                    {{ myBook?.description }}
+                                </p>
+
+                                <button
+                                    @click="changeTab(myBook?.slug)"
+                                    class="mt-auto px-4 py-2 w-full sm:w-32 border border-lime-700 bg-white text-lime-600 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-colors"
+                                >
+                                    Continue
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-8">
+
+                <!-- Book Component -->
+                <div class="mt-12">
                     <Book />
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
 </template>
 
-<style>
+<style scoped>
 html,
 body {
     overflow-y: auto;
@@ -110,9 +134,7 @@ body {
 .line-clamp {
     display: -webkit-box;
     -webkit-line-clamp: 2;
-    /* Restrict to 2 lines */
     line-clamp: 2;
-    /* Restrict to 2 lines */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;

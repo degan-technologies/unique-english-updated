@@ -1,11 +1,11 @@
 <script setup>
 import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
-import Axios from 'axios';
-import { ref, onMounted, watch } from 'vue'
+import Axios from "axios";
+import { ref, onMounted, watch } from "vue";
 
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { useAppStore } from '@/store/useAppStore'
+import { useAppStore } from "@/store/useAppStore";
 const appStore = useAppStore();
 const { profileUpdated, authUser } = storeToRefs(appStore);
 
@@ -35,14 +35,14 @@ const mainItems = [
         route: dashboard.value,
         description: "Overview of revenue, users, courses, and system health.",
         icon: "home",
-        role: 'systemAdmin',
+        role: "systemAdmin",
     },
     {
         label: "Users Management",
         route: users.value,
         description: "Manage students, instructors, and admins.",
         icon: "user-group",
-        role: 'systemAdmin',
+        role: "systemAdmin",
     },
     {
         label: "Course Management",
@@ -53,11 +53,11 @@ const mainItems = [
     },
 
     {
-        label: "Exams & Quizzes",
+        label: "Test Management",
         route: "exams",
         description: "Manage tests, quizzes, and questions.",
         icon: "clipboard-list",
-        role: 'systemAdmin',
+        role: "systemAdmin",
     },
 
     {
@@ -79,21 +79,21 @@ const mainItems = [
         route: schedule.value,
         description: " schedule live classes.",
         icon: "calendar",
-        role: 'systemAdmin',
+        role: "systemAdmin",
     },
     {
-        label: "Messaging ",
+        label: "Notifications ",
         route: messaging.value,
         description: "Send & manage messages.",
-        icon: "envelope",
-        role: 'systemAdmin',
+        icon: "bell",
+        role: "systemAdmin",
     },
     {
         label: "Settings ",
         route: "settings",
         description: "Configure platform branding & security.",
         icon: "gear",
-        role: 'systemAdmin',
+        role: "systemAdmin",
     },
 ];
 
@@ -111,81 +111,108 @@ function selectContent(changeTab) {
 // Function to fetch logo from backend
 const fetchLogo = async () => {
     try {
-        const res = await Axios.get('/api/logos')
+        const res = await Axios.get("/api/logos");
         if (res.data.data.length) {
-            logoUrl.value = res.data.data[0].file_url
+            logoUrl.value = res.data.data[0].file_url;
         }
     } catch (error) {
-        console.error('Error fetching logo:', error)
+        console.error("Error fetching logo:", error);
     }
-}
+};
 
 // Call the function when component mounts
 onMounted(() => {
-    fetchLogo()
-})
+    fetchLogo();
+});
 
 watch(profileUpdated, (updated) => {
     if (updated) {
-        fetchLogo() // your logo fetching function
-        profileUpdated.value = false
+        fetchLogo(); // your logo fetching function
+        profileUpdated.value = false;
         // reset it
     }
-})
-
-
+});
 </script>
 
 <template>
     <!-- Sidebar container: slides in/out on mobile -->
-    <aside :class="[
-        'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
-        sideBarOpen ? 'translate-x-0' : '-translate-x-full',
-    ]">
+    <aside
+        :class="[
+            'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
+            sideBarOpen ? 'translate-x-0' : '-translate-x-full',
+        ]"
+    >
         <!-- Sidebar panel: width changes when sidebarCollapsed -->
-        <div :class="[
-            sidebarCollapsed ? 'w-16' : 'w-64',
-            'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
-        ]">
+        <div
+            :class="[
+                sidebarCollapsed ? 'w-16' : 'w-64',
+                'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
+            ]"
+        >
             <!-- Header with logo and mobile close button (desktop: no close icon) -->
-            <div class="flex items-center justify-between h-20 px-4 border-b border-lime-300">
+            <div
+                class="flex items-center justify-between h-20 px-4 border-b border-lime-300"
+            >
                 <!-- Logo: Full Logo (if not sidebarCollapsed) -->
-                <div v-if="!sidebarCollapsed"
-                    class="flex items-center animate-fadeIn"> 
-                    <span class="ml-2 font-semibold text-xl text-lime-500">UniqueEnglish</span>
+                <div
+                    v-if="!sidebarCollapsed"
+                    class="flex items-center animate-fadeIn"
+                >
+                    <span class="ml-2 font-semibold text-xl text-lime-500"
+                        >Unique English</span
+                    >
                 </div>
 
                 <!-- Logo: Abbreviated Logo (if sidebarCollapsed) -->
-                <div v-else
-                    class="flex items-center animate-fadeIn w-full justify-center">
-                      <i class="fa-solid w-6 fa-arrow-right font-extrabold text-lime-500 transition-colors duration-200 text-2xl"></i>
+                <div
+                    v-else
+                    class="flex items-center animate-fadeIn w-full justify-center"
+                >
+                    <i
+                        class="fa-solid w-6 fa-arrow-right font-extrabold text-lime-500 transition-colors duration-200 text-2xl"
+                    ></i>
                 </div>
 
                 <!-- Mobile Close Icon (only visible on mobile) -->
-                <button @click="sidebarStore.toggleSidebar()"
+                <button
+                    @click="sidebarStore.toggleSidebar()"
                     class="text-lime-500 hover:text-lime-600 md:hidden transition-colors"
-                    title="Close Sidebar">
-                    <span class="material-icons animate-spinIn">close</span>
+                    title="Close Sidebar"
+                >
+                    <i class="fas fa-times animate-spinIn"></i>
                 </button>
             </div>
 
             <!-- Scrollable menu content -->
             <div class="flex-1 h-screen overflow-y-auto scrollbar">
                 <!-- MAIN Section -->
-                <div class="px-4 py-4"> 
+                <div class="px-4 py-4">
                     <div>
-                        <div v-for="(item, index) in mainItems"
+                        <div
+                            v-for="(item, index) in mainItems"
                             :key="index"
-                            @click="selectContent(item?.route)">
-                            <div v-if="item.role == true ? true :  (authUser?.role === item.role)" 
+                            @click="selectContent(item?.route)"
+                        >
+                            <div
+                                v-if="
+                                    item.role == true
+                                        ? true
+                                        : authUser?.role === item.role
+                                "
                                 class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-                                :title="item.description">
-                                <i :class="{
-                                    ['fa-' + item.icon]: true,
-                                }"
-                                class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"></i>
-                                <span v-if="!sidebarCollapsed"
-                                    class="text-gray-800 animate-fadeIn">{{ item.label }}</span>
+                                :title="item.description"
+                            >
+                                <i
+                                    :class="{
+                                        ['fa-' + item.icon]: true,
+                                    }"
+                                    class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"
+                                ></i>
+                                <span
+                                    v-if="!sidebarCollapsed"
+                                    class="text-gray-800 animate-fadeIn"
+                                    >{{ item.label }}</span
+                                >
                             </div>
                         </div>
                     </div>
@@ -193,10 +220,14 @@ watch(profileUpdated, (updated) => {
             </div>
 
             <!-- Collapse/Expand Button at bottom right -->
-            <button @click="sidebarStore.toggleCollapse()"
-                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 hover:bg-lime-200 transition-colors duration-200">
-                <i :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
-                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-lime-900 transform transition-transform duration-300"></i>
+            <button
+                @click="sidebarStore.toggleCollapse()"
+                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 hover:bg-lime-200 transition-colors duration-200"
+            >
+                <i
+                    :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
+                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-lime-900 transform transition-transform duration-300"
+                ></i>
             </button>
         </div>
     </aside>

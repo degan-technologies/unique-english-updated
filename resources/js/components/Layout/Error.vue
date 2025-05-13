@@ -19,15 +19,9 @@
             <div class="flex justify-center space-x-4">
                 <router-link
                     to="/"
-                    class="px-6 py-3 bg-lime-600 text-white font-medium text-lg rounded-lg hover:bg-lime-700 transition duration-300"
+                    class="px-4 py-2 bg-lime-600 text-white font-medium text-lg rounded-lg hover:bg-lime-700 transition duration-300"
                 >
                     Go to Homepage
-                </router-link>
-                <router-link
-                    to="/contact"
-                    class="px-6 py-3 bg-gray-200 text-gray-800 font-medium text-lg rounded-lg hover:bg-gray-300 transition duration-300"
-                >
-                    Contact Us
                 </router-link>
             </div>
         </div>
