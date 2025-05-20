@@ -18,8 +18,11 @@ use App\Models\Role\SystemAdmin;
 use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
+use App\Models\Live\PrivateRoom;
 use App\Models\Logs\AdminActivityLog;
 use App\Models\Notifications\EmailNotification;
+use App\Models\Notifications\NotifiableUser;
+use App\Models\Notifications\Notification;
 use App\Models\Plan\Plan;
 use App\Models\Quiz\Answer;
 use App\Models\Quiz\Quiz;
@@ -39,9 +42,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Notifications\DatabaseNotification;
+use Spatie\Permission\Traits\HasRoles; 
 
 
 
@@ -139,12 +140,13 @@ class User extends Authenticatable {
     public function feedbackUserInteractions () { return $this->hasMany(FeedbackUserInteraction::class); }
 
     public function courseContentProgress() { return $this->hasMany(CourseContentProgress::class); }
-    public function notifications() { return $this->morphMany(DatabaseNotification::class, 'notifiable'); }
     public function hero() { return $this->hasOne(Hero::class); }
     public function adminActivityLogs() { return $this->hasMany(AdminActivityLog::class); }
-    public function emailNotifications() { return $this->hasMany(EmailNotification::class); }
+    public function notifications() { return $this->hasMany(Notification::class); }
+    public function notifiableUsers() { return $this->hasMany(NotifiableUser::class); }
     public function schedules() { return $this->hasMany(Schedule::class); }
     public function groupRoom() { return $this->hasOne(GroupRoom::class);}
+    public function privateRoom() { return $this->hasOne(PrivateRoom::class);}
 
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {

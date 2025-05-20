@@ -10,12 +10,14 @@ class ChapaService {
     private $secretKey;
     private $baseUrl;
     private $approvalSecret;
+    private $webhookSecret;
 
     public function __construct()
     {
         $this->secretKey = config('services.chapa.secret_key');
         $this->baseUrl = config('services.chapa.base_url');
         $this->approvalSecret = config('services.chapa.approval_secret');
+        $this->webhookSecret = config('services.chapa.webhook_secret');
     }
 
     public function initializePayment($data)
@@ -47,16 +49,35 @@ class ChapaService {
         return $response->json();
     }
 
-    public function transfer($data) {
+    // app/Services/ChapaService.php
+public function transfer(array $data)
+{
+    try {
         $response = Http::withToken($this->secretKey)
             ->withHeaders([
-                'X-Chapa-Signature' => $this->generateSignature($data),
                 'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'Cache-Control' => 'no-cache',
             ])
-            ->post("$this->baseUrl/transfers", $data);
+            ->post($this->baseUrl.'/transfers', $data);
 
-        return $response->json();
-    }
+             $jsonResponse = $response->json();
+
+            if (isset($jsonResponse['data']) && is_string($jsonResponse['data'])) {
+                    $jsonResponse['data'] = [
+                        'reference' => $jsonResponse['data'],
+                        'status' => 'pending'
+                    ];
+                } 
+
+            return $jsonResponse;
+        }  catch (\Exception $e) {
+            $errorResponse['raw_response'] = $response->body();
+            return $errorResponse;
+        }
+
+
+    }  
 
 
     /**
@@ -70,17 +91,20 @@ class ChapaService {
      * Verify incoming webhook signature
      */
     // Add this to your ChapaService class
-    public function verifyWebhook(Request $request): bool
-    {
-        $incomingSignature = $request->header('X-Chapa-Signature');
+  public function verifyWebhook(Request $request) 
+{ 
+    $incomingSignature = $request->header('x-chapa-signature');
 
-        if (!$incomingSignature) {
-            return false;
-        }
-
-        $payload = $request->getContent();
-        $expectedSignature = hash_hmac('sha256', $payload, $this->approvalSecret);
-
-        return hash_equals($expectedSignature, $incomingSignature);
+    if (!$incomingSignature) {
+        return false;
     }
+
+    $payload = $request->getContent();
+
+    $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
+
+    return hash_equals($expectedSignature, $incomingSignature);
+}
+
+
 }

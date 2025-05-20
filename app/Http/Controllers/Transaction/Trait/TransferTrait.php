@@ -68,7 +68,7 @@ trait TransferTrait {
         ]);
     }
 
-    public function createWithdraw($amount) { 
+    public function createWithdraw($amount, $trf) { 
         $user = User::query()
             ->where('id', Auth::id())
             ->first();
@@ -88,6 +88,7 @@ trait TransferTrait {
             'withdrawals' => $amount,
             'user_id' => $user->id,
             'balance' => $balance,
+            'reference' => $trf,
         ]);
 
         return $transfer;

@@ -13,10 +13,8 @@ use Illuminate\Support\Facades\Auth;
 class Book extends Model {
    
     use HasFactory, SoftDeletes;
-    protected $table = 'books'; // If your table name is 'books'
-
-
-    protected $fillable = [
+    protected $table = 'books'; 
+     protected $fillable = [
         'slug', 'title', 'auther', 'page_number', 'publish_date',
         'eddition', 'price', 'discount', 'description', 'language',
         'file_format', 'cover_page_url', 'file_url', 'tag',

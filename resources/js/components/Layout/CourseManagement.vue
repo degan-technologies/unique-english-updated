@@ -1,5 +1,4 @@
-<script setup>
-import Axios from "axios";
+<script setup> 
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 import { ref, computed, onMounted, watch } from "vue";

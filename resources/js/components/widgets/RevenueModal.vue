@@ -13,7 +13,7 @@
         revenueData: Object
     })
 
-    const breakdownType = ref('today');
+    const breakdownType = ref('allTime');
 
     const revenueMetrics = computed(() => {
         return [

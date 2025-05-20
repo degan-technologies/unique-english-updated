@@ -1,401 +1,369 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import Axios from "axios"; 
+import Axios from "axios";
 
-const props = defineProps({ 
-   courseId: String,
-   selectedCourseSlug: String,
+import Spinner from "@/components/Layout/Spinner.vue";
+
+const props = defineProps({
+    courseId: String,
+    selectedCourseSlug: String,
 });
 
+// State
 const qaSections = ref([]);
- 
-const questions = ref([]);
 const newQuestion = ref("");
 const questionError = ref("");
 
 const editableQa = ref({});
-const replayQaId = ref(null); 
-const actionReplay = ref('replay')
-const actionEditReplay = ref(false)
-
-// For show more/less functionality
-const showAllQuestions = ref(false);
-const showAllAnswers = ref({});
-
-const updatedData =ref( {
+const replayQaId = ref(null);
+const actionEditReplay = ref(false);
+const updatedData = ref({
     question: null,
     qaSectionId: null,
     answer: null,
-    answerId:null,
-}); 
+    answerId: null,
+});
 
-function addQuestion() {
-     const payload = {
+// UI Controls
+const showAllQuestions = ref(false);
+const showAllAnswers = ref({});
+const isLoading = ref(false);
+
+const showDeleteModal = ref(false);
+const selectedData = ref(null);
+const selectedType = ref(null);
+
+// Computed
+const displayedQuestions = computed(() => {
+    return showAllQuestions.value ? qaSections.value : qaSections.value.slice(0, 2);
+});
+
+// Methods
+const fetchQA = async () => {
+    try {
+        isLoading.value = true;
+        const response = await Axios.get(`/api/get-course-qa/${props.selectedCourseSlug}`);
+        qaSections.value = response.data.data;
+    } catch (error) {
+        console.error("Failed to fetch Q&A:", error);
+        questionError.value = "Failed to load questions. Please try again.";
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const submitQuestion = async () => {
+    if (!newQuestion.value.trim()) {
+        questionError.value = "Question cannot be empty";
+        return;
+    }
+
+    try {
+        const response = await Axios.post("/api/QASection", {
             question: newQuestion.value.trim(),
-            course_id: props.courseId, 
-        }; 
-
-        Axios
-            .post("/api/QASection", payload)
-            .then(res => {
-                questions.value.push(response.data.data);
-                newQuestion.value = "";
-                questionError.value = "";
-            })
-};
-
-function getQA() {
-    Axios
-        .get(`/api/get-course-qa/${props.selectedCourseSlug}`)
-        .then(res => { 
-            qaSections.value = res.data.data; 
-        })
-}
-
-function editQuestion(qa, type = null) {
-    replayQaId.value = null;
-
-    if(actionReplay.value == type) {
-        editableQa.value = {};
-        return replayQaId.value = qa.id;
-    } 
-
-    editableQa.value = {... qa};
-    return;
-};
-
-function saveQuestion() {
-    Axios
-        .put(`/api/QASection/${editableQa.value?.id}`, {question:editableQa.value?.question})
-        .then(res=>{
-            editableQa.value = {};
+            course_id: props.courseId,
         });
+        qaSections.value = [response.data.data, ...qaSections.value];
+        newQuestion.value = "";
+        questionError.value = "";
+    } catch (error) {
+        console.error("Failed to submit question:", error);
+        questionError.value = "Failed to submit question. Please try again.";
+    }
 };
 
-function deleteQuestion(id){
-    Axios
-        .delete(`/api/QASection/${id}}`)
-        .then(res=>{ });
+const updateQuestion = async () => {
+    try {
+         const response = await Axios.put(`/api/QASection/${editableQa.value.id}`, {
+            question: editableQa.value.question,
+        });
+        editableQa.value = {};
+        qaSections.value = qaSections.value.map(item=>item.id===response.data.data.id ? response.data.data: item);
+    } catch (error) {
+        console.error("Failed to update question:", error);
+        questionError.value = "Failed to update question. Please try again.";
+    }
 };
- 
-function addAnswer(questionId){
-    const payload = {
-            answer: updatedData.value.answer,   
-            question_id: questionId,       
+
+const removeQuestion = async (id) => { 
+    try {
+        await Axios.delete(`/api/QASection/${id}`);
+        qaSections.value = qaSections.value.filter(q => q.id !== id);
+        showDeleteModal.value = false;
+        selectedData.value = null;
+    } catch (error) {
+        console.error("Failed to delete question:", error);
+        questionError.value = "Failed to delete question. Please try again.";
+    }
+};
+
+const submitAnswer = async (questionId) => {
+    try {
+        const payload = {
+            answer: updatedData.value.answer,
+            question_id: questionId,
         };
 
-    Axios
-        .post("/api/answers", payload).
-        then(res => {
+        if (actionEditReplay.value) {
+            await Axios.put(`/api/answers/${updatedData.value.answerId}`, payload);
+        } else {
+            await Axios.post("/api/answers", payload);
+        }
 
-        })
+        // Reset form and refresh data
+        updatedData.value.answer = "";
+        replayQaId.value = null;
+        actionEditReplay.value = false;
+        await fetchQA();
+    } catch (error) {
+        console.error("Failed to submit answer:", error);
+        questionError.value = "Failed to submit answer. Please try again.";
+    }
 };
 
-function editReplay(replay){
-    replayQaId.value = replay.question_id;
-    updatedData.value.answer = replay.answer;
-    updatedData.value.answerId = replay.id;
+const removeAnswer = async (answerId) => { 
+    try {
+        await Axios.delete(`/api/answers/${answerId}`);
+        await fetchQA();
+        showDeleteModal.value = false;
+        selectedData.value = null;
+    } catch (error) { 
+        questionError.value = "Failed to delete answer. Please try again.";
+    }
+};
+
+const editAnswer = (answer) => {
+    replayQaId.value = answer.question_id;
+    updatedData.value.answer = answer.answer;
+    updatedData.value.answerId = answer.id;
     actionEditReplay.value = true;
-    return;
+};
+function openModal(selectdeTodelete, type) { 
+    selectedData.value = selectdeTodelete;
+    selectedType.value = type;
+    showDeleteModal.value = true;
 }
+const closeModal = () => {
+    showDeleteModal.value = false;
+    selectedData.value = null;
+};
 
-function saveAnswer() {
-     const payload = { 
-        answer: updatedData.value.answer, 
+const toggleAnswerMode = (qa) => {
+    if (replayQaId.value === qa.id) {
+        replayQaId.value = null;
+        actionEditReplay.value = false;
+        updatedData.value.answer = "";
+    } else {
+        replayQaId.value = qa.id;
+        updatedData.value.answer = "";
+        actionEditReplay.value = false;
+    }
+};
+
+const getDisplayedAnswers = (answers, questionId) => {
+    return showAllAnswers.value[questionId] ? answers : answers?.slice(0, 2) || [];
+};
+
+const toggleShowAnswers = (questionId) => {
+    showAllAnswers.value = {
+        ...showAllAnswers.value,
+        [questionId]: !showAllAnswers.value[questionId]
     };
-     Axios
-        .put(`/api/answers/${updatedData.value?.answerId }`, payload)
-        .then(res=>{
-            updatedData.value.answer = null,
-            replayQaId.value = null,
-            actionEditReplay.value = false;
-        }) 
 };
 
- 
-function deleteAnswer(replayId) { 
-    Axios
-        .delete(`/api/answers/${replayId}`)
-        .then(res=>{});
-};
- 
-const displayedQuestions = computed(() => {
-    if (showAllQuestions.value || qaSections.value.length <= 2) {
-        return qaSections.value;
-    }
-    return qaSections.value.slice(0, 2);
-});
- 
-function getDisplayedAnswers(answers, questionId) {
-    if (showAllAnswers.value[questionId] || answers.length <= 2) {
-        return answers;
-    }
-    return answers.slice(0, 2);
-}
- 
-function toggleShowAllQuestions() {
-    showAllQuestions.value = !showAllQuestions.value;
-}
- 
-function toggleShowAllAnswers(questionId) {
-    showAllAnswers.value[questionId] = !showAllAnswers.value[questionId];
-}
-
-onMounted(()=>{
-    getQA();
-})
+// Lifecycle
+onMounted(fetchQA);
 </script>
 
 <template>
-    <div class="max-w-3xl mx-auto p-6">
-        <!-- Ask a Question Section -->
-        <div class="mb-8">
-            <h2 class="text-md font-semibold text-gray-800 mb-4">
-                Ask a Question
-            </h2>
-            <div class="mt-3 flex flex-row gap-2 w-full">
-                <div class="flex-grow">
-                    <textarea
-                        v-model="newQuestion"
-                        rows="3"
-                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 transition duration-300"
-                        placeholder="Type your question..."
-                    ></textarea>
-                </div>
-                <div @click="addQuestion()" class="w-fit">
-                    <i
-                        class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"
-                    ></i>
-                </div>
-            </div>
+    <div class="w-full mx-auto p-2">
+        <!-- Error Message -->
+        <div v-if="questionError" class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            {{ questionError }}
         </div>
 
-        <!-- List Questions and Answers -->
-        <div>
+        <!-- Ask Question Section -->
+        <section class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-800 mb-3">Ask a Question</h2>
+            <div class="flex gap-3">
+                <div class="flex-grow">
+                    <textarea v-model="newQuestion" rows="3"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-transparent transition"
+                        placeholder="What would you like to ask?" :disabled="isLoading"></textarea>
+                </div>
+                <button @click="submitQuestion" class="self-start p-3 text-lime-600 hover:text-lime-700 transition"
+                    :disabled="isLoading" aria-label="Submit question">
+                    <i class="fa-solid fa-paper-plane text-2xl"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- Questions List -->
+        <section>
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Questions</h2>
-            <div class="space-y-6">
-                <div
-                    v-for="qa in displayedQuestions"
-                    :key="qa.id"
-                    class="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200"
-                >
-                    <div class="flex flex-col space-y-3">
-                        <!-- Header: Avatar & User Full Name -->
-                        <div class="flex items-center space-x-3">
-                            <div class="w-6 h-6 rounded-full overflow-hidden">
-                                <img
-                                    v-if="qa?.user"
-                                    :src="qa?.user.profile"
-                                    alt="User Profile"
-                                    class="w-full h-full object-cover"
-                                />
+            <div v-if="isLoading && !qaSections.length" class="text-center py-8">
+                <Spinner/>
+            </div>
 
-                                <i
-                                    v-else
-                                    class="fas fa-user-circle text-lime-500 text-2xl"
-                                ></i>
-                            </div>
-                            <span class="text-md font-semibold text-gray-800">
-                                {{ qa.user ? qa.user.full_name : "Anonymous" }}
-                            </span>
+            <div v-else-if="!qaSections.length" class="text-center py-8 text-gray-500">
+                No questions yet. Be the first to ask!
+            </div>
+
+            <div v-else class="space-y-6">
+                <!-- Question Cards -->
+                <article v-for="qa in displayedQuestions" :key="qa.id"
+                    class="bg-white p-5 rounded-lg shadow border border-gray-200">
+                    <!-- Question Header -->
+                    <header class="flex items-center gap-3 mb-3">
+                        <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+                            <img v-if="qa.user?.profile" :src="qa.user.profile" :alt="qa.user.full_name"
+                                class="w-full h-full object-cover" />
+                            <i v-else class="fas fa-user-circle text-lime-500 text-2xl"></i>
                         </div>
+                        <span class="font-medium text-gray-800">
+                            {{ qa.user?.full_name || "Anonymous" }}
+                        </span>
+                        <span class="text-sm text-gray-500 ml-auto">
+                            {{ new Date(qa.created_at).toLocaleDateString() }}
+                        </span>
+                    </header>
 
-                        <!-- Question Content -->
-                        <div>
-                            <p class="text-gray-700 text-base">
-                                {{ qa.question }}
-                            </p>
-                        </div>
+                    <!-- Question Content -->
+                    <div class="mb-4">
+                        <p v-if="editableQa.id !== qa.id" class="text-gray-700">
+                            {{ qa.question }}
+                        </p>
 
-                        <!-- Edit/Delete Buttons (for owner only) -->
-                        <div class="flex space-x-3 text-sm">
-                            <button
-                                v-if="qa.editable"
-                                @click="editQuestion(qa)"
-                                class="text-blue-500 hover:text-blue-600"
-                            >
-                                Edit
+                        <!-- Edit Question Form -->
+                        <div v-else class="flex gap-2">
+                            <textarea v-model="editableQa.question" rows="2"
+                                class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-lime-400"></textarea>
+                            <button @click="updateQuestion" class="self-start p-2 text-lime-600 hover:text-lime-700"
+                                aria-label="Save changes">
+                                <i class="fa-solid fa-check text-xl"></i>
                             </button>
-                            <button
-                                @click="deleteQuestion(qa.id)"
-                                class="text-red-500 hover:text-red-600"
-                            >
-                                Delete
-                            </button>
-                            <button
-                                @click="
-                                    editQuestion(
-                                        replayQaId ? null : qa,
-                                        actionReplay
-                                    )
-                                "
-                                class="text-lime-500 hover:text-lime-600"
-                            >
-                                {{ replayQaId ? "cancel" : "Answer" }}
-                            </button>
-                        </div>
-
-                        <div
-                            v-if="editableQa.id == qa.id"
-                            class="mt-3 flex flex-row gap-2 w-full"
-                        >
-                            <div class="flex-grow">
-                                <textarea
-                                    v-model="editableQa.question"
-                                    rows="2"
-                                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-400 transition duration-300 resize-none"
-                                    placeholder="Write your answer..."
-                                >
-                                </textarea>
-                            </div>
-                            <div class="w-fit">
-                                <i
-                                    @click="saveQuestion()"
-                                    class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"
-                                ></i>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- answer question -->
-                    <div
-                        v-if="replayQaId === qa.id"
-                        class="mt-4 flex flex-row gap-2 w-full"
-                    >
-                        <div class="flex-grow">
-                            <textarea
-                                v-model="updatedData.answer"
-                                rows="2"
-                                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-400 transition duration-300 resize-none"
-                                placeholder="Write your answer..."
-                            ></textarea>
-                        </div>
-                        <div class="w-fit">
-                            <i
-                                @click="
-                                    actionEditReplay
-                                        ? saveAnswer()
-                                        : addAnswer(qa.id)
-                                "
-                                class="fa-solid px-4 hover:text-blue-500 active:text-blue-500 cursor-pointer fa-paper-plane text-2xl font-bold text-blue-500"
-                            ></i>
+                    <!-- Question Actions -->
+                    <div class="flex gap-4 text-sm">
+                        <button v-if="qa.editable && editableQa.id !== qa.id"
+                            @click="editableQa = { id: qa.id, question: qa.question }"
+                            class="text-blue-600 hover:underline">
+                            Edit
+                        </button>
+                        <button v-if="qa.editable" @click="openModal(qa, 'question')" class="text-red-600 hover:underline">
+                            Delete
+                        </button>
+                        <button @click="toggleAnswerMode(qa)" class="text-lime-600 hover:underline">
+                            {{ replayQaId === qa.id ? 'Cancel' : 'Answer' }}
+                        </button>
+                    </div>
+
+                    <!-- Answer Form -->
+                    <div v-if="replayQaId === qa.id" class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="flex gap-2">
+                            <textarea v-model="updatedData.answer" rows="3"
+                                class="flex-grow p-3 border rounded-lg focus:ring-2 focus:ring-lime-400"
+                                placeholder="Write your answer..."></textarea>
+                            <button @click="submitAnswer(qa.id)"
+                                class="self-start p-3 text-lime-600 hover:text-lime-700" aria-label="Submit answer">
+                                <i class="fa-solid fa-paper-plane text-xl"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="mt-4 space-y-2">
-                        <div
-                            v-for="replay in getDisplayedAnswers(
-                                qa?.answers,
-                                qa.id
-                            )"
-                            :key="replay.id"
-                            class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-lime-400"
-                        >
-                            <div class="flex items-center space-x-3">
-                                <div
-                                    class="w-6 h-6 rounded-full overflow-hidden"
-                                >
-                                    <img
-                                        v-if="replay?.user"
-                                        :src="replay?.user.profile"
-                                        alt="User Profile"
-                                        class="w-full h-full object-cover"
-                                    />
-
-                                    <i
-                                        v-else
-                                        class="fas fa-user-circle text-lime-500 text-2xl"
-                                    ></i>
+                    <!-- Answers List -->
+                    <div v-if="qa.answers?.length" class="mt-4 space-y-3">
+                        <div v-for="answer in getDisplayedAnswers(qa.answers, qa.id)" :key="answer.id"
+                            class="bg-gray-50 p-3 rounded-lg border-l-4 border-lime-400">
+                            <!-- Answer Header -->
+                            <header class="flex items-center gap-3 mb-2">
+                                <div class="w-6 h-6 rounded-full overflow-hidden bg-gray-100">
+                                    <img v-if="answer.user?.profile" :src="answer.user.profile"
+                                        :alt="answer.user.full_name" class="w-full h-full object-cover" />
+                                    <i v-else class="fas fa-user-circle text-lime-500 text-xl"></i>
                                 </div>
-                                <span
-                                    class="text-md font-semibold text-gray-800"
-                                >
-                                    {{
-                                        replay.user
-                                            ? replay.user.full_name
-                                            : "Anonymous"
-                                    }}
+                                <span class="text-sm font-medium text-gray-800">
+                                    {{ answer.user?.full_name || "Anonymous" }}
                                 </span>
-                            </div>
+                                <span class="text-xs text-gray-500 ml-auto">
+                                    {{ new Date(answer.created_at).toLocaleDateString() }}
+                                </span>
+                            </header>
 
-                            <!-- Answer Text (below the user info) -->
-                            <div class="mt-2">
-                                <p
-                                    v-if="!replay.isEditing"
-                                    class="text-gray-800 text-sm"
-                                >
-                                    {{ replay.answer }}
-                                </p>
-                            </div>
+                            <!-- Answer Content -->
+                            <p class="text-gray-700 text-sm">
+                                {{ answer.answer }}
+                            </p>
 
-                            <!-- Edit/Delete Buttons for Answer (owner only) -->
-                            <div
-                                v-if="replay.user.id"
-                                class="flex space-x-2 mt-2 text-sm"
-                            >
-                                <button
-                                    v-if="replay.editable"
-                                    @click="editReplay(replay)"
-                                    class="text-blue-500 hover:underline"
-                                >
+                            <!-- Answer Actions -->
+                            <div v-if="answer.editable" class="flex gap-3 mt-2 text-xs">
+                                <button @click="editAnswer(answer)" class="text-blue-600 hover:underline">
                                     Edit
                                 </button>
-                                <button
-                                    v-if="replay.editable"
-                                    @click="deleteAnswer(replay.id)"
-                                    class="text-red-500 hover:underline"
-                                >
+                                <button @click="openModal(answer, 'answer')" class="text-red-600 hover:underline">
                                     Delete
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Show More/Less Answers Button -->
-                        <div
-                            v-if="qa?.answers?.length > 2"
-                            class="text-center mt-2" >
-                            <button
-                                @click="toggleShowAllAnswers(qa.id)"
-                                class="text-lime-600 hover:underline text-sm"
-                            >
-                                {{
-                                    showAllAnswers[qa.id]
-                                        ? "Show Less Answers"
-                                        : `Show All Answers (${qa.answers.length})`
-                                }}
-                            </button>
-                        </div>
+                        <!-- Show More Answers Button -->
+                        <button v-if="qa.answers.length > 2" @click="toggleShowAnswers(qa.id)"
+                            class="mt-2 text-sm text-lime-600 hover:underline">
+                            {{ showAllAnswers[qa.id] ? 'Show fewer answers' : `Show all answers (${qa.answers.length})`
+                            }}
+                        </button>
                     </div>
-                </div>
+                </article>
 
-                <!-- Show More/Less Questions Button -->
-                <div v-if="qaSections.length > 2" class="text-center mt-4">
-                    <button
-                        @click="toggleShowAllQuestions"
-                        class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg transition duration-300"
-                    >
-                        {{
-                            showAllQuestions
-                                ? "Show Less Questions"
-                                : `Show All Questions (${qaSections.length})`
-                        }}
+                <!-- Show More Questions Button -->
+                <button v-if="qaSections.length > 2" @click="showAllQuestions = !showAllQuestions"
+                    class="w-full py-2 bg-lime-600 hover:bg-lime-700 text-white rounded-lg transition">
+                    {{ showAllQuestions ? 'Show fewer questions' : `Show all questions (${qaSections.length})` }}
+                </button>
+            </div>
+        </section>
+
+    </div>
+        <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+        <div v-if="showDeleteModal && selectedData"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div class="bg-white rounded shadow-lg w-96 p-6">
+                <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
+                <p class="mb-6">
+                    Are you sure you want to delete ?
+                </p>
+                <div class="flex justify-end space-x-2">
+                    <button @click="closeModal" class="px-4 py-3 border rounded hover:bg-gray-100">
+                        Cancel
+                    </button>
+                    <button @click="selectedType == 'answer' ? removeAnswer(selectedData?.id) : removeQuestion(selectedData?.id)   " class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
+                        Delete
                     </button>
                 </div>
             </div>
         </div>
-    </div>
+    </transition> 
 </template>
 
 <style scoped>
-.text-blue-500 {
-    color: #3b82f6;
+textarea {
+    resize: none;
 }
 
-.text-red-500 {
-    color: #ef4444;
+.fa-spinner {
+    animation: spin 1s linear infinite;
 }
 
-.text-green-500 {
-    color: #10b981;
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 </style>

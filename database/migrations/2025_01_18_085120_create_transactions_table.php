@@ -32,8 +32,7 @@ return new class extends Migration
 
             $table->unique(['customer_id', 'course_id', 'product_type'], 'customer_course_unique')->where('status', TRANSACTION_SUCCESS);
             $table->unique(['customer_id', 'book_id', 'product_type'], 'customer_book_unique')->where('status', TRANSACTION_SUCCESS);
-            $table->unique(['customer_id', 'plan_id', 'product_type'], 'customer_live_unique')->where('status', TRANSACTION_SUCCESS);
-
+           
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('customer_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
 

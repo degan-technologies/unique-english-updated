@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Live;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Live\LiveParticipantsResource;
+use App\Http\Resources\Live\PrivateLiveParticipantResource;
 use App\Http\Resources\Live\RoomResource;
 use App\Http\Resources\Transaction\CustomerInfoResource;
 use App\Models\Live\GroupRoom;
 use App\Models\Live\LiveRooms;
+use App\Models\Live\PrivateRoom;
 use App\Models\User;
 use App\Services\LangService;
 use Illuminate\Http\Request;
@@ -51,7 +53,8 @@ class LiveController extends Controller {
         $user = User::query()
             ->whereHas('customerTransactions', function($query) {
                 $query->where('status', TRANSACTION_SUCCESS)
-                      ->where('product_type', LIVE_CLASS);
+                    ->where('product_type', LIVE_CLASS)
+                    ->where('live_price_type', 'group');
             })
             ->get();
 
@@ -66,32 +69,12 @@ class LiveController extends Controller {
         ]);
     }
 
-    public function getMyStudents() { 
-        $user = User::query()
-        ->where('id', Auth::id())
-            ->whereSystemAdminOrInstructor()
-            ->first();
-
-        if (!$user) {
-            return response()->json([
-                'data' => 'No users found',
-            ]);
-        }
-
-        $liveRooms = LiveRooms::query()
-            ->where('instructor_id', $user->id)
-            ->get();
-        
-        if (!$liveRooms) {
-            return response()->json([
-                'data' => 'No rooms found',
-            ]);
-        }
-
+    public function getPrivateParticipants() { 
         $user = User::query()
             ->whereHas('customerTransactions', function($query) {
                 $query->where('status', TRANSACTION_SUCCESS)
-                      ->where('product_type', LIVE_CLASS);
+                    ->where('product_type', LIVE_CLASS)
+                    ->where('live_price_type', 'individual');
             })
             ->get();
 
@@ -102,7 +85,45 @@ class LiveController extends Controller {
         }
 
         return response()->json([
-            'data' => LiveParticipantsResource::collection($user),
+            'data' => PrivateLiveParticipantResource::collection($user),
+        ]);
+    }
+
+    public function getMyStudents() { 
+        $instructor = User::query()
+            ->where('id', Auth::id())
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$instructor) {
+            return response()->json([
+                'data' => 'No users found',
+            ]);
+        } 
+
+       $users = User::query()
+            ->whereHas('customerTransactions', function($query) {
+                $query->where('status', TRANSACTION_SUCCESS)
+                    ->where('product_type', LIVE_CLASS);
+            })
+            ->where(function($query) use ($instructor) {
+                $query->whereHas('groupRoom.liveRoom', function($q) use ($instructor) {
+                        $q->where('instructor_id', $instructor->id);
+                    })
+                    ->orWhereHas('privateRoom', function($q) use ($instructor) {
+                        $q->where('instructor_id', $instructor->id);
+                    });
+            })
+            ->get();
+
+        if (!$users) {
+            return response()->json([
+                'data' => 'No users found',
+            ]);
+        }
+
+        return response()->json([
+            'data' => LiveParticipantsResource::collection($users),
         ]);
     }
 
@@ -228,6 +249,57 @@ class LiveController extends Controller {
             'data' => $groupRoom
         ]);
     }
+
+    public function assignPrivateInstructor(Request $request, $id) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->where('id', Auth::id())
+            ->first();  
+
+        $student = User::query()
+            ->where('id', $id)
+            ->first();
+
+        if (!$student) {
+            return response()->json([
+            'message' => 'Student not found',
+            ], 404);
+        }
+
+        $instructor = User::query()
+            ->where('id', $request->instructorId)
+            ->first();
+
+        if (!$instructor) {
+            return response()->json([
+                'message'=> 'instructor not found',
+            ]);
+        }
+
+        $privateRoom = PrivateRoom::query()
+            ->where('user_id', $id) 
+            ->first();
+        
+        if ($privateRoom) {
+            $privateRoom->update([
+                'instructor_id' => $request->instructorId,
+            ]);
+            return response()->json([
+               'message' => 'Room assigned successfully',
+                'data' => $privateRoom
+            ]);
+        }
+
+        $privateRoom = $student->privateRoom()->create([
+            'instructor_id' => $request->instructorId,
+            'class_name' => 'Private class',
+        ]);
+
+        return response()->json([
+           'message' => 'Room assigned successfully',
+            'data' => $privateRoom
+        ]);
+    } 
 
     public function AssignInstructors(Request $request, $id) {
         $user = User::query()

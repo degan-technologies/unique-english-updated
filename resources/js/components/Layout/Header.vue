@@ -17,11 +17,13 @@ const AuthStore = useAuthStore();
 const studentStore = UseStudentStore();
 
 const checkoutUrl = ref(null);
+const isLoading = ref(false);
+const isCartOpen = ref(false); // New ref for cart dropdown state
 
 // Reactive refs from Pinia stores
 const { items, itemCount, totalPrice } = storeToRefs(cartStore);
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
-const { isLoggedIn, loggingIn, logoImage, authUser, exploreCourses } =
+const { isLoggedIn, loggingIn, logoImage, authUser, exploreCourses, selectedComponentId } =
     storeToRefs(appStore);
 const { landingPageTab, selectedCourseSlug, myCourseTab } =
     storeToRefs(studentStore);
@@ -53,25 +55,40 @@ function handleClickOutside(event) {
 }
 
 // Navigate to explore courses
-function onExploreCourses() {
-    router.push("/courses").then(() => {
+function onExploreCourses(id) {
+    isCartOpen.value = false;
+    selectedComponentId.value = id;
+    router.push("/").then(() => {
         exploreCourses.value = !exploreCourses.value;
+        isMenuOpen.value = false;
     });
 }
 
 // Initiate checkout
-function enrollCourse() {
-    Axios.post("/api/initiate-payment", { cartItems: items.value })
-        .then((res) => {
-            checkoutUrl.value = res.data.checkout_url;
-            window.open(checkoutUrl.value, "_blank");
-        })
-        .catch((error) => {
-            console.error(error);
-        });
-}
+async function enrollCourse() {
+    if (isLoading.value) return;
 
-// Remove a single item
+    isLoading.value = true;
+    try {
+        const response = await Axios.post("/api/initiate-payment", {
+            cartItems: [...items.value],
+        });
+        checkoutUrl.value = response.data.checkout_url;
+ 
+        cartStore.clearCart(); 
+        localStorage.removeItem("cartItems"); 
+        const newWindow = window.open(checkoutUrl.value, "_blank");
+ 
+        if (newWindow) {
+            newWindow.focus();
+        }
+    } catch (error) {
+        console.error("Checkout error:", error);
+    } finally {
+        isLoading.value = false;
+    }
+}
+ 
 function removeItem(item) {
     const selectedItem = {
         type: item.type,
@@ -83,7 +100,7 @@ function removeItem(item) {
     cartStore.removeFromCart(selectedItem);
 }
 
-// Switch to “My Courses” tab
+// Switch to "My Courses" tab
 function changeTab() {
     router.push({
         name: "student",
@@ -116,8 +133,7 @@ function toggleAuthActions(actionType) {
 
 onMounted(() => {
     document.addEventListener("click", handleClickOutside);
-
-    // Load cart from localStorage
+ 
     const saved = localStorage.getItem("cartItems");
     if (saved) {
         try {
@@ -125,6 +141,8 @@ onMounted(() => {
             cartStore.setCart(parsed);
         } catch (e) {
             console.warn("Failed to parse cartItems from localStorage:", e);
+            // Clear invalid cart data
+            localStorage.removeItem("cartItems");
         }
     }
 });
@@ -132,7 +150,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
 });
-
+ 
 watch(
     items,
     (newItems) => {
@@ -148,18 +166,12 @@ watch(
         :class="{
             'translate-y-0': isMenuVisible,
             '-translate-y-full': !isMenuVisible,
-        }"
-    >
+        }">
         <div class="mx-auto flex items-center justify-between h-fit">
             <router-link to="/" class="flex items-center gap-2">
-                <img
-                    src="/images/logo.jpg"
-                    alt="Logo"
-                    class="h-12 w-12 rounded-full object-cover border-2 border-white"
-                />
-                <span
-                    class="text-xl font-bold text-white drop-shadow-md hidden sm:inline-block"
-                >
+                <img src="/images/logo.jpg" alt="Logo"
+                    class="h-12 w-12 rounded-full object-cover border-2 border-white" />
+                <span class="text-xl font-bold text-white drop-shadow-md hidden sm:inline-block">
                     Unique English
                 </span>
             </router-link>
@@ -167,19 +179,14 @@ watch(
             <div class="flex items-center gap-4">
                 <!-- Cart Dropdown -->
                 <div class="relative flex justify-center">
-                    <Popper Popper :offset-distance="'0'" placement="bottom">
+                    <Popper v-model:visible="isCartOpen" :offset-distance="'0'" placement="bottom">
                         <!-- Cart Icon with Count -->
-                        <div
-                            class="relative flex justify-center items-center text-2xl cursor-pointer"
-                        >
+                        <div class="relative flex justify-center items-center text-2xl cursor-pointer"
+                            @click="isCartOpen = !isCartOpen">
                             <div class="relative">
-                                <i
-                                    class="fa-solid fa-cart-plus text-white text-2xl"
-                                ></i>
-                                <span
-                                    v-if="itemCount > 0"
-                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow"
-                                >
+                                <i class="fa-solid fa-cart-plus text-white text-2xl"></i>
+                                <span v-if="itemCount > 0"
+                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow">
                                     {{ itemCount }}
                                 </span>
                             </div>
@@ -188,64 +195,41 @@ watch(
                         <!-- Dropdown -->
                         <template #content>
                             <div
-                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4"
-                            >
+                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4">
                                 <div
-                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300"
-                                >
+                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
                                     <!-- Header -->
                                     <div class="text-center border-b pb-3 mb-3">
-                                        <h3
-                                            class="text-xl font-semibold text-gray-700"
-                                        >
+                                        <h3 class="text-xl font-semibold text-gray-700">
                                             Your Cart
                                         </h3>
                                     </div>
 
                                     <!-- Empty Cart -->
-                                    <div
-                                        v-if="!itemCount"
-                                        class="flex flex-col items-center justify-center h-40 space-y-3 text-gray-500"
-                                    >
-                                        <i
-                                            class="fa-solid fa-cart-shopping fa-fade text-4xl text-gray-400"
-                                        ></i>
+                                    <div v-if="!itemCount"
+                                        class="flex flex-col items-center justify-center h-40 space-y-3 text-gray-500">
+                                        <i class="fa-solid fa-cart-shopping fa-fade text-4xl text-gray-400"></i>
                                         <h1 class="text-center text-base">
                                             No items in cart
                                         </h1>
-                                        <button
-                                            @click="onExploreCourses"
-                                            class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition"
-                                        >
-                                            <i
-                                                class="fa-solid fa-book-open-reader mr-2"
-                                            ></i
-                                            >Explore Courses
+                                        <button @click="onExploreCourses('courses')"
+                                            class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition">
+                                            <i class="fa-solid fa-book-open-reader mr-2"></i>Explore Courses
                                         </button>
                                     </div>
 
                                     <!-- Cart Items -->
                                     <div v-else>
                                         <ul class="space-y-3">
-                                            <li
-                                                v-for="item in items"
-                                                :key="item.id"
-                                                class="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition"
-                                            >
-                                                <img
-                                                    :src="item.image"
-                                                    alt="Item Image"
-                                                    class="w-14 h-14 rounded-lg object-cover border"
-                                                />
+                                            <li v-for="item in items" :key="item.id"
+                                                class="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition">
+                                                <img :src="item.image" alt="Item Image"
+                                                    class="w-14 h-14 rounded-lg object-cover border" />
                                                 <div class="flex-1">
-                                                    <p
-                                                        class="font-medium text-sm truncate"
-                                                    >
+                                                    <p class="font-medium text-sm truncate">
                                                         {{ item.name }}
                                                     </p>
-                                                    <p
-                                                        class="text-gray-500 text-sm"
-                                                    >
+                                                    <p class="text-gray-500 text-sm">
                                                         ${{
                                                             item.price.toFixed(
                                                                 2
@@ -253,31 +237,37 @@ watch(
                                                         }}
                                                     </p>
                                                 </div>
-                                                <i
-                                                    @click="removeItem(item)"
-                                                    class="fa-solid fa-minus text-red-500 hover:text-red-700 cursor-pointer"
-                                                ></i>
+                                                <i @click="removeItem(item)"
+                                                    class="fa-solid fa-minus text-red-500 hover:text-red-700 cursor-pointer"></i>
                                             </li>
                                         </ul>
 
                                         <!-- Footer -->
                                         <div class="mt-5 border-t pt-3">
-                                            <div
-                                                class="flex justify-between text-base font-semibold"
-                                            >
+                                            <div class="flex justify-between text-base font-semibold">
                                                 <span>Total:</span>
-                                                <span
-                                                    >${{
-                                                        totalPrice.toFixed(2)
-                                                    }}</span
-                                                >
+                                                <span>${{
+                                                    totalPrice.toFixed(2)
+                                                }}</span>
                                             </div>
 
-                                            <button
-                                                @click="enrollCourse()"
-                                                class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition"
-                                            >
-                                                Proceed to Checkout
+                                            <button @click="enrollCourse" :disabled="isLoading"
+                                                class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
+                                                <template v-if="!isLoading">
+                                                    Proceed to Checkout
+                                                </template>
+                                                <template v-else>
+                                                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                                        xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                            stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor"
+                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                        </path>
+                                                    </svg>
+                                                    Processing...
+                                                </template>
                                             </button>
                                         </div>
                                     </div>
@@ -290,62 +280,33 @@ watch(
                 <!-- Auth/Profile -->
                 <div v-if="isLoggedIn" class="relative flex justify-center">
                     <!-- Profile Image or Initials -->
-                    <img
-                        v-if="authUser?.profile"
-                        :src="authUser.profile"
-                        alt="Profile"
-                        ref="profileBtnRef"
-                        @click="dropDownOpen = !dropDownOpen"
-                        title="Profile"
-                        class="w-8 h-8 rounded-full shadow-lg cursor-pointer"
-                    />
-                    <div
-                        v-else
-                        ref="profileBtnRef"
-                        @click="dropDownOpen = !dropDownOpen"
-                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 text-lg font-bold text-gray-700 cursor-pointer"
-                    >
+                    <img v-if="authUser?.profile" :src="authUser.profile" alt="Profile" ref="profileBtnRef"
+                        @click="dropDownOpen = !dropDownOpen" title="Profile"
+                        class="w-8 h-8 rounded-full shadow-lg cursor-pointer" />
+                    <div v-else ref="profileBtnRef" @click="dropDownOpen = !dropDownOpen"
+                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 text-lg font-bold text-gray-700 cursor-pointer">
                         {{ getInitials(authUser?.first_name) }}
                     </div>
 
                     <!-- Dropdown Menu -->
-                    <div
-                        v-if="dropDownOpen"
-                        ref="dropdownRef"
-                        class="absolute top-12 left-1/2 transform -translate-x-1/2 w-56 p-2 bg-white text-black rounded-lg shadow-xl z-50"
-                    >
+                    <div v-if="dropDownOpen" ref="dropdownRef"
+                        class="absolute top-12 left-1/2 transform -translate-x-1/2 w-56 p-2 bg-white text-black rounded-lg shadow-xl z-50">
                         <ul>
                             <li>
-                                <button
-                                    @click="
-                                        changeTab();
-                                        dropDownOpen = false;
-                                    "
-                                    class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded"
-                                >
+                                <button @click="
+                                    changeTab();
+                                dropDownOpen = false;
+                                " class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded">
                                     <i class="fas fa-book text-gray-500"></i> My
                                     Courses
                                 </button>
                             </li>
-                            <!-- <li>
-                                <a
-                                    href="/certificate"
-                                    class="block w-full px-4 py-2 text-sm hover:bg-gray-100 rounded"
-                                >
-                                    <i
-                                        class="fas fa-certificate text-gray-500"
-                                    ></i>
-                                    Certificate
-                                </a>
-                            </li> -->
                         </ul>
                         <hr class="my-2 border-gray-300" />
                         <ul>
                             <li>
-                                <button
-                                    @click.prevent="signOut"
-                                    class="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 rounded flex items-center gap-2"
-                                >
+                                <button @click.prevent="signOut"
+                                    class="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 rounded flex items-center gap-2">
                                     <i class="fas fa-right-from-bracket"></i>
                                     Sign Out
                                 </button>
@@ -356,81 +317,51 @@ watch(
 
                 <!-- Login/Register -->
                 <div v-else class="hidden md:flex gap-4">
-                    <button
-                        @click="toggleAuthActions(actionTypeLogin)"
-                        class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm"
-                    >
+                    <button @click="toggleAuthActions(actionTypeLogin)"
+                        class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm">
                         Login
                     </button>
-                    <button
-                        @click="toggleAuthActions(actionTypeRegister)"
-                        class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
-                    >
+                    <button @click="toggleAuthActions(actionTypeRegister)"
+                        class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm">
                         Register
                     </button>
                 </div>
 
                 <!-- Language Toggle -->
                 <button
-                    class="px-2 text-sm font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600"
-                >
+                    class="px-2 text-sm font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600">
                     አማ
                 </button>
             </div>
 
             <!-- Mobile Menu Toggle -->
-            <button
-                @click="toggleMenu"
-                class="block md:hidden text-2xl text-white focus:outline-none"
-            >
-                <i
-                    :class="
-                        isMenuOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'
-                    "
-                ></i>
+            <button @click="toggleMenu" class="block md:hidden text-2xl text-white focus:outline-none">
+                <i :class="isMenuOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'
+                    "></i>
             </button>
         </div>
 
         <!-- Mobile Menu -->
         <transition name="mobile-menu">
-            <div
-                v-if="isMenuOpen"
-                class="p-4 text-white border-t bottom-3 w-full mt-3 md:hidden"
-            >
+            <div v-if="isMenuOpen" class="p-4 text-white border-t bottom-3 w-full mt-3 md:hidden">
                 <ul class="flex flex-col items-center gap-4">
                     <li>
-                        <a
-                            href="/"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
+                        <a  @click="onExploreCourses('hero')" class="text-white hover:text-lime-200">
                             Home
                         </a>
                     </li>
                     <li>
-                        <a
-                            href="#about"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
+                        <a  @click="onExploreCourses('about')" class="text-white hover:text-lime-200">
                             About
                         </a>
                     </li>
                     <li>
-                        <a
-                            href="#courses"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
+                        <a  @click="onExploreCourses('courses')" class="text-white hover:text-lime-200">
                             Courses
                         </a>
                     </li>
                     <li>
-                        <a
-                            href="#books"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200 mt-5"
-                        >
+                        <a @click="onExploreCourses('books')" class="text-white hover:text-lime-200 mt-5">
                             Books
                         </a>
                     </li>
@@ -438,16 +369,12 @@ watch(
                     <!-- Simplified auth section -->
                     <template v-if="!isLoggedIn">
                         <div class="flex gap-4">
-                            <button
-                                @click="toggleAuthActions(actionTypeLogin)"
-                                class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm"
-                            >
+                            <button @click="toggleAuthActions(actionTypeLogin)"
+                                class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm">
                                 Login
                             </button>
-                            <button
-                                @click="toggleAuthActions(actionTypeRegister)"
-                                class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
-                            >
+                            <button @click="toggleAuthActions(actionTypeRegister)"
+                                class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm">
                                 Register
                             </button>
                         </div>
@@ -457,3 +384,30 @@ watch(
         </transition>
     </header>
 </template>
+
+<style>
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-enter-from,
+.mobile-menu-leave-to {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+</style>

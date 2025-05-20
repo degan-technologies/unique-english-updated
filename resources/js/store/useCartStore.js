@@ -4,8 +4,7 @@ import { ref, watch } from "vue";
 export const useCartStore = defineStore("useCartStore", () => {
     const items = ref([]);
     const itemCount = ref(0);
-    const totalPrice = ref(0);
-    const invoiceData = ref(null);
+    const totalPrice = ref(0); 
     const image = ref("/images/course-1.jpg");
 
     function addToCart(selectedItem) {
@@ -41,6 +40,15 @@ export const useCartStore = defineStore("useCartStore", () => {
         totalPrice.value = newItems.reduce((sum, item) => sum + item.price, 0);
     }
 
+    // In your useCartStore.js
+    function clearCart() {
+        this.items = [];
+        this.itemCount = 0;
+        this.totalPrice = 0;
+        localStorage.removeItem("cartItems"); // Directly remove from localStorage
+    }
+
+    // Load cart from localStorage on initialization
     const saved = localStorage.getItem("cartItems");
     if (saved) {
         try {
@@ -51,6 +59,7 @@ export const useCartStore = defineStore("useCartStore", () => {
         }
     }
 
+    // Watch for changes and persist to localStorage
     watch(
         items,
         (newItems) => {
@@ -67,5 +76,6 @@ export const useCartStore = defineStore("useCartStore", () => {
         addToCart,
         removeFromCart,
         setCart,
+        clearCart, // Make sure to expose the new function
     };
 });

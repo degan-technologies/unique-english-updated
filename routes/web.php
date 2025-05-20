@@ -20,9 +20,6 @@ Route::get('/language/{lang}', function ($lang) {
 Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider'])->name('social.redirect');
 Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProviderCallback'])->name('social.callback');
 
-
-// dd([
-//     'calculated_path' => config('jitsi.private_key_fullpath'),
-//     'file_exists' => file_exists(config('jitsi.private_key_fullpath')),
-//     'is_readable' => is_readable(config('jitsi.private_key_fullpath'))
-// ]);
+Route::get('/email', function(){
+    return view('emails.InstructorNotificationEmail');
+});

@@ -48,7 +48,7 @@ watch(
             selectedContent.value = newTab;
         }
     },
-    { immediate: true } // Ensure it runs on component mount
+    { immediate: true } 
 );
 
 </script>
@@ -74,10 +74,7 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === users">
                             <UserManagement />
-                        </div>
-                        <div v-else-if="selectedContent === exams">
-                            <ExamManagement />
-                        </div>
+                        </div> 
                         <div v-else-if="selectedContent === schedule">
                             <ScheduleManagement />
                         </div>
@@ -97,6 +94,9 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === liveSssions">
                             <LiveSessionManagement />
+                        </div>
+                        <div v-else-if="selectedContent === exams">
+                            <ExamManagement />
                         </div>
                    </div>
                 </div>

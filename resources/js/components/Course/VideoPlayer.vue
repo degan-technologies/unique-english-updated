@@ -12,39 +12,44 @@ import {
     watchEffect,
 } from "vue";
 
+// Components
 import QA from "@/components/Exam/QA.vue";
 import QuizReader from "./QuizReader.vue";
+import Spinner from "@/components/Layout/Spinner.vue";
 import TextEditor from "@/components/Layout/TextEditor.vue";
 import CourseList from "@/components/Course/CourseList.vue";
 import ReviewList from "@/components/Course/ReviewList.vue";
 import certificate from "@/components/Course/certificate.vue";
-import Spinner from "@/components/Layout/Spinner.vue";
 import LessonPdfReader from "@/components/Course/LessonPdfReader.vue";
 import LessonImageViewer from "@/components/Course/LessonImageViewer.vue";
 
+// Constants
+const LESSON_TYPE = "lesson";
+const QUIZ_TYPE = "quiz";
+const MIN_WATCH_THRESHOLD = 0.95;
+const TAB_TYPES = {
+    QA: "qa",
+    NOTE: "note",
+    REVIEW: "review"
+};
+
+// Stores and routing
 const studentStore = UseStudentStore();
 const route = useRoute();
+const { selectedCourseSlug, courses, completedLessons } = storeToRefs(studentStore);
 
-const { selectedCourseSlug, courses, completedLessons } =
-    storeToRefs(studentStore);
-
+// Refs
 const overallProgress = ref(0);
-selectedCourseSlug.value = route.query.slug;
-
 const selectedCourse = ref(null);
 const selectedModules = ref(null);
 const selectedModule = ref(null);
 const selectedLesson = ref(null);
 const selectedQuiz = ref(null);
-const volumeControlsVisible = ref(false);
-const totalDuration = ref(0);
-const watchedTime = ref(0);
-const videoWatched = ref(false);
-const minWatchThreshold = 0.95;
-
-const downloadCertificate = ref(false);
-
 const video = ref(null);
+const qaSections = ref([]);
+const certify = ref(false);
+
+// Video controls
 const isPlaying = ref(false);
 const showControls = ref(true);
 const progress = ref(0);
@@ -54,38 +59,32 @@ const volume = ref(1);
 const isMuted = ref(false);
 const playbackRate = ref("default");
 const isLoading = ref(false);
+const volumeControlsVisible = ref(false);
+const totalDuration = ref(0);
+const watchedTime = ref(0);
+const videoWatched = ref(false);
+const downloadCertificate = ref(false);
 
-const lessonType = ref("lesson");
-const quizType = ref("quiz");
+// Content and tabs
 const contentType = ref({
-    type: lessonType.value,
+    type: LESSON_TYPE,
     id: null,
     lessonId: null,
     quizeId: null,
 });
-
-const qaSections = ref([]);
-const qaTab = ref("qa");
-const noteTab = ref("note");
-const reviewTab = ref("review");
-const certify = ref(false);
-
-const activeTab = ref(qaTab.value);
-
+const activeTab = ref(TAB_TYPES.QA);
 let hideControlsTimeout = null;
 
-const feedBacks = computed(() => {
-    return selectedCourse.value?.feedBacks;
-});
+// Computed properties
+const feedBacks = computed(() => selectedCourse.value?.feedBacks);
+const averageRating = computed(() => selectedCourse.value?.averageRating);
+const starDistribution = computed(() => selectedCourse.value?.starDistribution);
+const streamVideo = computed(() => selectedLesson?.value?.course_content_url);
 
-const averageRating = computed(() => {
-    return selectedCourse.value?.averageRating;
-});
+// Initialize course slug from route
+selectedCourseSlug.value = route.query.slug;
 
-const starDistribution = computed(() => {
-    return selectedCourse.value?.starDistribution;
-});
-
+// Methods
 const handleDownloadCertificate = () => {
     downloadCertificate.value = !downloadCertificate.value;
 };
@@ -96,19 +95,12 @@ const setActiveTab = (tab) => {
 
 const togglePlayPause = () => {
     if (!video.value) return;
-
-    if (video.value.paused) {
-        video.value.play();
-        isPlaying.value = true;
-    } else {
-        video.value.pause();
-        isPlaying.value = false;
-    }
+    video.value.paused ? video.value.play() : video.value.pause();
+    isPlaying.value = !video.value.paused;
 };
 
 const toggleMute = () => {
     if (!video.value) return;
-
     video.value.muted = !video.value.muted;
     isMuted.value = video.value.muted;
 };
@@ -117,14 +109,12 @@ const handleSeekInput = (event) => {
     if (!video.value) return;
     const seekTime = (event.target.value / 100) * video.value.duration;
 
-    if (isNaN(seekTime) || seekTime < 0 || seekTime > video.value.duration)
-        return;
+    if (isNaN(seekTime) || seekTime < 0 || seekTime > video.value.duration) return;
+
     if (video.value.readyState < 2) {
         video.value.addEventListener(
             "loadeddata",
-            () => {
-                video.value.currentTime = seekTime;
-            },
+            () => { video.value.currentTime = seekTime; },
             { once: true }
         );
         return;
@@ -136,7 +126,7 @@ const handleSeekInput = (event) => {
 };
 
 const handleVideoEnd = () => {
-    if (watchedTime.value >= totalDuration.value * minWatchThreshold) {
+    if (watchedTime.value >= totalDuration.value * MIN_WATCH_THRESHOLD) {
         videoWatched.value = true;
         storeContentProgress();
     }
@@ -163,10 +153,9 @@ const startControlsHideTimer = () => {
 const handlePlay = () => {
     isPlaying.value = true;
     isLoading.value = false;
-
-    if (progress.value < 90) return;
-    console.log(progress.value);
-    storeContentProgress();
+    if (progress.value >= 90) {
+        storeContentProgress();
+    }
 };
 
 const handlePause = () => {
@@ -184,6 +173,7 @@ const changeVolume = (event) => {
 const handleWaiting = () => {
     isLoading.value = true;
 };
+
 const handleCanPlay = () => {
     isLoading.value = false;
 };
@@ -195,58 +185,45 @@ const changePlaybackRate = () => {
 
 const toggleFullscreen = () => {
     if (!video.value) return;
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    } else {
-        video.value.requestFullscreen();
-    }
+    document.fullscreenElement
+        ? document.exitFullscreen()
+        : video.value.requestFullscreen();
 };
 
 const changeQuality = (newQuality) => {
-    if (!selectedLesson.value || !selectedLesson.value.course_content_url) {
-        return;
-    }
+    if (!selectedLesson.value?.course_content_url) return;
 
-    let currentUrl = new URL(selectedLesson.value.course_content_url);
-    let params = new URLSearchParams(currentUrl.search);
+    const currentUrl = new URL(selectedLesson.value.course_content_url);
+    const params = new URLSearchParams(currentUrl.search);
 
-    if (newQuality === "Auto") {
-        params.delete("quality");
-    } else {
-        params.set("quality", newQuality);
-    }
+    newQuality === "Auto"
+        ? params.delete("quality")
+        : params.set("quality", newQuality);
 
-    let newUrl = `${currentUrl.origin}${currentUrl.pathname
-        }?${params.toString()}`;
-
+    const newUrl = `${currentUrl.origin}${currentUrl.pathname}?${params.toString()}`;
     selectedLesson.value.course_content_url = newUrl;
 
     if (video.value) {
         video.value.src = newUrl;
         video.value.load();
         video.value.play();
-    } else {
     }
 };
-
-const streamVideo = computed(() => {
-    return selectedLesson?.value?.course_content_url;
-});
 
 function openedLesson(module, lesson) {
     selectedQuiz.value = null;
     selectedModule.value = module;
     selectedLesson.value = lesson;
     totalTime.value = selectedLesson.value.hour;
-    currentTime.value =
-        selectedLesson.value?.courseContentProgress?.video_progress;
-    progress.value =
-        selectedLesson.value?.courseContentProgress?.max_video_progress;
+    currentTime.value = selectedLesson.value?.courseContentProgress?.video_progress;
+    progress.value = selectedLesson.value?.courseContentProgress?.max_video_progress;
 
-    contentType.value.type = lessonType.value;
-    contentType.value.id = module.id;
-    contentType.value.lessonId = lesson.id;
-    contentType.value.quizeId = null;
+    contentType.value = {
+        type: LESSON_TYPE,
+        id: module.id,
+        lessonId: lesson.id,
+        quizeId: null
+    };
 }
 
 function openedQuiz(module, qMetaData) {
@@ -254,63 +231,71 @@ function openedQuiz(module, qMetaData) {
     selectedModule.value = module;
     selectedQuiz.value = qMetaData;
 
-    contentType.value.type = quizType.value;
-    contentType.value.id = module.id;
-    contentType.value.quizeId = qMetaData.id;
-    contentType.value.lessonId = null;
+    contentType.value = {
+        type: QUIZ_TYPE,
+        id: module.id,
+        quizeId: qMetaData.id,
+        lessonId: null
+    };
 }
 
 const updateTotalTime = () => {
-    if (!video.value || !video.value.duration) return;
+    if (!video.value?.duration) return;
     isLoading.value = false;
     totalDuration.value = video.value.duration;
     totalTime.value = formatTime(video.value.duration);
-    video.value.currentTime =
-        selectedLesson.value?.courseContentProgress?.current_time;
-    return;
+    video.value.currentTime = selectedLesson.value?.courseContentProgress?.current_time;
 };
 
 function storeContentProgress() {
-    if (!video.value || totalDuration.value === 0) return;
+    if (!video.value || !totalDuration.value) return;
     const current = video.value.currentTime;
-    const newPogress = new Date(current * 1000).toISOString().substr(11, 8);
+    const newProgress = new Date(current * 1000).toISOString().substr(11, 8);
     watchedTime.value = current;
     currentTime.value = formatTime(current);
-    progress.value = (video.value.currentTime / video.value.duration) * 100;
+    progress.value = (current / video.value.duration) * 100;
 
-    const currentLessonId = selectedLesson.value.id;
-
-    const payload = {
-        course_content_id: currentLessonId,
-        progress: newPogress,
-    };
-
-    Axios.post("/api/coursecontent/progress", payload).then((res) => { });
+    Axios.post("/api/coursecontent/progress", {
+        course_content_id: selectedLesson.value.id,
+        progress: newProgress
+    });
 }
 
 function getCourseModules() {
-    Axios.get(`/api/get-course-modules/${selectedCourseSlug.value}`).then(
-        (res) => {
-            selectedModules.value = res.data.data;
-            qaSections.value = res.data.qaSections;
-            certify.value = res.data.certify;
-        }
-    );
+    Axios.get(`/api/get-course-modules/${selectedCourseSlug.value}`).then((res) => {
+        selectedModules.value = res.data.data;
+        qaSections.value = res.data.qaSections;
+        certify.value = res.data.certify;
+    });
 }
 
-function contniueProgress() {
-    Axios.get(`/api/contniue/progress/${selectedCourseSlug.value}`).then(
-        (res) => {
-            openedLesson(res.data.courseModule, res.data.courseContent);
-            overallProgress.value = res.data.overAllPogress;
-        }
-    );
+function continueProgress() {
+    Axios.get(`/api/contniue/progress/${selectedCourseSlug.value}`).then((res) => {
+        openedLesson(res.data.courseModule, res.data.courseContent);
+        overallProgress.value = res.data.overAllPogress;
+    });
 }
 
+const handleKeyDown = (e) => {
+    if (!video.value) return;
+
+    switch (e.key) {
+        case "ArrowRight":
+            e.preventDefault();
+            video.value.currentTime = Math.min(video.value.currentTime + 5, video.value.duration);
+            break;
+        case "ArrowLeft":
+            e.preventDefault();
+            video.value.currentTime = Math.max(video.value.currentTime - 5, 0);
+            break;
+    }
+};
+
+// Watchers
 watchEffect(() => {
     if (!courses.value) return;
     selectedCourse.value = courses.value.find(
-        (item) => item.slug === selectedCourseSlug.value
+        item => item.slug === selectedCourseSlug.value
     );
 });
 
@@ -319,7 +304,7 @@ watch(
     () => {
         selectedCourseSlug.value = route.query.slug;
         selectedCourse.value = courses.value.find(
-            (item) => item.slug === selectedCourseSlug.value
+            item => item.slug === selectedCourseSlug.value
         );
         getCourseModules();
     }
@@ -328,36 +313,16 @@ watch(
 watch(
     () => selectedLesson.value?.id,
     () => {
-        if (contentType.value.type !== lessonType) return;
+        if (contentType.value.type !== LESSON_TYPE) return;
         updateTotalTime();
     }
 );
 
-const handleKeyDown = (e) => {
-    if (!video.value) return;
-    let currentVolume = Number(volume.value);
-    if (!isFinite(currentVolume)) {
-        currentVolume = 0.5;
-    }
-
-    if (e.key === "ArrowRight") {
-        e.preventDefault();
-        video.value.currentTime = Math.min(
-            video.value.currentTime + 5,
-            video.value.duration
-        );
-    } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        video.value.currentTime = Math.max(video.value.currentTime - 5, 0);
-    } else if (e.key === " " || e.code === "Space") {
-        e.preventDefault();
-        togglePlayPause();
-    }
-};
-
+// Lifecycle hooks
 onMounted(() => {
     getCourseModules();
-    contniueProgress();
+    continueProgress();
+    document.addEventListener("keydown", handleKeyDown);
 
     if (!courses.value) {
         studentStore.fetchCourses();
@@ -366,8 +331,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     document.removeEventListener("keydown", handleKeyDown);
+    if (hideControlsTimeout) clearTimeout(hideControlsTimeout);
 });
 </script>
+
 <template>
     <div v-if="selectedCourseSlug" class="w-[90%] mx-auto mt-24">
         <div class="flex flex-col md:flex-row gap-4 relative">
@@ -378,21 +345,16 @@ onBeforeUnmount(() => {
                     <certificate :selectedCourse="selectedCourse" :overallProgress="overallProgress"
                         @backToHome="handleDownloadCertificate" />
                 </div>
-
-                <!-- Lesson / Quiz view -->
-                <div v-else class="flex-1 flex flex-col gap-4">
-                    <!-- Video Lesson -->
-                    <template v-if="
-                        contentType.type === lessonType &&
-                        selectedLesson?.content_type === 1
-                    ">
+ 
+                <div v-else class="flex-1 flex flex-col gap-4"> 
+                    <template v-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 1">
                         <div class="video-container relative bg-black h-96 rounded-lg overflow-hidden border-2 border-lime-700"
                             tabindex="0" @mousemove="resetControlsTimeout" @mouseleave="startControlsHideTimer"
                             @mouseenter="resetControlsTimeout" @click="togglePlayPause" @keydown="handleKeyDown">
-                            <video ref="video" class="w-full h-full object-cover" :src="streamVideo"
-                                :poster="selectedLesson?.thumbnail_url" @timeupdate="storeContentProgress"
-                                @loadedmetadata="updateTotalTime" @ended="handleVideoEnd" @play="handlePlay"
-                                @pause="handlePause" @waiting="handleWaiting" @canplay="handleCanPlay" playsinline>
+                            <video ref="video" class="w-full h-full object-contain" :src="streamVideo"
+                                :poster="selectedLesson?.thumbnail_url" @loadedmetadata="updateTotalTime"
+                                @ended="handleVideoEnd" @play="handlePlay" @pause="handlePause" @waiting="handleWaiting"
+                                @canplay="handleCanPlay" playsinline>
                                 Your browser does not support the video tag.
                             </video>
 
@@ -419,19 +381,13 @@ onBeforeUnmount(() => {
                                     <div class="flex items-center justify-between px-2">
                                         <!-- Play Button -->
                                         <button @click="togglePlayPause" class="text-white p-1" aria-label="Play/Pause">
-                                            <i :class="isPlaying
-                                                    ? 'fas fa-pause'
-                                                    : 'fas fa-play'
-                                                "></i>
+                                            <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
                                         </button>
 
                                         <!-- Volume Control -->
                                         <div class="flex items-center space-x-1">
                                             <button @click="toggleMute" class="text-white p-1" aria-label="Mute/Unmute">
-                                                <i :class="isMuted
-                                                        ? 'fas fa-volume-mute'
-                                                        : 'fas fa-volume-up'
-                                                    "></i>
+                                                <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
                                             </button>
                                             <input type="range" :value="volume" @input="changeVolume" min="0" max="1"
                                                 step="0.01" class="w-12 h-1 rounded-md bg-gray-300"
@@ -444,11 +400,8 @@ onBeforeUnmount(() => {
                                         </span>
 
                                         <!-- Quality Selector -->
-                                        <select @change="
-                                            changeQuality(
-                                                $event.target.value
-                                            )
-                                            " class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
+                                        <select @change="changeQuality($event.target.value)"
+                                            class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
                                             style="max-width: 70px">
                                             <option value="Auto">Auto</option>
                                             <option value="480p">480p</option>
@@ -476,34 +429,19 @@ onBeforeUnmount(() => {
                                 <div class="hidden sm:flex sm:items-center sm:gap-4">
                                     <button @click="togglePlayPause" class="text-white text-sm flex items-center"
                                         aria-label="Play/Pause">
-                                        <i :class="isPlaying
-                                                ? 'fas fa-pause'
-                                                : 'fas fa-play'
-                                            "></i>
+                                        <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
                                     </button>
                                     <div class="flex-1 flex items-center gap-4">
                                         <div class="relative flex items-center overflow-hidden transition-all duration-300"
-                                            :class="volumeControlsVisible
-                                                    ? 'w-40'
-                                                    : 'w-12'
-                                                " @mouseenter="
-                                                volumeControlsVisible = true
-                                                " @mouseleave="
-                                                volumeControlsVisible = false
-                                                ">
+                                            :class="volumeControlsVisible ? 'w-40' : 'w-12'"
+                                            @mouseenter="volumeControlsVisible = true"
+                                            @mouseleave="volumeControlsVisible = false">
                                             <button @click="toggleMute" class="text-white p-2" aria-label="Mute/Unmute">
-                                                <i :class="isMuted
-                                                        ? 'fas fa-volume-mute'
-                                                        : 'fas fa-volume-up'
-                                                    "></i>
+                                                <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
                                             </button>
                                             <div v-if="volumeControlsVisible" class="flex items-center space-x-1 ml-2">
                                                 <span class="text-xs text-white">
-                                                    {{
-                                                        Math.round(
-                                                            volume * 100
-                                                        )
-                                                    }}%
+                                                    {{ Math.round(volume * 100) }}%
                                                 </span>
                                                 <input type="range" :value="volume" @input="changeVolume" min="0"
                                                     max="1" step="0.01" class="w-16 h-1 rounded-md bg-gray-300"
@@ -515,9 +453,8 @@ onBeforeUnmount(() => {
                                         <span>{{ currentTime }}</span> /
                                         <span>{{ totalTime }}</span>
                                     </div>
-                                    <select @change="
-                                        changeQuality($event.target.value)
-                                        " class="text-white text-sm bg-lime-700 p-1 rounded">
+                                    <select @change="changeQuality($event.target.value)"
+                                        class="text-white text-sm bg-lime-700 p-1 rounded">
                                         <option value="Auto">Auto</option>
                                         <option value="1080p">1080p</option>
                                         <option value="720p">720p</option>
@@ -525,9 +462,7 @@ onBeforeUnmount(() => {
                                     </select>
                                     <select v-model="playbackRate" @change="changePlaybackRate"
                                         class="text-white text-sm bg-lime-700 p-1 rounded">
-                                        <option disabled value="default">
-                                            1x
-                                        </option>
+                                        <option disabled value="default">1x</option>
                                         <option value="0.5">0.5x</option>
                                         <option value="1.0">1x</option>
                                         <option value="1.5">1.5x</option>
@@ -541,24 +476,18 @@ onBeforeUnmount(() => {
                             </div>
                         </div>
                     </template>
-                    <!-- PDF Lesson -->
-                    <template v-else-if="
-                        contentType.type === lessonType &&
-                        selectedLesson?.content_type === 2
-                    ">
+ 
+                    <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 2">
                         <LessonPdfReader :selectedLesson="selectedLesson" />
                     </template>
 
                     <!-- Image Lesson -->
-                    <template v-else-if="
-                        contentType.type === lessonType &&
-                        selectedLesson?.content_type === 3
-                    ">
+                    <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 3">
                         <LessonImageViewer :selectedLesson="selectedLesson" />
                     </template>
 
                     <!-- Quiz -->
-                    <template v-else-if="contentType.type === quizType">
+                    <template v-else-if="contentType.type === QUIZ_TYPE">
                         <QuizReader :quizData="selectedQuiz" />
                     </template>
 
@@ -566,10 +495,6 @@ onBeforeUnmount(() => {
                     <div class="bg-white p-4 rounded-b-lg">
                         <div class="flex justify-between mt-2">
                             <div class="flex flex-row gap-2">
-                                <div class="w-12 h-12 rounded-full overflow-hidden shrink-0">
-                                    <img :src="selectedLesson?.thumbnail_url" class="w-full h-full object-cover"
-                                        alt="thumbnail-image" />
-                                </div>
                                 <div class="flex flex-col self-center">
                                     <p class="text-md text-gray-600">
                                         {{ selectedLesson?.title }}
@@ -583,12 +508,14 @@ onBeforeUnmount(() => {
                                 <div
                                     class="relative w-16 h-16 bg-gray-100 rounded-full border border-lime-700 overflow-hidden">
                                     <div class="absolute bottom-0 left-0 w-full" :style="{
-                                        height: overallProgress + '%',
+                                        height: 0 + '%',
                                         backgroundColor: '#1E40AF',
                                         transition: 'height 0.5s ease',
                                     }"></div>
                                     <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span class="text-lg font-bold text-lime-500">{{ overallProgress }} %</span>
+                                        <span class="text-lg font-bold text-lime-500">{{ overallProgress[0] }} / {{
+                                            overallProgress[1]
+                                            }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -598,25 +525,25 @@ onBeforeUnmount(() => {
                     <!-- DESKTOP-ONLY TABS -->
                     <div class="mt-4 hidden md:block bg-white p-4 rounded-lg">
                         <div class="flex justify-start border-b-2 border-gray-200 gap-4">
-                            <button @click="setActiveTab(qaTab)" :class="[
+                            <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
                                 'tab-button px-4 py-2 font-semibold',
-                                activeTab === qaTab
+                                activeTab === TAB_TYPES.QA
                                     ? 'border-lime-700 border-b-2 text-lime-700'
                                     : 'hover:border-lime-500',
                             ]">
                                 <i class="fas fa-question pr-2"></i> Q&A
                             </button>
-                            <button @click="setActiveTab(noteTab)" :class="[
+                            <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
                                 'tab-button px-4 py-2 font-semibold',
-                                activeTab === noteTab
+                                activeTab === TAB_TYPES.NOTE
                                     ? 'border-lime-700 border-b-2 text-lime-700'
                                     : 'hover:border-lime-500',
                             ]">
                                 <i class="fas fa-pen pr-2"></i> Notes
                             </button>
-                            <button @click="setActiveTab(reviewTab)" :class="[
+                            <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
                                 'tab-button px-4 py-2 font-semibold',
-                                activeTab === reviewTab
+                                activeTab === TAB_TYPES.REVIEW
                                     ? 'border-lime-700 border-b-2 text-lime-700'
                                     : 'hover:border-lime-500',
                             ]">
@@ -624,21 +551,12 @@ onBeforeUnmount(() => {
                             </button>
                         </div>
                         <div class="mt-4">
-                            <QA 
-                            v-if="activeTab === qaTab" 
-                            :selectedCourseSlug="selectedCourseSlug" 
-                            :courseId="selectedCourse?.id" />
-                            <TextEditor 
-                                v-else-if="activeTab === noteTab" 
-                                :selectedLesson="selectedLesson"
-                                :selectedCourse="selectedCourse" 
-                                :openedLesson="openedLesson" />
-                            <ReviewList 
-                                v-else-if="activeTab === reviewTab" 
-                                :feedBacks="feedBacks"
-                                :averageRating="averageRating" 
-                                :starDistribution="starDistribution" 
-                                :showOnly="false" />
+                            <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
+                                :courseId="selectedCourse?.id" />
+                            <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
+                                :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
+                            <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
+                                :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
                         </div>
                     </div>
                 </div>
@@ -652,27 +570,27 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- MOBILE-ONLY TABS -->
-            <div class="mt-4 block md:hidden bg-white p-4 rounded-lg">
+            <div class="mt-4 block md:hidden bg-white w-full mx-auto rounded-lg">
                 <div class="flex justify-start border-b-2 border-gray-200 gap-4">
-                    <button @click="setActiveTab(qaTab)" :class="[
+                    <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
                         'tab-button px-4 py-2 font-semibold',
-                        activeTab === qaTab
+                        activeTab === TAB_TYPES.QA
                             ? 'border-lime-700 border-b-2 text-lime-700'
                             : 'hover:border-lime-500',
                     ]">
                         <i class="fas fa-question pr-2"></i> Q&A
                     </button>
-                    <button @click="setActiveTab(noteTab)" :class="[
+                    <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
                         'tab-button px-4 py-2 font-semibold',
-                        activeTab === noteTab
+                        activeTab === TAB_TYPES.NOTE
                             ? 'border-lime-700 border-b-2 text-lime-700'
                             : 'hover:border-lime-500',
                     ]">
                         <i class="fas fa-pen pr-2"></i> Notes
                     </button>
-                    <button @click="setActiveTab(reviewTab)" :class="[
+                    <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
                         'tab-button px-4 py-2 font-semibold',
-                        activeTab === reviewTab
+                        activeTab === TAB_TYPES.REVIEW
                             ? 'border-lime-700 border-b-2 text-lime-700'
                             : 'hover:border-lime-500',
                     ]">
@@ -680,21 +598,12 @@ onBeforeUnmount(() => {
                     </button>
                 </div>
                 <div class="mt-4">
-                    <QA 
-                        v-if="activeTab === qaTab" 
-                        :selectedCourseSlug="selectedCourseSlug" 
+                    <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
                         :courseId="selectedCourse?.id" />
-                    <TextEditor 
-                        v-else-if="activeTab === noteTab" 
-                        :selectedLesson="selectedLesson"
-                        :selectedCourse="selectedCourse" 
-                        :openedLesson="openedLesson" />
-                    <ReviewList
-                        v-else-if="activeTab === reviewTab" 
-                        :feedBacks="feedBacks"
-                        :averageRating="averageRating" 
-                        :starDistribution="starDistribution" 
-                        :showOnly="false" />
+                    <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
+                        :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
+                    <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
+                        :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
                 </div>
             </div>
         </div>

@@ -179,4 +179,60 @@ class CourseContentProgressController extends Controller {
             'overAllPogress' => $checkProgress['overAllPogress'],
         ], 200);
     }
+
+    public function completeProgress($courseContentId) { 
+        $user = Auth::user();  
+
+        $courseContent = CourseContent::query()
+            ->where('id', $courseContentId)
+            ->first();
+
+        if (!$courseContent) {
+            return response()->json([
+                'error' => 'Course content not found'
+            ], 404);
+        }
+
+        if ($courseContent->content_type !== VIDEO) {
+            return response()->json([
+                'error' => 'Only video content can be marked as progress'
+            ], 400);
+        }
+
+        $eligibleCourse = Course::checkEligibility($courseContent->course_id);
+
+        if (!$eligibleCourse) {
+            return response()->json([
+                'message' => 'Unauthorized action.'
+            ], 403);
+        }
+
+        $getProgress = $courseContent->courseContentProgress()->first();
+
+        if(!$getProgress) {
+           
+            $progressRecord = $user->courseContentProgress()->create([
+                'progress'          => $courseContent->hour,
+                'course_content_id' => $courseContentId,
+                'vedeo_progress' => $courseContent->hour,
+                'course_id' => $courseContent->course_id,
+            ]);
+
+            return response()->json([
+                'message' => 'Progress saved successfully',
+                'data'    => $progressRecord
+            ], 200);
+        }
+
+        $progressRecord = $getProgress->update([
+            'progress' => $courseContent->hour,
+            'vedeo_progress' => $courseContent->hour,
+            'course_id' => $courseContent->course_id,
+        ]);
+
+        return response()->json([
+            'message' => 'Progress saved successfully',
+            'data'    => $progressRecord
+        ], 200);
+    }
 }

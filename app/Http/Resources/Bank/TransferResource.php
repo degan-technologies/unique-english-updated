@@ -18,7 +18,7 @@ class TransferResource extends JsonResource
  
         return [
             'currency' => $this->currency,
-            'reference' => $this->transaction?->tx_ref,
+            'reference' => $this->transaction?->tx_ref ?? $this->reference,
             'deposits' => $this->deposits,
             'withdrawals' => $this->withdrawals,
             'status' => $this->status,

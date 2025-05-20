@@ -2,17 +2,25 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\Log;
+use App\Http\Resources\Notification\UserNotificationResource;
+use App\Models\Notifications\NotifiableUser;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;  
 
 
-class NotificationController extends Controller
-{
-    public function index()
-    {
-        return response()->json(Auth::user()->notifications);
+class NotificationController extends Controller {
+    public function index() {
+       $notifiedUser = NotifiableUser::query()
+            ->where('user_id', Auth::user()->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $unReadNotifications = $notifiedUser->where('read_at', null)->count();
+
+        return response()->json([
+            'data' => UserNotificationResource::collection($notifiedUser),
+            'unReadNotifications'=> $unReadNotifications
+        ]);
     }
 
     public function unread()
@@ -22,33 +30,31 @@ class NotificationController extends Controller
 
     public function markAsRead($id) {  
         $user = Auth::user(); 
-        $notifications = $user->notifications;
-      
-        $notification = $notifications->firstWhere('id', $id);
-      
-        if (!$notification) {
+
+        $notifiableUser = NotifiableUser::query()
+            ->where('user_id', $user->id)
+            ->where('id', $id)
+            ->first();  
+
+        if (!$notifiableUser) {
             return response()->json([
                 'status' => 'not_found'
             ], 404);
         } 
         
-        $notification->markAsRead();
+        $notifiableUser->update([
+            'read_at' => Carbon::now(),
+        ]);
+
+        $unReadNotifications =NotifiableUser::query()
+            ->where('user_id', $user->id)
+            ->where('read_at', null)
+            ->get()
+            ->count();  
 
         return response()->json([
-            'status' => 'success',
-            'read_at' => $notification->read_at,
+            'data'=> new UserNotificationResource($notifiableUser),
+            'unReadNotifications'=> $unReadNotifications
         ]);
-    
-    }
-    
-    
-
-    
-    
-    
-    public function markAllAsRead()
-    {
-        Auth::user()->unreadNotifications->markAsRead();
-        return response()->json(['status' => 'all_marked_as_read']);
     }
 }

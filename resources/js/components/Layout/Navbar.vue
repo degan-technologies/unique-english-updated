@@ -3,29 +3,23 @@ import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-
-import { useThemeStore } from "@/store/theme";
+ 
 import { useAppStore } from "@/store/useAppStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
 const router = useRouter();
 const appStore = useAppStore();
 const sidebarStore = useSidebarStore();
-const { authUser, unreadNotifications, readNotifications, isLoggedIn } =
+const { authUser, unreadNotifications, notifications, readNotifications, isLoggedIn } =
     storeToRefs(appStore);
 const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
 
-const searchOpen = ref(false);
-const mobileMenuOpen = ref(false);
+const searchOpen = ref(false); 
 const notificationOpen = ref(false);
 const profileOpen = ref(false);
 const showAllNotifications = ref(false);
 const currentNotification = ref(null);
-const showNotificationModal = ref(false);
-
-const themeStore = useThemeStore();
-let intervalId = null;
-let echoListener = null;
+const showNotificationModal = ref(false); 
 
 function formatTime(date) {
     const options = {
@@ -40,13 +34,7 @@ function formatTime(date) {
 
 const toggleNotifications = () => {
         notificationOpen.value = !notificationOpen.value;
-        profileOpen.value = false;
-        if (notificationOpen.value) {
-            appStore.fetchUnreadNotifications();
-            if (showAllNotifications.value) {
-                appStore.fetchReadNotifications();
-            }
-        }
+        profileOpen.value = false; 
     };
     
     const toggleProfile = () => {
@@ -74,22 +62,14 @@ const toggleNotifications = () => {
         }
     } 
 
-    async function markAsUnread(notificationId) {
-        try {
-            await appStore.markNotificationAsUnread(notificationId);
-            await appStore.fetchUnreadNotifications();
-            if (showAllNotifications.value) {
-                await appStore.fetchReadNotifications();
-            }
-        } catch (error) {
-            console.error("Error marking notification as unread:", error);
-        }
-    }
-
     function showNotificationDetails(notification) {
         currentNotification.value = notification;
         showNotificationModal.value = true;
         notificationOpen.value = false;  
+
+        if(notification.data.read_at == null){
+            appStore.markNotificationAsRead(notification.id);
+        }
     }
  
 
@@ -98,36 +78,11 @@ const toggleNotifications = () => {
     }
 
     function toggleShowAllNotifications() {
-        showAllNotifications.value = !showAllNotifications.value;
-        if (showAllNotifications.value) {
-            appStore.fetchReadNotifications();
-        } else {
-            appStore.fetchUnreadNotifications();
-        }
+        showAllNotifications.value = !showAllNotifications.value; 
     }
 
     onMounted(() => {
-        appStore.fetchUnreadNotifications();
-
-        // Setup real-time notifications with Echo
-        if (window.Echo && authUser.value?.id) {
-            echoListener = window.Echo.private(
-                `App.Models.User.${authUser.value.id}`
-            ).notification((notification) => {
-                console.log("New notification received:", notification);
-                appStore.fetchUnreadNotifications();
-                if (showAllNotifications.value) {
-                    appStore.fetchReadNotifications();
-                }
-            });
-        }
-    });
-
-    onUnmounted(() => {
-        clearInterval(intervalId);
-        if (echoListener && authUser.value?.id) {
-            window.Echo.leave(`App.Models.User.${authUser.value.id}`);
-        }
+        appStore.fetchUnreadNotifications(); 
     }); 
 </script>
 
@@ -178,9 +133,9 @@ const toggleNotifications = () => {
                     <button @click="toggleNotifications"
                         class="hover:text-lime-500 relative transition-colors duration-300 z-50" title="Notifications">
                         <i class="fa-solid fa-bell text-xl"></i>
-                        <span v-if="unreadNotifications.length > 0"
+                        <span 
                             class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                            {{ unreadNotifications.length }}
+                            {{ unreadNotifications ? unreadNotifications : 0 }}
                         </span>
                     </button>
 
@@ -204,7 +159,7 @@ const toggleNotifications = () => {
 
                         <!-- No notifications -->
                         <div v-if="
-                            unreadNotifications.length === 0 &&
+                            notifications.length === 0 &&
                             (!showAllNotifications ||
                                 readNotifications.length === 0)
                         " class="p-4 text-gray-500 text-sm">
@@ -212,8 +167,11 @@ const toggleNotifications = () => {
                         </div>
 
                         <!-- Unread Notifications -->
-                        <ul v-if="unreadNotifications.length > 0">
-                            <li v-for="notification in unreadNotifications" :key="notification.id"
+                        <ul v-if="notifications.length > 0">
+                            <li v-for="notification in notifications" :key="notification.id"
+                                :class="{
+                                    'hidden': showAllNotifications && notification.data.read_at,
+                                }"
                                 class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b text-sm leading-snug break-words whitespace-normal"
                                 @click="showNotificationDetails(notification)">
                                 <div class="flex justify-between items-start">
@@ -229,38 +187,10 @@ const toggleNotifications = () => {
                                             }}
                                         </p>
                                     </div>
-                                    <span class="w-2 h-2 bg-lime-500 rounded-full mt-1 flex-shrink-0"></span>
+                                    <span v-if="currentNotification?.id == notification?.id ? false : !notification.read_at" class="w-2 h-2 bg-lime-500 rounded-full mt-1 flex-shrink-0"></span>
                                 </div>
                             </li>
-                        </ul>
-
-                        <!-- Read Notifications (when showAll is true) -->
-                        <ul v-if=" showAllNotifications && readNotifications.length > 0 ">
-                            <li v-for="notification in readNotifications" :key="notification.id"
-                                class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b text-sm leading-snug break-words whitespace-normal bg-gray-50"
-                                @click="showNotificationDetails(notification)">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <p class="text-gray-600">
-                                            {{ notification.data.message }}
-                                        </p>
-                                        <p class="text-xs text-gray-400 mt-1">
-                                            {{
-                                                formatTime(
-                                                    notification.created_at
-                                                )
-                                            }}
-                                        </p>
-                                    </div>
-                                    <button @click.stop="
-                                        markAsUnread(notification.id)
-                                        " class="text-xs text-gray-400 hover:text-gray-600 ml-2"
-                                        title="Mark as unread">
-                                        <i class="fa-solid fa-envelope"></i>
-                                    </button>
-                                </div>
-                            </li>
-                        </ul>
+                        </ul> 
                     </div>
                 </div>
 
@@ -287,6 +217,7 @@ const toggleNotifications = () => {
                 </div>
             </div>
         </div>
+    </div>
 
         <!-- Custom Notification Modal -->
         <div v-if="showNotificationModal"
@@ -296,11 +227,12 @@ const toggleNotifications = () => {
                     <h3 class="text-lg font-semibold">Notification Details</h3>
                 </div>
                 <div class="p-4" v-if="currentNotification">
-                    <h6 class="mb-3 font-medium">
+                    <h1 class="text-gray-600 my-2 font-bold"> {{ currentNotification.data.title }} </h1>
+                    <h6 class="mb-3 font-normal">
                         {{ currentNotification.data.message }}
                     </h6>
                     <p class="text-gray-500 text-sm mb-2">
-                        Received:
+                        Date Received:
                         {{ formatTime(currentNotification.created_at) }}
                     </p>
                     <div v-if="currentNotification.data.details" class="mt-3">
@@ -312,21 +244,10 @@ const toggleNotifications = () => {
                 <div class="p-4 border-t flex justify-end space-x-2">
                     <button @click="closeNotificationModal" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
                         Close
-                    </button>
-                    <!-- <button
-                        @click="handleNotificationAction(currentNotification)"
-                        class="px-4 py-2 bg-lime-500 text-white hover:bg-lime-600 rounded"
-                    >
-                        {{
-                            currentNotification?.read_at
-                                ? "Open"
-                                : "Mark as Read & Open"
-                        }}
-                    </button> -->
+                    </button>  
                 </div>
             </div>
         </div>
-    </div>
 </template>
 
 <style scoped>

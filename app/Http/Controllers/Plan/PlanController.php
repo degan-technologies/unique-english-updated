@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Plan;
 
 use App\Models\Plan\Plan;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Plan\ManagePlanResource;
 use Illuminate\Http\Request;
 use App\Http\Resources\Plan\PlanResource;
 use App\Models\User;
@@ -32,6 +33,15 @@ class PlanController extends Controller {
             'data' => PlanResource::collection($plans),
         ]);
     }
+
+    public function getMyPlans() {
+
+        $plans = Plan::all();
+
+        return response()->json([
+            'data' => ManagePlanResource::collection($plans),
+        ]);
+    } 
  
     public function store(Request $request) {
         $user = User::query()
@@ -68,7 +78,7 @@ class PlanController extends Controller {
 
         return response()->json([
             'message' => 'Plan created successfully',
-            'data' => new PlanResource($plan),
+            'data' => new ManagePlanResource($plan),
         ], 201);
     }
 
@@ -81,7 +91,7 @@ class PlanController extends Controller {
                 'message' => 'Plan not found'
             ], 404);
         }
-        return new PlanResource($plan);
+        return new ManagePlanResource($plan);
     }
 
     // Update an existing plan
@@ -119,7 +129,7 @@ class PlanController extends Controller {
 
         return response()->json([
             'message' => 'Plan updated successfully',
-            'data' => new PlanResource($plan),
+            'data' => new ManagePlanResource($plan),
         ]);
     }
 

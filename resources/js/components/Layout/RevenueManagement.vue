@@ -61,36 +61,10 @@
             return match
         })
     })
- 
-    function processRefund(transaction) {
-        Axios
-            .get(`/api/refend-transaction/${transaction.ref_key}`)
-            .then(res=>{
-                showToast(res.data.message);
-            });
-    }
-
-    function tabClasses(tab) {
-        activeTab.value === tab ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-600 hover:text-blue-500'
-    }
-
-    function showToast(message) {
-        toast.value.message = message
-        toast.value.show = true
-        setTimeout(() => {
-            toast.value.show = false
-        }, 3000)
-    }
-
-    function changeEarningType() {
-        summryLength.value = !summryLength.value;
-        fetchTransactions();
-    }
-    
+  
     onMounted(()=>{
         fetchTransactions();
     })
-
 </script>
   
 
@@ -99,21 +73,8 @@
         <!-- Header -->
         <header class="bg-white shadow p-4 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-gray-800">Payment & Revenue Management</h1>
-                <p class="text-sm text-gray-500">Track and manage earnings from courses, books, and virtual classes</p>
-            </div>
-            <div>
-                <input
-                    type="text"
-                    placeholder="Search..."
-                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-            </div>
-        </header>
-    
-        <div class="flex">
-            <main class="flex-1 max-w-full p-6">
-                <nav class="text-gray-500 text-sm mb-4">
+                <h1 class="text-2xl font-semibold text-gray-800">Payment & Revenue Management</h1> 
+                 <nav class="text-gray-500 text-sm mb-4">
                     <ol class="list-reset flex">
                         <li>
                             <a href="#" class="hover:text-blue-500">Dashboard</a>
@@ -124,25 +85,43 @@
                         <li>Revenue Overview</li>
                     </ol>
                 </nav>
-        
-                <!-- Tab Navigation -->
-
+            </div>
+            <div>
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div> 
+        </header>
+    
+        <div class="flex">
+            <main class="flex-1 max-w-full">
                 <div class="mb-6">
                     <nav class="flex border-b">
                     <button
-                        :class="tabClasses('overview')"
+                        :class="{
+                                'border-lime-700 text-lime-700 border-b-2': activeTab === 'overview',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'overview',
+                            }"
                         @click="activeTab = 'overview'"
                         class="px-4 py-2 font-medium focus:outline-none" >
                         Overview
                     </button>
                     <button
-                        :class="tabClasses('transactions')"
+                        :class="{
+                                'border-lime-700 text-lime-700  border-b-2': activeTab === 'transactions',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'transactions',
+                            }" 
                         @click="activeTab = 'transactions'"
                         class="px-4 py-2 font-medium focus:outline-none" >
                         Transactions
                     </button>
                     <button
-                        :class="tabClasses('payouts')"
+                        :class="{
+                                'border-lime-700 text-lime-700  border-b-2': activeTab === 'payouts',
+                                'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'payouts',
+                            }" 
                         @click="activeTab = 'payouts'"
                         class="px-4 py-2 font-medium focus:outline-none" >
                         Payouts
@@ -156,8 +135,7 @@
                     <section v-if="activeTab === 'overview'"> 
                         <div v-if="revenue?.transactionSummary">
                             <TransactionOverview 
-                                :revenue="revenue"
-                                @changeEarningType="changeEarningType()"/> 
+                                :revenue="revenue" /> 
                         </div>             
                     </section>
         
@@ -199,8 +177,7 @@
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount  ETB</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th> 
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white divide-y divide-gray-200">
@@ -219,11 +196,6 @@
                                                 <span :class="transaction.color" >
                                                 {{ transaction.status }}
                                                 </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                <button class="text-blue-500 hover:underline" @click="processRefund(transaction)">
-                                                    Refund
-                                                </button>
                                             </td>
                                         </tr>
                                     </tbody>

@@ -15,7 +15,7 @@
     const sidebarStore = useSidebarStore();
     const { sidebarCollapsed, } = storeToRefs(sidebarStore);
      
-    const activeFilter = ref('today');
+    const activeFilter = ref('allTime');
  
     const revenueData = ref({
         today: 0,

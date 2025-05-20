@@ -29,7 +29,7 @@ class OTPVerificationMail extends Mailable
                     ->with([
                         'otp'  => $this->otp,
                         'name' => $this->name,
-                        'url'  => $this->url, // Pass URL to Blade view
+                        'url'  => $this->url,  
                     ]);
     }
 }

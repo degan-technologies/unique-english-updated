@@ -12,7 +12,7 @@ return new class extends Migration {
             $table->string('name')->nullable();
             $table->string('file_path');
             $table->timestamps();
-            $table->softDeletes(); // Soft delete support
+            $table->softDeletes();  
         });
     }
 

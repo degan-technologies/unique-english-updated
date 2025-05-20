@@ -45,44 +45,27 @@ onMounted(() => {
         <main class="py-6">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
                 <!-- Spinner centered -->
-                <div
-                    v-if="isLoading"
-                    class="flex items-center justify-center h-[60vh]"
-                >
+                <div v-if="isLoading" class="flex items-center justify-center h-[60vh]">
                     <Spinner />
                 </div>
 
                 <!-- No books -->
-                <div
-                    v-else-if="myBooks?.length === 0"
-                    class="text-center text-gray-500 py-12"
-                >
+                <div v-else-if="myBooks?.length === 0" class="text-center text-gray-500 py-12">
                     No transactions found.
                 </div>
 
                 <!-- Book list -->
                 <div v-else class="flex flex-col gap-6">
-                    <div
-                        v-for="myBook in myBooks"
-                        :key="myBook.id"
-                        class="bg-white border border-gray-300 shadow-md rounded-lg overflow-hidden"
-                    >
+                    <div v-for="myBook in myBooks" :key="myBook.id"
+                        class="bg-white border border-gray-300 shadow-md rounded-lg overflow-hidden">
                         <div class="flex flex-col md:flex-row">
                             <!-- Video -->
                             <div class="w-full md:w-1/2">
                                 <div class="relative w-full h-56 md:h-64">
-                                    <video
-                                        ref="videoPlayer"
-                                        id="videoPlayer"
+                                    <video ref="videoPlayer" id="videoPlayer"
                                         class="video-js vjs-default-skin w-full h-full object-cover rounded-t-md md:rounded-none md:rounded-l-md"
-                                        controls
-                                        :poster="myBook?.cover_page_url"
-                                        preload="auto"
-                                    >
-                                        <source
-                                            :src="myBook?.intro_video_url"
-                                            type="video/mp4"
-                                        />
+                                        controls :poster="myBook?.cover_page_url" preload="auto">
+                                        <source :src="myBook?.intro_video_url" type="video/mp4" />
                                         Your browser does not support the video
                                         tag.
                                     </video>
@@ -90,37 +73,29 @@ onMounted(() => {
                             </div>
 
                             <!-- Book info -->
-                            <div
-                                class="w-full md:w-1/2 p-6 flex flex-col justify-center"
-                            >
-                                <h2
-                                    class="text-lg sm:text-xl font-semibold mb-2"
-                                >
+                            <div class="w-full md:w-1/2 p-6 flex flex-col justify-center">
+                                <h2 class="text-lg sm:text-xl font-semibold mb-2">
                                     {{ myBook?.title }}
                                 </h2>
-                                <p
-                                    class="text-gray-600 text-sm line-clamp mb-4"
-                                >
-                                    {{ myBook?.description }}
-                                </p>
 
-                                <button
-                                    @click="changeTab(myBook?.slug)"
-                                    class="mt-auto px-4 py-2 w-full sm:w-32 border border-lime-700 bg-white text-lime-600 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-colors"
-                                >
+                                <div class="prose prose-sm sm:prose-base max-w-none ql-editor preview line-clamp"
+                                    v-html="myBook?.description">
+                                </div>
+
+                                <button @click="changeTab(myBook?.slug)"
+                                    class="mt-auto px-4 py-2 w-full sm:w-32 border border-lime-700 bg-white text-lime-600 font-semibold text-sm rounded-md hover:bg-lime-700 hover:text-white transition-colors">
                                     Continue
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Book Component -->
-                <div class="mt-12">
-                    <Book />
-                </div>
             </div>
         </main>
+        <!-- Book Component -->
+        <div class="w-full mt-12 mx-auto">
+            <Book />
+        </div>
     </div>
 </template>
 

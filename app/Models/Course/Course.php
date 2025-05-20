@@ -77,21 +77,18 @@ class Course extends Model {
         $courseSeconds = $totalSeconds % 60;
 
         $overAllCreditHour = sprintf('%02d:%02d:%02d', $courseHours, $courseMinutes, $courseSeconds);
+        $totalLessons = $course->courseContents()->where('content_type', VIDEO)->get()-> count();
 
         if ($progress) {
-            $totalTimeInSeconds = $progress->where('course_id', $course->id)->get()->reduce(function ($carry, $content) {
-                $timeParts = explode(':', $content->progress);
-                $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
-                return $carry + $seconds;
-            }, 0);
+            $learnedLessons = $progress->where('course_id', $course->id)->get()->count(); 
 
-            $overAllPogress = $totalTimeInSeconds / $totalSeconds * 100; 
+            $overAllPogress =[$learnedLessons, $totalLessons];
         }
 
         
 
         if (!$overAllPogress) {
-            $overAllPogress = 0;
+            $overAllPogress = [0, $totalLessons];
         }
         
         return [

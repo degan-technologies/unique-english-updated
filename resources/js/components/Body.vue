@@ -29,7 +29,7 @@ const currentComponentName = computed(() => {
             <div v-if="currentComponentName === 'InvoicePage'">
                 <RouterView />
             </div>
-            <div v-if="currentComponentName === 'Error'">
+            <div v-else-if="currentComponentName === 'Error'">
                 <RouterView />
             </div>
             <div v-else>

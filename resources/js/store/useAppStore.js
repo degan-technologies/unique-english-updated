@@ -15,6 +15,7 @@ export const useAppStore = defineStore("useAppStore", () => {
     const commission = ref(commission);
     const profileUpdated = ref(false);
     const exploreCourses = ref(false);
+    const selectedComponentId = ref(null);
 
     //hero section
 
@@ -30,7 +31,8 @@ export const useAppStore = defineStore("useAppStore", () => {
     const middleName = computed(() => authUser.value?.middle_name);
     const lastName = computed(() => authUser.value?.last_name);
 
-    const unreadNotifications = ref([]);
+    const notifications = ref([]);
+    const unreadNotifications = ref(0);
 
     const isLoggedIn = computed(
         () => loggedIn.value == true && authToken.value != ""
@@ -96,18 +98,20 @@ export const useAppStore = defineStore("useAppStore", () => {
     // Function to fetch unread notifications from the backend
     async function fetchUnreadNotifications() {
         try {
-            Axios.defaults.headers.common[
-                "Authorization"
-            ] = `Bearer ${authToken.value}`;
-            const response = await Axios.get("/api/notifications/unread");
-            unreadNotifications.value = response.data;
-        } catch (error) {
-            console.error("Error fetching unread notifications:", error);
+            Axios.defaults.headers.common[ "Authorization" ] = `Bearer ${authToken.value}`;
+            const response = await Axios.get("/api/get-notifications");
+            unreadNotifications.value = response.data.unReadNotifications;
+            notifications.value = response.data.data;
+        } catch (error) { 
         }
     }
 
     function markNotificationAsRead(id) {
-        return Axios.post(`api/notifications/${id}/read`);
+        Axios.post(`api/read-notification/${id}`)
+            .then(res => {
+                unreadNotifications.value = res.data.unReadNotifications;
+            });
+        return;
     }
 
     function getHeroSection() {
@@ -141,11 +145,13 @@ export const useAppStore = defineStore("useAppStore", () => {
         profileUpdated,
 
         unreadNotifications,
+        notifications,
         fetchUnreadNotifications,
         markNotificationAsRead,
 
         hero,
         getHeroSection,
         exploreCourses,
+        selectedComponentId,
     };
 });

@@ -165,13 +165,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div
-        v-if="selectedCourseSlug"
-        class="p-6 mt-24 pb-16 rounded-lg bg-slate-50"
-    >
-        <div
-            class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative"
-        >
+    <div v-if="selectedCourseSlug" class="p-6 mt-24 pb-16 rounded-lg bg-slate-50">
+        <div class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative">
             <div class="">
                 <div class="text-left">
                     <h2 class="text-3xl text-gray-900 font-bold">
@@ -179,11 +174,8 @@ onBeforeUnmount(() => {
                     </h2>
                     <div class="flex my-2 gap-4">
                         <div>
-                            <img
-                                :src="selectedCourse?.thumbnail_url"
-                                :alt="selectedCourse?.user.first_name"
-                                class="w-12 h-12 object-cover mt-4 rounded-full"
-                            />
+                            <img :src="selectedCourse?.thumbnail_url" :alt="selectedCourse?.user.first_name"
+                                class="w-12 h-12 object-cover mt-4 rounded-full" />
                         </div>
                         <div class="text-lg text-gray-700 mt-2">
                             <p>A course by</p>
@@ -194,49 +186,29 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
                 <div class="w-full flex flex-col items-start relative">
-                    <div
-                        class="overflow-hidden w-full aspect-video rounded-t-lg mt-3 relative"
-                    >
+                    <div class="overflow-hidden w-full aspect-video rounded-t-lg mt-3 relative">
                         <!-- Thumbnail with play icon -->
-                        <div
-                            v-if="!isPlaying"
-                            class="relative w-full h-full cursor-pointer"
-                            @click="playVideo"
-                        >
-                            <img
-                                :src="selectedCourse?.thumbnail_url"
-                                alt="Course Thumbnail"
-                                class="w-full h-full object-cover transition-transform duration-300 rounded-t-lg shadow-lg hover:shadow-xl"
-                            />
-                            <div
-                                class="absolute inset-0 flex items-center justify-center"
-                            >
+                        <div v-if="!isPlaying" class="relative w-full h-full cursor-pointer" @click="playVideo">
+                            <img :src="selectedCourse?.thumbnail_url" alt="Course Thumbnail"
+                                class="w-full h-full object-cover transition-transform duration-300 rounded-t-lg shadow-lg hover:shadow-xl" />
+                            <div class="absolute inset-0 flex items-center justify-center">
                                 <!-- Pulse effect -->
                                 <span class="animate-pulse-circle"></span>
 
                                 <!-- Actual play button -->
                                 <div
-                                    class="relative z-10 p-4 w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center shadow-lg"
-                                >
-                                    <i
-                                        class="fas fa-play text-white text-2xl"
-                                    ></i>
+                                    class="relative z-10 p-4 w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-play text-white text-2xl"></i>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Video Player with Video.js -->
                         <div v-else class="relative w-full h-full">
-                            <video
-                                ref="videoPlayer"
-                                id="videoPlayer"
-                                class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border"
-                                controls
-                                preload="auto"
-                                @timeupdate="onTimeUpdate"
-                                @loadedmetadata="onLoadedMetadata"
-                                @progress="onProgress"
-                            >
+                            <video ref="videoPlayer" id="videoPlayer"
+                                class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border" controls
+                                preload="auto" @timeupdate="onTimeUpdate" @loadedmetadata="onLoadedMetadata"
+                                @progress="onProgress">
                                 <source :src="videoSource" type="video/mp4" />
                                 Your browser does not support the video tag.
                             </video>
@@ -248,133 +220,82 @@ onBeforeUnmount(() => {
                         <h2 class="text-3xl text-slate-600 font-semibold mb-3">
                             Course Overview
                         </h2>
-                        <div
-                            class="preview ql-editor max-w-full text-justify mt-5"
-                            v-html="selectedCourse?.overview"
+                        <div class="preview ql-editor max-w-full text-justify mt-5" v-html="selectedCourse?.overview"
                             style="
                                 font-size: 1.1rem !important;
                                 line-height: 1.75rem !important;
-                                all: revert; "
-                        ></div>
+                                all: revert; "></div>
                         <h2 class="text-3xl text-slate-600 font-semibold mt-5">
                             What you will learn
                         </h2>
                     </div>
-                    <div
-                        v-for="(
-                            courseModule, courseModuleIndex
-                        ) in selectedCourse?.courseModules"
-                        :key="courseModuleIndex"
-                        class="mb-3 px-2"
-                    >
+                    <div v-for="(
+courseModule, courseModuleIndex
+                        ) in selectedCourse?.courseModules" :key="courseModuleIndex" class="mb-3 px-2">
                         <div class="flex justify-between items-center">
-                            <button
-                                @click="toggleModuleLesson(courseModule.id)"
-                                class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300"
-                            >
+                            <button @click="toggleModuleLesson(courseModule.id)"
+                                class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300">
                                 <span class="font-semibold text-lg">{{
                                     courseModule.title
-                                }}</span>
-                                <i
-                                    :class="[
-                                        {
-                                            'rotate-90':
-                                                collapsModuleId ==
-                                                courseModule.id,
-                                        },
-                                    ]"
-                                    class="fa-solid fa-angle-right text-xl transition-transform duration-300"
-                                >
+                                    }}</span>
+                                <i :class="[
+                                    {
+                                        'rotate-90':
+                                            collapsModuleId ==
+                                            courseModule.id,
+                                    },
+                                ]" class="fa-solid fa-angle-right text-xl transition-transform duration-300">
                                 </i>
                             </button>
                         </div>
 
-                        <div
-                            v-if="collapsModuleId == courseModule.id"
-                            class="ml-4 mt-2"
-                        >
+                        <div v-if="collapsModuleId == courseModule.id" class="ml-4 mt-2">
                             <ul class="list-none pl-0">
-                                <li
-                                    v-for="(
-                                        courseContent, courseContentIndex
-                                    ) in courseModule.courseContents"
-                                    :key="courseContentIndex"
-                                    class="text-gray-700 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1"
-                                >
-                                    <i
-                                        :class="{
-                                            'fa-circle-play':
-                                                courseContent.content_type == 1,
-                                            'fa-file-lines':
-                                                courseContent.content_type == 2,
-                                            'fa-image':
-                                                courseContent.content_type == 3,
-                                        }"
-                                        class="fa-solid px-8 text-lg w-5 h-5"
-                                    ></i>
+                                <li v-for="(
+courseContent, courseContentIndex
+                                    ) in courseModule.courseContents" :key="courseContentIndex"
+                                    class="text-gray-700 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1">
+                                    <i :class="{
+                                        'fa-circle-play':
+                                            courseContent.content_type == 1,
+                                        'fa-file-lines':
+                                            courseContent.content_type == 2,
+                                        'fa-image':
+                                            courseContent.content_type == 3,
+                                    }" class="fa-solid px-8 text-lg w-5 h-5"></i>
                                     {{ courseContent.title }}
                                 </li>
 
-                                <li
-                                    v-for="(
-                                        qMetaData, qMetaDataIndex
-                                    ) in courseModule.QMetaDatas"
-                                    :key="'qMetaData-' + qMetaDataIndex"
-                                    class="text-gray-600 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1"
-                                >
-                                    <i
-                                        class="fa-solid fa-clipboard-list px-8 text-lg w-5 h-5"
-                                    ></i>
-                                    <span class="font-semibold"
-                                        >Quiz {{ qMetaDataIndex + 1 }} -
+                                <li v-for="(
+qMetaData, qMetaDataIndex
+                                    ) in courseModule.QMetaDatas" :key="'qMetaData-' + qMetaDataIndex"
+                                    class="text-gray-600 flex leading-relaxed text-lg py-2 cursor-pointer items-center my-1">
+                                    <i class="fa-solid fa-clipboard-list px-8 text-lg w-5 h-5"></i>
+                                    <span class="font-semibold">Quiz {{ qMetaDataIndex + 1 }} -
                                     </span>
                                     <span class="ml-2">{{
                                         qMetaData.title
-                                    }}</span>
+                                        }}</span>
                                 </li>
                             </ul>
                         </div>
                     </div>
                 </div>
 
-                <ReviewList
-                    v-if="selectedCourse"
-                    :feedBacks="selectedCourse?.feedBacks"
-                    :averageRating="selectedCourse?.averageRating"
-                    :starDistribution="selectedCourse?.starDistribution"
-                    :showOnly="true"
-                />
+                <ReviewList v-if="selectedCourse" :feedBacks="selectedCourse?.feedBacks"
+                    :averageRating="selectedCourse?.averageRating" :starDistribution="selectedCourse?.starDistribution"
+                    :showOnly="true" />
             </div>
 
             <!-- Right Card: Course Details -->
-            <div
-                class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center"
-            >
-                <button
-                    v-if="selectedCourse"
-                    @click="enrollCourse(selectedCourse)"
-                    :disabled="isLoading"
-                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                >
+            <div class="bg-gray-100 p-6 rounded-lg shadow-lg sticky top-0 h-fit justify-center">
+                <button v-if="selectedCourse" @click="enrollCourse(selectedCourse)" :disabled="isLoading"
+                    class="bg-lime-600 text-white px-6 py-2 rounded-lg mb-4 hover:bg-lime-700 transition-colors w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
                     <!-- Clean inside-ring spinner -->
-                    <svg
-                        v-if="isLoading"
-                        class="animate-spin h-5 w-5 text-white"
-                        viewBox="0 0 50 50"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <circle
-                            class="text-white"
-                            cx="25"
-                            cy="25"
-                            r="20"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="5"
-                            stroke-linecap="round"
-                            stroke-dasharray="90,150"
-                            stroke-dashoffset="0"
-                        />
+                    <svg v-if="isLoading" class="animate-spin h-5 w-5 text-white" viewBox="0 0 50 50"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <circle class="text-white" cx="25" cy="25" r="20" fill="none" stroke="currentColor"
+                            stroke-width="5" stroke-linecap="round" stroke-dasharray="90,150" stroke-dashoffset="0" />
                     </svg>
 
                     <!-- Button text -->
@@ -385,8 +306,8 @@ onBeforeUnmount(() => {
                                     ? "Loading..."
                                     : "Continue"
                                 : isLoading
-                                ? "Processing..."
-                                : "Enroll Course"
+                                    ? "Processing..."
+                                    : "Enroll Course"
                         }}
                     </span>
                 </button>
@@ -467,11 +388,13 @@ onBeforeUnmount(() => {
         opacity: 0.7;
         box-shadow: 0 0 5px rgba(132, 204, 22, 0.6);
     }
+
     50% {
         transform: scale(1.6);
         opacity: 0.4;
         box-shadow: 0 0 20px rgba(91, 150, 9, 0.8);
     }
+
     100% {
         transform: scale(2);
         opacity: 0;
