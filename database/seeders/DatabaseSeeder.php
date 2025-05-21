@@ -11,13 +11,13 @@ use Database\Seeders\Comment\FeedBackSeeder;
 use Database\Seeders\Course\CourseContentSeeder;
 use Database\Seeders\Course\CourseModuleSeeder;
 use Database\Seeders\Course\CourseSeeder;
+use Database\Seeders\Hero\HeroSeeder;
 use Database\Seeders\Role\SystemAdminSeeder;
 use Database\Seeders\Role\StudentSeeder;
 use Database\Seeders\Role\InstructorSeeder;
 use Database\Seeders\Live\LiveSessionSeeder;
 use Database\Seeders\Live\ParticipantSeeder;
-use Database\Seeders\Live\LiveResourceSeeder;
-use Database\Seeders\Live\VirtualClassEnrollmentSeeder;
+use Database\Seeders\Live\LiveResourceSeeder; 
 
 use Database\Seeders\Quiz\QuizSeeder;
 use Database\Seeders\Quiz\ResultSeeder;
@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder {
             SystemAdminSeeder::class,
             InstructorSeeder::class,
             StudentSeeder::class,
+            HeroSeeder::class,
 
             CourseSeeder::class,
             CourseModuleSeeder::class,
@@ -49,9 +50,7 @@ class DatabaseSeeder extends Seeder {
             LiveResourceSeeder::class,
             ParticipantSeeder::class,
 
-            FeedBackSeeder::class,
-            VirtualClassEnrollmentSeeder::class,
-
+            FeedBackSeeder::class, 
             QMetaDataSeeder::class,
             QuizSeeder::class,
             ResultSeeder::class,

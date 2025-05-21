@@ -124,7 +124,7 @@ onMounted(fetchAllVideos);
                 <div class="mx-auto" style="max-width: 800px">
                     <div class="relative rounded-xl overflow-hidden shadow-lg border-2 border-lime-600/20 bg-black">
                         <iframe :src="activeSrc" class="w-full aspect-video" :key="activeVideo?.id?.videoId"
-                            allow="autoplay; fullscreen" allowfullscreen frameborder="0"></iframe>
+                            allow="fullscreen" allowfullscreen frameborder="0"></iframe>
                     </div>
                 <div class="text-xl my-8 font-bold  md:text-2xl text-gray-800 px-1">
                     {{ activeVideo?.snippet?.title }}

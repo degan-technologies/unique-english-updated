@@ -128,7 +128,7 @@ onMounted(() => {
                     <div class="h-fit bottem-0">
                         <div class="text-lg font-semibold flex flex-row items-center justify-between">
                             <p class="self-center my-auto">
-                                {{ course.price.toFixed(2) }} ETB
+                                {{ course.price?.toFixed(2) }} ETB
                             </p>
                             <button v-if="!course.isMyCourse" @click="addItems(course)"
                                 class="ml-auto focus:outline-none">

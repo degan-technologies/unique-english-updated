@@ -110,18 +110,12 @@ watch(
         </div>
 
         <!-- Loading State for general content -->
-        <div
-            v-if="isLoading && !isBookLoading"
-            class="flex-grow flex items-center justify-center"
-        >
+        <div v-if="isLoading && !isBookLoading" class="flex-grow flex items-center justify-center">
             <Spinner class="h-12 w-12" />
         </div>
 
         <!-- Special Loading State for book reading -->
-        <div
-            v-else-if="isBookLoading"
-            class="flex-grow flex items-center justify-center"
-        >
+        <div v-else-if="isBookLoading" class="flex-grow flex items-center justify-center">
             <div class="text-center">
                 <Spinner class="text-lime-700 mx-auto" />
                 <p class="text-lg text-gray-600">Loading your book...</p>
@@ -131,13 +125,11 @@ watch(
         <!-- Main Content -->
         <div v-else class="flex-grow overflow-y-auto scrollbar">
             <div class="w-full mt-18 min-h-[calc(100vh-144px)]">
-                <div
-                    v-if="currentTab.tab == courseDetailTab && currentTab.slug"
-                >
+                <div v-if="currentTab.tab == courseDetailTab && currentTab.slug">
                     <CourseDetail />
                 </div>
 
-                <div v-else-if=" currentTab.tab == videoPlayerTab && currentTab.slug ">
+                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug">
                     {{ redirectRoute() }}
                     <VideoPlayer />
                 </div>
@@ -147,19 +139,15 @@ watch(
                     <MyCourse />
                 </div>
 
-                <div
-                    v-else-if="
-                        currentTab.tab == bookOverviewTab && currentTab.slug
-                    "
-                >
+                <div v-else-if="
+                    currentTab.tab == bookOverviewTab && currentTab.slug
+                ">
                     <BookDetails />
                 </div>
 
-                <div
-                    v-else-if="
-                        currentTab.tab == bookReadingTab && currentTab.slug
-                    "
-                >
+                <div v-else-if="
+                    currentTab.tab == bookReadingTab && currentTab.slug
+                ">
                     <Pdf />
                 </div>
 

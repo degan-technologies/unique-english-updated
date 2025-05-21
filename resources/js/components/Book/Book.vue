@@ -76,7 +76,7 @@ onMounted(() => {
                     <div class="h-fit bottem-0">
                         <div class="text-lg font-semibold flex flex-row items-center justify-between">
                             <p class="self-center">
-                                {{ book.price.toFixed(2) }} ETB
+                                {{ book.price?.toFixed(2) }} ETB
                             </p>
                             <button v-if="!book.isMyBook" @click="addItems(book)" class="ml-auto focus:outline-none">
                                 <i
