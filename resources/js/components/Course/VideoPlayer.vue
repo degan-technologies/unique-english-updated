@@ -48,6 +48,7 @@ const selectedQuiz = ref(null);
 const video = ref(null);
 const qaSections = ref([]);
 const certify = ref(false);
+const startLoading = ref(true);
 
 // Video controls
 const isPlaying = ref(false);
@@ -291,21 +292,23 @@ const handleKeyDown = (e) => {
     }
 };
 
+function fetchSelectedCourse() {
+    if (!selectedCourseSlug.value) return;
+    Axios.get(`/api/show-course/${selectedCourseSlug.value}`).then((res) => {
+        selectedCourse.value = res.data.data; 
+    });
+}
+
 // Watchers
 watchEffect(() => {
     if (!courses.value) return;
-    selectedCourse.value = courses.value.find(
-        item => item.slug === selectedCourseSlug.value
-    );
+     fetchSelectedCourse();
 });
 
 watch(
     () => route.query.slug,
-    () => {
-        selectedCourseSlug.value = route.query.slug;
-        selectedCourse.value = courses.value.find(
-            item => item.slug === selectedCourseSlug.value
-        );
+    () => { 
+        fetchSelectedCourse();
         getCourseModules();
     }
 );
@@ -320,6 +323,7 @@ watch(
 
 // Lifecycle hooks
 onMounted(() => {
+    startLoading.value = true;
     getCourseModules();
     continueProgress();
     document.addEventListener("keydown", handleKeyDown);
@@ -327,6 +331,7 @@ onMounted(() => {
     if (!courses.value) {
         studentStore.fetchCourses();
     }
+    startLoading.value = false;
 });
 
 onBeforeUnmount(() => {
@@ -336,276 +341,280 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div v-if="selectedCourseSlug" class="w-[90%] mx-auto mt-24">
-        <div class="flex flex-col md:flex-row gap-4 relative">
-            <!-- LEFT COLUMN: video/pdf/image/quiz, lesson info, (desktop) tabs -->
-            <div class="flex-1 flex flex-col gap-4">
-                <!-- Certificate view -->
-                <div v-if="downloadCertificate && certify" class="w-full mt-8 overflow-x-auto scrollbar">
-                    <certificate :selectedCourse="selectedCourse" :overallProgress="overallProgress"
-                        @backToHome="handleDownloadCertificate" />
-                </div>
- 
-                <div v-else class="flex-1 flex flex-col gap-4"> 
-                    <template v-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 1">
-                        <div class="video-container relative bg-black h-96 rounded-lg overflow-hidden border-2 border-lime-700"
-                            tabindex="0" @mousemove="resetControlsTimeout" @mouseleave="startControlsHideTimer"
-                            @mouseenter="resetControlsTimeout" @click="togglePlayPause" @keydown="handleKeyDown">
-                            <video ref="video" class="w-full h-full object-contain" :src="streamVideo"
-                                :poster="selectedLesson?.thumbnail_url" @loadedmetadata="updateTotalTime"
-                                @ended="handleVideoEnd" @play="handlePlay" @pause="handlePause" @waiting="handleWaiting"
-                                @canplay="handleCanPlay" playsinline>
-                                Your browser does not support the video tag.
-                            </video>
+    <div v-if="startLoading">
+        <Spinner />
+    </div>
+    <div v-else>
+        <div v-if="selectedCourseSlug" class="w-[90%] mx-auto mt-24">
+            <div class="flex flex-col md:flex-row gap-4 relative"> 
+                <div class="flex-1 flex  flex-col gap-4"> 
+                    <div class="flex-1 flex flex-col gap-4"> 
+                        <template v-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 1">
+                            <div class="video-container relative bg-black h-96 rounded-lg overflow-hidden border-2 border-lime-700"
+                                tabindex="0" @mousemove="resetControlsTimeout" @mouseleave="startControlsHideTimer"
+                                @mouseenter="resetControlsTimeout" @click="togglePlayPause" @keydown="handleKeyDown">
+                                <video ref="video" class="w-full h-full object-contain" :src="streamVideo"
+                                    :poster="selectedLesson?.thumbnail_url" @loadedmetadata="updateTotalTime"
+                                    @ended="handleVideoEnd" @play="handlePlay" @pause="handlePause" @waiting="handleWaiting"
+                                    @canplay="handleCanPlay" playsinline>
+                                    Your browser does not support the video tag.
+                                </video>
 
-                            <div v-if="isLoading"
-                                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                                <div class="spinner">
-                                    <Spinner />
-                                </div>
-                            </div>
-
-                            <!-- Controls Overlay -->
-                            <div v-show="showControls"
-                                class="absolute bottom-0 left-0 right-0 pl-2 pr-2 pb-1 bg-lime-700 transition-opacity duration-300 z-20 gap-2"
-                                @click.stop>
-                                <!-- Single Seek Bar -->
-                                <div class="mb-1">
-                                    <input type="range" :value="progress" @input="handleSeekInput" min="0" max="100"
-                                        step="0.01" class="w-full h-1 bg-white rounded-md" aria-label="Seek Video" />
+                                <div v-if="isLoading"
+                                    class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                                    <div class="spinner">
+                                        <Spinner />
+                                    </div>
                                 </div>
 
-                                <!-- MOBILE CONTROLS (2 ROWS) -->
-                                <div class="flex flex-col sm:hidden" style="padding: 4px 0">
-                                    <!-- Row 2: All Other Controls -->
-                                    <div class="flex items-center justify-between px-2">
-                                        <!-- Play Button -->
-                                        <button @click="togglePlayPause" class="text-white p-1" aria-label="Play/Pause">
+                                <!-- Controls Overlay -->
+                                <div v-show="showControls"
+                                    class="absolute bottom-0 left-0 right-0 pl-2 pr-2 pb-1 bg-lime-700 transition-opacity duration-300 z-20 gap-2"
+                                    @click.stop>
+                                    <!-- Single Seek Bar -->
+                                    <div class="mb-1">
+                                        <input type="range" :value="progress" @input="handleSeekInput" min="0" max="100"
+                                            step="0.01" class="w-full h-1 bg-white rounded-md" aria-label="Seek Video" />
+                                    </div>
+
+                                    <!-- MOBILE CONTROLS (2 ROWS) -->
+                                    <div class="flex flex-col sm:hidden" style="padding: 4px 0">
+                                        <!-- Row 2: All Other Controls -->
+                                        <div class="flex items-center justify-between px-2">
+                                            <!-- Play Button -->
+                                            <button @click="togglePlayPause" class="text-white p-1" aria-label="Play/Pause">
+                                                <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
+                                            </button>
+
+                                            <!-- Volume Control -->
+                                            <div class="flex items-center space-x-1">
+                                                <button @click="toggleMute" class="text-white p-1" aria-label="Mute/Unmute">
+                                                    <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
+                                                </button>
+                                                <input type="range" :value="volume" @input="changeVolume" min="0" max="1"
+                                                    step="0.01" class="w-12 h-1 rounded-md bg-gray-300"
+                                                    aria-label="Volume Control" />
+                                            </div>
+
+                                            <!-- Time Display -->
+                                            <span class="text-white text-xs whitespace-nowrap mx-2">
+                                                {{ currentTime }}/{{ totalTime }}
+                                            </span>
+
+                                            <!-- Quality Selector -->
+                                            <select @change="changeQuality($event.target.value)"
+                                                class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
+                                                style="max-width: 70px">
+                                                <option value="Auto">Auto</option>
+                                                <option value="480p">480p</option>
+                                                <option value="720p">720p</option>
+                                            </select>
+
+                                            <!-- Playback Speed -->
+                                            <select v-model="playbackRate" @change="changePlaybackRate"
+                                                class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
+                                                style="max-width: 60px">
+                                                <option value="1.0">1x</option>
+                                                <option value="1.5">1.5x</option>
+                                                <option value="2.0">2x</option>
+                                            </select>
+
+                                            <!-- Fullscreen -->
+                                            <button @click="toggleFullscreen" class="text-white p-1 ml-auto"
+                                                aria-label="Fullscreen">
+                                                <i class="fas fa-expand"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- DESKTOP CONTROLS -->
+                                    <div class="hidden sm:flex sm:items-center sm:gap-4">
+                                        <button @click="togglePlayPause" class="text-white text-sm flex items-center"
+                                            aria-label="Play/Pause">
                                             <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
                                         </button>
-
-                                        <!-- Volume Control -->
-                                        <div class="flex items-center space-x-1">
-                                            <button @click="toggleMute" class="text-white p-1" aria-label="Mute/Unmute">
-                                                <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
-                                            </button>
-                                            <input type="range" :value="volume" @input="changeVolume" min="0" max="1"
-                                                step="0.01" class="w-12 h-1 rounded-md bg-gray-300"
-                                                aria-label="Volume Control" />
+                                        <div class="flex-1 flex items-center gap-4">
+                                            <div class="relative flex items-center overflow-hidden transition-all duration-300"
+                                                :class="volumeControlsVisible ? 'w-40' : 'w-12'"
+                                                @mouseenter="volumeControlsVisible = true"
+                                                @mouseleave="volumeControlsVisible = false">
+                                                <button @click="toggleMute" class="text-white p-2" aria-label="Mute/Unmute">
+                                                    <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
+                                                </button>
+                                                <div v-if="volumeControlsVisible" class="flex items-center space-x-1 ml-2">
+                                                    <span class="text-xs text-white">
+                                                        {{ Math.round(volume * 100) }}%
+                                                    </span>
+                                                    <input type="range" :value="volume" @input="changeVolume" min="0"
+                                                        max="1" step="0.01" class="w-16 h-1 rounded-md bg-gray-300"
+                                                        aria-label="Volume Control" />
+                                                </div>
+                                            </div>
                                         </div>
-
-                                        <!-- Time Display -->
-                                        <span class="text-white text-xs whitespace-nowrap mx-2">
-                                            {{ currentTime }}/{{ totalTime }}
-                                        </span>
-
-                                        <!-- Quality Selector -->
+                                        <div class="text-white text-sm whitespace-nowrap">
+                                            <span>{{ currentTime }}</span> /
+                                            <span>{{ totalTime }}</span>
+                                        </div>
                                         <select @change="changeQuality($event.target.value)"
-                                            class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
-                                            style="max-width: 70px">
+                                            class="text-white text-sm bg-lime-700 p-1 rounded">
                                             <option value="Auto">Auto</option>
-                                            <option value="480p">480p</option>
+                                            <option value="1080p">1080p</option>
                                             <option value="720p">720p</option>
+                                            <option value="480p">480p</option>
                                         </select>
-
-                                        <!-- Playback Speed -->
                                         <select v-model="playbackRate" @change="changePlaybackRate"
-                                            class="text-white text-xs bg-lime-700 p-1 rounded mr-1"
-                                            style="max-width: 60px">
+                                            class="text-white text-sm bg-lime-700 p-1 rounded">
+                                            <option disabled value="default">1x</option>
+                                            <option value="0.5">0.5x</option>
                                             <option value="1.0">1x</option>
                                             <option value="1.5">1.5x</option>
                                             <option value="2.0">2x</option>
                                         </select>
-
-                                        <!-- Fullscreen -->
-                                        <button @click="toggleFullscreen" class="text-white p-1 ml-auto"
+                                        <button @click="toggleFullscreen" class="text-white flex items-center p-2"
                                             aria-label="Fullscreen">
                                             <i class="fas fa-expand"></i>
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </template>
+    
+                        <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 2">
+                            <LessonPdfReader :selectedLesson="selectedLesson" />
+                        </template>
 
-                                <!-- DESKTOP CONTROLS -->
-                                <div class="hidden sm:flex sm:items-center sm:gap-4">
-                                    <button @click="togglePlayPause" class="text-white text-sm flex items-center"
-                                        aria-label="Play/Pause">
-                                        <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'"></i>
-                                    </button>
-                                    <div class="flex-1 flex items-center gap-4">
-                                        <div class="relative flex items-center overflow-hidden transition-all duration-300"
-                                            :class="volumeControlsVisible ? 'w-40' : 'w-12'"
-                                            @mouseenter="volumeControlsVisible = true"
-                                            @mouseleave="volumeControlsVisible = false">
-                                            <button @click="toggleMute" class="text-white p-2" aria-label="Mute/Unmute">
-                                                <i :class="isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up'"></i>
-                                            </button>
-                                            <div v-if="volumeControlsVisible" class="flex items-center space-x-1 ml-2">
-                                                <span class="text-xs text-white">
-                                                    {{ Math.round(volume * 100) }}%
-                                                </span>
-                                                <input type="range" :value="volume" @input="changeVolume" min="0"
-                                                    max="1" step="0.01" class="w-16 h-1 rounded-md bg-gray-300"
-                                                    aria-label="Volume Control" />
-                                            </div>
+                        <!-- Image Lesson -->
+                        <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 3">
+                            <LessonImageViewer :selectedLesson="selectedLesson" />
+                        </template>
+
+                        <!-- Quiz -->
+                        <template v-else-if="contentType.type === QUIZ_TYPE">
+                            <QuizReader :quizData="selectedQuiz" />
+                        </template>
+
+                        <!-- Lesson Info & Progress -->
+                        <div class="bg-white p-4 rounded-b-lg">
+                            <div class="flex justify-between mt-2">
+                                <div class="flex flex-row gap-2">
+                                    <div class="flex flex-col self-center">
+                                        <p class="text-md text-gray-600">
+                                            {{ selectedLesson?.title }}
+                                        </p>
+                                        <p class="text-xl text-blue-600">
+                                            {{ selectedModule?.title }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="relative flex items-center justify-center">
+                                    <div
+                                        class="relative w-16 h-16 bg-gray-100 rounded-full border border-lime-700 overflow-hidden">
+                                        <div class="absolute bottom-0 left-0 w-full" :style="{
+                                            height: 0 + '%',
+                                            backgroundColor: '#1E40AF',
+                                            transition: 'height 0.5s ease',
+                                        }"></div>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span class="text-lg font-bold text-lime-500">{{ overallProgress[0] }} / {{
+                                                overallProgress[1]
+                                                }}</span>
                                         </div>
                                     </div>
-                                    <div class="text-white text-sm whitespace-nowrap">
-                                        <span>{{ currentTime }}</span> /
-                                        <span>{{ totalTime }}</span>
-                                    </div>
-                                    <select @change="changeQuality($event.target.value)"
-                                        class="text-white text-sm bg-lime-700 p-1 rounded">
-                                        <option value="Auto">Auto</option>
-                                        <option value="1080p">1080p</option>
-                                        <option value="720p">720p</option>
-                                        <option value="480p">480p</option>
-                                    </select>
-                                    <select v-model="playbackRate" @change="changePlaybackRate"
-                                        class="text-white text-sm bg-lime-700 p-1 rounded">
-                                        <option disabled value="default">1x</option>
-                                        <option value="0.5">0.5x</option>
-                                        <option value="1.0">1x</option>
-                                        <option value="1.5">1.5x</option>
-                                        <option value="2.0">2x</option>
-                                    </select>
-                                    <button @click="toggleFullscreen" class="text-white flex items-center p-2"
-                                        aria-label="Fullscreen">
-                                        <i class="fas fa-expand"></i>
-                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </template>
- 
-                    <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 2">
-                        <LessonPdfReader :selectedLesson="selectedLesson" />
-                    </template>
 
-                    <!-- Image Lesson -->
-                    <template v-else-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 3">
-                        <LessonImageViewer :selectedLesson="selectedLesson" />
-                    </template>
-
-                    <!-- Quiz -->
-                    <template v-else-if="contentType.type === QUIZ_TYPE">
-                        <QuizReader :quizData="selectedQuiz" />
-                    </template>
-
-                    <!-- Lesson Info & Progress -->
-                    <div class="bg-white p-4 rounded-b-lg">
-                        <div class="flex justify-between mt-2">
-                            <div class="flex flex-row gap-2">
-                                <div class="flex flex-col self-center">
-                                    <p class="text-md text-gray-600">
-                                        {{ selectedLesson?.title }}
-                                    </p>
-                                    <p class="text-xl text-blue-600">
-                                        {{ selectedModule?.title }}
-                                    </p>
-                                </div>
+                        <!-- DESKTOP-ONLY TABS -->
+                        <div class="mt-4 hidden md:block bg-white p-4 rounded-lg">
+                            <div class="flex justify-start border-b-2 border-gray-200 gap-4">
+                                <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
+                                    'tab-button px-4 py-2 font-semibold',
+                                    activeTab === TAB_TYPES.QA
+                                        ? 'border-lime-700 border-b-2 text-lime-700'
+                                        : 'hover:border-lime-500',
+                                ]">
+                                    <i class="fas fa-question pr-2"></i> Q&A
+                                </button>
+                                <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
+                                    'tab-button px-4 py-2 font-semibold',
+                                    activeTab === TAB_TYPES.NOTE
+                                        ? 'border-lime-700 border-b-2 text-lime-700'
+                                        : 'hover:border-lime-500',
+                                ]">
+                                    <i class="fas fa-pen pr-2"></i> Notes
+                                </button>
+                                <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
+                                    'tab-button px-4 py-2 font-semibold',
+                                    activeTab === TAB_TYPES.REVIEW
+                                        ? 'border-lime-700 border-b-2 text-lime-700'
+                                        : 'hover:border-lime-500',
+                                ]">
+                                    <i class="fas fa-star pr-2"></i> Reviews
+                                </button>
                             </div>
-                            <div class="relative flex items-center justify-center">
-                                <div
-                                    class="relative w-16 h-16 bg-gray-100 rounded-full border border-lime-700 overflow-hidden">
-                                    <div class="absolute bottom-0 left-0 w-full" :style="{
-                                        height: 0 + '%',
-                                        backgroundColor: '#1E40AF',
-                                        transition: 'height 0.5s ease',
-                                    }"></div>
-                                    <div class="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span class="text-lg font-bold text-lime-500">{{ overallProgress[0] }} / {{
-                                            overallProgress[1]
-                                            }}</span>
-                                    </div>
-                                </div>
+                            <div class="mt-4">
+                                <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
+                                    :courseId="selectedCourse?.id" />
+                                <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
+                                    :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
+                                <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
+                                    :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- DESKTOP-ONLY TABS -->
-                    <div class="mt-4 hidden md:block bg-white p-4 rounded-lg">
-                        <div class="flex justify-start border-b-2 border-gray-200 gap-4">
-                            <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
-                                'tab-button px-4 py-2 font-semibold',
-                                activeTab === TAB_TYPES.QA
-                                    ? 'border-lime-700 border-b-2 text-lime-700'
-                                    : 'hover:border-lime-500',
-                            ]">
-                                <i class="fas fa-question pr-2"></i> Q&A
-                            </button>
-                            <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
-                                'tab-button px-4 py-2 font-semibold',
-                                activeTab === TAB_TYPES.NOTE
-                                    ? 'border-lime-700 border-b-2 text-lime-700'
-                                    : 'hover:border-lime-500',
-                            ]">
-                                <i class="fas fa-pen pr-2"></i> Notes
-                            </button>
-                            <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
-                                'tab-button px-4 py-2 font-semibold',
-                                activeTab === TAB_TYPES.REVIEW
-                                    ? 'border-lime-700 border-b-2 text-lime-700'
-                                    : 'hover:border-lime-500',
-                            ]">
-                                <i class="fas fa-star pr-2"></i> Reviews
-                            </button>
-                        </div>
-                        <div class="mt-4">
-                            <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
-                                :courseId="selectedCourse?.id" />
-                            <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
-                                :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
-                            <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
-                                :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
-                        </div>
+                <!-- RIGHT COLUMN: Course List -->
+                <div class="sticky top-10 mt-8 md:mt-0 md:w-[1fr] bg-white h-fit p-2 rounded-b-lg">
+                    <CourseList v-if="selectedModules" :selectedModules="selectedModules" :contentType="contentType"
+                        :certify="certify" @openedLesson="openedLesson" @openedQuiz="openedQuiz"
+                        @downloadCertificate="handleDownloadCertificate" />
+                    <!-- Certificate view -->
+                    <div v-if="downloadCertificate && certify">
+                        <certificate :selectedCourse="selectedCourse" :overallProgress="overallProgress"
+                            @backToHome="handleDownloadCertificate" />
                     </div>
                 </div>
-            </div>
 
-            <!-- RIGHT COLUMN: Course List -->
-            <div class="sticky top-10 mt-8 md:mt-0 md:w-[1fr]">
-                <CourseList v-if="selectedModules" :selectedModules="selectedModules" :contentType="contentType"
-                    :certify="certify" @openedLesson="openedLesson" @openedQuiz="openedQuiz"
-                    @downloadCertificate="handleDownloadCertificate" />
-            </div>
-
-            <!-- MOBILE-ONLY TABS -->
-            <div class="mt-4 block md:hidden bg-white w-full mx-auto rounded-lg">
-                <div class="flex justify-start border-b-2 border-gray-200 gap-4">
-                    <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
-                        'tab-button px-4 py-2 font-semibold',
-                        activeTab === TAB_TYPES.QA
-                            ? 'border-lime-700 border-b-2 text-lime-700'
-                            : 'hover:border-lime-500',
-                    ]">
-                        <i class="fas fa-question pr-2"></i> Q&A
-                    </button>
-                    <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
-                        'tab-button px-4 py-2 font-semibold',
-                        activeTab === TAB_TYPES.NOTE
-                            ? 'border-lime-700 border-b-2 text-lime-700'
-                            : 'hover:border-lime-500',
-                    ]">
-                        <i class="fas fa-pen pr-2"></i> Notes
-                    </button>
-                    <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
-                        'tab-button px-4 py-2 font-semibold',
-                        activeTab === TAB_TYPES.REVIEW
-                            ? 'border-lime-700 border-b-2 text-lime-700'
-                            : 'hover:border-lime-500',
-                    ]">
-                        <i class="fas fa-star pr-2"></i> Reviews
-                    </button>
-                </div>
-                <div class="mt-4">
-                    <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
-                        :courseId="selectedCourse?.id" />
-                    <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
-                        :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
-                    <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
-                        :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
+                <!-- MOBILE-ONLY TABS -->
+                <div class="mt-4 block md:hidden bg-white w-full mx-auto rounded-lg">
+                    <div class="flex justify-start border-b-2 border-gray-200 gap-4">
+                        <button @click="setActiveTab(TAB_TYPES.QA)" :class="[
+                            'tab-button px-4 py-2 font-semibold',
+                            activeTab === TAB_TYPES.QA
+                                ? 'border-lime-700 border-b-2 text-lime-700'
+                                : 'hover:border-lime-500',
+                        ]">
+                            <i class="fas fa-question pr-2"></i> Q&A
+                        </button>
+                        <button @click="setActiveTab(TAB_TYPES.NOTE)" :class="[
+                            'tab-button px-4 py-2 font-semibold',
+                            activeTab === TAB_TYPES.NOTE
+                                ? 'border-lime-700 border-b-2 text-lime-700'
+                                : 'hover:border-lime-500',
+                        ]">
+                            <i class="fas fa-pen pr-2"></i> Notes
+                        </button>
+                        <button @click="setActiveTab(TAB_TYPES.REVIEW)" :class="[
+                            'tab-button px-4 py-2 font-semibold',
+                            activeTab === TAB_TYPES.REVIEW
+                                ? 'border-lime-700 border-b-2 text-lime-700'
+                                : 'hover:border-lime-500',
+                        ]">
+                            <i class="fas fa-star pr-2"></i> Reviews
+                        </button>
+                    </div>
+                    <div class="mt-4">
+                        <QA v-if="activeTab === TAB_TYPES.QA" :selectedCourseSlug="selectedCourseSlug"
+                            :courseId="selectedCourse?.id" />
+                        <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
+                            :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
+                        <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
+                            :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    
 </template>

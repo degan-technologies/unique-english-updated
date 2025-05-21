@@ -9,8 +9,7 @@ const { profileUpdated, hero } = storeToRefs(appStore);
 
 
 import Hero from "@/components/Layout/Hero.vue";
-import LandingHeader from "@/components/Layout/Header.vue";
-import ChangeComission from '@/components/Transaction/ChangeComission.vue'
+import LandingHeader from "@/components/Layout/Header.vue"; 
 
 const settingTab = ref('setting');
 const securityTab = ref('security');
@@ -196,9 +195,7 @@ onMounted(()=>{
                                     </div>
                                 </div>
                             </div>
-                        </div> 
-                        <!-- Commission Settings Card -->
-                        <ChangeComission />
+                        </div>  
                     </div>
                 </transition>
 

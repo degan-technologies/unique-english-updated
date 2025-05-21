@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Transaction\Trait;
 
 use App\Http\Resources\Bank\TransferResource;
 use App\Models\Bank\BankInfo;
+use App\Models\System\PlatformComission;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\Transfer;
 use App\Models\User; 
@@ -14,13 +15,16 @@ use Illuminate\Http\Request;
 trait TransferTrait {
     public function createDeposit($transaction) {
 
-        $balance = Transfer::query()
+        $balance = $balance = Transfer::query()
             ->where('user_id', $transaction->user_id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->orderBy('id', 'desc')
-            ->first()->balance ?? 0;
+            ->where('status', TRANSACTION_SUCCESS) 
+            ->sum('deposits') 
+            - Transfer::query()
+            ->where('user_id', $transaction->user_id)
+            ->where('status', TRANSACTION_SUCCESS) 
+            ->sum('withdrawals') ;;
 
-        $balance = $balance + $transaction->amount;
+        $balance += $transaction->amount;
 
         if ($transaction->transfer) {
             $transaction->transfer()->update([
@@ -42,15 +46,20 @@ trait TransferTrait {
         return;
     }
 
-    public function getTransferHistory() {
+    public function getTransferHistory(Request $request) {
 
         $transferInfo = Transfer::query()
             ->where('user_id', Auth::id() )
-            ->get();
+            ->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
+
+        $pagination = $transferInfo->toArray();
+        unset($pagination['data']); 
 
         return response()->json([
             'status' => 'success',
-            'data' => TransferResource::collection($transferInfo)
+            'data' => TransferResource::collection($transferInfo),
+            'pagination' =>$pagination,
         ]);
     }
 
@@ -58,9 +67,12 @@ trait TransferTrait {
 
         $balance = Transfer::query()
             ->where('user_id', Auth::id())
-            ->where('status', TRANSACTION_SUCCESS)
-            ->orderBy('id', 'desc')
-            ->first()->balance ?? 0;
+            ->where('status', TRANSACTION_SUCCESS) 
+            ->sum('deposits') 
+            - Transfer::query()
+            ->where('user_id', Auth::id())
+            ->where('status', TRANSACTION_SUCCESS) 
+            ->sum('withdrawals') ;
 
         return response()->json([
             'status' => 'success',
@@ -74,6 +86,8 @@ trait TransferTrait {
             ->first();
         if (!$user) return;
 
+        $platformComission = PlatformComission::first()->fees;
+
         $balance = Transfer::query()
             ->where('user_id', $user->id)
             ->where('status', TRANSACTION_SUCCESS)
@@ -81,17 +95,28 @@ trait TransferTrait {
             - Transfer::query()
             ->where('user_id', $user->id)
             ->where('status', TRANSACTION_SUCCESS)
-            ->sum('withdrawals');
-
+            ->sum('withdrawals');  
          
        $transfer = Transfer::create([
             'withdrawals' => $amount,
             'user_id' => $user->id,
             'balance' => $balance,
             'reference' => $trf,
-        ]);
+        ]); 
 
-        return $transfer;
+        $commission = $amount * $platformComission;
+
+        $getComission = Transfer::create([
+            'withdrawals' => $commission,
+            'user_id' => $user->id,
+            'balance' => $balance-$commission, 
+            'reference' => 'commision-'. uniqid(),
+        ]); 
+
+        return [
+            'transfer' => $transfer,
+            'commission' => $getComission,
+        ];
     }
 
 

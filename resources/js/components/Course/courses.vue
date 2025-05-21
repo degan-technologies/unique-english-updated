@@ -74,10 +74,7 @@ function onPreviousPage() {
 function coursePerPage(amount) {
     rowsPerPage.value = amount;
     filteredCourses(currentPage.value);
-}
-const toggleMenu = (id) => {
-    activeMenuId.value = activeMenuId.value === id ? null : id;
-};
+} 
 
 function handleClickOutside(event) {
     if (!event.target.closest(".relative")) {
@@ -317,7 +314,7 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                 </div>
 
                 <!-- Pagination Footer -->
-                <div class="flex flex-wrap justify-between items-center mt-4 px-2 gap-2">
+                <div class="p-4 bg-white flex flex-row items-center justify-between">
                     <!-- Rows Per Page Selector -->
                     <div class="flex flex-wrap space-x-2 items-center">
                         <span class="text-sm text-gray-600">Courses per page:</span>

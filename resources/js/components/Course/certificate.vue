@@ -1,16 +1,13 @@
 <script setup>
-import { ref, onMounted, defineProps, computed, nextTick } from 'vue';
-import Axios from 'axios';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import QrcodeVue from 'qrcode.vue';
 import { storeToRefs } from 'pinia';
 import html2canvas from 'html2canvas';
-
 import { useAppStore } from '@/store/useAppStore';
+
 const appStore = useAppStore();
-
 const { authUser } = storeToRefs(appStore);
-
-const emit = defineEmits(['backToHome']);
+const isLoading = ref(false);
 
 const props = defineProps({
     showDownload: {
@@ -19,6 +16,7 @@ const props = defineProps({
     },
     selectedCourse: {
         type: Object,
+        default: () => ({})
     },
     overallProgress: {
         type: Number,
@@ -26,164 +24,261 @@ const props = defineProps({
     }
 });
 
-const certificateRef = ref(null);
-const certificateWrapper = ref(null);
-const completionDate = ref(new Date().toLocaleDateString());
+const emit = defineEmits(['backToHome']);
+
 const qrCodeData = ref('');
 
- 
-async function downloadCertificate() {
-    if (!certificateRef.value || !certificateWrapper.value) return;
- 
-    certificateWrapper.value.classList.add("force-desktop");
- 
-    await nextTick();
+const completionDate = computed(() => new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+}));
+
+const fullName = computed(() =>
+    `${authUser.value?.first_name || ''} ${authUser.value?.middle_name || ''}`.trim()
+);
+
+const downloadCertificate = async () => {
+    // Create a hidden container
+    isLoading.value = true;
+    const hiddenContainer = document.createElement('div');
+    hiddenContainer.style.position = 'fixed';
+    hiddenContainer.style.left = '-9999px';
+    hiddenContainer.style.top = '0';
+    hiddenContainer.style.width = '800px';
+    hiddenContainer.style.height = '600px';
+    hiddenContainer.style.zIndex = '-1000';
+    document.body.appendChild(hiddenContainer);
+
+    // Create Vue app for QR code rendering
+    const { createApp } = await import('vue');
+    const qrCodeApp = createApp({
+        template: `
+            <div class="certificate-template" style="
+                width: 100%;
+                height: 100%;
+                background-image: url('/images/certificate.PNG');
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                position: relative;
+                font-family: 'Times New Roman', serif;
+            ">
+                <!-- Recipient Name -->
+                <div style="
+                    position: absolute;
+                    top: 30%;
+                    left: 0;
+                    width: 100%;
+                    text-align: center;
+                ">
+                    <h2 style="
+                        font-size: 2.5rem;
+                        color: #000;
+                        margin: 0;
+                        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+                    ">
+                        ${fullName.value}
+                    </h2>
+                </div>
+
+                <!-- Course Info -->
+                <div style="
+                    position: absolute;
+                    top: 51%;
+                    left: 23%;
+                    width: 54%;
+                    text-align: left;
+                ">
+                    <h3 style="
+                        font-size: 1.25rem;
+                        color: #000;
+                        margin: 0 0 0.5rem 0;
+                        font-weight: bold;
+                        word-wrap: break-word;
+                    ">
+                        ${props.selectedCourse?.course_name || 'Course'}
+                    </h3>
+                </div>
+
+                <!-- QR Code Section -->
+                <div style="
+                    position: absolute;
+                    bottom: 10%;
+                    right: 20%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                ">
+                    <div style="
+                        background: white;
+                        padding: 8px;
+                        display: inline-block;
+                        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+                    ">
+                        <qrcode-vue 
+                            :value="qrData" 
+                            :size="80" 
+                            level="H"
+                            style="display: block;"
+                        ></qrcode-vue>
+                    </div>
+                    <p style="
+                        font-size: 0.7rem;
+                        color: #333;
+                        margin: 0.2rem 0 0 0;
+                        text-align: center;
+                    ">
+                        Scan to verify
+                    </p>
+                    <p style="
+                        font-size: 0.9rem;
+                        color: #333;
+                        margin: 0;
+                    ">
+                        Date: <strong>${completionDate.value}</strong>
+                    </p>
+                </div>
+            </div>
+        `,
+        components: { QrcodeVue },
+        data() {
+            return {
+                qrData: qrCodeData.value
+            };
+        }         
+    });
+
+    // Mount the Vue app to our hidden container
+    qrCodeApp.mount(hiddenContainer);
 
     try {
-        const canvas = await html2canvas(certificateRef.value, { scale: 2 });
-        const imageData = canvas.toDataURL('image/png');
- 
-        certificateWrapper.value.classList.remove("force-desktop");
- 
+        // Wait for everything to render
+        await nextTick();
+
+        const certificateElement = hiddenContainer.querySelector('.certificate-template');
+        if (!certificateElement) return;
+
+        const canvas = await html2canvas(certificateElement, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: null,
+            width: 800,
+            height: 600,
+            async: true
+        });
+
         const link = document.createElement('a');
-        link.href = imageData;
-        link.download = 'certificate.png';
-        document.body.appendChild(link);
+        link.href = canvas.toDataURL('image/png');
+        link.download = `Certificate_${props.selectedCourse?.course_name || 'Course'}.png`;
         link.click();
-        document.body.removeChild(link);
     } catch (error) {
         console.error('Error downloading certificate:', error);
-        certificateWrapper.value.classList.remove("force-desktop");
+    } finally {
+        // Clean up
+        document.body.removeChild(hiddenContainer);
     }
-} 
+
+    isLoading.value = false;
+};
+
+onMounted(() => {
+    qrCodeData.value = JSON.stringify({
+        userId: authUser.value?.id,
+        courseId: props.selectedCourse?.id,
+        date: new Date().toISOString()
+    });
+});
 </script>
 
 <template>
-    <div class="w-full"> 
-        <!-- Buttons -->
-        <div class="flex sticky">
-            <div v-if="showDownload" class=" flex flex-col sm:flex-row items-start justify-start gap-4 mb-8 no-scroll">
-                <button @click="$emit('backToHome')"
-                    class="text-lime-500 px-4 py-2 text-base font-medium hover:text-lime-700 transition duration-300">
-                    Close
-                </button>
-                <button @click="downloadCertificate"
-                    class="text-blue-700 px-4 py-2 text-base font-medium hover:text-blue-800 transition duration-300">
-                    Download
-                </button>
-            </div>
+    <div class="certificate-view">
+        <!-- Download Button - Visible only on mobile -->
+        <div v-if="showDownload" class="download-btn-container">
+            <button @click="downloadCertificate" class="download-btn">
+                <svg v-if="isLoading" class="animate-spin h-5 w-5 text-white" viewBox="0 0 50 50"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <circle class="text-white mr-2" cx="25" cy="25" r="20" fill="none" stroke="currentColor"
+                        stroke-width="5" stroke-linecap="round" stroke-dasharray="90,150" stroke-dashoffset="0" />
+                </svg>
+                <i v-else class="fas fa-download mr-2"></i>
+                {{ isLoading ? 'Downloading...' : 'Download Certificate'}}
+            </button> 
         </div>
-        
-        <div ref="certificateWrapper" class="certificate-wrapper ">
-            <div ref="certificateRef" class="certificate shadow-xl relative">
-                <!-- Top Decorative Border -->
-                <div
-                    class="absolute top-0 left-0 w-full h-4 bg-gradient-to-r from-yellow-500 via-gray-700 to-yellow-500">
-                </div>
-
-                <!-- Certificate Heading -->
-                <h1 class="text-5xl font-serif font-extrabold text-center text-gray-900 uppercase mt-12 tracking-wide">
-                    Certificate of Achievement
-                </h1>
-
-                <p class="text-lg text-center text-gray-600 italic mt-3">
-                    This is proudly awarded to
-                </p>
-
-                <h2 class="text-2xl font-bold text-gray-900 text-center mt-3 underline">
-                    {{ authUser?.first_name }} {{ authUser?.middle_name }}
-                </h2>
-
-                <p class="text-xl text-gray-700 text-center mt-6">
-                    For successfully completing the course
-                </p>
-                <h3 class="text-2xl font-semibold text-gray-800 italic text-center">
-                    {{ selectedCourse?.course_name }}
-                </h3>
-
-                <p class="text-md text-center text-gray-700 mt-4">
-                    Date of Completion: <strong>{{ completionDate }}</strong>
-                </p>
-
-                <!-- Footer Section: Signature, Seal & QR Code -->
-                <div class="flex justify-between items-center px-14 mt-10">
-                    <!-- Instructor Signature -->
-                    <div class="text-center">
-                        <img src="/images/signature_image.png" alt="Signature" class="h-20 w-36 mx-auto" />
-                        <p class="text-gray-900 font-semibold text-lg mt-2">{{ selectedCourse?.user?.first_name }} {{ selectedCourse?.user?.middle_name }}</p>
-                        <p class="text-gray-600 text-md">Unique English Language Academy</p>
-                    </div>
-
-                    <!-- QR Code for Authenticity -->
-                    <div class="text-center">
-                        <qrcode-vue :value="qrCodeData" :size="90" level="H"
-                            class="border border-gray-400 p-1 rounded-md shadow-md" />
-                        <p class="text-gray-600 text-sm mt-1">Scan to verify authenticity</p>
-                    </div>
-                </div>
-
-                <!-- Bottom Decorative Border -->
-                <div
-                    class="absolute bottom-0 left-0 w-full h-4 bg-gradient-to-r from-yellow-500 via-gray-700 to-yellow-500">
-                </div>
-            </div>
-        </div>
-
-
     </div>
 </template>
 
 <style scoped>
-/* Certificate Container */
-.certificate-container {
+/* Your existing styles remain the same */
+.certificate-view {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    background-color: #f8f9fa;
-    padding: 15px;
+    padding: 1rem;
 }
 
-/* Certificate Wrapper (for scaling on mobile) */
-.certificate-wrapper {
-    width: 900px;
-    height: 600px;
-    /* Desktop: no scaling; Mobile: scale applied via media query */
-}
-
-/* Force desktop style override for downloads */
-.force-desktop {
-    transform: none !important;
-}
-
-/* Certificate Styling */
-.certificate {
+.download-btn-container {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     width: 100%;
-    height: 100%;
-    padding: 30px;
-    background: url('/images/certificate bg.jpg') no-repeat center center;
-    background-size: cover;
-    position: relative;
-    border: 5px solid #ccc;
-    box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
 }
 
-/* Responsive scaling for mobile devices */
-@media (max-width: 768px) {
-    .certificate-wrapper {
-        transform: scale(0.5);
-        transform-origin: top center;
-        /* The dimensions of the wrapper remain unchanged internally */
-        width: 900px;
-        height: 600px;
+.download-btn,
+.back-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.download-btn {
+    background-color: #4CAF50;
+    color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.download-btn:hover {
+    background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+.back-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn:hover {
+    background-color: #e0e0e0;
+    transform: translateY(-1px);
+}
+
+@media (min-width: 640px) {
+    .download-btn-container {
+        flex-direction: row;
     }
 
-    /* Optionally adjust spacing and fonts visually on mobile */
-    .certificate {
-        padding: 20px;
+    .download-btn,
+    .back-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
     }
+}
 
-
+@media (min-width: 768px) {
+    .certificate-view {
+        padding: 2rem;
+    }
 }
 </style>

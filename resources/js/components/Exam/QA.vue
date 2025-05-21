@@ -40,6 +40,8 @@ const displayedQuestions = computed(() => {
 
 // Methods
 const fetchQA = async () => {
+
+    console.log("Fetching Q&A...");
     try {
         isLoading.value = true;
         const response = await Axios.get(`/api/get-course-qa/${props.selectedCourseSlug}`);

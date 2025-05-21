@@ -63,10 +63,16 @@ class UserController extends Controller {
             $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
         }
   
-        $users = $query->get();
+        $users = $query->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
+
+        $pagination = $users->toArray();
+        unset($pagination['data']);
+
 
         return response()->json([
-            'data' => CustomerInfoResource::collection($users)
+            'data' => CustomerInfoResource::collection($users),
+            'pagination' =>$pagination,
         ]);
     }
 

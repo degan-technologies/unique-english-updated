@@ -17,8 +17,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Models\Course\CourseContent;
-use App\Models\Quiz\QMetaData;
-use App\Models\Quiz\Result;
+use App\Models\Quiz\QMetaData; 
 use App\Models\Course\CourseContentProgress;
 
 

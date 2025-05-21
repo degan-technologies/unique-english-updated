@@ -81,7 +81,7 @@ return [
     'chapa' => [
         'secret_key' => env('CHAPA_SECRET_KEY'),
         'base_url' => env('CHAPA_BASE_URL', 'https://api.chapa.com/v1'),
-        'approval_secret' => env('TRANSFER_APPROVAL_SECRET'),
+        'approval_secret' => env('TRANSFER_APPROVAL_SECRET', 'asdfghjkl'),
         'webhook_secret' => env('WEBHOOK_SECRET'),
     ],
 

@@ -18,7 +18,7 @@ class PlanResource extends JsonResource {
             'group_price' => $this->group_price,
             'duration' => $this->duration . ' months',
             'isMyLive' => $this->checkEligibility($this->id) ? true : false,
-            'planType' => $this->checkEligibility($this->id)->live_price_type,
+            'planType' => $this->checkEligibility($this->id) ? $this->checkEligibility($this->id)->live_price_type : null,
             'created_at' => $this->created_at->format('l, M-d-Y'), 
         ];
     }

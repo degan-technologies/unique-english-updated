@@ -5,7 +5,7 @@ namespace App\Http\Resources\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ScheduleResource extends JsonResource {
+class TodayScheduleResource extends JsonResource {
     public function toArray(Request $request): array {
         return [
             'id' => $this->id,
@@ -18,10 +18,19 @@ class ScheduleResource extends JsonResource {
             'color' => $this->sessionStatusClass($this->status),
             'room_name' => $this->room_name,
 
-            'class_name' => $this->peredicTable?->liveRoom?->class_name,
-            'instructor_name' => $this->peredicTable?->liveRoom?->instructor?->first_name . ' ' . $this->peredicTable?->liveRoom?->instructor?->middle_name,
+            'class_name' => $this->peredicTable?->liveRoom?->class_name, 
+            'group_instructor_name' => $this->getGroupInstructor($this->peredicTable),
+            'private_instructor_name' => $this->getPrivateInstructorName($this->student),
             'student_name' => $this->student?->first_name  . ' ' .  $this->student?->middle_name,          
         ];
+    }
+
+    public function getPrivateInstructorName($student) {
+        return $student?->privateRoom?->instructor?->first_name. ' ' .  $this->student?->privateRoom?->instructor?->middle_name;
+    }
+
+    public function getGroupInstructor($peredicTable) {
+       return $peredicTable?->liveRoom?->user?->first_name . ' ' . $this->peredicTable?->liveRoom?->user?->middle_name;      
     }
 
     public function sessionStatusClass($status) {

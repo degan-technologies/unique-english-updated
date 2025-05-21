@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\System;
 
 use App\Http\Controllers\Controller;
+use App\Models\System\PlatformComission;
+use App\Models\System\PlatformComissionHistory;
 use App\Models\User;
 use App\Services\LangService;
 use App\Traits\AdminActivityLog;
@@ -98,12 +100,7 @@ class PlatformComissionController extends Controller {
      * Display the specified resource.
      */
     public function getComission() {
-        $platformComission = User::query()
-            ->has('systemAdmin')
-            ->where('id', Auth::id())
-            ->first()
-            ->platformComissions()
-            ->first();
+        $platformComission = PlatformComission::first(); 
 
         return response()->json([
             'status' => 'success',

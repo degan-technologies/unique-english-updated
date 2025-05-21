@@ -23,6 +23,7 @@ import MyCourse from "@/components/Course/EnrolledManagement.vue";
 import MeetingAction from "@/components/Live/MeetingAction.vue";
 import WhatExpect from "@/components/Layout/WhatExpect.vue";
 import Test from "@/components/Course/Test.vue";
+import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 
 const appStore = useAppStore();
 const AuthStore = useAuthStore();
@@ -171,6 +172,7 @@ watch(
                     <CourseCard />
                     <MeetingAction />
                     <Book />
+                    <YoutubeEmbed />
                     <AboutUs />
                     <WhatExpect />
                 </div>

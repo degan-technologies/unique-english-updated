@@ -147,6 +147,7 @@ class User extends Authenticatable {
     public function schedules() { return $this->hasMany(Schedule::class); }
     public function groupRoom() { return $this->hasOne(GroupRoom::class);}
     public function privateRoom() { return $this->hasOne(PrivateRoom::class);}
+    public function mySchedules() { return $this->hasMany(Schedule::class, 'student_id');}
 
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {

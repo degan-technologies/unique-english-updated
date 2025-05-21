@@ -7,16 +7,20 @@ import Spinner from "@/components/Layout/Spinner.vue";
 const sessions = ref([]);
 const selectedRoom = ref(false);
 const isLoading = ref(true);
+const privateSchedule = ref([]);
 
-function getMySchedules() {
-    isLoading.value = true;
+function getMySchedules() { 
     Axios.get("/api/student-schedule")
         .then((res) => {
             sessions.value = res.data.data;
-        })
-        .finally(() => {
-            isLoading.value = false;
-        });
+        }) 
+}
+
+function getMyPrivateSchedules() { 
+    Axios.get("/api/private-student-schedule")
+        .then((res) => {
+            privateSchedule.value = res.data.data;
+        }) 
 }
 
 function joinSession(room) {
@@ -24,7 +28,10 @@ function joinSession(room) {
 }
 
 onMounted(() => {
+    isLoading.value = true;
     getMySchedules();
+    getMyPrivateSchedules();
+    isLoading.value = false;
 });
 </script>
 
@@ -43,38 +50,71 @@ onMounted(() => {
         </div>
 
         <!-- No Sessions -->
-        <div v-else-if="sessions.length === 0" class="text-center text-gray-600 py-12 text-lg">
+        <div v-else-if="sessions.length === 0 &&  privateSchedule.length === 0 " class="text-center text-gray-600 py-12 text-lg">
             No sessions found.
         </div>
 
         <!-- Session Cards -->
-        <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-fadeIn">
-            <div v-for="session in sessions" :key="session.id"
-                class="bg-white border border-gray-200 rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow duration-300">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-800">
-                            {{ session.day }}
-                        </h3>
-                        <p class="text-sm text-gray-500 mt-1">
-                            {{ session.schedule_time }} - {{session.schedule_time.replace(/(\d+):/, (match, hour) =>
-                                `${(parseInt(hour) + 1).toString().padStart(2, '0')}:`) }}
-                        </p>
+        <div  v-else>
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-fadeIn">
+                <div v-for="session in sessions" :key="session.id"
+                    class="bg-white border border-gray-200 rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">
+                                {{ session.day }}
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ session.schedule_time }} - {{session.schedule_time.replace(/(\d+):/, (match, hour) =>
+                                    `${(parseInt(hour) + 1).toString().padStart(2, '0')}:`) }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span :class="session?.color"
+                                class="text-xs font-medium px-2 py-1 rounded capitalize bg-gray-100">
+                                {{ session.status }}
+                            </span>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span :class="session?.color"
-                            class="text-xs font-medium px-2 py-1 rounded capitalize bg-gray-100">
-                            {{ session.status }}
-                        </span>
+
+                    <div class="mt-6 flex justify-end">
+                        <button
+                            class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-md font-semibold text-sm transition duration-200"
+                            @click="joinSession(session?.room_name)">
+                            Start
+                        </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-6 flex justify-end">
-                    <button
-                        class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-md font-semibold text-sm transition duration-200"
-                        @click="joinSession(session?.room_name)">
-                        Start
-                    </button>
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 animate-fadeIn">
+                <div v-for="session in privateSchedule" :key="session.id"
+                    class="bg-white border border-gray-200 rounded-xl shadow-md p-5 hover:shadow-lg transition-shadow duration-300">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800">
+                                {{ session.day }}
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ session.schedule_time }} - {{session.schedule_time.replace(/(\d+):/, (match, hour) =>
+                                    `${(parseInt(hour) + 1).toString().padStart(2, '0')}:`) }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span :class="session?.color"
+                                class="text-xs font-medium px-2 py-1 rounded capitalize bg-gray-100">
+                                {{ session.status }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                        <button
+                            class="bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-md font-semibold text-sm transition duration-200"
+                            @click="joinSession(session?.room_name)">
+                            Start
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

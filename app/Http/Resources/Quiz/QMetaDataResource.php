@@ -4,6 +4,7 @@ namespace App\Http\Resources\Quiz;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use phpDocumentor\Reflection\PseudoTypes\True_;
 
 class QMetaDataResource extends JsonResource {
     public function toArray(Request $request): array
@@ -22,6 +23,27 @@ class QMetaDataResource extends JsonResource {
             'course_module_id' => $this->course_module_id,
 
             'questions' => QuizResource::collection($this->quizzes),
+            'is_completed' => $this->checkIfCompleted($this->results),
+            'best_score' => $this->getBestScore($this->results),
         ];
     }
+
+    public function checkIfCompleted($results)
+    {
+        if (!$results || $results->isEmpty()) {
+            return false;
+        }
+ 
+        return $results->contains(fn ($result) => $result->result > 70);
+    }
+
+    public function getBestScore($results)
+    {
+        if (!$results || $results->isEmpty()) {
+            return 'not taken';
+        }
+
+        return $results->max('result');
+    }
+
 }

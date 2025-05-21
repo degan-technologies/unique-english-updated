@@ -15,11 +15,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use App\Services\LangService;
+use Illuminate\Support\Facades\DB;
 
-class CourseModuleController extends Controller
-{
-
-
+class CourseModuleController extends Controller {
+ 
     protected $langService;
 
     public function __construct(LangService $langService) {
@@ -58,28 +57,32 @@ class CourseModuleController extends Controller
             ->where('course_id', $courseId)
             ->get(); 
 
-        $certificateCompletion = QMetaData::query()
-            ->where('course_id', $courseId)
-            ->where(function($query) use ($user) {
-                $query->has('results')
-                      ->whereHas('results', function($subQuery) use ($user) {
-                          $subQuery->where('user_id', $user->id)
-                                   ->where('result', '<', 70);
-                      });
-            })
-            ->orWhere(function ($query) use ($user) {
-                $query->whereDoesntHave('results');
-            })
-            ->first();
+        $examStatus = QMetaData::where('course_id', $courseId)
+            ->with(['results' => function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            }])
+            ->get()
+            ->map(function ($exam) {
+                return [
+                    'exam_id' => $exam->id,
+                    'taken' => $exam->results->isNotEmpty(),
+                    'passed' => $exam->results->first()?->result > 70 ?? false
+                ];
+            });
 
-        if(!$certificateCompletion) {
+        $missingCount = $examStatus->where('taken', false)->count();
+        $failedCount = $examStatus->where('taken', true)->where('passed', false)->count();
+
+        $hasCompletedAll = $missingCount === 0 && $failedCount === 0;
+
+        if($hasCompletedAll) {
             $certify = true;
         }
  
 
         return response()->json([
             'data' => CourseModuleResource::collection($courseModules), 
-            'certify' => true,
+            'certify' => $certify,
         ]);
     }
 

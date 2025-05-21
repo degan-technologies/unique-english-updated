@@ -6,6 +6,12 @@ import { ref, computed, watch, onMounted } from "vue";
 const users = ref([]);
 const selectedUsers = ref([]);
 
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const rowsPerPageOptions = [5, 10, 15, 20];
+const pagination = ref("");
+const totalPages = ref(0);
+
 const searchQuery = ref("");
 const masterSelected = ref(false);
 const showDeleteModal = ref(false);
@@ -18,9 +24,7 @@ const newUser = ref({
     first_name: "",
     middle_name: "",
     role: "INSTRUCTOR_ROLE",
-});
-const currentPage = ref(1);
-const rowsPerPage = ref(10);
+}); 
 const showActivityLogModal = ref(false);
 const activityLogDetails = ref([]);
 const activityLogUser = ref({});
@@ -32,9 +36,9 @@ const filters = ref({
     progress: 0,
 });
 
-async function fetchUsers() {
+async function fetchUsers(page = 1) {
     try {
-        const response = await axios.get("/api/users", {
+        const res = await axios.get(`/api/users?page=${page}`, {
             params: {
                 search: searchQuery.value,
                 role: filters.value.role,
@@ -42,10 +46,13 @@ async function fetchUsers() {
                 joinDateFrom: filters.value.joinDateFrom,
                 joinDateTo: filters.value.joinDateTo,
                 progress: filters.value.progress,
+                rowsPerPageOptions: rowsPerPage.value,
             },
         });
-        users.value = response.data.data;
-        console.log("Users fetched:", users.value);
+        users.value = res.data.data; 
+        pagination.value = res.data.pagination;
+        totalPages.value = res.data.pagination.last_page;
+        currentPage.value = res.data.pagination.current_page;
     } catch (error) {
         console.error("Error fetching users:", error);
     }
@@ -53,14 +60,7 @@ async function fetchUsers() {
 onMounted(() => {
     fetchUsers();
 });
-
-const paginatedUsers = computed(() => {
-    const start = (currentPage.value - 1) * rowsPerPage.value;
-    return users.value.slice(start, start + rowsPerPage.value);
-});
-const totalPages = computed(() => {
-    return Math.ceil(users.value.length / rowsPerPage.value) || 1;
-});
+ 
 const showTempPasswordColumn = computed(() => {
     return users.value.some((user) => user.role === "INSTRUCTOR_ROLE");
 });
@@ -92,6 +92,7 @@ function openDeleteModal(user) {
     modalUser.value = user;
     showDeleteModal.value = true;
 }
+
 async function confirmDelete() {
     try {
         const response = await axios.delete(
@@ -179,17 +180,7 @@ async function bulkDelete() {
         clearSelection();
     } catch (error) { }
 }
-
-function prevPage() {
-    if (currentPage.value > 1) {
-        currentPage.value--;
-    }
-}
-function nextPage() {
-    if (currentPage.value < totalPages.value) {
-        currentPage.value++;
-    }
-}
+ 
 watch(selectedUsers, () => {
     masterSelected.value = users.value.every((user) =>
         selectedUsers.value.includes(user.id)
@@ -219,6 +210,24 @@ function closeActivityLogModal() {
     activityLogUser.value = {};
     activityLogDetails.value = [];
 }
+
+function onNextPage() {
+    if (currentPage.value == totalPages.value) return;
+
+    fetchUsers(currentPage.value + 1);
+}
+
+function onPreviousPage() {
+    if (currentPage.value <= 1) return;
+
+    fetchUsers(currentPage.value - 1);
+}
+
+function userPerPage(amount) {
+    rowsPerPage.value = amount;
+    fetchUsers(currentPage.value);
+} 
+
 </script>
 
 <template>
@@ -307,7 +316,7 @@ function closeActivityLogModal() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="user in paginatedUsers" :key="user.id" :class="{
+                                <tr v-for="user in users" :key="user.id" :class="{
                                     'bg-blue-50': selectedUsers.includes(
                                         user.id
                                     ),
@@ -420,32 +429,41 @@ function closeActivityLogModal() {
                         </table>
                     </div>
 
-                    <!-- Pagination Controls -->
-                    <div class="p-4 bg-white flex flex-col sm:flex-row items-center justify-between">
-                        <div class="flex items-center mb-2 sm:mb-0">
-                            <span class="text-sm text-gray-600 mr-2">Rows per page:</span>
-                            <select v-model.number="rowsPerPage"
-                                class="border-gray-300 text-gray-600 bg-gray-800 rounded focus:outline-none">
-                                <option :value="5">5</option>
-                                <option :value="10">10</option>
-                                <option :value="20">20</option>
-                                <option :value="50">50</option>
-                            </select>
+                    <!-- Pagination Footer -->
+                    <div class="p-4 bg-white flex flex-row items-center justify-between">
+                        <!-- Rows Per Page Selector -->
+                        <div class="flex flex-wrap space-x-2 items-center">
+                            <span class="text-sm text-gray-600">Courses per page:</span>
+                            <div v-for="option in rowsPerPageOptions" :key="option" @click="userPerPage(option)"
+                                class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                                :class="{
+                                    'bg-blue-500 text-white font-bold':
+                                        rowsPerPage === option,
+                                    'bg-white text-gray-700 hover:bg-gray-200':
+                                        rowsPerPage !== option,
+                                }">
+                                {{ option }}
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <button @click="prevPage" :disabled="currentPage === 1"
-                                class="px-3 py-1 border rounded disabled:opacity-50">
+
+                        <!-- Pagination Controls -->
+                        <div class="flex items-center space-x-3">
+                            <button @click="onPreviousPage()" :disabled="currentPage === 1"
+                                class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
                                 Prev
                             </button>
+
                             <span class="text-sm text-gray-600">
                                 Page {{ currentPage }} of {{ totalPages }}
                             </span>
-                            <button @click="nextPage" :disabled="currentPage === totalPages"
-                                class="px-3 py-1 border rounded disabled:opacity-50">
+
+                            <button @click="onNextPage()" :disabled="currentPage === totalPages"
+                                class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
                                 Next
                             </button>
                         </div>
                     </div>
+
                 </div>
             </main>
         </div>

@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
 use App\Http\Controllers\Book\BookController;
-use App\Http\Controllers\Book\BookVideoController;
 use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
@@ -30,7 +29,8 @@ use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
-use App\Http\Controllers\System\HeroController; 
+use App\Http\Controllers\System\HeroController;
+use App\Http\Controllers\VideoController;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -38,8 +38,7 @@ Route::resource('test', TestController::class);
 Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
-Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
-Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
+Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']); 
 Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 
 Route::get('/hero-section', [HeroController::class, 'index']);
@@ -92,7 +91,6 @@ Route::middleware(['web'])->group(function () {
     Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProviderCallback']);
 });
 
-
 Route::middleware('auth:api')
     ->group(function () {
         Route::get('/current', [AuthController::class, 'currentUser']);       
@@ -109,9 +107,15 @@ Route::middleware('auth:api')
         Route::get('/my-participants', [LiveController::class, 'getParticipants']);   
         Route::get('/private-participants', [LiveController::class, 'getPrivateParticipants']);   
         Route::get('/student-schedule', [ScheduleController::class, 'getStudentSchedules']); 
-        Route::get('/my-get-students', [LiveController::class, 'getMyStudents']);  
-
+        Route::get('/my-get-students', [LiveController::class, 'getMyStudents']);
+        Route::get('/my-private-students-schedule', [LiveController::class, 'getMyPrivateStudentsAndSchedules']); 
+        
         Route::get('get-my-plans', [PlanController::class, 'getMyPlans']);
+         Route::get('/private-student-schedule', [ScheduleController::class, 'getStudentPrivateSchedules']); 
+        
+        Route::post('update-private-schedules/{id}', [ScheduleController::class, 'updatePrivateSchedule']);
+        Route::post('add-private-schedules', [ScheduleController::class, 'addPrivateSchedule']);
+        Route::get('/today-schedules', [ScheduleController::class, 'todaySchedules']);   
     });
 
 Route::middleware('auth:api')

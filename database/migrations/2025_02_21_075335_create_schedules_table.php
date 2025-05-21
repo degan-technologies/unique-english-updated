@@ -12,8 +12,9 @@ return new class extends Migration {
             $table->string('type')->default('group');
             $table->string('status')->default('scheduled');
             $table->string('room_name');  
-            $table->timestamps();
+            $table->timestamps(); 
 
+            $table->foreignId('student_id')->nullable()->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
             $table->foreignId('assign_id')->nullable()->constrained('users')->cascadeOnUpdate()->restrictOnDelete();
         });

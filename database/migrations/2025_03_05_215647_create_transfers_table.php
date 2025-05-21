@@ -20,6 +20,7 @@ return new class extends Migration
             $table->double('deposits')->nullable();
             $table->double('withdrawals')->nullable();
             $table->double('balance')->nullable();
+            $table->string('chapa_reference')->Unique()->nullable(); 
 
             $table->timestamps();
 

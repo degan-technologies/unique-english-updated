@@ -13,9 +13,10 @@ class Schedule extends Model {
     protected $fillable = [
         'day', 'time', 
         'user_id', 'schedule_time',
-        'room_name'
+        'room_name', 'student_id','status'
     ];
 
     public function user() { return $this->belongsTo(User::class); }
     public function peredicTable() { return $this->hasOne(PeredicTable::class); }
+    public function student() { return $this->belongsTo(User::class, 'student_id'); }
 }

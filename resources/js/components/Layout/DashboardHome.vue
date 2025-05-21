@@ -11,11 +11,13 @@
     import LiveSessionsWidget from '@/components/widgets/LiveSessionsWidget.vue';
     import ReviewsRatingsWidget from '@/components/widgets/ReviewsRatingsWidget.vue'; 
     import RevenueModal from '@/components/widgets/RevenueModal.vue';
+    import JetsiLive from "@/components/Live/JetsiLive.vue";
 
     const sidebarStore = useSidebarStore();
     const { sidebarCollapsed, } = storeToRefs(sidebarStore);
      
     const activeFilter = ref('allTime');
+    const selectedRoom = ref(null);
  
     const revenueData = ref({
         today: 0,
@@ -48,13 +50,22 @@
         fetchTransactions();
     }
 
+    function joinSession(roomId) {
+        selectedRoom.value = roomId;
+    }
+
     onMounted(()=>{
         fetchTransactions();
     })
 </script>
 <template>
+     <div v-if="selectedRoom" class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="relative w-full h-full min-h-[600px]">
+            <JetsiLive :selectedRoom="selectedRoom" @closeStream="selectedRoom = null" />
+        </div>
+    </div>
     <!-- Main container -->
-    <div class="min-h-screen overflow-hidden w-full bg-gray-100 text-gray-900 transition-colors duration-300">
+    <div v-else class="min-h-screen overflow-hidden w-full bg-gray-100 text-gray-900 transition-colors duration-300">
         <!-- Top Navigation Bar -->
 
         <div class="">
@@ -78,7 +89,8 @@
                 class="grid lg:grid-cols-3 gap-4 my-6">
                 <UserStatisticsWidget />
 
-                <LiveSessionsWidget/>
+                <LiveSessionsWidget
+                    @joinSession="joinSession"/>
 
                 <ReviewsRatingsWidget/> 
             </div>

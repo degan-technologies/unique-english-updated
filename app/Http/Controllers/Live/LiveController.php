@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Live;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Live\LiveParticipantsResource;
 use App\Http\Resources\Live\PrivateLiveParticipantResource;
+use App\Http\Resources\Live\PrivateStudentsAndScheduleReesource;
 use App\Http\Resources\Live\RoomResource;
 use App\Http\Resources\Transaction\CustomerInfoResource;
 use App\Models\Live\GroupRoom;
@@ -48,48 +49,96 @@ class LiveController extends Controller {
         ]);
     }
     
-    public function getParticipants() { 
+    public function getParticipants(Request $request) { 
 
-        $user = User::query()
+        $users = User::query()
             ->whereHas('customerTransactions', function($query) {
                 $query->where('status', TRANSACTION_SUCCESS)
                     ->where('product_type', LIVE_CLASS)
                     ->where('live_price_type', 'group');
             })
-            ->get();
+            ->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
 
-        if (!$user) {
+        if (!$users) {
             return response()->json([
                 'data' => 'No users found',
             ]);
         }
 
+        $pagination = $users->toArray();
+        unset($pagination['data']);
+
         return response()->json([
-            'data' => LiveParticipantsResource::collection($user),
+            'data' => LiveParticipantsResource::collection($users),
+            'pagination' =>$pagination,
         ]);
     }
 
-    public function getPrivateParticipants() { 
-        $user = User::query()
+    public function getPrivateParticipants(Request $request) { 
+        $users = User::query()
             ->whereHas('customerTransactions', function($query) {
                 $query->where('status', TRANSACTION_SUCCESS)
                     ->where('product_type', LIVE_CLASS)
                     ->where('live_price_type', 'individual');
             })
-            ->get();
+            ->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
 
-        if (!$user) {
+        if (!$users) {
             return response()->json([
                 'data' => 'No users found',
             ]);
         }
 
+        $pagination = $users->toArray();
+        unset($pagination['data']);
+
         return response()->json([
-            'data' => PrivateLiveParticipantResource::collection($user),
+            'data' => PrivateLiveParticipantResource::collection($users),
+            'pagination' =>$pagination,
         ]);
     }
 
-    public function getMyStudents() { 
+    public function getMyStudents(Request $request) { 
+        $instructor = User::query()
+            ->where('id', Auth::id())
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$instructor) {
+            return response()->json([
+                'data' => 'No users found',
+            ]);
+        } 
+
+       $users = User::query()
+            ->whereHas('customerTransactions', function($query) {
+                $query->where('status', TRANSACTION_SUCCESS)
+                    ->where('product_type', LIVE_CLASS);
+            })
+            ->whereHas('groupRoom.liveRoom', function($query) use ($instructor) {
+                $query->where('instructor_id', $instructor->id);
+            })
+            ->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
+
+        if (!$users) {
+            return response()->json([
+                'data' => 'No users found',
+            ]);
+        }
+
+        $pagination = $users->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'data' => LiveParticipantsResource::collection($users),
+            'pagination' =>$pagination,
+        ]);
+    }
+
+    public function getMyPrivateStudentsAndSchedules(Request $request) { 
         $instructor = User::query()
             ->where('id', Auth::id())
             ->whereSystemAdminOrInstructor()
@@ -107,14 +156,12 @@ class LiveController extends Controller {
                     ->where('product_type', LIVE_CLASS);
             })
             ->where(function($query) use ($instructor) {
-                $query->whereHas('groupRoom.liveRoom', function($q) use ($instructor) {
-                        $q->where('instructor_id', $instructor->id);
-                    })
-                    ->orWhereHas('privateRoom', function($q) use ($instructor) {
+                $query->whereHas('privateRoom', function($q) use ($instructor) {
                         $q->where('instructor_id', $instructor->id);
                     });
             })
-            ->get();
+            ->orderBy('created_at','DESC')
+            ->paginate($request->rowsPerPageOptions);
 
         if (!$users) {
             return response()->json([
@@ -122,8 +169,12 @@ class LiveController extends Controller {
             ]);
         }
 
+        $pagination = $users->toArray();
+        unset($pagination['data']);
+
         return response()->json([
-            'data' => LiveParticipantsResource::collection($users),
+            'data' => PrivateStudentsAndScheduleReesource::collection($users),
+            'pagination' =>$pagination,
         ]);
     }
 

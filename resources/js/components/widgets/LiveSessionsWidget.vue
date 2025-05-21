@@ -1,38 +1,29 @@
 <script setup>
+import Axios from "axios";
 import { ref, onMounted } from "vue";
+ 
+const schedules = ref([]);  
+const isLoading = ref(false);
 
-// Sample Data (Replace with API Call)
-const sessions = ref([
-    { id: 1, title: "Advanced Vue.js", instructor: "John Doe", startTime: "2024-02-01T14:30:00Z", participants: 42, isLive: true },
-    { id: 2, title: "Data Science with Python", instructor: "Jane Smith", startTime: "2024-02-01T16:00:00Z", participants: 35, isLive: false },
-]);
+const emit = defineEmits(["joinSession"]);
+  
+function getTodaySchedules() {
+    isLoading.value = true;
+    Axios.get("/api/today-schedules")
+        .then((res) => {
+            schedules.value = res.data.data;
+        })
+        .finally(() => {
+            isLoading.value = false;
+        });
+}
 
-const selectedSession = ref(null);
+function joinNewSession(roomName) {
+    emit("joinSession", roomName);
+}
 
-// Fetch Sessions (Simulated API Call)
-const fetchSessions = () => {
-    // Simulate a live session update (Replace with API call)
-    sessions.value = [
-        { id: 1, title: "Advanced Vue.js", instructor: "John Doe", startTime: "2024-02-01T14:30:00Z", participants: 42, isLive: true },
-        { id: 2, title: "Data Science with Python", instructor: "Jane Smith", startTime: "2024-02-01T16:00:00Z", participants: 38, isLive: false },
-        { id: 3, title: "Web3 & Blockchain", instructor: "Michael Lee", startTime: "2024-02-01T18:00:00Z", participants: 21, isLive: false },
-    ];
-};
-
-// Open Session Details Modal
-const openSessionDetails = (session) => {
-    selectedSession.value = session;
-};
-
-// Format Time
-const formatTime = (isoString) => {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-};
-
-// Auto-refresh every 10 seconds
 onMounted(() => {
-    setInterval(fetchSessions, 10000);
+     getTodaySchedules()
 });
 </script>
 
@@ -44,62 +35,53 @@ onMounted(() => {
                 <i class="fas fa-video text-lime-700 text-xl"></i>
                 <h3 class="text-lg font-bold">Live Sessions Overview</h3>
             </div>
-            <button @click="fetchSessions" class="text-gray-500 hover:text-gray-800">
+            <button  class="text-gray-500 hover:text-gray-800">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>
 
         <!-- Live Sessions List -->
-        <div v-if="sessions.length">
-            <div v-for="session in sessions" :key="session.id" @click="openSessionDetails(session)"
+        <div v-if="schedules.length" class="max-h-[400px] overflow-y-auto scrollable-container space-y-2 pr-1">
+            <div v-for="schedule in schedules" :key="schedule.id"
                 class="p-4 rounded-lg border border-gray-200 mb-3 cursor-pointer transition hover:bg-gray-100">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-3">
                         <!-- Live Indicator -->
-                        <span v-if="session.isLive" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                        <h4 class="text-md font-semibold">{{ session.title }}</h4>
+                        <span  class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+                        <h4 class="text-md font-semibold">{{ schedule.day }}</h4>
                     </div>
-                    <span class="text-sm text-gray-500">{{ formatTime(session.startTime) }}</span>
+                    <span class="text-sm text-gray-500">{{ schedule.schedule_time }}</span>
                 </div>
 
                 <!-- Instructor & Participants -->
-                <div class="text-sm text-gray-600 mt-1">
-                    Instructor: <span class="font-medium">{{ session.instructor }}</span>
+                <div class="flex items-center justify-between">
+                    <div v-if="schedule?.class_name == null" class="text-sm text-gray-600 mt-1">
+                         <i class="fas fa-user"></i>  <span class="font-medium">{{ schedule.private_instructor_name }}</span>
+                        <h1 class="font-bold text-lime-700 py-2">Private Class</h1>
+                    </div>
+                    <div v-else class="text-sm text-gray-600 mt-1">
+                        <div class="flex-col">
+                             <i class="fas fa-user"></i>  <span class="font-medium">{{ schedule.group_instructor_name }}</span>
+                            <h1 class="font-bold text-lime-700 py-2">Group Class</h1>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-sm py-2 capitalize text-blue-700"> {{ schedule.status }}</h1>
+                        <button @click="joinNewSession(schedule.room_name)"
+                            :disabled="isStartingSession"
+                            class="inline-flex self-center items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-75 disabled:cursor-not-allowed">
+                            <span v-if="!isStartingSession">Join</span> 
+                        </button>
+                    </div>
                 </div>
-                <div class="text-xs text-gray-500">
-                    <i class="fas fa-users"></i> {{ session.participants }} Participants
+                <div class="text-xs capitalize text-gray-500">
+                      <i class="fas fa-users"></i>  {{ schedule.student_name }} {{ schedule.class_name }} 
                 </div>
             </div>
         </div>
 
         <!-- No Sessions Placeholder -->
         <div v-else class="text-gray-500 text-center py-6">No live sessions available.</div>
-
-        <!-- Modal for Session Details -->
-        <Teleport to="body">
-            <div v-if="selectedSession"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4">
-                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-                    <div class="flex justify-between items-center mb-3">
-                        <h4 class="text-lg font-semibold">{{ selectedSession.title }}</h4>
-                        <button @click="selectedSession = null" class="text-gray-500 hover:text-gray-800">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <p><strong>Instructor:</strong> {{ selectedSession.instructor }}</p>
-                    <p><strong>Start Time:</strong> {{ formatTime(selectedSession.startTime) }}</p>
-                    <p><strong>Participants:</strong> {{ selectedSession.participants }}</p>
-                    <div class="flex justify-end mt-4 space-x-2">
-                        <button class="px-3 py-1 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800">
-                            Join Session
-                        </button>
-                        <button class="px-3 py-1 text-sm bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
-                            @click="selectedSession = null">
-                            Close
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </Teleport>
+ 
     </div>
 </template>

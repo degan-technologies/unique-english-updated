@@ -17,6 +17,7 @@ use App\Services\ChapaService;
 use App\Services\LangService;
 use Carbon\Carbon;
 use App\Traits\AdminActivityLog;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -95,35 +96,9 @@ class TransactionController extends Controller
         }
     }
 
-    public function handleWithdrawalApproval(Request $request) { 
-        $computedSignature = hash_hmac('sha256', json_encode($request->all()), config('services.chapa.approval_secret'));
-
-        if ($request->header('Chapa-Signature') !== $computedSignature) {
-            return response()->json(['message' => 'Invalid signature'], 400);
-        }
- 
-        $validated = $request->validate([
-            'reference' => 'required|string',
-            'account_number' => 'required|string',
-            'amount' => 'required|numeric',
-            'bank' => 'required|string',
-            'account_name' => 'required|string',
-        ]);
- 
-        $transfer = Transfer::where('reference', $validated['reference'])->first();
-
-        if (!$transfer) {
-            return response()->json(['message' => 'Transfer not found'], 404);
-        }
- 
-        $transfer->update([
-            'status' => 'approved',
-            'approved_at' => now(),  
-        ]);
-
+    public function handleWithdrawalApproval(Request $request) {
         return response()->json(['message' => 'Transfer approved'], 200);
     }
-
 
     public function initiatePayment(Request $request) {
         $user = Auth::user();
@@ -198,8 +173,7 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function transactions(Request $request)
-    {
+    public function transactions(Request $request) {
         $user = User::whereSystemAdminOrInstructor()->first();
 
         if (!$user) {
@@ -207,14 +181,22 @@ class TransactionController extends Controller
         }
 
         $transactions = $user->has('systemAdmin')
-            ? Transaction::all()
-            : Transaction::where('user_id', $user->id)->get();
+            ? Transaction::query() 
+                ->orderBy('created_at','DESC')
+                ->paginate($request->rowsPerPageOptions)
+            : Transaction::query() 
+                ->where('user_id', $user->id)
+                ->orderBy('created_at','DESC')
+                ->paginate($request->rowsPerPageOptions);
 
         $transactionData = $this->prepareTransactionData($transactions, $request->summryLength === 'true');
 
+        $pagination = $transactions->toArray();
+        unset($pagination['data']);
+
         return response()->json([
             'data' => TransactionHistoryResource::collection($transactions),
-            'pagination' => $this->getPaginationData($transactions),
+            'pagination' =>$pagination,
             ...$transactionData
         ]);
     }
@@ -224,11 +206,9 @@ class TransactionController extends Controller
             'data' => $this->chapaService->getBankList()
         ]);
     } 
-public function transferToBank(Request $request)
-{
+public function transferToBank(Request $request) {
     $user = Auth::user();
-    $txRef = 'Trf-' . uniqid();
- 
+    $txRef = 'Trf-' . uniqid(); 
 
     $validator = Validator::make(
         $request->all(),
@@ -267,7 +247,7 @@ public function transferToBank(Request $request)
     try {
         $transfer = $this->createWithdraw($request->amount, $txRef);
 
-        $response = $this->chapaService->transfer($data); 
+        $response = $this->chapaService->transfer($data);  
 
        if (!isset($response['status']) || $response['status'] !== 'success') {
             $message = $response['message'] ?? 'Transfer initiation failed';
@@ -290,27 +270,26 @@ public function transferToBank(Request $request)
                 'message' => 'Payment gateway returned invalid reference',
                 'gateway_response' => $response
             ], 400);
-        }
+        }  
 
-        // $transfer->update([
-        //     'chapa_reference' => $chapaReference,
-        //     'gateway_response' => json_encode($response)
-        // ]);
+        $transfer['transfer']->update([
+           'chapa_reference' => $chapaReference,
+            'status' =>$response['status'],
+        ]);
 
+        $transfer['commission']->update([ 
+            'status' =>$response['status'],
+        ]); 
+        
         DB::commit();
 
         return response()->json([
-            'transfer' => $transfer,
+            'transfer' => $transfer['transfer'],
             'response' => $response
         ]);
 
     } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::channel('payments')->error('Transfer Exception', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'request' => $request->all()
-        ]);
+        DB::rollBack(); 
 
         return response()->json([
             'message' => 'An unexpected error occurred during transfer',
@@ -319,8 +298,7 @@ public function transferToBank(Request $request)
     }
 }
 
-    public function checkTransferStatus()
-    {
+    public function checkTransferStatus() {
         $response = Http::withToken(config('services.chapa.secret_key'))
             ->get("https://api.chapa.co/v1/transfer/events/CTzAUrTZ1yVVm2");
 
@@ -329,8 +307,7 @@ public function transferToBank(Request $request)
 
     // Helper methods
 
-    private function getModelByType(string $type)
-    {
+    private function getModelByType(string $type) {
         return match ($type) {
             COURSE => new Course,
             BOOK => new Book,
@@ -350,8 +327,7 @@ public function transferToBank(Request $request)
         return $order->price;
     }
 
-    private function createOrUpdateTransaction($order, $user, $item, $txRef, $price)
-    {
+    private function createOrUpdateTransaction($order, $user, $item, $txRef, $price) {
         $existingTransaction = $order->transactions()
             ->where('customer_id', $user->id)
             ->where('product_type', $item['type'])
@@ -386,8 +362,7 @@ public function transferToBank(Request $request)
         }
     }
 
-    private function preparePaymentData($user, $txRef, $totalPrice): array
-    {
+    private function preparePaymentData($user, $txRef, $totalPrice): array {
         return [
             'amount' => $totalPrice,
             'email' => $user->email,
@@ -424,13 +399,6 @@ public function transferToBank(Request $request)
             'transactionToday' => $transactions->where('created_at', '>=', today())->sum('amount'),
             'transactionThisMonth' => $transactions->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
         ];
-    }
-
-    private function getPaginationData($paginator): array
-    {
-        $pagination = $paginator->toArray();
-        unset($pagination['data']);
-        return $pagination;
     }
 
     private function getUserBalance(User $user): float

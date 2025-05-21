@@ -50,6 +50,7 @@ watchEffect(() => {
 });
 
 onMounted(() => {
+    
     const saved = JSON.parse(localStorage.getItem("completedLessons")) || [];
     completedLessons.value = new Set(saved);
 });
@@ -60,7 +61,7 @@ const isLessonCompleted = (lesson) => {
 </script>
 
 <template>
-    <div class="bg-white h-full p-2 rounded-b-lg">
+    <div class="h-fit">
         <div class="border-b mb-2 border-lime-700 text-lime-600">
             <h2 class="text-2xl leading-9 py-2 font-semibold">Course Lesson</h2>
         </div>
@@ -149,12 +150,15 @@ const isLessonCompleted = (lesson) => {
                         </div>
                         <span class="font-semibold self-center">Quiz {{ qMetaDataIndex + 1 }} -
                         </span>
-                        <span class="">{{ qMetaData.title }}</span>
+                        <div class="flex-col">
+                            <span class="">{{ qMetaData.title }}</span>
+                            <p class="text-sm py-1 text-lime-600"><span class="font-bold"> Best Score :</span> {{qMetaData.best_score }}</p>
+                        </div>
                     </li>
                 </ul>
             </div>
         </div>
-        <button @click="downloadCerteficate()" :disabled="certify" :class="certify
+        <button @click="downloadCerteficate()" :disabled="!certify" :class="certify
                 ? 'text-blue-500 hover:underline'
                 : 'text-gray-400 cursor-not-allowed'
             " :title="certify

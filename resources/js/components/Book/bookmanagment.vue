@@ -401,7 +401,7 @@ onUnmounted(() => {
                 </div>
                 <!-- Pagination Footer -->
                 <div v-if="pagination.last_page >= 1"
-                    class="flex flex-wrap justify-between items-center mt-6 px-4 gap-4">
+                    class="p-4 bg-white flex flex-row items-center justify-between">
 
                     <!-- Rows Per Page Selector -->
                     <div class="flex items-center space-x-2">

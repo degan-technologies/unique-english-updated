@@ -7,27 +7,40 @@ import ChangeComission from '@/components/Transaction/ChangeComission.vue';
 
 const appStore = useAppStore();
 const { commission } = storeToRefs(appStore);
- 
+
 const CurrentBalance = ref(null);
 const payouts = ref([]);
 const isLoading = ref(false);
 const isWithdrawing = ref(false);
- 
+
 const showWithdrawModal = ref(false);
 const withdrawAmount = ref(null);
 const withdrawError = ref(null);
- 
+
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const rowsPerPageOptions = [5, 10, 15, 20];
+const pagination = ref("");
+const totalPages = ref(0);
+
 const toast = ref({
     show: false,
     message: '',
-    type: 'success'  
+    type: 'success'
 });
- 
-const fetchTransferTransactions = async () => {
+
+const fetchTransferTransactions = async (page=1) => {
     isLoading.value = true;
     try {
-        const res = await Axios.get('/api/get-transfer-history');
+        const res = await Axios.get(`/api/get-transfer-history?page=${page}`, {
+                params:{ 
+                    rowsPerPageOptions: rowsPerPage.value,
+                }
+            });
         payouts.value = res.data.data;
+        pagination.value = res.data.pagination;
+        totalPages.value = res.data.pagination.last_page;
+        currentPage.value = res.data.pagination.current_page;
     } catch (error) {
         showToast('Failed to fetch transactions', 'error');
         console.error('Fetch error:', error);
@@ -46,7 +59,7 @@ const getCurrentBalance = async () => {
         console.error('Balance error:', error);
     }
 };
- 
+
 const validateWithdrawal = () => {
     withdrawError.value = null;
 
@@ -105,8 +118,7 @@ const showToast = (message, type = 'success') => {
         toast.value.show = false;
     }, 3000);
 };
-
-// Modal controls
+ 
 const openWithdrawModal = () => {
     showWithdrawModal.value = true;
 };
@@ -116,8 +128,24 @@ const closeWithdrawModal = () => {
     withdrawAmount.value = null;
     withdrawError.value = null;
 };
+ 
+function onNextPage() {
+        if (currentPage.value == totalPages.value) return;
 
-// Initial data load
+    fetchTransferTransactions(currentPage.value + 1);
+}
+
+function onPreviousPage() {
+    if (currentPage.value <= 1) return;
+
+    fetchTransferTransactions(currentPage.value - 1);
+}
+
+function coursePerPage(amount) {
+    rowsPerPage.value = amount;
+    fetchTransferTransactions(currentPage.value);
+} 
+
 onMounted(() => {
     fetchTransferTransactions();
     getCurrentBalance();
@@ -224,6 +252,41 @@ onMounted(() => {
                     </tr>
                 </tbody>
             </table>
+
+             <!-- Pagination Footer -->
+            <div class="p-4 bg-white flex flex-row items-center justify-between">
+                <!-- Rows Per Page Selector -->
+                <div class="flex flex-wrap space-x-2 items-center">
+                    <span class="text-sm text-gray-600">Courses per page:</span>
+                    <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                        class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                        :class="{
+                            'bg-blue-500 text-white font-bold':
+                                rowsPerPage === option,
+                            'bg-white text-gray-700 hover:bg-gray-200':
+                                rowsPerPage !== option,
+                        }">
+                        {{ option }}
+                    </div>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="flex items-center space-x-3">
+                    <button @click="onPreviousPage()" :disabled="currentPage === 1"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        Prev
+                    </button>
+
+                    <span class="text-sm text-gray-600">
+                        Page {{ currentPage }} of {{ totalPages }}
+                    </span>
+
+                    <button @click="onNextPage()" :disabled="currentPage === totalPages"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        Next
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

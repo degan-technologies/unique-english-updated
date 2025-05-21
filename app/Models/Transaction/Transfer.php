@@ -16,6 +16,7 @@ class Transfer extends Model {
         'user_id',
         'transaction_id',
         'balance',
+        'chapa_reference',
     ];
 
     public function user() { return $this->belongsTo(User::class); }

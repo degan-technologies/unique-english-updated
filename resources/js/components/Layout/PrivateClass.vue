@@ -12,15 +12,28 @@ const users = ref([]);
 const instructors = ref([]);
 const selectedInstructor = ref(null);
 const selectedStudentId = ref(null);
+
+const currentPage = ref(1);
+const rowsPerPage = ref(10);
+const rowsPerPageOptions = [5, 10, 15, 20];
+const pagination = ref("");
+const totalPages = ref(0);
  
 const props = defineProps({
     toggleAddButton: Boolean
 });
 
-const fetchUsers = async () => {
+const fetchUsers = async (page = 1) => {
     try {
-        const response = await Axios.get("/api/private-participants");
-        users.value = response.data.data;
+        const res = await Axios.get(`/api/private-participants?page=${page}`,  {
+                params:{ 
+                    rowsPerPageOptions: rowsPerPage.value,
+                }
+            });
+        users.value = res.data.data;
+        pagination.value = res.data.pagination;
+        totalPages.value = res.data.pagination.last_page;
+        currentPage.value = res.data.pagination.current_page;
     } catch (error) {
         console.error("Error fetching users:", error);
         toast.error("Failed to fetch users");
@@ -54,6 +67,23 @@ watch(() => props.toggleAddButton, (newValue) => {
     }
 });
 
+function onNextPage() {
+    if (currentPage.value == totalPages.value) return;
+
+    fetchUsers(currentPage.value + 1);
+}
+
+function onPreviousPage() {
+    if (currentPage.value <= 1) return;
+
+    fetchUsers(currentPage.value - 1);
+}
+
+function coursePerPage(amount) {
+    rowsPerPage.value = amount;
+    fetchUsers(currentPage.value);
+} 
+
 onMounted(() => { 
     fetchUsers();
     fetchInstructors();
@@ -63,7 +93,7 @@ onMounted(() => {
 <template>
     <div>   
         <!-- student register for live class -->
-        <div class="w-full h-72 overflow-auto mt-12 bg-white scrollbar">
+        <div class="w-full min-h-72 overflow-auto mt-12 bg-white scrollbar">
             <table class="w-full" v-if="users.length">
                 <thead>
                     <tr class="py-">
@@ -123,6 +153,41 @@ onMounted(() => {
                 </tbody>
             </table>
         </div>  
+
+        <!-- Pagination Footer -->
+        <div class="p-4 bg-white flex flex-row items-center justify-between">
+            <!-- Rows Per Page Selector -->
+            <div class="flex flex-wrap space-x-2 items-center">
+                <span class="text-sm text-gray-600">Courses per page:</span>
+                <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                    class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                    :class="{
+                        'bg-blue-500 text-white font-bold':
+                            rowsPerPage === option,
+                        'bg-white text-gray-700 hover:bg-gray-200':
+                            rowsPerPage !== option,
+                    }">
+                    {{ option }}
+                </div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="flex items-center space-x-3">
+                <button @click="onPreviousPage()" :disabled="currentPage === 1"
+                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Prev
+                </button>
+
+                <span class="text-sm text-gray-600">
+                    Page {{ currentPage }} of {{ totalPages }}
+                </span>
+
+                <button @click="onNextPage()" :disabled="currentPage === totalPages"
+                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Next
+                </button>
+            </div>
+        </div>
     </div>
 </template>
 

@@ -208,6 +208,4 @@ function sendChat() {
   console.log('Chat message sent:', chatMessage.value);
   chatMessage.value = '';
 }
-</script>
-
-<!-- No additional CSS is needed since Tailwind CSS and Material Icons are handling styling -->
+</script> 
