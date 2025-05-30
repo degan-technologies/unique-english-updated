@@ -1,155 +1,121 @@
 <script setup>
-    import Axios from 'axios';
-    import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from 'axios';
 
-    const transactions = ref([]);
+const transactions = ref([]);
+const isLoading = ref(true);
+const error = ref(null);
 
-    const reviews = ref([]);
-    const selectedRating = ref(null);
-    const selectedReview = ref(null);
-    const topBestSellers = ref([]);
+const fetchTopSellers = async () => {
+    try {
+        isLoading.value = true;
+        const response = await axios.get('/api/top-sellers');
+        transactions.value = response.data.data;
+    } catch (err) {
+        console.error('Error fetching top sellers:', err);
+        error.value = 'Failed to load top sellers. Please try again later.';
+    } finally {
+        isLoading.value = false;
+    }
+};
 
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+};
 
-    const fetchTransactions = async () => {
-        try {
-            const response = await Axios.get('/api/transaction');
-            const data = response.data.data;
-
-            transactions.value = data;
-
-            const productMap = {}; 
-            data.forEach(tx => {
-                let key = null;
-                let name = null;
-                let type = null;
-                let buyer = null;
-                let averageRating = null;
-
-                if (tx.type === 'course' && tx.course_id != null) {
-                    key = `course-${tx.course_id}`;
-                    name = tx.course_name;
-                    type = 'course';
-                    buyer = tx.course_owner;
-                    averageRating = tx.course ? tx.course.averageRating : null;
-                } else if (tx.type === 'book' && tx.book_id != null) {
-                    key = `book-${tx.book_id}`;
-                    name = tx.book_name;
-                    type = 'book';
-                    buyer = tx.book_owner;
-                    averageRating = tx.book ? tx.book.averageRating : null;
-                }
-
-                if (key && name) {
-                    if (!productMap[key]) {
-                        productMap[key] = {
-                            key,
-                            name,
-                            type,
-                            sales: 0,
-                            buyer,
-                            averageRating,
-                        };
-                    }
-                    productMap[key].sales += 1;
-                }
-            });
-
-            const sorted = Object.values(productMap)
-                .sort((a, b) => b.sales - a.sales)
-                .slice(0, 10);
-
-            topBestSellers.value = sorted;
-
-            console.log("Top 10 Best Sellers:", topBestSellers.value);
-
-        } catch (error) {
-            console.error('Error fetching transactions:', error);
-        }
-    };
-
-    const fetchReviews = async () => {
-        await Axios
-            .get('/api/feedbacks')
-            .then((response) => {
-                reviews.value = response.data.data;
-            });
-    };
-
-    const filterByRating = (rating) => {
-        selectedRating.value = selectedRating.value === rating ? null : rating;
-    };
-
-    // Compute filtered reviews based on selected rating
-    const filteredReviews = computed(() => {
-        return selectedRating.value
-            ? reviews.value.filter(review => review.rating === selectedRating.value)
-            : reviews.value;
+const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
     });
+};
 
-    // Calculate rating percentage for the distribution chart
-    const getRatingPercentage = (star) => {
-        if (reviews.value.length === 0) {
-            return 0;
-        }
-        const count = reviews.value.filter(review => review.rating === star).length;
-        return (count / reviews.value.length) * 100;
-    };
-
-    // Open the review details modal
-    const openReviewDetails = (review) => {
-        selectedReview.value = review;
-    };
-
-    // Auto-refresh reviews every 15 seconds
-    let intervalId = null;
-    onMounted(() => {
-        fetchReviews();
-        fetchTransactions();
-        intervalId = setInterval(fetchReviews, 15000);
-    });
-
-
-    onUnmounted(() => {
-        clearInterval(intervalId);
-    });
+onMounted(() => {
+    fetchTopSellers();
+});
 </script>
 
 <template>
-    <div class="bg-white rounded-lg shadow-lg w-full p-6 relative">
-        <div v-if="topBestSellers.length"
-            class="">
-            <div class="flex items-center space-x-2 mb-4">
-                <h3 class="text-lg font-bold text-gray-900"> 🏆 Top 10 Best Sellers </h3>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 w-full p-6">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <span class="text-amber-500 text-lg font-bold">🏆</span>
+                Top Performing Sellers
+            </h3>
+            <button @click="fetchTopSellers"
+                class="text-sm font-medium text-indigo-600 hover:text-indigo-500 transition-colors"
+                :disabled="isLoading">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="isLoading" class="space-y-4">
+            <div v-for="i in 5" :key="i" class="animate-pulse">
+                <div class="h-20 bg-gray-100 rounded-lg"></div>
             </div>
-            <div class="max-h-[400px] overflow-y-auto scrollable-container space-y-2 pr-1">
-                <div class="space-y-3 ">
-                    <div v-for="(item) in topBestSellers"
-                        :key="item.key"
-                        class="p-4 rounded-lg border border-gray-200 mb-3 cursor-pointer transition hover:bg-gray-100">
-                        <div class="flex items-center justify-between mb-0.5">
-                            <div class="text-xs text-gray-500 font-medium flex flex-row justify-between">
-                                <p class="text-sm">Total Salse:</p>
-                                <p class="font-bold text-sm">{{item.sales}}</p>
+        </div>
+
+        <!-- Error State -->
+        <div v-else-if="error" class="text-center py-8">
+            <div class="text-red-500 mb-2">⚠️ {{ error }}</div>
+            <button @click="fetchTopSellers"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+                Retry
+            </button>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="!transactions.length" class="text-center py-8">
+            <div class="text-gray-500 mb-2">No top sellers data available</div>
+        </div>
+
+        <!-- Success State -->
+        <div v-else>
+            <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                <div v-for="(seller, index) in transactions" :key="seller.user"
+                    class="p-4 rounded-lg border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors cursor-pointer">
+                    <!-- Rank and Profile -->
+                    <div class="flex items-start gap-4 mb-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold"
+                                :class="{
+                                    'bg-amber-500': index === 0,
+                                    'bg-gray-400': index === 1,
+                                    'bg-amber-800': index === 2,
+                                    'bg-gray-300': index > 2
+                                }">
+                                {{ index + 1 }}
                             </div>
-                            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                                :class="item.type === 'course' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'">
-                                {{ item.type === 'course' ? '🎓 Course' : '📚 Book' }}
-                            </span>
                         </div>
-                        <div class="flex justify-between items-center py-1">
-                            <h4 class="text-md font-semibold">
-                                {{ item.name }}
+
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-md font-semibold text-gray-900 truncate">
+                                {{ seller.first_name }} {{ seller.middle_name }}
                             </h4>
-                            
+                            <p class="text-sm text-gray-500 truncate">{{ seller.email }}</p>
                         </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <p class="text-xs text-gray-600">
-                                👤 
-                                <span class="font-medium text-gray-800">{{ item.buyer }}</span>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Sales</p>
+                            <p class="text-lg font-bold text-gray-900">
+                                {{ seller.transaction_count }}
                             </p>
-                            <p class="text-sm text-gray-500">
-                                ⭐ 
-                                <span class="font-semibold text-gray-800">{{ item.averageRating }}</span>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Revenue</p>
+                            <p class="text-lg font-bold text-gray-900">
+                                {{ formatCurrency(seller.amount) }}
                             </p>
                         </div>
                     </div>
@@ -160,26 +126,40 @@
 </template>
 
 <style scoped>
-    .scrollable-container {
-        overflow-y: auto;
+/* Custom scrollbar */
+.scrollable-container {
+    scrollbar-width: thin;
+    scrollbar-color: #E0E7FF #F8FAFC;
+}
+
+.scrollable-container::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb {
+    background-color: #E0E7FF;
+    border-radius: 20px;
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+    background-color: #F8FAFC;
+}
+
+/* Animation for rank badges */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
     }
 
-    .scrollable-container {
-        scrollbar-width: thin;
-        scrollbar-color: #A0AEC0 #F7FAFC;
-
+    50% {
+        transform: scale(1.05);
     }
+}
 
-    .scrollable-container::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-thumb {
-        background-color: #A0AEC0;
-        border-radius: 5px;
-    }
-
-    .scrollable-container::-webkit-scrollbar-track {
-        background-color: #F7FAFC;
-    }
+.bg-amber-500 {
+    animation: pulse 2s infinite;
+}
 </style>

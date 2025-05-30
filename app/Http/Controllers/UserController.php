@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Helper\PhoneNumberHelper;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Http\Resources\Transaction\CustomerInfoResource;
 use App\Mail\OTPVerificationMail;
@@ -10,12 +9,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Resources\userResource;
 use App\Models\Role\Instructor;
-use App\Models\Role\Student;
 use App\Services\LangService;
 use App\Traits\AdminActivityLog;
 use Carbon\Carbon;
 use Exception;
-use Illuminate\Container\Attributes\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -43,8 +40,7 @@ class UserController extends Controller {
 
     public function index(Request $request) { 
         $query = User::query()
-            ->doesntHave('systemAdmin')
-            ->whereNull('user_banned_at');
+            ->doesntHave('systemAdmin');
  
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -106,7 +102,6 @@ class UserController extends Controller {
      * @return \Illuminate\Http\JsonResponse
      */
     public function studentRegistration(Request $request) {
-
         $fullname = [];
         $otp = random_int(100000, 999999);
 
@@ -116,7 +111,7 @@ class UserController extends Controller {
         $lastName = isset($fullname[2]) ? $fullname[2] : null;
 
         $validationRules = [
-            'email'      => 'required|email',
+            'email'      => 'required|email|unique:users,email',
             'full_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],            
             'password'   => 'required|min:4',
         ];
@@ -150,6 +145,7 @@ class UserController extends Controller {
   
             $user->student()->create();
 
+            
             $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
 
             Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
@@ -157,8 +153,7 @@ class UserController extends Controller {
             DB::commit();
 
             return response()->json([
-                'message' => 'User registered. OTP sent to your email.',
-                'data' => new userResource($user)
+                'message' => 'User registered. OTP sent to your email.', 
             ], 201);
 
         } catch (Exception $e) {
@@ -402,10 +397,11 @@ class UserController extends Controller {
 
         $user = User::findOrFail($id);
         $user->update([
-            'user_banned_at' => Carbon::now(),
-        ]);
-
-        $user->delete();
+            'user_banned_at' => DB::raw('CASE 
+                WHEN user_banned_at IS NULL THEN NOW() 
+                ELSE NULL 
+            END'),
+        ]); 
 
         $this->adminActivities('Delete user name: ' . $user->first_name . 'and email ' . $user->email);
 
@@ -436,7 +432,7 @@ class UserController extends Controller {
 
         $validationRules = [
             'email' => 'required|email|unique:users,email,' . $user->id, 
-            'phone' => ['unique:users,phone,' . $user->id, 'regex:/^\+[1-9]\d{1,14}$/'], 
+            'phone' => ['unique:users,phone,' . $user->id], 
             'gender' => [Rule::in(GENDER)],
         ];
 
@@ -612,7 +608,10 @@ class UserController extends Controller {
 
         $userIds = $request->ids; 
         User::whereIn('id', $userIds)->update([
-            'user_banned_at' => Carbon::now()
+            'user_banned_at' => DB::raw('CASE 
+                WHEN user_banned_at IS NULL THEN NOW() 
+                ELSE NULL 
+            END')
         ]);
 
         $this->adminActivities('Bulk banned ' . count($userIds) . ' users');

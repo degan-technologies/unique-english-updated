@@ -94,8 +94,7 @@ class BookController extends Controller {
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
+    public function store(Request $request) {
         $canStoreBook = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
@@ -148,17 +147,15 @@ $pageNumber = null;
 
 if ($request->hasFile('file_url')) {
     $pdfFile = $request->file('file_url');
-    $fileFormat = $pdfFile->getClientOriginalExtension(); // returns 'pdf'
-
-    // ✅ Double-check format (security measure)
+    $fileFormat = $pdfFile->getClientOriginalExtension();  
+ 
     if (strtolower($fileFormat) !== 'pdf') {
         return response()->json([
             'message' => 'Only PDF files are allowed.',
         ], 422);
     }
     $imagePath = $pdfFile->store('/books/images', 'public');
-
-    // Use PdfParser to get number of pages
+ 
     $parser = new Parser();
     $pdf = $parser->parseFile($pdfFile->getPathname());
     $pages = $pdf->getPages();
@@ -241,8 +238,7 @@ if ($request->hasFile('file_url')) {
         }
     
         $data = $validator->validated();
-    
-        // Handle PDF file upload + format check + page count
+     
         if ($request->hasFile('file_url')) {
             $pdfFile = $request->file('file_url');
             $fileFormat = $pdfFile->getClientOriginalExtension();
@@ -255,25 +251,21 @@ if ($request->hasFile('file_url')) {
     
             $filePath = $pdfFile->store('/books/images', 'public');
             $data['file_url'] = $filePath;
-    
-            // Use PdfParser
+     
             $parser = new Parser();
             $pdf = $parser->parseFile($pdfFile->getPathname());
             $pages = $pdf->getPages();
             $data['page_number'] = count($pages);
         }
-    
-        // Cover image
+     
         if ($request->hasFile('cover_page_url')) {
             $data['cover_page_url'] = $request->file('cover_page_url')->store('/books/images', 'public');
         }
-    
-        // Intro video
+     
         if ($request->hasFile('intro_vedio')) {
             $data['intro_vedio'] = $request->file('intro_vedio')->store('/books/videos', 'public');
         }
-    
-        // Encode tag to JSON if present
+     
         if ($request->has('tag')) {
             $data['tag'] = json_encode($request->tag);
         }

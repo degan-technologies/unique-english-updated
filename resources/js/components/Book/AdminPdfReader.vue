@@ -178,13 +178,13 @@ watch(() => props.selectedBook, (newVal) => {
 
 <template>
     <div v-if="openPdf"
-        class="relative flex flex-col items-center p-4 bg-gray-100 min-h-screen">
+        class="relative w-full flex flex-col items-center min-h-screen">
         <div ref="containerRef"
             :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
-            <div class="overflow-auto">
+            class="w-full  rounded-lg">
+            <div class="w-full">
                 <canvas ref="canvasRef"
-                    class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
+                    class="w-full h-full  select-none"
                     @contextmenu.prevent
                     @dragstart.prevent></canvas>
             </div>

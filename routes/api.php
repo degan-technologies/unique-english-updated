@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
 use App\Http\Controllers\Book\BookController;
+use App\Http\Controllers\Book\BookVideoController;
 use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
@@ -24,13 +25,13 @@ use App\Http\Controllers\Course\CourseVideoController;
 use App\Http\Controllers\Course\CourseContentVideoController;
 use App\Http\Controllers\Course\CourseContentProgressController;
 use App\Http\Controllers\JitsiController;
+use App\Http\Controllers\Live\AttendanceController;
 use App\Http\Controllers\Live\LiveController;
 use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
-use App\Http\Controllers\System\HeroController;
-use App\Http\Controllers\VideoController;
+use App\Http\Controllers\System\HeroController; 
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -40,6 +41,7 @@ Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
 Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']); 
 Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
+Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
 
 Route::get('/hero-section', [HeroController::class, 'index']);
 Route::get('/get-plans',[ PlanController::class, 'index']);
@@ -84,11 +86,17 @@ Route::middleware('auth:api')
 
         Route::post('/assign-instructor/{id}', [LiveController::class, 'AssignInstructors']);
         Route::get('/my-instructors', [LiveController::class, 'getMyInstructors']); 
-});
-    // Social Login Routes
-Route::middleware(['web'])->group(function () {
-    Route::get('/auth/{provider}/redirect', [SocialController::class, 'redirectToProvider']);
-    Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProviderCallback']);
+        Route::post('/courses-status/{id}', [CourseController::class, 'updateStatus']);
+
+        Route::post('/update-visiter-attendance/{scheduleId}', [AttendanceController::class, 'updateVisiterAttendance']);
+        Route::post('/update-instractor-attendance/{scheduleId}', [AttendanceController::class, 'updateInstractorAttendance']);
+        Route::post('/store-instractor-attendance/{scheduleId}', [AttendanceController::class, 'storeInstractorAttendance']);
+
+        Route::post('/update-student-attendance/{scheduleId}', [AttendanceController::class, 'updateStudentAttendance']);
+        Route::post('/store-student-attendance/{scheduleId}', [AttendanceController::class, 'storeStudentAttendance']);
+
+        Route::get('/get-instractor-attendance', [AttendanceController::class, 'instractorAttendance']);
+        Route::get('/detail-instractor-attendance/{id}', [AttendanceController::class, 'detailInstractorAttendance']);
 });
 
 Route::middleware('auth:api')
@@ -96,8 +104,9 @@ Route::middleware('auth:api')
         Route::get('/current', [AuthController::class, 'currentUser']);       
         Route::resource('quize',QuizController::class);
         Route::resource('schedules', ScheduleController::class);
-        Route::resource('QMetaData', QMetaDataController::class);  
-        Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::resource('QMetaData', QMetaDataController::class);
+        // Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::get('/get-module-quizes', [QMetaDataController::class,'fetchInstructorExam']); 
         Route::resource('tests', TestController::class);
         Route::resource('/results', ResultController::class);
         Route::resource('plans', PlanController::class);
@@ -154,7 +163,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/send-otp', [SMSController::class, 'sendOTP']);
         Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
 
-        Route::post('/email-notification', [EmailNotificationController::class, 'sedEmailNotification']);
+        Route::post('/email-notification', [EmailNotificationController::class, 'sendEmailNotification']);
         Route::get('/created-announcements', [EmailNotificationController::class, 'getAnnouncements']);
         });
 
@@ -169,6 +178,9 @@ Route::middleware('auth:api')
 ->group(function () {
     Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
     Route::get('/transaction', [TransactionController::class, 'transactions']);
+    Route::get('/top-sellers', [TransactionController::class, 'getTopSeller']);
+    Route::get('/top-sold-books', [TransactionController::class, 'topSoldBooks']);
+    Route::get('/top-sold-courses', [TransactionController::class, 'topSoldCourses']);
     Route::get('/system-transaction', [TransactionController::class, 'systemTransaction']);
     Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoice']);
     Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);

@@ -2,105 +2,197 @@
 import Axios from "axios";
 import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { onMounted, ref, watch, onBeforeUnmount } from "vue";
+import { onMounted, ref, watch, onBeforeUnmount, computed } from "vue";
 import { useRouter } from "vue-router";
 
+import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
 const router = useRouter();
+
+// Pinia stores
+const sidebarStore = useSidebarStore();
+const { selectedContent } = storeToRefs(sidebarStore);
+
 const appStore = useAppStore();
-const cartStore = useCartStore();
 const AuthStore = useAuthStore();
+const cartStore = useCartStore();
 const studentStore = UseStudentStore();
 
-const checkoutUrl = ref(null);
-const isLoading = ref(false);
-const isCartOpen = ref(false); // New ref for cart dropdown state
-
-// Reactive refs from Pinia stores
+// Cart refs
 const { items, itemCount, totalPrice } = storeToRefs(cartStore);
+
+// Auth refs
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
-const { isLoggedIn, loggingIn, logoImage, authUser, exploreCourses, selectedComponentId } =
+
+// App & user refs
+const { isLoggedIn, loggingIn, logoImage, unreadNotifications, notifications, readNotifications, authUser, exploreCourses } =
     storeToRefs(appStore);
+
+// Student refs
 const { landingPageTab, selectedCourseSlug, myCourseTab } =
     storeToRefs(studentStore);
 
+// Notification refs
+const notificationOpen = ref(false);
+const showAllNotifications = ref(false);
+const currentNotification = ref(null);
+const showNotificationModal = ref(false);
+
 // UI state refs
-const dropdownRef = ref(null);
-const profileBtnRef = ref(null);
+const isCartOpen = ref(false);
 const isMenuOpen = ref(false);
 const isMenuVisible = ref(true);
+
+// --- Profile dropdown refs ---
 const dropDownOpen = ref(false);
+const profileBtnRef = ref(null);
+const dropdownRef = ref(null);
+
+// Action type refs
 const actionTypeLogin = ref("login");
 const actionTypeRegister = ref("register");
 
-// Toggle mobile menu
+// Checkout
+const checkoutUrl = ref(null);
+const isLoading = ref(false);
+
+// Helpers
+function formatTime(date) {
+    const options = {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    };
+    return new Date(date).toLocaleDateString(undefined, options);
+}
+
+// Toggle notifications dropdown
+const toggleNotifications = () => {
+    notificationOpen.value = !notificationOpen.value;
+    dropDownOpen.value = false;
+    if (notificationOpen.value) {
+        appStore.fetchUnreadNotifications();
+        if (showAllNotifications.value) {
+            appStore.fetchReadNotifications();
+        }
+    }
+};
+
+async function markAsRead(notificationId) {
+    try {
+        await appStore.markNotificationAsRead(notificationId);
+        await appStore.fetchUnreadNotifications();
+        if (showAllNotifications.value) {
+            await appStore.fetchReadNotifications();
+        }
+    } catch (e) {
+        console.error("Error marking notification as read:", e);
+    }
+}
+
+async function markAsUnread(notificationId) {
+    try {
+        await appStore.markNotificationAsUnread(notificationId);
+        await appStore.fetchUnreadNotifications();
+        if (showAllNotifications.value) {
+            await appStore.fetchReadNotifications();
+        }
+    } catch (e) {
+        console.error("Error marking notification as unread:", e);
+    }
+}
+
+function showNotificationDetails(notification) {
+        currentNotification.value = notification;
+        showNotificationModal.value = true;
+        notificationOpen.value = false;  
+
+        if(notification.data.read_at == null){
+            appStore.markNotificationAsRead(notification.id);
+        }
+    }
+
+function closeNotificationModal() {
+    showNotificationModal.value = false;
+}
+
+function toggleShowAllNotifications() {
+    if(notifications.length === 0) return;
+    showAllNotifications.value = !showAllNotifications.value; 
+}
+
+// Mobile menu
 const toggleMenu = () => {
     isMenuOpen.value = !isMenuOpen.value;
 };
 
-// Close profile dropdown when clicking outside
+// --- Profile dropdown logic ---
+function toggleDropdown() {
+    dropDownOpen.value = !dropDownOpen.value;
+    notificationOpen.value = false;
+}
+function closeDropdown() {
+    dropDownOpen.value = false;
+}
 function handleClickOutside(event) {
     if (
-        dropdownRef.value &&
-        !dropdownRef.value.contains(event.target) &&
+        dropDownOpen.value &&
         profileBtnRef.value &&
-        !profileBtnRef.value.contains(event.target)
+        dropdownRef.value &&
+        !profileBtnRef.value.contains(event.target) &&
+        !dropdownRef.value.contains(event.target)
     ) {
-        dropDownOpen.value = false;
+        closeDropdown();
     }
 }
 
-// Navigate to explore courses
-function onExploreCourses(id) {
+// Get initials for fallback avatar
+const getInitials = (name) => (name ? name.charAt(0).toUpperCase() : "");
+
+// Navigation actions
+function onExploreCourses() {
     isCartOpen.value = false;
-    selectedComponentId.value = id;
     router.push("/").then(() => {
         exploreCourses.value = !exploreCourses.value;
-        isMenuOpen.value = false;
     });
 }
 
-// Initiate checkout
+// Checkout flow
 async function enrollCourse() {
     if (isLoading.value) return;
-
     isLoading.value = true;
     try {
-        const response = await Axios.post("/api/initiate-payment", {
+        const res = await Axios.post("/api/initiate-payment", {
             cartItems: [...items.value],
         });
-        checkoutUrl.value = response.data.checkout_url;
- 
-        cartStore.clearCart(); 
-        localStorage.removeItem("cartItems"); 
-        const newWindow = window.open(checkoutUrl.value, "_blank");
- 
-        if (newWindow) {
-            newWindow.focus();
-        }
-    } catch (error) {
-        console.error("Checkout error:", error);
+        checkoutUrl.value = res.data.checkout_url;
+        cartStore.clearCart();
+        localStorage.removeItem("cartItems");
+        const newWin = window.open(checkoutUrl.value, "_blank");
+        if (newWin) newWin.focus();
+    } catch (e) {
+        console.error("Checkout error:", e);
     } finally {
         isLoading.value = false;
     }
 }
- 
+
 function removeItem(item) {
-    const selectedItem = {
+    cartStore.removeFromCart({
         type: item.type,
         slug: item.slug,
         price: item.price,
         name: item.course_name,
         image: item.thumbnail_url,
-    };
-    cartStore.removeFromCart(selectedItem);
+    });
 }
 
-// Switch to "My Courses" tab
 function changeTab() {
     router.push({
         name: "student",
@@ -108,19 +200,20 @@ function changeTab() {
     });
 }
 
-// Sign out user
+function openProfile() {
+    router.push({
+        name: "student",
+        query: { currentTab: "profile" },
+    });
+    closeDropdown();
+}
+
 function signOut() {
     appStore.setAuthToken("");
     loggingIn.value = false;
+    closeDropdown();
 }
 
-// Get initials for placeholder avatar
-const getInitials = (name) => {
-    if (!name) return "";
-    return name.charAt(0).toUpperCase();
-};
-
-// Toggle login/register forms
 function toggleAuthActions(actionType) {
     if (actionType === actionTypeLogin.value) {
         showLoginForm.value = true;
@@ -131,26 +224,38 @@ function toggleAuthActions(actionType) {
     }
 }
 
+// Lifecycle
 onMounted(() => {
     document.addEventListener("click", handleClickOutside);
- 
+
+    // cart persistence
     const saved = localStorage.getItem("cartItems");
     if (saved) {
         try {
-            const parsed = JSON.parse(saved);
-            cartStore.setCart(parsed);
-        } catch (e) {
-            console.warn("Failed to parse cartItems from localStorage:", e);
-            // Clear invalid cart data
+            cartStore.setCart(JSON.parse(saved));
+        } catch {
             localStorage.removeItem("cartItems");
         }
+    }
+
+    // notifications
+    appStore.fetchUnreadNotifications();
+    if (window.Echo && authUser.value?.id) {
+        window.Echo.private(
+            `App.Models.User.${authUser.value.id}`
+        ).notification(() => {
+            appStore.fetchUnreadNotifications();
+            if (showAllNotifications.value) {
+                appStore.fetchReadNotifications();
+            }
+        });
     }
 });
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
 });
- 
+
 watch(
     items,
     (newItems) => {
@@ -176,7 +281,134 @@ watch(
                 </span>
             </router-link>
 
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-4 pr-4">
+                <!-- Notification Button -->
+                <div class="relative flex justify-center">
+                    <Popper v-model:visible="notificationOpen" :offset-distance="'0'" placement="bottom">
+                        <!-- Notification Icon with Count -->
+                        <div class="relative flex justify-center items-center text-2xl cursor-pointer"
+                            @click="toggleNotifications">
+                            <div class="relative">
+                                <i class="fa-solid fa-bell text-2xl text-white"></i>
+                                <span v-if="unreadNotifications > 0"
+                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow">
+                                    {{ unreadNotifications }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <template #content>
+                            <div
+                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4">
+                                <div
+                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+                                    <!-- Header -->
+                                    <div class="border-b pb-3 mb-3 flex justify-between items-center">
+                                        <h3 class="text-xl font-semibold text-gray-700">
+                                            Notifications
+                                        </h3>
+                                        <button @click.stop="
+                                            toggleShowAllNotifications
+                                        " class="text-xs text-lime-600 hover:text-lime-800">
+                                            {{
+                                                showAllNotifications
+                                                    ? "Show Unread Only"
+                                                    : "Show All"
+                                            }}
+                                        </button>
+                                    </div>
+
+                                    <!-- No notifications -->
+                                    <div v-if="
+                                        notifications.length === 0 &&
+                                        (!showAllNotifications ||
+                                            readNotifications.length === 0)
+                                    " class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40">
+                                        <i class="fa-regular fa-bell-slash text-4xl text-gray-400 mb-3"></i>
+                                        <p>No new notifications</p>
+                                    </div>
+
+                                    <!-- Unread Notifications -->
+                                    <ul v-if="notifications.length > 0" class="space-y-2">
+                                        <li v-for="notification in notifications" :key="notification.id"
+                                            :class="{
+                                                'hidden': showAllNotifications && notification.data.read_at,
+                                            }"
+                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition" @click="
+                                                showNotificationDetails(
+                                                    notification
+                                                )
+                                                ">
+                                            <div class="flex items-start gap-3">
+                                                <div>
+                                                    <p class="font-medium text-sm">
+                                                        {{
+                                                            notification.data
+                                                                .message
+                                                        }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500 mt-1">
+                                                        {{
+                                                            formatTime(
+                                                                notification.created_at
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <span v-if="currentNotification?.id == notification?.id ? false : !notification.read_at"
+                                                    class="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0"></span>
+                                            </div>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Read Notifications (when showAll is true) -->
+                                    <ul v-if="
+                                        showAllNotifications &&
+                                        readNotifications.length > 0
+                                    " class="space-y-2">
+                                        <li v-for="notification in readNotifications" :key="notification.id"
+                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
+                                            @click="
+                                                showNotificationDetails(
+                                                    notification
+                                                )
+                                                ">
+                                            <div class="flex items-start gap-3">
+                                                <span
+                                                    class="w-2 h-2 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                                <div class="flex-1">
+                                                    <p class="text-gray-600 text-sm">
+                                                        {{
+                                                            notification.data
+                                                                .message
+                                                        }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-400 mt-1">
+                                                        {{
+                                                            formatTime(
+                                                                notification.created_at
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <button @click.stop="
+                                                    markAsUnread(
+                                                        notification.id
+                                                    )
+                                                    " class="text-xs text-gray-400 hover:text-gray-600 ml-2"
+                                                    title="Mark as unread">
+                                                    <i class="fa-solid fa-envelope"></i>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </template>
+                    </Popper>
+                </div>
+
                 <!-- Cart Dropdown -->
                 <div class="relative flex justify-center">
                     <Popper v-model:visible="isCartOpen" :offset-distance="'0'" placement="bottom">
@@ -212,7 +444,7 @@ watch(
                                         <h1 class="text-center text-base">
                                             No items in cart
                                         </h1>
-                                        <button @click="onExploreCourses('courses')"
+                                        <button @click="onExploreCourses"
                                             class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition">
                                             <i class="fa-solid fa-book-open-reader mr-2"></i>Explore Courses
                                         </button>
@@ -248,7 +480,7 @@ watch(
                                                 <span>Total:</span>
                                                 <span>${{
                                                     totalPrice.toFixed(2)
-                                                }}</span>
+                                                    }}</span>
                                             </div>
 
                                             <button @click="enrollCourse" :disabled="isLoading"
@@ -281,9 +513,8 @@ watch(
                 <div v-if="isLoggedIn" class="relative flex justify-center">
                     <!-- Profile Image or Initials -->
                     <img v-if="authUser?.profile" :src="authUser.profile" alt="Profile" ref="profileBtnRef"
-                        @click="dropDownOpen = !dropDownOpen" title="Profile"
-                        class="w-8 h-8 rounded-full shadow-lg cursor-pointer" />
-                    <div v-else ref="profileBtnRef" @click="dropDownOpen = !dropDownOpen"
+                        @click="toggleDropdown" title="Profile" class="w-8 h-8 rounded-full shadow-lg cursor-pointer" />
+                    <div v-else ref="profileBtnRef" @click="toggleDropdown"
                         class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 text-lg font-bold text-gray-700 cursor-pointer">
                         {{ getInitials(authUser?.first_name) }}
                     </div>
@@ -294,18 +525,39 @@ watch(
                         <ul>
                             <li>
                                 <button @click="
-                                    changeTab();
-                                dropDownOpen = false;
-                                " class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded">
-                                    <i class="fas fa-book text-gray-500"></i> My
-                                    Courses
+                                    () => {
+                                        changeTab();
+                                        closeDropdown();
+                                    }
+                                "
+                                    class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded flex items-center gap-2">
+                                    <i class="fas fa-book text-gray-500"></i>
+                                    My Courses
                                 </button>
                             </li>
                         </ul>
+
+                        <div @click="
+                            () => {
+                                openProfile();
+                                closeDropdown();
+                            }
+                        " class="block px-4 py-2 hover:bg-gray-200 rounded cursor-pointer" title="Account">
+                            <i class="fa-solid fa-user text-gray-500"></i>
+
+                            Account
+                        </div>
+
                         <hr class="my-2 border-gray-300" />
+
                         <ul>
                             <li>
-                                <button @click.prevent="signOut"
+                                <button @click.prevent="
+                                    () => {
+                                        signOut();
+                                        closeDropdown();
+                                    }
+                                "
                                     class="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 rounded flex items-center gap-2">
                                     <i class="fas fa-right-from-bracket"></i>
                                     Sign Out
@@ -332,13 +584,15 @@ watch(
                     class="px-2 text-sm font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600">
                     አማ
                 </button>
-            </div>
 
-            <!-- Mobile Menu Toggle -->
-            <button @click="toggleMenu" class="block md:hidden text-2xl text-white focus:outline-none">
-                <i :class="isMenuOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'
-                    "></i>
-            </button>
+                <!-- Mobile Menu Toggle -->
+                <button @click="toggleMenu" class="block md:hidden text-2xl text-white focus:outline-none">
+                    <i :class="isMenuOpen
+                        ? 'fa-solid fa-xmark'
+                        : 'fa-solid fa-bars'
+                        "></i>
+                </button>
+            </div>
         </div>
 
         <!-- Mobile Menu -->
@@ -346,22 +600,22 @@ watch(
             <div v-if="isMenuOpen" class="p-4 text-white border-t bottom-3 w-full mt-3 md:hidden">
                 <ul class="flex flex-col items-center gap-4">
                     <li>
-                        <a  @click="onExploreCourses('hero')" class="text-white hover:text-lime-200">
+                        <a href="/" @click="toggleMenu" class="text-white hover:text-lime-200">
                             Home
                         </a>
                     </li>
                     <li>
-                        <a  @click="onExploreCourses('about')" class="text-white hover:text-lime-200">
+                        <a href="#about" @click="toggleMenu" class="text-white hover:text-lime-200">
                             About
                         </a>
                     </li>
                     <li>
-                        <a  @click="onExploreCourses('courses')" class="text-white hover:text-lime-200">
+                        <a href="#courses" @click="toggleMenu" class="text-white hover:text-lime-200">
                             Courses
                         </a>
                     </li>
                     <li>
-                        <a @click="onExploreCourses('books')" class="text-white hover:text-lime-200 mt-5">
+                        <a href="/" @click="toggleMenu" class="text-white hover:text-lime-200 mt-5">
                             Books
                         </a>
                     </li>
@@ -383,9 +637,75 @@ watch(
             </div>
         </transition>
     </header>
+
+    <!-- Notification Details Modal -->
+    <div v-if="showNotificationModal && currentNotification"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        @click.self="closeNotificationModal">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800">
+                    Notification Details
+                </h3>
+                <button @click="closeNotificationModal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-4">
+                <div class="mb-4">
+                    <p class="text-gray-600">
+                        {{ currentNotification.data.message }}
+                    </p>
+                </div>
+
+                <div class="flex items-center text-sm text-gray-500 mb-6">
+                    <i class="fa-regular fa-clock mr-2"></i>
+                    <span>{{
+                        formatTime(currentNotification.created_at)
+                    }}</span>
+                </div>
+
+                <!-- Additional details based on notification type -->
+                <div v-if="currentNotification.data.additional_data" class="bg-gray-50 p-3 rounded-lg mb-4">
+                    <h4 class="font-medium text-gray-700 mb-2">Details:</h4>
+                    <pre class="text-sm text-gray-600 whitespace-pre-wrap">{{
+                        JSON.stringify(
+                            currentNotification.data.additional_data,
+                            null,
+                            2
+                        )
+                    }}</pre>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg"> 
+                <button @click="closeNotificationModal"
+                    class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <style>
+.notification-item.unread {
+    background-color: #f8f9fa;
+}
+
+.notification-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #28a745;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 5px;
+}
+
 .animate-spin {
     animation: spin 1s linear infinite;
 }
@@ -409,5 +729,16 @@ watch(
 .mobile-menu-leave-to {
     opacity: 0;
     transform: translateY(-20px);
+}
+
+/* Modal transition */
+.modal-enter-active,
+.modal-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+    opacity: 0;
 }
 </style>

@@ -108,7 +108,7 @@ class CourseController extends Controller {
             'thumbnail_url' => $imagePath,
             'intro_video' => $videoPath,
             'language' => $request->language,
-            'status' => $request->status
+            'status' => DRAFT,
         ]);
 
         return response()->json([
@@ -155,8 +155,7 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            -> where('user_id', $user->id)
-            ->where('user_id', $user->id)
+            -> where('user_id', $user->id) 
             ->findOrFail($id);
 
         if(!$course) {
@@ -173,7 +172,6 @@ class CourseController extends Controller {
             'discount' => 'numeric', 
             'thumbnail_url' => 'nullable',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
-
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -187,11 +185,7 @@ class CourseController extends Controller {
             ], 422);
         }
 
-        $data = $validator->validated();
-
-        if ($course->status === 'draft') {
-            $data['status'] = 'published';  
-        }
+        $data = $validator->validated(); 
 
         if ($request->hasFile('thumbnail_url')) {
 
@@ -216,8 +210,34 @@ class CourseController extends Controller {
         ]);
     }
 
-    public function certificateStatus(Request $request, $course_id)
-    {
+    public function updateStatus(Request $request, string $id) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) return;
+
+        $course = Course::query()
+            ->where('user_id', $user->id) 
+            ->findOrFail($id);
+
+        if(!$course) {
+            return response()->json([
+                'message' => $this->langService->getLang('course_not_found'),
+            ], 404);
+        }
+
+         
+        $course->update([
+            'status' => $course->status === PUBLISHED ? DRAFT : PUBLISHED,
+        ]);
+
+        return response()->json([
+            'message' => $this->langService->getLang('course_successfully_updated'), 
+        ]);
+    }
+
+    public function certificateStatus(Request $request, $course_id) {
         $user = Auth::user();
         $allContentsCompleted= false;
         $allQuizzesCompleted = false;

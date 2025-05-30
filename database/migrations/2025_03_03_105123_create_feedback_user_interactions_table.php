@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->boolean('reported')->default(false);
             $table->timestamps();
 
-            $table->unique(['user_id', 'feed_back_id']); // Prevent duplicate entries
+            $table->unique(['user_id', 'feed_back_id']); 
         });
     }
 

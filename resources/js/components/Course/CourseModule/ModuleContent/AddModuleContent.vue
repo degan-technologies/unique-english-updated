@@ -1,21 +1,26 @@
 <script setup>
 import Axios from 'axios';
-import { ref, computed, watch } from 'vue';
 import 'video.js/dist/video-js.css';
+import { storeToRefs } from "pinia";
+import { ref, computed, watch } from 'vue';
+
+import { useInstructorStore } from "@/store/useInstructorStore";
+
+const instructorStore = useInstructorStore();
+const { selectedCourse } = storeToRefs(instructorStore);
 
 const props = defineProps({
     selectedModule: Object,
 });
 
-const emit = defineEmits(['closeModal', 'onAddLesson']);
+const emit = defineEmits(['closeModal']);
 
-const videoPlayer = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 
 const form = ref({
-    title: "", 
+    title: "",
     content_type: 1,
     content_url: null,
     thumbnail_url: null,
@@ -28,16 +33,9 @@ watch(() => props.selectedModule, () => {
     resetForm();
 });
 
-const contentTypeLabels = {
-    1: 'Video Content',
-    2: 'PDF Document',
-    3: 'Image Content',
-    4: 'Document'
-};
-
 const previewContent = computed(() => {
     if (!form.value.create_content_url) return null;
-    
+
     return {
         url: form.value.create_content_url,
         type: form.value.content_type,
@@ -46,8 +44,8 @@ const previewContent = computed(() => {
 });
 
 function getContentType(file) {
-    if (!file) return 1; // default to video
-    
+    if (!file) return 1;
+
     const type = file.type || '';
     if (type.startsWith('video/')) return 1;
     if (type.startsWith('application/pdf')) return 2;
@@ -58,15 +56,15 @@ function getContentType(file) {
 function handleFileUpload(field, event) {
     errorMessage.value = '';
     const file = event.target.files[0];
-    
+
     if (!file) return;
-    
+
     // Validate file size (e.g., 50MB max)
     if (file.size > 50 * 1024 * 1024) {
         errorMessage.value = 'File size must be less than 50MB';
         return;
     }
-    
+
     if (field === 'content_url') {
         form.value.content_url = file;
         form.value.create_content_url = URL.createObjectURL(file);
@@ -79,7 +77,7 @@ async function storeModuleContent() {
         errorMessage.value = 'Title is required';
         return;
     }
-    
+
     if (!form.value.content_url) {
         errorMessage.value = 'Please select a file';
         return;
@@ -90,9 +88,9 @@ async function storeModuleContent() {
     successMessage.value = '';
 
     try {
-        const formData = new FormData(); 
+        const formData = new FormData();
         formData.append("course_module_id", props.selectedModule.id);
-        formData.append("title", form.value.title); 
+        formData.append("title", form.value.title);
         formData.append("content_url", form.value.content_url);
         formData.append("content_type", form.value.content_type);
 
@@ -101,11 +99,22 @@ async function storeModuleContent() {
                 'Content-Type': 'multipart/form-data'
             }
         });
-        
+
         successMessage.value = 'Content added successfully!';
-        emit('onAddLesson', response.data.data);
-        
-        // Auto-close after success
+
+        selectedCourse.value = {
+            ...selectedCourse.value,  
+            courseModules: selectedCourse.value.courseModules.map(module => {
+                if (module.id === props.selectedModule.id) {
+                    return {
+                        ...module,
+                        courseContents: [ response.data.data, ...module.courseContents]  
+                    };
+                }
+                return module;  
+            })
+        }
+
         setTimeout(() => {
             closeModal();
         }, 1500);
@@ -147,12 +156,12 @@ function closeModal() {
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <!-- Success Message -->
             <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
                 {{ successMessage }}
             </div>
-            
+
             <!-- Error Message -->
             <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
                 {{ errorMessage }}
@@ -165,18 +174,16 @@ function closeModal() {
                     </label>
                     <input v-model="form.title" type="text"
                         class="w-full border border-gray-300 p-2.5 text-sm rounded-md focus:ring-2 focus:ring-lime-500 focus:border-lime-500 focus:outline-none transition"
-                        placeholder="Enter lesson title"
-                        required>
-                </div> 
+                        placeholder="Enter lesson title" required>
+                </div>
 
-                <div>  
+                <div>
                     <!-- Preview Section -->
-                    <div v-if="previewContent" class="mb-3">                         
-                        <div class="w-full h-48 rounded-md border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <div v-if="previewContent" class="mb-3">
+                        <div
+                            class="w-full h-48 rounded-md border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
                             <!-- Video Preview -->
-                            <video v-if="form.content_type === 1" 
-                                controls
-                                class="w-full h-full object-contain"
+                            <video v-if="form.content_type === 1" controls class="w-full h-full object-contain"
                                 preload="metadata">
                                 <source :src="previewContent.url" type="video/mp4">
                                 Your browser does not support the video tag.
@@ -189,10 +196,8 @@ function closeModal() {
                             </div>
 
                             <!-- Image Preview -->
-                            <img v-else-if="form.content_type === 3" 
-                                :src="previewContent.url"
-                                class="w-full h-full object-contain"
-                                alt="Content preview">
+                            <img v-else-if="form.content_type === 3" :src="previewContent.url"
+                                class="w-full h-full object-contain" alt="Content preview">
 
                             <!-- Other File Preview -->
                             <div v-else class="p-4 text-center">
@@ -201,9 +206,10 @@ function closeModal() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- File Upload -->
-                    <div class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition">
+                    <div
+                        class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition">
                         <div class="flex flex-col items-center">
                             <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600">
@@ -213,22 +219,18 @@ function closeModal() {
                                 Videos, PDFs, Images (Max 50MB)
                             </p>
                         </div>
-                        <input type="file" 
-                            @change="handleFileUpload('content_url', $event)" 
+                        <input type="file" @change="handleFileUpload('content_url', $event)"
                             accept="video/*,application/pdf,image/*"
-                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
-                            required />
+                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" required />
                     </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
-                    <button type="button"
-                        @click="closeModal"
+                    <button type="button" @click="closeModal"
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500">
                         Cancel
                     </button>
-                    <button type="submit"
-                        :disabled="isLoading"
+                    <button type="submit" :disabled="isLoading"
                         class="px-4 py-2 text-sm font-medium text-white bg-lime-600 border border-transparent rounded-md shadow-sm hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed">
                         <span v-if="isLoading">
                             <i class="fas fa-spinner fa-spin mr-2"></i> Processing...
@@ -244,10 +246,13 @@ function closeModal() {
 </template>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s;
 }
-.fade-enter, .fade-leave-to {
-  opacity: 0;
+
+.fade-enter,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>

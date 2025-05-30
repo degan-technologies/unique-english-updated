@@ -1,76 +1,3 @@
-<template>
-    <div
-        v-if="openPdf"
-        class="relative flex flex-col items-center p-4 bg-gray-100 h-fit"
-    >
-        <div
-            ref="containerRef"
-            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg pdf-container"
-        >
-            <div class="overflow-auto">
-                <canvas
-                    ref="canvasRef"
-                    class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
-                    @contextmenu.prevent
-                    @dragstart.prevent
-                ></canvas>
-            </div>
-            <!-- Pagination & Controls -->
-            <div
-                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
-            >
-                <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button
-                        @click="prevPage"
-                        :disabled="currentPage === 1"
-                        class="px-2 py-2 bg-white rounded text-black disabled:opacity-50 relative group"
-                    >
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="font-semibold text-gray-700">
-                        Page {{ currentPage }} / {{ totalPages }}
-                    </span>
-                    <button
-                        @click="nextPage"
-                        :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-white rounded text-black disabled:opacity-50 relative group"
-                    >
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-                <div class="flex items-center gap-2">
-                    <input
-                        type="number"
-                        v-model="searchPage"
-                        placeholder="Page #"
-                        class="px-2 py-1 border border-gray-500 rounded w-24"
-                    />
-                    <button
-                        @click="goToPage"
-                        class="px-2 py-1 bg-white rounded text-black relative group"
-                    >
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-                <button
-                    @click="toggleFullScreen"
-                    class="px-2 py-2 bg-white rounded text-black flex items-center relative group"
-                >
-                    <i
-                        :class="
-                            isFullScreen ? 'fas fa-compress' : 'fas fa-expand'
-                        "
-                    ></i>
-                </button>
-            </div>
-        </div>
-    </div>
-    <div v-else class="p-4">
-        <Spinner />
-    </div>
-</template>
-
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
@@ -214,6 +141,49 @@ watch(
     { immediate: true }
 );
 </script>
+
+<template>
+    <div v-if="openPdf" class="relative flex flex-col items-center p-4 h-fit">
+        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
+            class="w-full bg-white rounded-lg pdf-container">
+            <div class="overflow-auto">
+                <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
+                    @contextmenu.prevent @dragstart.prevent></canvas>
+            </div>
+            <!-- Pagination & Controls -->
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                <div class="flex gap-4 mb-4 sm:mb-0 items-center">
+                    <button @click="prevPage" :disabled="currentPage === 1"
+                        class="px-2 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="font-semibold text-gray-700">
+                        Page {{ currentPage }} / {{ totalPages }}
+                    </span>
+                    <button @click="nextPage" :disabled="currentPage === totalPages"
+                        class="px-4 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="number" v-model="searchPage" placeholder="Page #"
+                        class="px-2 py-1 border border-gray-500 rounded w-24" />
+                    <button @click="goToPage" class="px-2 py-1 bg-white rounded text-black relative group">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <button @click="toggleFullScreen"
+                    class="px-2 py-2 bg-white rounded text-black flex items-center relative group">
+                    <i :class="isFullScreen ? 'fas fa-compress' : 'fas fa-expand'
+                        "></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div v-else class="p-4">
+        <Spinner />
+    </div>
+</template>
 
 <style scoped>
 @media (max-width: 640px) {

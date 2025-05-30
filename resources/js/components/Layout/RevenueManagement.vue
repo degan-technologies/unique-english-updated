@@ -1,5 +1,6 @@
 <script setup>
     import Axios from 'axios'
+    import Popper from 'vue3-popper';
     import { ref, onMounted, computed } from 'vue'
 
     import TransactionOverview from '@/components/Transaction/TransactionOverview.vue';
@@ -84,7 +85,7 @@
         fetchTransactions(currentPage.value - 1);
     }
 
-    function coursePerPage(amount) {
+    function transactionPerPage(amount) {
         rowsPerPage.value = amount;
         fetchTransactions(currentPage.value);
     } 
@@ -232,20 +233,25 @@
 
                             <!-- Pagination Footer -->
                             <div class="p-4 bg-white flex flex-row items-center justify-between">
-                                <!-- Rows Per Page Selector -->
-                                <div class="flex flex-wrap space-x-2 items-center">
-                                    <span class="text-sm text-gray-600">Courses per page:</span>
-                                    <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
-                                        class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
-                                        :class="{
-                                            'bg-blue-500 text-white font-bold':
-                                                rowsPerPage === option,
-                                            'bg-white text-gray-700 hover:bg-gray-200':
-                                                rowsPerPage !== option,
-                                        }">
-                                        {{ option }}
+                               <Popper>
+                                    <div class="flex flex-row md:gap-2">
+                                        <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                                        <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                                        <i class="fa-solid fa-chevron-down text-lg"></i>
                                     </div>
-                                </div>
+                                    <template #content>
+                                        <div v-for="option in rowsPerPageOptions" :key="option" @click="transactionPerPage(option)"
+                                            class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                                            :class="{
+                                                'bg-gray-300 text-white font-bold':
+                                                    rowsPerPage === option,
+                                                'bg-white text-gray-700 hover:bg-gray-200':
+                                                    rowsPerPage !== option,
+                                            }">
+                                            {{ option }}
+                                        </div>
+                                    </template>
+                                </Popper>
 
                                 <!-- Pagination Controls -->
                                 <div class="flex items-center space-x-3">

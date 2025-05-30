@@ -21,12 +21,23 @@ class FeedBackSeeder extends Seeder
             $this->command->warn("Skipping feedback seeding: Not enough users or courses.");
             return;
         }
+        $fakeFeedbacks = array(
+            "This product works great for my needs!",
+            "I'm really satisfied with the quality.",
+            "The service could be improved slightly.",
+            "Excellent value for the price paid.",
+            "Not exactly what I expected but still good.",
+            "Fast delivery and good packaging.",
+            "The instructions could be clearer.",
+            "Perfect fit for what I was looking for.",
+            "Customer support was very helpful.",
+            "Would definitely recommend to others."
+        );
 
-        foreach (range(1, 10) as $index) {
+        foreach ($fakeFeedbacks as $index) {
             FeedBack::create([
-                // Generate a rating between 1 and 5 in half-star increments (e.g., 1, 1.5, 2, ..., 5)
                 'rate'           => rand(2, 10) / 2,
-                'comment'        => fake()->sentence(),
+                'comment'        => $index,
                 'user_id'        => $users->random()->id,
                 'instractor_id'  => $users->random()->id,
                 'course_id'      => $courses->random()->id,

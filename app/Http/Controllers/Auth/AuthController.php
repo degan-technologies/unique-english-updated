@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Auth\CurrentUserResource;
+use App\Mail\OTPVerificationMail;
+use App\Models\User;
 use App\Services\LangService;
 use App\Traits\AdminActivityLog;
 use Illuminate\Http\Request;
- 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller {
@@ -109,6 +112,100 @@ class AuthController extends Controller {
         return response()->json([
             'message' => $this->langService->getLang('logged_out')
         ])->withCookie($cookie);
+    }
+
+    public function sendResetOtp(Request $request) {
+        $otp = random_int(100000, 999999);
+
+        $validationRules = [
+            'email' => 'required|email|exists:users,email'
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::query()
+            ->where('email', $request->email)
+            ->first();
+
+        $user->otp = $otp;
+        $user->otp_expires_at = Carbon::now()->addMinutes(10);
+        $user->otp_attempts = 0;
+
+        $user->save();
+
+        if(!$user) {
+            return response()->json([
+               'message' => $this->langService->getLang('user_not_found')
+            ], 404);
+        } 
+
+        $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
+
+        Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
+
+        return response()->json([
+           'message' => $this->langService->getLang('otp_sent')
+        ]);
+    }
+
+    public function resetPasswordViaOtp(Request $request){ 
+        $validationRules = [
+            'email' =>'required|email|exists:users,email',
+            'otp' =>'required|integer',
+            'password' =>'required|min:8',
+            'password_confirmation' =>'required|same:password'
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
+
+        if($validator->fails()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json([
+               'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::query()
+            ->where('email', $request->email) 
+            ->first();
+
+        if(!$user) {
+            return response()->json([
+              'message' => $this->langService->getLang('user_not_found')
+            ], 404);
+        }
+
+        if($user->otp != $request->otp) {
+            return response()->json([
+            'message' => $this->langService->getLang('invalid_otp')
+            ]);
+        }
+
+        if($user->otp_expires_at < Carbon::now()) {
+            return response()->json([
+             'message' => $this->langService->getLang('otp_expired')
+            ], 404);
+        }
+
+        $user->password = bcrypt($request->password);
+        $user->otp = null;
+        $user->otp_expires_at = null;
+        $user->otp_attempts = 0;
+        $user->save();
+
+        return response()->json([
+          'message' => $this->langService->getLang('password_changed')
+        ]);
     }
 
 }

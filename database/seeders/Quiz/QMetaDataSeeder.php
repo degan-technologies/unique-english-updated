@@ -30,25 +30,7 @@ class QMetaDataSeeder extends Seeder {
                     'user_id' => $user->id,
                     'course_module_id' => $courseModule->id,
                     'course_id' => $course->id,
-                ],
-                [
-                    'slug' => Str::uuid(),
-                    'question_type' => 'true_false',
-                    'instruction' => 'Mark the statement as true or false.',
-                    'title' => 'Basic Science Fact',
-                    'user_id' => $user->id,
-                    'course_module_id' => $courseModule->id,
-                    'course_id' => $course->id,
-                ],
-                [
-                    'slug' => Str::uuid(),
-                    'question_type' => 'short_answer',
-                    'instruction' => 'Provide a short and concise answer.',
-                    'title' => 'Mathematics Problem',
-                    'user_id' => $user->id,
-                    'course_module_id' => $courseModule->id,
-                    'course_id' => $course->id,
-                ]
+                ], 
             ];
 
             foreach ($qMetaDataRecords as $qMetaData) {

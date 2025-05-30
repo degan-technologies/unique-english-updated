@@ -15,9 +15,9 @@ const toggleExpanded = () => {
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >
             <!-- Image Section -->
-            <div class="lg:w-1/3 hidden lg:block">
+            <div class="lg:w-1/3 lg:block">
                 <img
-                    src="/images/mehari.jpg"
+                    src="/images/mehari.JPG"
                     alt="About Us"
                     class="rounded-lg shadow-md w-full"
                 />

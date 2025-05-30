@@ -110,32 +110,10 @@ class ScheduleController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
-    {
+    public function update(Request $request, $id) {
         try {
 
             $liveRoomId = $request->live_room_id ?? null;
-
-            $liveRoom = LiveRooms::query()
-                ->where('id', $liveRoomId)
-                ->first();
-
-            if (!$liveRoom) {
-                return response()->json([
-                    'message' => $this->langService->getLang('live_room_not_found')
-                ], 422);
-            }
-
-            $schedule = Schedule::query()
-                ->where('user_id', Auth::id())
-                ->where('id', $id)
-                ->firstOrFail();
-
-            if (!$schedule) {
-                return response()->json([
-                    'message' => $this->langService->getLang('schedules_not_found')
-                ], 404);
-            }
 
             $validationRules = [
                 'day' => 'required|string',
@@ -151,18 +129,46 @@ class ScheduleController extends Controller
                 ], 422);
             }
 
+            $liveRoom = LiveRooms::query()
+                ->where('id', $liveRoomId)
+                ->first();
+
+            if (!$liveRoom) {
+                return response()->json([
+                   'message' => $this->langService->getLang('live_room_not_found')
+                ], 422);
+            }
+
+            $schedule = Schedule::query()
+                ->where('user_id', Auth::id())
+                ->where('id', $id)
+                ->firstOrFail();
+
+            if (!$schedule) {
+                return response()->json([
+                    'message' => $this->langService->getLang('schedules_not_found')
+                ], 404);
+            } 
+           
             try {
                 DB::beginTransaction();
 
                 $schedule->update([
                     'day' => $request->day,
                     'schedule_time' => $request->time,
+                    'status' =>'scheduled'
                 ]);
 
-                $schedule->peredicTable()->update([
-                    'live_room_id' => $liveRoomId,
-                ]);
-
+                 if (!$schedule->peredicTable) {
+                    $schedule->peredicTable()->create([ 
+                        'live_room_id' => $liveRoomId,
+                    ]);
+                } else {
+                    $schedule->peredicTable()->update([
+                        'live_room_id' => $liveRoomId,
+                    ]);
+                }
+                
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();
@@ -316,8 +322,7 @@ class ScheduleController extends Controller
         ]);
     }
 
-    public function updatePrivateSchedule(Request $request, $id)
-    {
+    public function updatePrivateSchedule(Request $request, $id) {
         try {
 
             $schedule = Schedule::query()
@@ -351,6 +356,7 @@ class ScheduleController extends Controller
                 $schedule->update([
                     'day' => $request->day,
                     'schedule_time' => $request->time,
+                    'status' => 'scheduled'
                 ]);
 
                 DB::commit();

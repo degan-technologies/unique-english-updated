@@ -50,9 +50,12 @@ watchEffect(() => {
 });
 
 onMounted(() => {
-    
-    const saved = JSON.parse(localStorage.getItem("completedLessons")) || [];
-    completedLessons.value = new Set(saved);
+    try {
+        const saved = JSON.parse(localStorage.getItem("completedLessons")) || [];
+        completedLessons.value = new Set(saved);
+    } catch (e) {
+        completedLessons.value = new Set();
+    }
 });
 
 const isLessonCompleted = (lesson) => {
@@ -65,7 +68,7 @@ const isLessonCompleted = (lesson) => {
         <div class="border-b mb-2 border-lime-700 text-lime-600">
             <h2 class="text-2xl leading-9 py-2 font-semibold">Course Lesson</h2>
         </div>
-        <div v-for="(courseModule, moduleIndex) in selectedModules" :key="moduleIndex" class="mb-3 px-2">
+        <div v-for="(courseModule, moduleIndex) in Array.isArray(selectedModules) ? selectedModules : []" :key="moduleIndex" class="mb-3 px-2">
             <div class="flex justify-between items-center">
                 <button @click="toggleModuleLesson(courseModule.id)"
                     class="text-blue-500 hover:text-blue-700 text-lg w-full text-left p-3 rounded-lg flex items-center justify-between bg-gray-100 hover:bg-gray-200 transition-colors duration-300">
@@ -80,10 +83,10 @@ const isLessonCompleted = (lesson) => {
 
             <div v-if="collapsModuleId == courseModule.id" class="mt-2">
                 <ul class="list-none pl-0">
-                    <li v-for="( courseContent, contentIndex ) in courseModule?.courseContents" 
+                    <li v-for="( courseContent, contentIndex ) in Array.isArray(courseModule?.courseContents) ? courseModule.courseContents : []" 
                     :key="contentIndex"
                         @click="openLesson(courseModule, courseContent)"
-                        class="flex items-center my-1 cursor-pointer border-b border-gray-100 w-full mx-auto gap-2 my-1 rounded-lg transition-colors duration-300"
+                        class="flex items-center cursor-pointer border-b border-gray-100 w-full mx-auto gap-2 my-1 rounded-lg transition-colors duration-300"
                         :class="{
                             'bg-blue-100 text-blue-600 font-bold':
                                 selectedLessonId === courseContent.id,
@@ -128,7 +131,7 @@ const isLessonCompleted = (lesson) => {
                     </li>
 
                     <!-- Quiz Items -->
-                    <li v-for="( qMetaData, qMetaDataIndex ) in courseModule.QMetaDatas" 
+                    <li v-for="( qMetaData, qMetaDataIndex ) in Array.isArray(courseModule?.QMetaDatas) ? courseModule.QMetaDatas : []" 
                         :key="'qMetaData-' + qMetaDataIndex"
                         @click="openQuiz(courseModule, qMetaData)"
                         class="flex items-center cursor-pointer border-b border-gray-100 w-full mx-auto gap-2 my-1 rounded-lg transition-colors duration-300"

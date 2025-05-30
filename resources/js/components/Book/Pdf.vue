@@ -99,9 +99,8 @@ const renderPage = async (pageNumber) => {
 
     // Set canvas display size
     canvas.style.width = `${containerWidth}px`;
-    canvas.style.height = `${
-        (containerWidth * scaledViewport.height) / scaledViewport.width
-    }px`;
+    canvas.style.height = `${(containerWidth * scaledViewport.height) / scaledViewport.width
+        }px`;
 
     // Set canvas render size (accounting for device pixel ratio)
     canvas.width = scaledViewport.width;
@@ -171,7 +170,7 @@ const goToPage = () => {
     } else {
         alert(
             "Invalid page number. Please enter a number between 1 and " +
-                totalPages.value
+            totalPages.value
         );
     }
 };
@@ -276,33 +275,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div
-        v-if="openPdf"
-        class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen"
-    >
-        <div
-            ref="containerRef"
-            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg"
-        >
+    <div v-if="openPdf" class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen">
+        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
+            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
             <div class="overflow-auto">
-                <canvas
-                    ref="canvasRef"
+                <canvas ref="canvasRef"
                     class="w-full max-w-full h-auto object-contain shadow-lg border rounded-lg select-none"
-                    @contextmenu.prevent
-                    @dragstart.prevent
-                ></canvas>
+                    @contextmenu.prevent @dragstart.prevent></canvas>
             </div>
-            <div
-                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
-            >
+            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
                 <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button
-                        @click="prevPage"
-                        :disabled="currentPage === 1"
-                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group"
-                    >
+                    <button @click="prevPage" :disabled="currentPage === 1"
+                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group">
                         <i class="fas fa-chevron-left text-balck"></i>
                     </button>
 
@@ -310,43 +295,27 @@ onBeforeUnmount(() => {
                         {{ currentPage }} / {{ totalPages }}
                     </span>
 
-                    <button
-                        @click="nextPage"
-                        :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group"
-                    >
+                    <button @click="nextPage" :disabled="currentPage === totalPages"
+                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group">
                         <i class="fas fa-chevron-right text-black"></i>
                     </button>
                 </div>
 
                 <!-- Search Input -->
                 <div class="flex items-center gap-2">
-                    <input
-                        type="number"
-                        v-model="searchPage"
-                        placeholder="Go to page"
-                        class="px-2 py-1 border border-gray-500 rounded w-24"
-                        @keyup.enter="goToPage"
-                    />
-                    <button
-                        @click="goToPage"
-                        class="px-3 py-1 bg-slate-50 text-black rounded relative group"
-                    >
+                    <input type="number" v-model="searchPage" placeholder="Go to page"
+                        class="px-2 py-1 border border-gray-500 rounded w-24" @keyup.enter="goToPage" />
+                    <button @click="goToPage" class="px-3 py-1 bg-slate-50 text-black rounded relative group">
                         <i class="fas fa-search"></i>
                     </button>
 
                     <!-- Full Screen Toggle -->
-                    <button
-                        @click="toggleFullScreen"
-                        class="px-4 py-2 bg-slate-50 text-black rounded flex items-center gap-2 relative group"
-                    >
-                        <i
-                            :class="
-                                isFullScreen
-                                    ? 'fas fa-compress'
-                                    : 'fas fa-expand'
-                            "
-                        ></i>
+                    <button @click="toggleFullScreen"
+                        class="px-4 py-2 bg-slate-50 text-black rounded flex items-center gap-2 relative group">
+                        <i :class="isFullScreen
+                                ? 'fas fa-compress'
+                                : 'fas fa-expand'
+                            "></i>
                     </button>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
+import Popper from "vue3-popper";
 import { ref, onMounted, watch, watchEffect, computed } from "vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
@@ -116,6 +117,13 @@ function getSelectedCourse(tab, course) {
     selectedCourse.value = course;
 }
 
+function changCourseStatus(courseId) {
+    Axios.post(`/api/courses-status/${courseId}`)
+    .then((res) => {
+        filteredCourses(currentPage.value);
+    });
+}
+
 watchEffect(() => {
     if (!selectedCourse.value) {
         selectedCourse.value = instructorCourses.value.find(
@@ -144,13 +152,15 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
             <div class="w-full bg-white py-2 rounded-lg  space-y-0 flex flex-wrap items-center justify-between">
 
                 <!-- Skill Level Dropdown -->
-                <div class="flex items-center px-3 py-2 rounded">
-                    <p class="text-xs font-medium text-gray-600 mr-1">Total {{ props?.activeTab }}</p>
-                    <p class="text-lg font-bold text-lime-700">{{ analytics?.total }}</p>
-                </div>
-                <div class="flex items-center px-3 py-2 rounded">
-                    <p class="text-xs font-medium text-gray-600 mr-1">New Today</p>
-                    <p class="text-lg font-bold">{{ analytics?.newToday }}</p>
+                <div class="flex flex-row gap-4">
+                    <div class="flex items-center px-3 py-2 rounded">
+                        <p class="text-xs font-medium text-gray-600 mr-1">Total {{ props?.activeTab }}</p>
+                        <p class="text-lg font-bold text-lime-700">{{ analytics?.total }}</p>
+                    </div>
+                    <div class="flex items-center px-3 py-2 rounded">
+                        <p class="text-xs font-medium text-gray-600 mr-1">New Today</p>
+                        <p class="text-lg font-bold">{{ analytics?.newToday }}</p>
+                    </div>
                 </div>
                 <div class="w-fit flex flex-row gap-2">
                     <label for="skillLevelFilter"
@@ -245,6 +255,9 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                                     Revenue
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
+                                    Status
+                                </th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
                                     Created Date
                                 </th>
                                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">
@@ -279,19 +292,33 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                                                 d="M10 15l-5.878 3.09L5.244 12 .49 7.91l6.07-.88L10 2l2.44 5.03 6.07.88-4.754 4.09 1.122 5.99z" />
                                         </svg>
                                         <span class="ml-1 text-center">{{
-                                            course.averageRating || 0
+                                            course.averageRating  
                                             }}</span>
                                     </div>
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ course.total_enroll || 15 }}
+                                    {{ course.total_enroll   }}
                                 </td>
 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    ${{ course.revenue || 25 }}
+                                    {{ course.revenue  }}
                                 </td>
 
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <Popper>
+                                        <div class="flex flex-row md:gap-2 items-center text-lime-700 justify-between">
+                                            <span>{{ course.status  }}</span>
+                                            <i class="fa-solid fa-chevron-down text-lime-700"></i>
+                                        </div>
+                                        <template #content>
+                                            <div  @click="changCourseStatus(course.id)"
+                                                class="border w-32 block border-gray-200 bg-white rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200" >
+                                                {{ course.status === 'draft' ? 'published' : 'draft'}} 
+                                            </div> 
+                                        </template>
+                                    </Popper>
+                                </td>
                                 <!-- "Created Date" cell hidden on mobile -->
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {{
@@ -316,19 +343,26 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                 <!-- Pagination Footer -->
                 <div class="p-4 bg-white flex flex-row items-center justify-between">
                     <!-- Rows Per Page Selector -->
-                    <div class="flex flex-wrap space-x-2 items-center">
-                        <span class="text-sm text-gray-600">Courses per page:</span>
-                        <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
-                            class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
-                            :class="{
-                                'bg-blue-500 text-white font-bold':
-                                    rowsPerPage === option,
-                                'bg-white text-gray-700 hover:bg-gray-200':
-                                    rowsPerPage !== option,
-                            }">
-                            {{ option }}
+                    
+                    <Popper>
+                        <div class="flex flex-row md:gap-2">
+                            <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                            <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                            <i class="fa-solid fa-chevron-down text-lg"></i>
                         </div>
-                    </div>
+                        <template #content>
+                            <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                                class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                                :class="{
+                                    'bg-gray-300 text-white font-bold':
+                                        rowsPerPage === option,
+                                    'bg-white text-gray-700 hover:bg-gray-200':
+                                        rowsPerPage !== option,
+                                }">
+                                {{ option }}
+                            </div>
+                        </template>
+                    </Popper>
 
                     <!-- Pagination Controls -->
                     <div class="flex items-center space-x-3">

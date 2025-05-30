@@ -20,6 +20,12 @@ class Plan extends Model {
         'group_price',
     ];
 
+    protected $casts = [
+        'price' => 'integer',
+        'one_to_one_price' => 'integer',
+        'group_price' => 'integer',
+    ]; 
+
     public function transactions() { return $this->hasMany(Transaction::class); }
 
     public static function checkEligibility($planId) {

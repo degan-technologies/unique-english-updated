@@ -12,6 +12,7 @@ use App\Models\Course\CourseContent;
 use App\Models\Course\CourseContentProgress;
 use App\Models\Course\CourseModule;
 use App\Models\Live\GroupRoom;
+use App\Models\Live\InsAttendance;
 use App\Models\Role\Instructor;
 use App\Models\Role\Student;
 use App\Models\Role\SystemAdmin;
@@ -19,6 +20,7 @@ use App\Models\Live\LiveSession;
 use App\Models\Live\Participant;
 use App\Models\Live\LiveResource;
 use App\Models\Live\PrivateRoom;
+use App\Models\Live\StdAttendance;
 use App\Models\Logs\AdminActivityLog;
 use App\Models\Notifications\EmailNotification;
 use App\Models\Notifications\NotifiableUser;
@@ -146,6 +148,9 @@ class User extends Authenticatable {
     public function privateRoom() { return $this->hasOne(PrivateRoom::class);}
     public function mySchedules() { return $this->hasMany(Schedule::class, 'student_id');}
 
+    public function insAttendances() { return $this->hasMany(InsAttendance::class, 'instructor_id');}
+    public function classVisiter() { return $this->hasMany(InsAttendance::class, 'visiter_id');}
+    public function stdAttendances() { return $this->hasMany(StdAttendance::class, 'student_id');}
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){

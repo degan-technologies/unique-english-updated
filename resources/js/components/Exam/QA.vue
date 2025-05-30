@@ -76,18 +76,18 @@ const submitQuestion = async () => {
 
 const updateQuestion = async () => {
     try {
-         const response = await Axios.put(`/api/QASection/${editableQa.value.id}`, {
+        const response = await Axios.put(`/api/QASection/${editableQa.value.id}`, {
             question: editableQa.value.question,
         });
         editableQa.value = {};
-        qaSections.value = qaSections.value.map(item=>item.id===response.data.data.id ? response.data.data: item);
+        qaSections.value = qaSections.value.map(item => item.id === response.data.data.id ? response.data.data : item);
     } catch (error) {
         console.error("Failed to update question:", error);
         questionError.value = "Failed to update question. Please try again.";
     }
 };
 
-const removeQuestion = async (id) => { 
+const removeQuestion = async (id) => {
     try {
         await Axios.delete(`/api/QASection/${id}`);
         qaSections.value = qaSections.value.filter(q => q.id !== id);
@@ -123,13 +123,13 @@ const submitAnswer = async (questionId) => {
     }
 };
 
-const removeAnswer = async (answerId) => { 
+const removeAnswer = async (answerId) => {
     try {
         await Axios.delete(`/api/answers/${answerId}`);
         await fetchQA();
         showDeleteModal.value = false;
         selectedData.value = null;
-    } catch (error) { 
+    } catch (error) {
         questionError.value = "Failed to delete answer. Please try again.";
     }
 };
@@ -140,7 +140,7 @@ const editAnswer = (answer) => {
     updatedData.value.answerId = answer.id;
     actionEditReplay.value = true;
 };
-function openModal(selectdeTodelete, type) { 
+function openModal(selectdeTodelete, type) {
     selectedData.value = selectdeTodelete;
     selectedType.value = type;
     showDeleteModal.value = true;
@@ -204,18 +204,16 @@ onMounted(fetchQA);
         <section>
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Questions</h2>
             <div v-if="isLoading && !qaSections.length" class="text-center py-8">
-                <Spinner/>
+                <Spinner />
             </div>
 
             <div v-else-if="!qaSections.length" class="text-center py-8 text-gray-500">
                 No questions yet. Be the first to ask!
             </div>
 
-            <div v-else class="space-y-6">
-                <!-- Question Cards -->
+            <div v-else class="space-y-6"> 
                 <article v-for="qa in displayedQuestions" :key="qa.id"
-                    class="bg-white p-5 rounded-lg shadow border border-gray-200">
-                    <!-- Question Header -->
+                    class="bg-white p-5 rounded-lg shadow border border-gray-200"> 
                     <header class="flex items-center gap-3 mb-3">
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
                             <img v-if="qa.user?.profile" :src="qa.user.profile" :alt="qa.user.full_name"
@@ -228,15 +226,13 @@ onMounted(fetchQA);
                         <span class="text-sm text-gray-500 ml-auto">
                             {{ new Date(qa.created_at).toLocaleDateString() }}
                         </span>
-                    </header>
+                    </header> 
 
-                    <!-- Question Content -->
                     <div class="mb-4">
                         <p v-if="editableQa.id !== qa.id" class="text-gray-700">
                             {{ qa.question }}
                         </p>
-
-                        <!-- Edit Question Form -->
+ 
                         <div v-else class="flex gap-2">
                             <textarea v-model="editableQa.question" rows="2"
                                 class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-lime-400"></textarea>
@@ -246,15 +242,15 @@ onMounted(fetchQA);
                             </button>
                         </div>
                     </div>
-
-                    <!-- Question Actions -->
+ 
                     <div class="flex gap-4 text-sm">
                         <button v-if="qa.editable && editableQa.id !== qa.id"
                             @click="editableQa = { id: qa.id, question: qa.question }"
                             class="text-blue-600 hover:underline">
                             Edit
                         </button>
-                        <button v-if="qa.editable" @click="openModal(qa, 'question')" class="text-red-600 hover:underline">
+                        <button v-if="qa.editable" @click="openModal(qa, 'question')"
+                            class="text-red-600 hover:underline">
                             Delete
                         </button>
                         <button @click="toggleAnswerMode(qa)" class="text-lime-600 hover:underline">
@@ -318,17 +314,16 @@ onMounted(fetchQA);
                         </button>
                     </div>
                 </article>
-
-                <!-- Show More Questions Button -->
+ 
                 <button v-if="qaSections.length > 2" @click="showAllQuestions = !showAllQuestions"
-                    class="w-full py-2 bg-lime-600 hover:bg-lime-700 text-white rounded-lg transition">
+                    class="mt-2 text-sm text-lime-600 hover:underline">
                     {{ showAllQuestions ? 'Show fewer questions' : `Show all questions (${qaSections.length})` }}
                 </button>
             </div>
         </section>
 
     </div>
-        <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation Modal -->
     <transition name="fade">
         <div v-if="showDeleteModal && selectedData"
             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -341,13 +336,15 @@ onMounted(fetchQA);
                     <button @click="closeModal" class="px-4 py-3 border rounded hover:bg-gray-100">
                         Cancel
                     </button>
-                    <button @click="selectedType == 'answer' ? removeAnswer(selectedData?.id) : removeQuestion(selectedData?.id)   " class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
+                    <button
+                        @click="selectedType == 'answer' ? removeAnswer(selectedData?.id) : removeQuestion(selectedData?.id)"
+                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
                         Delete
                     </button>
                 </div>
             </div>
         </div>
-    </transition> 
+    </transition>
 </template>
 
 <style scoped>

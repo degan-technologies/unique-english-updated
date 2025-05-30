@@ -90,7 +90,7 @@
             </div>
         </div>
  
-        <div class="gap-4 mt-8"> 
+        <div class="gap-4 h-64 mt-8"> 
             <div class="bg-gray-100 rounded-lg p-4">
                 <h4 class="text-sm font-semibold mb-4 text-lime-700">
                     Revenue Breakdown {{ breakdownType }}

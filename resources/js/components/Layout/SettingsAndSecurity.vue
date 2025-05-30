@@ -96,7 +96,7 @@ onMounted(()=>{
         </header>
 
         <div class="mb-6 border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8"
+            <nav class="-mb-px flex"
                 aria-label="Tabs">
                 <button  
                     @click="onSelectTab(settingTab)"
@@ -119,7 +119,7 @@ onMounted(()=>{
             </nav>
         </div>
 
-        <div class="flex flex-1 overflow-hidden"> 
+        <div class="flex flex-1 w-full overflow-hidden"> 
             <main class="flex-1 overflow-y-auto p-6">
                 <!-- Platform Settings Panel -->
                 <transition name="fade" mode="out-in">

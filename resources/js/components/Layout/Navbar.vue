@@ -78,6 +78,7 @@ const toggleNotifications = () => {
     }
 
     function toggleShowAllNotifications() {
+        if(notifications.length === 0) return;
         showAllNotifications.value = !showAllNotifications.value; 
     }
 
@@ -89,43 +90,12 @@ const toggleNotifications = () => {
 <template>
     <div class="sticky top-0 z-40">
         <div
-            class="w-full h-16 px-6 bg-gray-100 border-b flex items-center justify-between transition-colors duration-300">
+            class="w-full h-16 px-6 bg-gray-100 border-b flex items-center justify-between md:justify-end transition-colors duration-300">
             <div class="flex items-center">
-                <button class="lg:hidden text-gray-600 hover:text-lime-500 transition-colors duration-300"
+                <button class="md:hidden text-gray-600 hover:text-lime-500 transition-colors duration-300"
                     @click="toggleSidebar" title="Toggle Sidebar">
                     <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-
-                <div class="relative ml-4">
-                    <div class="hidden md:block">
-                        <input type="text" placeholder="Search..."
-                            class="bg-white h-10 w-64 px-5 rounded-lg border text-sm text-gray-700 focus:outline-none transition-colors duration-300" />
-                        <button type="submit"
-                            class="absolute right-0 top-0 mt-2 mr-4 text-gray-600 hover:text-lime-500 transition-colors duration-300"
-                            title="Search">
-                            <i class="fa-solid fa-magnifying-glass text-xl"></i>
-                        </button>
-                    </div>
-                    <div class="block md:hidden">
-                        <template v-if="searchOpen">
-                            <div class="flex items-center">
-                                <button @click="searchOpen = false"
-                                    class="mr-2 text-gray-600 hover:text-lime-500 transition-colors duration-300"
-                                    title="Back">
-                                    <i class="fa-solid fa-arrow-left text-xl"></i>
-                                </button>
-                                <input type="text" placeholder="Search..."
-                                    class="flex-1 h-10 px-4 rounded-lg border text-sm text-gray-700 bg-gray focus:outline-none transition-colors duration-300" />
-                            </div>
-                        </template>
-                        <template v-else>
-                            <button @click="searchOpen = true"
-                                class="text-gray-600 hover:text-lime-500 transition-colors duration-300" title="Search">
-                                <i class="fa-solid fa-magnifying-glass text-xl"></i>
-                            </button>
-                        </template>
-                    </div>
-                </div>
+                </button> 
             </div>
             <div class="flex items-center space-x-4 text-gray-600">
                 <!-- Notification Button -->
@@ -134,8 +104,9 @@ const toggleNotifications = () => {
                         class="hover:text-lime-500 relative transition-colors duration-300 z-50" title="Notifications">
                         <i class="fa-solid fa-bell text-xl"></i>
                         <span 
+                            v-if="unreadNotifications > 0"
                             class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                            {{ unreadNotifications ? unreadNotifications : 0 }}
+                            {{ unreadNotifications }}
                         </span>
                     </button>
 

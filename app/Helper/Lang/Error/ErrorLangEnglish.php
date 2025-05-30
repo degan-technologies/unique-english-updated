@@ -136,6 +136,7 @@ class ErrorLangEnglish extends Lang {
                 'email.required' => 'Email is required',
                 'phone.required' => 'phone number is required',
                 'invalid.email' => 'Invalid email provided',
+                'email.exists' => 'Email does not already exists',
                 'invalid.unique' => 'Email already exist',
                 'password.required' => 'Please enter you password',
                 'password.min' => 'Password contain atleast four characters',

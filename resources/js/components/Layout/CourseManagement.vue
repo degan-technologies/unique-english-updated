@@ -83,13 +83,10 @@ function selectedTab(tab) {
             class="bg-white shadow px-6 py-4 flex-col flex lg:flex-row iteems-left lg:items-center lg:justify-between">
             <div>
                 <h1 class="text-xl sm:text-2xl font-semibold text-lime-700">
-                    Book Management
+                    Course && Book Management
                 </h1>
-                <p class="text-xs sm:text-sm text-gray-500">
-                    Manage Courses &amp; Books
-                </p>
             </div>
-            <div class="mt-4 md:mt-0 flex items-center">
+            <div class="mt-4 md:mt-0 block md:flex items-center">
                 <nav class="text-sm" aria-label="Breadcrumb">
                     <ol class="list-reset flex text-gray-600">
                         <li>
@@ -102,7 +99,7 @@ function selectedTab(tab) {
                     </ol>
                 </nav>
 
-                <div class="ml-6 relative">
+                <div class="md:ml-6 my-4 relative">
                     <input type="text" v-model="searchQuery" :placeholder="`Search  ${searchItem}...`"
                         class="border border-gray-300 rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-lime-700" />
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -130,7 +127,7 @@ function selectedTab(tab) {
         <div class="w-full mx-auto">
             <div>
                 <div class="mb-6 border-b border-gray-200">
-                    <nav class="flex" aria-label="Tabs">
+                    <nav class="flex gap-4" aria-label="Tabs">
                         <button @click="selectedTab(courseTab)" :class="{
                                 'border-lime-700 text-lime-700': activeTab === courseTab,
                                 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== courseTab,

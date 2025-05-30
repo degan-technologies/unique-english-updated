@@ -37,24 +37,19 @@ export const useAppStore = defineStore("useAppStore", () => {
     const isLoggedIn = computed(
         () => loggedIn.value == true && authToken.value != ""
     );
-
-    // set authToken and store it in cookies
-    function setAuthToken(token) {
-        // Store token in Pinia state
-        authToken.value = token;
-
-        // Store token in Cookies (7 days expiration)
+ 
+    function setAuthToken(token) { 
+       authToken.value = token;
+        
         Cookies.set("authToken", token, {
-            expires: 7, // Cookie expires in 7 days
-            secure: true, // Send cookie only over HTTPS (set to false for local dev)
-            sameSite: "Strict", // Prevent CSRF attacks by limiting cross-site usage
+            expires: 7,  
+            secure: true,  
+            sameSite: "Strict",  
         });
-
-        // Set Authorization header for future Axios requests
+ 
         Axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
-
-    // change login status and store it in cookies
+ 
     function changeLoginStatus(status) {
         loggedIn.value = status;
         Cookies.set("loggedin", status.toString(), {

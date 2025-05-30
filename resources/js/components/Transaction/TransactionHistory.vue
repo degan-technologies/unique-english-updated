@@ -4,9 +4,10 @@ import { ref, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useAppStore } from '@/store/useAppStore';
 import ChangeComission from '@/components/Transaction/ChangeComission.vue';
+import Popper from 'vue3-popper';
 
 const appStore = useAppStore();
-const { commission } = storeToRefs(appStore);
+const { commission, authUser } = storeToRefs(appStore);
 
 const CurrentBalance = ref(null);
 const payouts = ref([]);
@@ -16,6 +17,7 @@ const isWithdrawing = ref(false);
 const showWithdrawModal = ref(false);
 const withdrawAmount = ref(null);
 const withdrawError = ref(null);
+const myBakInfo = ref(null);
 
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
@@ -62,6 +64,11 @@ const getCurrentBalance = async () => {
 
 const validateWithdrawal = () => {
     withdrawError.value = null;
+
+    if(myBakInfo.value === null){
+        withdrawError.value = 'Please complete you Bank Acount ';
+        return false;
+    }
 
     if (!withdrawAmount.value) {
         withdrawError.value = 'Amount is required';
@@ -141,10 +148,17 @@ function onPreviousPage() {
     fetchTransferTransactions(currentPage.value - 1);
 }
 
-function coursePerPage(amount) {
+function transferPerPage(amount) {
     rowsPerPage.value = amount;
     fetchTransferTransactions(currentPage.value);
 } 
+
+function getMyBankInfo() {
+    Axios.get("/api/my-bank-info")
+        .then(res => {
+            myBakInfo.value = res.data.data; 
+        });
+}
 
 onMounted(() => {
     fetchTransferTransactions();
@@ -193,7 +207,7 @@ onMounted(() => {
 
     <!-- Balance & Commission Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white p-6 rounded-lg shadow flex justify-between items-center">
+        <div class="bg-white p-6 col-span-1 rounded-lg shadow flex justify-between items-center">
             <div>
                 <h3 class="text-sm text-gray-500">Current Balance</h3>
                 <p class="text-2xl font-bold mt-1">ETB {{ CurrentBalance ?? '--' }}</p>
@@ -205,7 +219,7 @@ onMounted(() => {
             </button>
         </div>
 
-        <ChangeComission />
+        <ChangeComission v-if="authUser?.role === 'systemAdmin'" />
     </div>
 
     <!-- Transaction History -->
@@ -255,20 +269,25 @@ onMounted(() => {
 
              <!-- Pagination Footer -->
             <div class="p-4 bg-white flex flex-row items-center justify-between">
-                <!-- Rows Per Page Selector -->
-                <div class="flex flex-wrap space-x-2 items-center">
-                    <span class="text-sm text-gray-600">Courses per page:</span>
-                    <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
-                        class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
-                        :class="{
-                            'bg-blue-500 text-white font-bold':
-                                rowsPerPage === option,
-                            'bg-white text-gray-700 hover:bg-gray-200':
-                                rowsPerPage !== option,
-                        }">
-                        {{ option }}
+               <Popper>
+                    <div class="flex flex-row md:gap-2">
+                        <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                        <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                        <i class="fa-solid fa-chevron-down text-lg"></i>
                     </div>
-                </div>
+                    <template #content>
+                        <div v-for="option in rowsPerPageOptions" :key="option" @click="transferPerPage(option)"
+                            class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                            :class="{
+                                'bg-gray-300 text-white font-bold':
+                                    rowsPerPage === option,
+                                'bg-white text-gray-700 hover:bg-gray-200':
+                                    rowsPerPage !== option,
+                            }">
+                            {{ option }}
+                        </div>
+                    </template>
+                </Popper>
 
                 <!-- Pagination Controls -->
                 <div class="flex items-center space-x-3">

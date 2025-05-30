@@ -1,7 +1,9 @@
 <script setup>
 import Axios from "axios";
 import { ref, onMounted } from "vue";
- 
+import { useToast } from "vue-toastification";
+
+const toast = useToast();
 const schedules = ref([]);  
 const isLoading = ref(false);
 
@@ -17,9 +19,27 @@ function getTodaySchedules() {
             isLoading.value = false;
         });
 }
+ 
+function joinNewSession(newSession) {
+    if(newSession.status !== 'live'){
+        toast.warning("This room is not live yet", { timeout: 3000 });
+        return;
+    }
 
-function joinNewSession(roomName) {
-    emit("joinSession", roomName);
+    if (!newSession) {
+        toast.warning("No room selected", { timeout: 3000 });
+        return;
+    }
+
+    Axios.post(`/api/update-visiter-attendance/${newSession.id}`)
+        .then(res => { 
+             emit("joinSession", newSession);
+            toast.success(res.data.data, { timeout: 3000 });
+        })
+        .catch(error => {
+            toast.warning("No room selected", { timeout: 3000 });
+            return;
+        }) 
 }
 
 onMounted(() => {
@@ -56,18 +76,12 @@ onMounted(() => {
                 <!-- Instructor & Participants -->
                 <div class="flex items-center justify-between">
                     <div v-if="schedule?.class_name == null" class="text-sm text-gray-600 mt-1">
-                         <i class="fas fa-user"></i>  <span class="font-medium">{{ schedule.private_instructor_name }}</span>
-                        <h1 class="font-bold text-lime-700 py-2">Private Class</h1>
-                    </div>
-                    <div v-else class="text-sm text-gray-600 mt-1">
-                        <div class="flex-col">
-                             <i class="fas fa-user"></i>  <span class="font-medium">{{ schedule.group_instructor_name }}</span>
-                            <h1 class="font-bold text-lime-700 py-2">Group Class</h1>
-                        </div>
-                    </div>
+                         <i class="fas fa-user"></i>  <span class="font-medium">{{ schedule?.info?.instructor_name }}</span>
+                        <h1 class="font-bold text-lime-700 py-2">{{ schedule?.info?.type  }} Class</h1>
+                    </div> 
                     <div class="flex flex-col">
                         <h1 class="text-sm py-2 capitalize text-blue-700"> {{ schedule.status }}</h1>
-                        <button @click="joinNewSession(schedule.room_name)"
+                        <button @click="joinNewSession(schedule)"
                             :disabled="isStartingSession"
                             class="inline-flex self-center items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-75 disabled:cursor-not-allowed">
                             <span v-if="!isStartingSession">Join</span> 
@@ -75,7 +89,7 @@ onMounted(() => {
                     </div>
                 </div>
                 <div class="text-xs capitalize text-gray-500">
-                      <i class="fas fa-users"></i>  {{ schedule.student_name }} {{ schedule.class_name }} 
+                      <i class="fas fa-users"></i>  {{ schedule?.info?.class_or_student_name }}
                 </div>
             </div>
         </div>

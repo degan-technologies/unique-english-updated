@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource {
     /**
@@ -23,8 +24,7 @@ class UserResource extends JsonResource {
             'middle_name' => $this->middle_name,
             'last_name'   => $this->last_name,
             'full_name'   => $this->full_name,
-            'phone'       => $this->phone,
-            'profile'     => $this->profile,
+            'phone'       => $this->phone, 
             'bg_image'    => $this->bg_image,
             'role'        => $this->role == 2 ? 'INSTRUCTOR_ROLE' : 'STUDENT_ROLE', 
             'joinDate'    => $this->created_at ? $this->created_at->format('Y-m-d') : null,
@@ -34,6 +34,10 @@ class UserResource extends JsonResource {
             'otp' => $this->otp ?? null,
             'otp_expires_at' => $this->otp_expires_at ? $this->otp_expires_at->format('Y-m-d H:i:s') : null,
             'otp_attempts' => $this->otp_attempts ?? 0,
+            
+            'profile' => $this->profile
+                ? Storage::disk('public')->url($this->profile)
+                : 'images/no-profile.png',
         ];
     }
 }

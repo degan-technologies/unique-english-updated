@@ -69,18 +69,13 @@ onMounted(() => {
 </script>
 
 <template>
-    <div v-if="!isReadingMode" class="p-6 mt-2 pb-16 rounded-lg bg-slate-50 mx-auto max-w-7xl"> 
-        <div class="flex items-start w-fit">
-            <button @click="goBack"
-                class="py-2 px-3 bg-gray-100 text-black rounded-md hover:bg-gray-200 transition mr-4 flex items-center"
-                aria-label="Go back">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
-                </svg>
-                <span class="ml-1 hidden sm:inline">Back</span>
-            </button>
-        </div>
+    <div v-if="!isReadingMode" class="p-6 mt-2 pb-16 rounded-lg bg-slate-50 mx-auto w-full"> 
+        <button @click="goBack"
+            class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
+            aria-label="Go back">
+            <i class="fas fa-arrow-left text-lg group-hover:-translate-x-1 transition-transform"></i>
+            <span class="ml-2 font-medium">Back to Books</span>
+        </button>
  
         <div class="grid w-full mx-auto mt-4">
             <div class="rounded-lg p-4 sm:p-6 flex flex-col gap-6 w-full">
@@ -93,8 +88,8 @@ onMounted(() => {
                         <video v-if="selectedbook?.intro_video_url" ref="videoPlayer"
                             class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border" controls
                             preload="auto" 
-                            :poster="selectedbook.cover_page_url">
-                            <source :src="selectedbook.intro_video_url" 
+                            :poster="selectedbook?.cover_page_url">
+                            <source :src="selectedbook?.intro_video_url" 
                             type="video/mp4" /> 
                         </video>
                     </div>
@@ -132,10 +127,10 @@ onMounted(() => {
  
                 <div class="p-0 sm:p-4 pt-8 rounded-b-lg bg-white shadow-sm">
                     <h2 class="text-2xl sm:text-3xl text-slate-700 font-semibold mb-4 sm:mb-6">
-                        Book Description
+                        {{ selectedbook?.title  }}
                     </h2>
                     <div class="prose prose-sm sm:prose-base max-w-none ql-editor preview"
-                        v-html="selectedbook.description">
+                        v-html="selectedbook?.description">
                     </div>
                 </div>
             </div>
@@ -151,18 +146,14 @@ onMounted(() => {
         </div>
     </div>  
 
-    <div v-else class="p-4 sm:p-6 rounded-lg mx-auto max-w-7xl bg-white">
-        <div class="flex items-start w-fit mb-4">
-            <button @click="cancelBookRead"
-                class="py-2 px-3 bg-gray-200 text-black rounded-md hover:bg-gray-300 transition flex items-center"
-                aria-label="Close reader">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M15 18l-6-6 6-6" />
-                </svg>
-                <span>Back to Details</span>
-            </button>
-        </div>
+    <div v-else class="p-6 mt-2 pb-16 rounded-lg bg-slate-50 mx-auto w-full">        
+        <button @click="cancelBookRead"
+            class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
+            aria-label="Go back">
+            <i class="fas fa-arrow-left text-lg group-hover:-translate-x-1 transition-transform"></i>
+            <span class="ml-2 font-medium">Back to Details</span>
+        </button>
+
         <AdminPdfReader :selectedBook="selectedBookRead" />
     </div>
 </template>

@@ -6,18 +6,19 @@
     import { useSidebarStore } from "@/store/useSidebarStore";
 
     // Import widget and modal components
-    import CoursePerformanceWidget from '@/components/widgets/CoursePerformanceWidget.vue';
-    import UserStatisticsWidget from '@/components/widgets/UserStatisticsWidget.vue';
+    import JetsiLive from "@/components/Live/JetsiLive.vue";
+    import RevenueModal from '@/components/widgets/RevenueModal.vue';
     import LiveSessionsWidget from '@/components/widgets/LiveSessionsWidget.vue';
     import ReviewsRatingsWidget from '@/components/widgets/ReviewsRatingsWidget.vue'; 
-    import RevenueModal from '@/components/widgets/RevenueModal.vue';
-    import JetsiLive from "@/components/Live/JetsiLive.vue";
+    import UserStatisticsWidget from '@/components/widgets/UserStatisticsWidget.vue';
+    import BookPerformanceWidget from '@/components/widgets/BookPerformanceWidget.vue';
+    import CoursePerformanceWidget from '@/components/widgets/CoursePerformanceWidget.vue';
 
     const sidebarStore = useSidebarStore();
     const { sidebarCollapsed, } = storeToRefs(sidebarStore);
      
     const activeFilter = ref('allTime');
-    const selectedRoom = ref(null);
+    const startSelectedSchedule = ref(null);
  
     const revenueData = ref({
         today: 0,
@@ -50,8 +51,8 @@
         fetchTransactions();
     }
 
-    function joinSession(roomId) {
-        selectedRoom.value = roomId;
+    function joinSession(newSession) {
+        startSelectedSchedule.value = newSession;
     }
 
     onMounted(()=>{
@@ -59,9 +60,9 @@
     })
 </script>
 <template>
-     <div v-if="selectedRoom" class="bg-white rounded-lg shadow overflow-hidden">
+     <div v-if="startSelectedSchedule" class="bg-white rounded-lg shadow overflow-hidden">
         <div class="relative w-full h-full min-h-[600px]">
-            <JetsiLive :selectedRoom="selectedRoom" @closeStream="selectedRoom = null" />
+            <JetsiLive :startSelectedSchedule="startSelectedSchedule" @closeStream="startSelectedSchedule = null" />
         </div>
     </div>
     <!-- Main container -->
@@ -77,23 +78,27 @@
                 <RevenueModal 
                     :revenueData="revenueData" 
                     @filterCourse="changeFilterType"/>
-
-                <CoursePerformanceWidget />
-            
+                <UserStatisticsWidget />
             </div>
 
             <div 
                 :class="{
-                    'sm:grid-cols-2' : sidebarCollapsed,
-                }"
-                class="grid lg:grid-cols-3 gap-4 my-6">
-                <UserStatisticsWidget />
+                        'sm:grid-cols-2' : sidebarCollapsed,
+                    }"
+                class="grid lg:grid-cols-2 gap-4 my-6">
+                <CoursePerformanceWidget/>
+                <BookPerformanceWidget />
+            </div>
 
+            <div 
+                :class="{
+                        'sm:grid-cols-2' : sidebarCollapsed,
+                    }"
+                class="grid lg:grid-cols-2 gap-4 my-6">
                 <LiveSessionsWidget
                     @joinSession="joinSession"/>
-
-                <ReviewsRatingsWidget/> 
-            </div>
+                <ReviewsRatingsWidget />
+            </div> 
         </div>
 
         <!-- Revenue Modal -->

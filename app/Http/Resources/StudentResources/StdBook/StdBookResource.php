@@ -6,8 +6,11 @@ use App\Http\Resources\Comment\FeedBackResource;
 use App\Http\Resources\userResource;
 use App\Models\Book\Book;
 use App\Models\Comment\FeedBack;
+use App\Models\Transaction\Transaction;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 class StdBookResource extends JsonResource {
     /**
@@ -32,13 +35,10 @@ class StdBookResource extends JsonResource {
             'page_number' => $this->page_number,
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
-            'intro_vedio' => $this->intro_vedio 
-            ? Storage::disk('public')->url($this->intro_vedio) 
-            : 'no-video.mp4',
+            'total_enroll' => $this->totalEnroll($this->id),
+            'revenue' => $this->totalRevenue($this->id),
 
-            'file_url' => $this->file_url
-                ? Storage::disk('public')->url($this->file_url)
-                : 'no-file_url.png',
+            'file_url' => $this->getFileUrl(),
 
             'intro_video_url' => $this->intro_vedio
                 ? url('/api/books/stream/video/' . basename($this->intro_vedio))
@@ -55,5 +55,39 @@ class StdBookResource extends JsonResource {
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
         ];
+    }
+
+    public function totalEnroll($id) {
+
+        $countTotalEnroll = Transaction::query()
+            ->where('book_id', $id)
+            ->where('status', 'success')
+            ->count();
+
+        return $countTotalEnroll === 0 ?  'not selled' : $countTotalEnroll;
+    }
+
+    public function totalRevenue($id) {
+        $countRevenue = Transaction::query()
+            ->where('book_id', $id)
+            ->where('status','success')
+            ->sum('amount');
+
+        return $countRevenue === 0 ?  'not selled' : $countRevenue;
+    }
+
+    public function getFileUrl() {
+        $user = User::query()
+            ->where('id', Auth::id())
+            ->has('systemAdmin')
+            ->first(); 
+
+        if(Book::checkEligibility($this->id) || $user !== null ) {
+            return $this->file_url
+                ? Storage::disk('public')->url($this->file_url)
+                : 'no-file_url.png';
+        } 
+
+        return 'not-allowed.png';
     }
 }

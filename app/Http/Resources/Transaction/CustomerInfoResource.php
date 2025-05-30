@@ -23,6 +23,7 @@ class CustomerInfoResource extends JsonResource
             'first_name'   => $this->first_name,
             'middle_name'       => $this->middle_name,
             'temp_password' => $this->temp_password ?? null,
+            'status' => $this->user_banned_at ? 'Blocked' : 'Active',
             'phone'       => $this->phone,
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)

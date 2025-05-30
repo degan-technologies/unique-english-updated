@@ -42,13 +42,17 @@ async function handleSubmit() {
 
         if (props.actionType === 'STORE') {
             const response = await Axios.post("/api/courses/module", data);
-            emit('onAddNewModule',  response.data.data)
+            selectedCourse.value.courseModules = [
+                response.data.data,
+                ...selectedCourse.value.courseModules
+            ]
             resetForm();
         } else {
             const response = await Axios.patch(`/api/courses/module/${editCourseModule.value?.id}`, data);
             selectedCourse.value.courseModules = selectedCourse.value.courseModules.map(
                 item => item.id === response.data.data.id ? response.data.data : item
             );
+
             editCourseModule.value = null;
         }
     } catch (err) {

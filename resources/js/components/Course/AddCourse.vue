@@ -12,6 +12,7 @@ import { useInstructorStore } from "@/store/useInstructorStore";
 const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 const SUCCESS_MESSAGE_TIMEOUT = 3000;
+const THUMBNAIL_HEIGHT = '200px'; // Specific height for thumbnails
 
 // Store and Router
 const InstructorStore = useInstructorStore();
@@ -62,15 +63,29 @@ const submitButtonText = computed(() => {
 });
 
 // Initialize form if editing
-watch([() => selectedCourse.value, () => props.editCourse], ([course, editMode]) => {
-    if (course?.id && editMode) {
-        initializeFormFromSelectedCourse();
+watch([() => route.query.slug, () => props.editCourse], async ([slug, editMode]) => {
+    if (slug && editMode) {
+        await fetchCourseToEdit(slug);
     } else if (!editMode) {
         selectedCourse.value = null;
     }
 }, { immediate: true });
 
 // Methods
+async function fetchCourseToEdit(slug) {
+    try {
+        loading.value = true;
+        const response = await Axios.get(`/api/show-course/${slug}`);
+        selectedCourse.value = response.data.data;
+        initializeFormFromSelectedCourse();
+    } catch (error) {
+        console.error("Failed to fetch course:", error);
+        errors.value.general = "Failed to load course data. Please try again.";
+    } finally {
+        loading.value = false;
+    }
+}
+
 function initializeFormFromSelectedCourse() {
     course.value = {
         ...selectedCourse.value,
@@ -78,7 +93,7 @@ function initializeFormFromSelectedCourse() {
         upload_intro_video: null,
         create_thumbnail_url: null,
         create_intro_video: null
-    }; 
+    };
 }
 
 function validateFile(file, field) {
@@ -191,7 +206,6 @@ function createFormData(status) {
 
     // Handle special fields
     formData.append("status", status);
- 
 
     // Add files if they exist
     if (upload_thumbnail instanceof File) {
@@ -206,7 +220,7 @@ function createFormData(status) {
 
 function handleSuccessResponse(response, status) {
     successMessage.value = response.data.message ||
-        (status === 'draft' ? 'Draft saved successfully' :
+        (status === 'draft' ? 'Course saved as draft successfully' :
             isEditing.value ? 'Course updated successfully' : 'Course published successfully');
 
     if (!isEditing.value && status === 'published') {
@@ -312,7 +326,11 @@ watch(successMessage, (newVal) => {
                 {{ errors.general }}
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div v-if="loading" class="flex justify-center items-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-600"></div>
+            </div>
+
+            <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <!-- Main Content Column -->
                 <div class="lg:col-span-3 space-y-6">
                     <!-- Course Name -->
@@ -333,7 +351,8 @@ watch(successMessage, (newVal) => {
                         <div>
                             <div v-if="course.create_thumbnail_url || course?.thumbnail_url" class="mb-2 relative">
                                 <img :src="course.create_thumbnail_url || course.thumbnail_url" alt="Course Thumbnail"
-                                    class="w-full h-40 object-cover rounded-md shadow-md border border-gray-200" />
+                                    class="w-full object-cover rounded-md shadow-md border border-gray-200"
+                                    :style="{ height: THUMBNAIL_HEIGHT }" />
                                 <div v-if="isProcessingThumbnail"
                                     class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
                                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
@@ -371,8 +390,8 @@ watch(successMessage, (newVal) => {
                         <div>
                             <div v-if="course.create_intro_video || course?.intro_video_url" class="mb-2 relative">
                                 <video ref="videoPlayer"
-                                    class="video-js w-full h-40 rounded-md border border-gray-200 bg-black" controls
-                                    preload="auto">
+                                    class="video-js w-full rounded-md border border-gray-200 bg-black" controls
+                                    preload="auto" :style="{ height: THUMBNAIL_HEIGHT }">
                                     <source :src="course.create_intro_video || course.intro_video_url"
                                         type="video/mp4" />
                                 </video>
@@ -462,7 +481,7 @@ watch(successMessage, (newVal) => {
                             </div>
                             <p v-if="errors.discount" class="mt-1 text-red-500 text-sm">{{ errors.discount }}</p>
                         </div>
-                    </div> 
+                    </div>
 
                     <!-- Language -->
                     <div>
@@ -476,18 +495,7 @@ watch(successMessage, (newVal) => {
             </div>
 
             <!-- Form Actions -->
-            <div class="flex justify-end mt-8 space-x-4">
-                <button v-if="!isEditing" type="button" @click="submitCourse('draft')"
-                    :disabled="isSavingDraft || loading"
-                    class="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
-                    <span v-if="isSavingDraft">
-                        <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
-                    </span>
-                    <span v-else>
-                        <i class="fas fa-save mr-2"></i> Save as Draft
-                    </span>
-                </button>
-
+            <div class="flex justify-end mt-8 space-x-4"> 
                 <button type="button" @click="submitCourse('published')"
                     :disabled="isStoringCourse || isUpdatingCourse || loading"
                     class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
@@ -516,9 +524,9 @@ watch(successMessage, (newVal) => {
     opacity: 0;
 }
 
-/* Improved video player styling */
+/* Video player styling with fixed height */
 .video-js {
-    height: 200px;
+    height: v-bind(THUMBNAIL_HEIGHT);
     background-color: #000;
 }
 

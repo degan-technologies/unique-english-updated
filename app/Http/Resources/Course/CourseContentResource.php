@@ -26,6 +26,7 @@ class CourseContentResource extends JsonResource {
             'sequence' => $this->sequence,
             'content_type' => $this->content_type,
             'note' => $this->note,
+            'created_at' => $this->created_at ? $this->created_at->format('l, F j Y') : null,
 
             'hour' => $this->hour && strpos($this->hour, '00:') === 0 
                 ? substr($this->hour, 3) 

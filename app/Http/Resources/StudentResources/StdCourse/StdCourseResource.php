@@ -39,7 +39,6 @@ class StdCourseResource extends JsonResource {
             'status' => $this->status,
             'user' => new userResource($this->user),
 
-
             'intro_video_url' => $this->intro_video
                 ? url('/api/courses/stream/video/' . basename($this->intro_video))
                 : 'no-intro_video.png',

@@ -21,7 +21,7 @@ const isLoading = ref(false);
 const selectedPriceType = ref(null);
 const plans = ref([]);
 const checkoutUrl = ref('');
-
+const selectedPlanId = ref(null);
 // Stores
 const appStore = useAppStore();
 const authStore = useAuthStore();
@@ -53,13 +53,9 @@ const handleEnrollment = async (item, priceType) => {
 
     isLoading.value = true;
     selectedPriceType.value = priceType;    
+    selectedPlanId.value = item.id
 
-    try {
-        // if (item.isMyLive) {
-        //     await handleExistingCourse(item);
-        //     return;
-        // }
-
+    try { 
         await initiatePayment(item, priceType);
     } catch (error) {
         console.error("Enrollment error:", error);
@@ -67,15 +63,7 @@ const handleEnrollment = async (item, priceType) => {
         isLoading.value = false;
         selectedPriceType.value = null;
     }
-};
-
-const handleExistingCourse = (item) => {
-    router.push({
-        name: "student",
-        query: { tab: liveSchedulTab.value, slug: item.slug },
-    });
-    selectedCourseSlug.value = item.slug;
-};
+}; 
 
 const initiatePayment = async (item, priceType) => {
     const selectedItem = [{
@@ -153,7 +141,7 @@ onMounted(fetchPlans);
                                 </label> 
                                 <button  @click="handleEnrollment(plan, PRICE_TYPES.INDIVIDUAL)" :disabled="isLoading || plan.planType == PRICE_TYPES.INDIVIDUAL"
                                     class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
-                                    <template v-if="isLoading && selectedPriceType==PRICE_TYPES.INDIVIDUAL">
+                                    <template v-if="isLoading && selectedPriceType==PRICE_TYPES.INDIVIDUAL && plan.id == selectedPlanId">
                                         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                             xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24">
@@ -176,7 +164,7 @@ onMounted(fetchPlans);
                                 </label> 
                                  <button  @click="handleEnrollment(plan, PRICE_TYPES.GROUP)" :disabled="isLoading || plan.planType == PRICE_TYPES.GROUP"
                                     class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
-                                    <template v-if="isLoading && selectedPriceType==PRICE_TYPES.GROUP" >
+                                    <template v-if="isLoading && selectedPriceType==PRICE_TYPES.GROUP && plan.id == selectedPlanId" >
                                         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                                             xmlns="http://www.w3.org/2000/svg" fill="none"
                                             viewBox="0 0 24 24">

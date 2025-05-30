@@ -32,17 +32,27 @@ class QMetaDataController extends Controller{
         ]);
     }
 
-    public function fetchInstructorExam(){
+    public function fetchInstructorExam(Request $request){
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
 
         if(!$user) return;
 
-        $qMetaData = QMetaData::where('user_id', Auth::id())->paginate(10);
+        $qMetaData = QMetaData::query()  
+            ->where('course_id', $request->course_id)
+            ->where('course_module_id', $request->module_id)
+            ->where('user_id', Auth::id())
+            ->paginate(10);
 
         $pagination = $qMetaData->toArray();
         unset($pagination['data']);
+
+        if($qMetaData->isEmpty()){
+            return response()->json([
+                'message' => $this->langService->getLang('no_data_found'),
+            ], 404);
+        }
 
         return response()->json([
             'pagination'=> $pagination,

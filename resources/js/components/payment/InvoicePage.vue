@@ -194,13 +194,13 @@ onMounted(() => {
                                     {{ item.name }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                                    ${{ item.price.toFixed(2) }}
+                                    ${{ item.price?.toFixed(2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                     {{ item.quantity }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                                    ${{ (item.price * item.quantity).toFixed(2) }}
+                                    ${{ (item.price * item.quantity)?.toFixed(2) }}
                                 </td>
                             </tr>
                         </tbody>
@@ -212,16 +212,16 @@ onMounted(() => {
                     <div class="max-w-md ml-auto space-y-2">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Subtotal:</span>
-                            <span class="font-medium">${{ invoiceData.subtotal.toFixed(2) }}</span>
+                            <span class="font-medium">${{ invoiceData.subtotal?.toFixed(2) }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Tax ({{ (invoiceData.tax / invoiceData.subtotal *
-                                100).toFixed(0) }}%):</span>
-                            <span class="font-medium">${{ invoiceData.tax.toFixed(2) }}</span>
+                                100)?.toFixed(0) }}%):</span>
+                            <span class="font-medium">${{ invoiceData.tax?.toFixed(2) }}</span>
                         </div>
                         <div class="flex justify-between border-t pt-2">
                             <span class="text-lg font-bold text-gray-800">Total:</span>
-                            <span class="text-lg font-bold text-gray-800">${{ invoiceData.total.toFixed(2) }}</span>
+                            <span class="text-lg font-bold text-gray-800">${{ invoiceData.total?.toFixed(2) }}</span>
                         </div>
                     </div>
                 </div>

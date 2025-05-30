@@ -23,6 +23,8 @@ class Book extends Model {
 
     protected $casts = [
         'tag' => 'array',
+        'price' => 'integer',
+        'discount' => 'integer',
     ];
 
     public function user() { return $this->belongsTo(User::class); }

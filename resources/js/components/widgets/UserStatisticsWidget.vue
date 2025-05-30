@@ -112,7 +112,7 @@ onMounted(() => {
             <h3 class="text-lg font-bold text-gray-900">User Statistics</h3>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-center mx-auto ">
+        <div class="grid grid-cols-3 gap-4 mb-6 text-center mx-auto ">
             <div class="py-2">
                 <div class="text-3xl font-bold text-lime-700">{{ animatedTotalUsers }}</div>
                 <div class="text-sm text-gray-600">Total Users</div>
@@ -126,7 +126,7 @@ onMounted(() => {
                 <div class="text-sm text-gray-600">New User</div>
             </div>
         </div>
-        <div class="relative w-full">
+        <div class="relative h-64">
             <canvas ref="donutChartCanvas" class="w-full"></canvas>
         </div>
     </div>

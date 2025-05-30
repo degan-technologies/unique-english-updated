@@ -1,9 +1,11 @@
 <script setup>
 import Axios from "axios";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
-import { UseStudentStore } from "@/store/UseStudentStore"; 
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+const emit = defineEmits(['feedback-added', 'feedback-updated']);
 
 const studentStore = UseStudentStore();
 const { bookOverviewTab, videoPlayerTab } = storeToRefs(studentStore);
@@ -32,15 +34,21 @@ const userHoverRating = ref(0);
 const userRatingError = ref("");
 
 // Reviews display
-const showAllReviews = ref(false); 
+const showAllReviews = ref(false);
+const localFeedbacks = ref([...props.feedBacks]);
+
+// Update localFeedbacks when props.feedBacks changes
+watch(() => props.feedBacks, (newVal) => {
+    localFeedbacks.value = [...newVal];
+}, { immediate: true });
 
 // Computed
 const visibleFeedBacks = computed(() => {
-    return showAllReviews.value ? props.feedBacks : props.feedBacks.slice(0, 2);
+    return showAllReviews.value ? localFeedbacks.value : localFeedbacks.value.slice(0, 2);
 });
 
 const shouldShowToggle = computed(() => {
-    return props.feedBacks.length > 2;
+    return localFeedbacks.value.length > 2;
 });
 
 const userHoverRatingOrValue = computed(() => {
@@ -75,6 +83,11 @@ const isStarFull = (star, rating) => star <= Math.floor(rating);
 const isStarHalf = (star, rating) => rating === star - 0.5;
 
 const addComment = async () => {
+    // Clear previous errors
+    commentError.value = "";
+    userRatingError.value = "";
+
+    // Validate
     if (!userRating.value) {
         userRatingError.value = "Please select a rating";
         return;
@@ -82,6 +95,11 @@ const addComment = async () => {
 
     if (!newComment.value.trim()) {
         commentError.value = "Please write a review";
+        return;
+    }
+
+    if (newComment.value.length > 500) {
+        commentError.value = "Review must be less than 500 characters";
         return;
     }
 
@@ -100,14 +118,22 @@ const addComment = async () => {
         newComment.value = "";
         userRating.value = 0;
         userHoverRating.value = 0;
-        commentError.value = "";
-        userRatingError.value = "";
 
-        // Emit event to parent to refresh feedbacks
+        // Update local feedbacks and emit event
+        localFeedbacks.value = [response.data.data, ...localFeedbacks.value];
         emit('feedback-added', response.data.data);
+
+        // Show success message
+        commentError.value = "Thank you for your feedback!";
+        setTimeout(() => {
+            commentError.value = "";
+        }, 3000);
+
     } catch (error) {
-        console.error("Failed to submit feedback:", error);
         commentError.value = "Failed to submit feedback. Please try again.";
+        setTimeout(() => {
+            commentError.value = "";
+        }, 3000);
     } finally {
         isLoading.value = false;
     }
@@ -119,7 +145,6 @@ const likeComment = async (comment, action) => {
             action: action,
         });
 
-        // Emit event to parent to update the feedback
         emit('feedback-updated', {
             id: comment.id,
             likes: response.data.like,
@@ -128,8 +153,8 @@ const likeComment = async (comment, action) => {
     } catch (error) {
         console.error("Failed to update feedback reaction:", error);
     }
-}; 
- 
+};
+
 const getInitials = (name) => {
     return name?.charAt(0).toUpperCase() || "";
 };
@@ -144,7 +169,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="feedback-container"> 
+    <div class="feedback-container">
         <!-- Rating Summary -->
         <div class="rating-summary">
             <h2 class="section-title">Student Feedback</h2>
@@ -155,7 +180,7 @@ onMounted(() => {
                     <div class="rating-meta">
                         <p class="rating-label">Course Rating</p>
                         <p class="rating-count">
-                            Based on {{ feedBacks?.length }} review{{ feedBacks?.length !== 1 ? 's' : '' }}
+                            Based on {{ localFeedbacks.length }} review{{ localFeedbacks.length !== 1 ? 's' : '' }}
                         </p>
                     </div>
                 </div>
@@ -166,7 +191,8 @@ onMounted(() => {
                         <span class="star-label">{{ 5 - index }}</span>
                         <i class="fas fa-star star-icon"></i>
                         <div class="progress-bar">
-                            <div class="progress-fill" :style="{ width: `${(count / feedBacks.length) * 100}%` }"></div>
+                            <div class="progress-fill" :style="{ width: `${(count / localFeedbacks.length) * 100}%` }">
+                            </div>
                         </div>
                         <span class="star-count">({{ count }})</span>
                     </div>
@@ -199,26 +225,31 @@ onMounted(() => {
 
             <!-- Review Form -->
             <div class="review-form">
-                <input v-model="newComment" type="text" placeholder="Write a review..." class="review-input"
-                    :disabled="isLoading" />
+                <textarea v-model="newComment" placeholder="Write a review..." class="review-input"
+                    :disabled="isLoading" maxlength="500" rows="3"></textarea>
                 <button @click="addComment" class="submit-button" :disabled="isLoading">
                     <span v-if="isLoading">Posting...</span>
                     <span v-else>Post</span>
                 </button>
             </div>
+            <p v-if="newComment.length > 0" class="text-right text-xs text-gray-500 mt-1">
+                {{ newComment.length }}/500 characters
+            </p>
         </div>
 
-         <!-- Error Messages -->
+        <!-- Error Messages -->
         <div v-if="commentError || userRatingError" class="error-messages">
             <p v-if="userRatingError" class="error">{{ userRatingError }}</p>
-            <p v-if="commentError" class="error">{{ commentError }}</p>
+            <p v-if="commentError" class="error" :class="{ 'text-green-500': commentError.includes('Thank you') }">
+                {{ commentError }}
+            </p>
         </div>
 
         <!-- Reviews Section -->
         <div class="reviews-section">
             <h2 class="section-title">Reviews</h2>
 
-            <template v-if="feedBacks.length > 0">
+            <template v-if="localFeedbacks.length > 0">
                 <div v-for="feedback in visibleFeedBacks" :key="feedback.id" class="feedback-item">
                     <!-- User Info -->
                     <div class="user-info">
@@ -266,7 +297,7 @@ onMounted(() => {
                 <!-- Show More/Less Toggle -->
                 <div v-if="shouldShowToggle" class="show-more-container">
                     <button @click="toggleShowMore" class="show-more-button">
-                        {{ showAllReviews ? 'Show Less' : `Show More (${feedBacks.length - 2})` }}
+                        {{ showAllReviews ? 'Show Less' : `Show More (${localFeedbacks.length - 2})` }}
                     </button>
                 </div>
             </template>
@@ -275,7 +306,6 @@ onMounted(() => {
                 No reviews yet. Be the first to review!
             </div>
         </div>
-
     </div>
 </template>
 
@@ -385,15 +415,15 @@ onMounted(() => {
 }
 
 .review-form {
-    @apply flex mt-6 flex-wrap gap-2;
+    @apply flex flex-col md:flex-row mt-6 gap-2;
 }
 
 .review-input {
-    @apply flex-grow p-3 border rounded-lg focus:ring-2 focus:ring-blue-300 w-full md:w-auto;
+    @apply w-full p-3 border rounded-lg flex-grow focus:ring-2 focus:ring-blue-300 resize-none;
 }
 
 .submit-button {
-    @apply bg-lime-500 text-white px-6 py-3 rounded-lg hover:bg-lime-600 transition w-full md:w-auto disabled:opacity-50;
+    @apply bg-lime-500 text-white px-6 py-3 rounded-lg hover:bg-lime-600 transition w-full md:w-fit h-fit disabled:opacity-50;
 }
 
 /* Reviews Section */
@@ -467,10 +497,6 @@ onMounted(() => {
     @apply text-red-500;
 }
 
-.action-button.report {
-    @apply hover:text-yellow-600;
-}
-
 .no-reviews {
     @apply text-gray-500 text-center py-4;
 }
@@ -481,54 +507,5 @@ onMounted(() => {
 
 .show-more-button {
     @apply text-lime-600 font-medium hover:underline px-4 py-2 rounded-lg hover:bg-lime-50 transition;
-}
-
-/* Report Modal */
-.modal-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
-}
-
-.modal-content {
-    @apply bg-white p-6 rounded-lg shadow-lg max-w-md w-full;
-}
-
-.modal-title {
-    @apply text-xl font-bold text-gray-800 mb-2;
-}
-
-.modal-description {
-    @apply text-gray-600 mb-4;
-}
-
-.form-group {
-    @apply mb-4;
-}
-
-.form-label {
-    @apply block text-gray-700 mb-2;
-}
-
-.form-select {
-    @apply w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-300;
-}
-
-.form-textarea {
-    @apply w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-300 resize-none;
-}
-
-.modal-actions {
-    @apply flex justify-end space-x-3 mt-4;
-}
-
-.modal-button {
-    @apply px-4 py-2 rounded-lg transition;
-}
-
-.modal-button.cancel {
-    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
-}
-
-.modal-button.submit {
-    @apply bg-lime-500 text-white hover:bg-lime-600;
 }
 </style>

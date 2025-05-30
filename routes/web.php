@@ -23,3 +23,7 @@ Route::get('/auth/{provider}/callback', [SocialController::class, 'handleProvide
 Route::get('/email', function(){
     return view('emails.InstructorNotificationEmail');
 });
+
+Route::post('/forgot-password', [AuthController::class, 'sendResetOtp']);
+Route::post('/reset-password', [AuthController::class,'resetPasswordViaOtp']);
+     

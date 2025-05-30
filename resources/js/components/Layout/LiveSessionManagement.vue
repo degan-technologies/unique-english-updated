@@ -6,13 +6,14 @@ import { useToast } from "vue-toastification";
 import JetsiLive from "@/components/Live/JetsiLive.vue";
 import AddSchedule from "@/components/Live/AddSchedule.vue";
 import Spinner from "@/components/Layout/Spinner.vue";
-import Privatechedule from '@/components/Layout/Privatechedule.vue';
+import PrivateSchedule from '@/components/Layout/PrivateSchedule.vue';
+import Popper from "vue3-popper";
 
 const toast = useToast();
 const sessions = ref([]);
 const users = ref([]);
 const showAddSchedule = ref(false);
-const selectedRoom = ref(null);
+const startSelectedSchedule = ref(null);
 const selectedSession = ref(null);
 const isLoading = ref(true);
 const isStartingSession = ref(false);
@@ -64,14 +65,23 @@ function getStatusColor(status) {
     return statusMap[status.toLowerCase()] || "bg-gray-100 text-gray-800";
 }
 
-function joinSession(room) {
-    if (!room) {
+function joinSession(newSession) {
+     if (!newSession) {
         toast.warning("No room selected", { timeout: 3000 });
         return;
     }
-    isStartingSession.value = true;
-    selectedRoom.value = room;
-    isStartingSession.value = false;
+
+    Axios.post(`/api/store-instractor-attendance/${newSession.id}`)
+        .then(res => { 
+            isStartingSession.value = true;
+            startSelectedSchedule.value = newSession;
+            isStartingSession.value = false;
+            toast.success(res.data.data, { timeout: 3000 });
+        })
+        .catch(error => {
+            toast.warning("No room selected", { timeout: 3000 });
+            return;
+        }) 
 }
 
 function editSession(session) {
@@ -100,7 +110,7 @@ function onPreviousPage() {
     fetchParticipants(currentPage.value - 1);
 }
 
-function coursePerPage(amount) {
+function studentPerPage(amount) {
     rowsPerPage.value = amount;
     fetchParticipants(currentPage.value);
 } 
@@ -189,9 +199,11 @@ onMounted(async () => {
 
                 <template v-else>
                     <!-- When a room is selected -->
-                    <div v-if="selectedRoom" class="bg-white rounded-lg shadow overflow-hidden">
+                    <div v-if="startSelectedSchedule" class="bg-white rounded-lg shadow overflow-hidden">
                         <div class="relative w-full h-full min-h-[600px]">
-                            <JetsiLive :selectedRoom="selectedRoom" @closeStream="selectedRoom = null" />
+                            <JetsiLive 
+                                :startSelectedSchedule="startSelectedSchedule" 
+                                @closeStream="startSelectedSchedule = null" />
                         </div>
                     </div>
 
@@ -251,7 +263,7 @@ onMounted(async () => {
                                                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                             </svg>
                                                         </button>
-                                                        <button @click="joinSession(session.room_name)"
+                                                        <button @click="joinSession(session)"
                                                             :disabled="isStartingSession"
                                                             class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-75 disabled:cursor-not-allowed">
                                                             <span v-if="!isStartingSession">Start</span>
@@ -384,20 +396,25 @@ onMounted(async () => {
 
                                 <!-- Pagination Footer -->
                                 <div class="p-4 bg-white flex flex-row items-center justify-between">
-                                    <!-- Rows Per Page Selector -->
-                                    <div class="flex flex-wrap space-x-2 items-center">
-                                        <span class="text-sm text-gray-600">Courses per page:</span>
-                                        <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
-                                            class="border border-gray-300 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
-                                            :class="{
-                                                'bg-blue-500 text-white font-bold':
-                                                    rowsPerPage === option,
-                                                'bg-white text-gray-700 hover:bg-gray-200':
-                                                    rowsPerPage !== option,
-                                            }">
-                                            {{ option }}
+                                   <Popper>
+                                        <div class="flex flex-row md:gap-2">
+                                            <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                                            <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                                            <i class="fa-solid fa-chevron-down text-lg"></i>
                                         </div>
-                                    </div>
+                                        <template #content>
+                                            <div v-for="option in rowsPerPageOptions" :key="option" @click="studentPerPage(option)"
+                                                class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                                                :class="{
+                                                    'bg-gray-300 text-white font-bold':
+                                                        rowsPerPage === option,
+                                                    'bg-white text-gray-700 hover:bg-gray-200':
+                                                        rowsPerPage !== option,
+                                                }">
+                                                {{ option }}
+                                            </div>
+                                        </template>
+                                    </Popper>
 
                                     <!-- Pagination Controls -->
                                     <div class="flex items-center space-x-3">
@@ -425,13 +442,13 @@ onMounted(async () => {
             <!-- Overlay: Add Schedule Form -->
             <div v-if="showAddSchedule"
                 class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 animate-fadeIn z-50">
-                <AddSchedule v-if="showAddSchedule" :selectedSession="selectedSession" @close="showAddSchedule = false"
+                <AddSchedule v-if="showAddSchedule" :selectedSession="selectedSession" @close="showAddSchedule = false, selectedSession = null"
                         @schedule-updated="handleScheduleAdded" />
             </div>
        </div>
 
        <div v-else>
-            <Privatechedule/>
+            <PrivateSchedule/>
        </div>
     </div>
 </template>

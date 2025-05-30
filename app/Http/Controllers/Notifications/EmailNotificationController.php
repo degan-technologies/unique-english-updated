@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Notifications;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Email\EmailAnnouncementResource;
 use App\Models\User;
 use App\Services\LangService;
 use App\Services\SMSService;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class EmailNotificationController extends Controller {
 
@@ -30,77 +32,99 @@ class EmailNotificationController extends Controller {
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function sedEmailNotification(Request $request) {
- 
-        $newStatus = 'failed';
+    public function sendEmailNotification(Request $request) {
+        // Verify admin permissions
         $admin = User::query()
             ->has('systemAdmin')
             ->where('id', Auth::id())
-            ->first();
+            ->firstOrFail();
 
-        if (!$admin) {
-            return response()->json([
-                'message' => 'Unauthorized'
-            ], 403);
-        }
-
-        $validationRules = [
-            'subject' => 'required|string ',
+        // Validate input
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string',
             'message' => 'required|string',
-        ];
+        ], $this->langService->getLang('email_notification'));
 
-        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_notification'));
-
-        if (!$validator->passes()) {
+        if ($validator->fails()) {
             return response()->json([
-                'message' => $validator->errors()->all()[0],
+                'message' => $validator->errors()->first(),
                 'errors' => $validator->errors()
             ], 422);
         }
-        $users = User::all();
 
-        if ($users->isEmpty()) {
+        // Get all users (chunk for large datasets)
+        $users = User::cursor();
+        if ($users->count() === 0) {
             return response()->json([
-                'message' => 'no user not found'
+                'message' => 'No users found'
             ], 400);
         }
 
         DB::beginTransaction();
 
-        $messageRecord = $admin->emailNotifications()->create([
-            'subject' => $request->subject,
-            'user_ids' => json_encode($users->pluck('id')->toArray()),
-            'message' => $request->message, 
-        ]);
+        try {
+            // Create notification record
+            $notificationId = DB::table('email_notifications')->insert([
+                'user_id' => $admin->id,
+                'subject' => $request->subject,
+                'user_ids' => json_encode(User::pluck('id')->all()),
+                'message' => $request->message,
+                'status' => 'processing',
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ]);
 
-        foreach ($users as $user) {
-            try {
-                Mail::raw($request->message, function ($mail) use ($user, $request) {
-                    $mail->to($user->email)
-                        ->subject($request->subject);
-                }); 
+            $failedEmails = [];
+            $successCount = 0;
 
-                $newStatus = 'sent'; 
-            } catch (\Exception $e) {
+            foreach ($users as $user) {
+                try {
+                    Mail::raw($request->message, function ($mail) use ($user, $request) {
+                        $mail->to($user->email)
+                            ->subject($request->subject);
+                    });
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $failedEmails[] = [
+                        'email' => $user->email,
+                        'error' => $e->getMessage()
+                    ];
+                    logger()->error('Email send failed to '.$user->email, ['error' => $e]);
+                }
+            }
 
-                $newStatus = 'failed';
-                DB::rollBack();
+            // Update notification status
+            $status = empty($failedEmails) ? 'sent' : ($successCount > 0 ? 'partial' : 'failed');
+            
+            DB::table('email_notifications')
+                ->where('id', $notificationId)
+                ->update([
+                    'status' => $status,
+                    'updated_at' => now()
+                ]);
 
-                return response()->json([
-                    'message' => 'Failed to send email to ' . $user->email,
-                    'error' => $e->getMessage()
-                ], 500);
-            }            
+            DB::commit();
+
+            $this->adminActivities('send message');
+
+            return response()->json([
+                'message' => 'Emails processed',
+                'data' => [
+                    'success_count' => $successCount,
+                    'failed_count' => count($failedEmails),
+                    'status' => $status
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            logger()->error('Email notification failed', ['error' => $e]);
+            
+            return response()->json([
+                'message' => 'Failed to process email notifications',
+                'error' => $e->getMessage()
+            ], 500);
         }
-        
-        $messageRecord->update(['status' => $newStatus]);
-        $this->adminActivities('send message');
-
-        DB::commit();
-
-        return response()->json([
-            'message' => 'Message request processed', 
-        ]);
     }
 
     public function getAnnouncements(Request $request) {
@@ -110,11 +134,19 @@ class EmailNotificationController extends Controller {
             ->first();
 
 
-        $emailNotifications = $user->emailNotifications()->orderBy('created_at')->get();
+        $emailNotifications = DB::table('email_notifications')
+            ->where('user_id', $user->id)
+            ->orderBy('created_at')
+            ->get();
+
+        if (!$emailNotifications) {
+            return response()->json([
+               'message' => 'No notifications found'
+            ], 404);
+        }
 
         return response()->json([
-            'message' => 'Email notifications retrieved successfully',
-            'data' => $emailNotifications
+            'data' => EmailAnnouncementResource::collection($emailNotifications)
         ]);
     }
 }

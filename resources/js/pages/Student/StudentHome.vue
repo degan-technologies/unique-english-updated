@@ -57,7 +57,10 @@ const isBookLoading = ref(false); // Specific loading state for book reading
 selectedCourseSlug.value = route.query.slug;
 
 const selectedCourse = computed(() => {
-    return courses.value.find((item) => item.slug === selectedCourseSlug.value);
+    if (Array.isArray(courses.value)) {
+        return courses.value.find((item) => item.slug === selectedCourseSlug.value) || null;
+    }
+    return null;
 });
 
 async function redirectRoute() {

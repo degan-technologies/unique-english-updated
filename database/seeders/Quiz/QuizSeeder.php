@@ -22,7 +22,7 @@ class QuizSeeder extends Seeder
                 'question_type' => 'multiple_choice',
                 'question' => 'Which word is a synonym for "happy"?',
                 'choice' => ['Sad', 'Excited', 'Joyful', 'Angry'],  
-                'answer' => ['Joyful'],  
+                'answer' => 'Joyful',  
                 'q_meta_data_id' => $qMetaData->id,  
                 'user_id' => $user->id,
             ]);

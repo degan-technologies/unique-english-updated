@@ -48,9 +48,8 @@ class FeedBackController extends Controller
         $feedbackType = $request->feedbackType ?? null;
         $courseSlug = $request->slug ?? null;
         $currentFeedback = null;
-        $eligibleCourse = false;
-        $courseId = null;
-        $bookId = null;
+        $eligibleCourse = false; 
+        $getId = null;
         $columenNmae = null;
 
         /* @var \App\Models\User $user
@@ -59,52 +58,9 @@ class FeedBackController extends Controller
             ->where('id', Auth::id())
             ->first();
 
-        $feedbackCompleted = $user->feedBacks;
-
-        switch ($feedbackType) {
-            case 'course':
-                $currentFeedback = Course::query()
-                    ->where('slug', $courseSlug)
-                    ->first();
-                $courseId = $currentFeedback->id; 
-                $eligibleCourse = Course::checkEligibility($currentFeedback->id);
-                $columenNmae = 'course_id';
-                break;
-            case 'book':
-                $currentFeedback = Book::query()
-                    ->where('slug', $courseSlug)
-                    ->first();
-                $bookId = $currentFeedback->id;
-                $eligibleCourse = Book::checkEligibility($currentFeedback->id);
-                $columenNmae = 'book_id';
-                break;
-            default:
-                return response()->json([
-                    'message' => $this->langService->getLang('invalid_feedback_type')
-                ], 400);
-        }
- 
-        $feedbackCompleted = FeedBack::query()
-            ->where('user_id', $user->id)
-            ->where("$columenNmae", $courseId)
-            ->first();
-
-        if($feedbackCompleted){
+        if(!$user) {
             return response()->json([
-                'message' => $this->langService->getLang('feedback_already_submitted')
-            ], 403);
-        }
-
-        if(!$currentFeedback) {
-            return response()->json([
-                'message' => $this->langService->getLang('course_not_found')
-            ], 404);
-        }
-
- 
-        if (!$eligibleCourse && !$user->systemAdmin) {
-            return response()->json([
-                'message' => $this->langService->getLang('unauthorized_action')
+               'message' => $this->langService->getLang('unauthorized_action')
             ], 403);
         }
 
@@ -122,12 +78,59 @@ class FeedBackController extends Controller
             ], 422);
         }
 
+        $feedbackCompleted = $user->feedBacks;
+
+        switch ($feedbackType) {
+            case 'course':
+                $currentFeedback = Course::query()
+                    ->where('slug', $courseSlug)
+                    ->first();
+                $getId = $currentFeedback->id; 
+                $eligibleCourse = Course::checkEligibility($currentFeedback->id);
+                $columenNmae = 'course_id';
+                break;
+            case 'book':
+                $currentFeedback = Book::query()
+                    ->where('slug', $courseSlug)
+                    ->first();
+                $getId = $currentFeedback->id;
+                $eligibleCourse = Book::checkEligibility($currentFeedback->id);
+                $columenNmae = 'book_id';
+                break;
+            default:
+                return response()->json([
+                    'message' => $this->langService->getLang('invalid_feedback_type')
+                ], 400);
+        }
+
+         if(!$currentFeedback) {
+            return response()->json([
+                'message' => $this->langService->getLang('not_found')
+            ], 404);
+        }
+ 
+        $feedbackCompleted = FeedBack::query()
+            ->where('user_id', $user->id)
+            ->where("$columenNmae", $getId)
+            ->first(); 
+
+        if($feedbackCompleted){
+            return response()->json([
+                'message' => $this->langService->getLang('feedback_already_submitted')
+            ], 403);
+        }
+ 
+        if (!$eligibleCourse && !$user->systemAdmin) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action')
+            ], 403);
+        } 
+
         $feedback = $user->feedBacks()->create([
             'rate' => $request->rate,
             'comment' => $request->comment,
-            'course_id'=>  $courseId,
+            $columenNmae => $getId,
             'instractor_id' => $currentFeedback->user_id,
-            'book_id' => $bookId,
         ]);
 
         return response()->json([

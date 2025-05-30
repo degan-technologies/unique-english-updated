@@ -36,6 +36,8 @@ class CourseResource extends JsonResource {
             'credit_hour' => $this->credit_hour,
             'created_at' => $this->created_at,
             'status' => $this->status,  
+            'total_enroll' => $this->totalEnroll($this->id),
+            'revenue' => $this->totalRevenue($this->id),
 
             'intro_video_url' => $this->intro_video
                     ? url('/api/courses/stream/video/' . basename($this->intro_video))
@@ -67,5 +69,24 @@ class CourseResource extends JsonResource {
             default:
                 return 'not assigned';
         }
+    }
+
+    public function totalEnroll($id) {
+
+        $countTotalEnroll = Transaction::query()
+            ->where('course_id', $id)
+            ->where('status', 'success')
+            ->count();
+
+        return $countTotalEnroll === 0 ?  'not selled' : $countTotalEnroll;
+    }
+
+    public function totalRevenue($id) {
+        $countRevenue = Transaction::query()
+            ->where('course_id', $id)
+            ->where('status','success')
+            ->sum('amount');
+
+        return $countRevenue === 0 ?  'not selled' : $countRevenue;
     }
 }

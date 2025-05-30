@@ -86,6 +86,14 @@ class English extends Lang {
             'meeting_invitations_not_sent' => 'Meeting invitations not sent.',
             'meeting_invitations_not_found' => 'Meeting invitations not found.',
             'meeting_invitations_not_accepted' => 'Meeting invitations not accepted yet.',
+
+            'Or_log_in_with' => 'Or log in with',
+            'd_have_account'=>"Don't have an account?",
+            'register'=> 'Register',
+            'forgot_password'=> 'Forgot Password?',
+            'login_log'=> 'Login ...',
+            'login_to_account'=> 'Login To Your Account',
+            'login_to_your_account'=> 'Login To Your Account',
         ];
     }
 

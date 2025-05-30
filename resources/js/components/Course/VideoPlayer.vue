@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div v-if="startLoading">
+    <div v-if="startLoading || !selectedModules || !selectedCourseSlug">
         <Spinner />
     </div>
     <div v-else>

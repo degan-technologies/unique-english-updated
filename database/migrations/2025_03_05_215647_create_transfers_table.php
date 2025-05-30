@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
 
             $table->string('currency')->default('ETB');
-            $table->string('reference')->unique();
+            $table->string('reference')->unique()->nullable();
             $table->string('status')->default('pending');
             $table->double('deposits')->nullable();
             $table->double('withdrawals')->nullable();

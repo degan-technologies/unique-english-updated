@@ -13,7 +13,8 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const payments = ref("payments");
     const liveSssions = ref("liveSssions");
     const messaging = ref("messaging");
-     const schedule=ref("schedule");
+    const schedule=ref("schedule");
+    const attendance = ref("attendance");
     const selectedContent = ref(dashboard.value);
 
     function loadSidebarState() {
@@ -74,6 +75,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         payments,
         liveSssions,
         schedule,
+        attendance,
         messaging,
     };
 });

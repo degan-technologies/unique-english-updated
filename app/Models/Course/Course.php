@@ -16,6 +16,11 @@ class Course extends Model {
         'skill_level', 'price', 'discount',
         'credit_hour', 'user_id','thumbnail_url','language', 'intro_video','status'
     ];
+
+    protected $casts = [
+        'price' => 'integer',
+        'discount' => 'integer',
+    ];  
     
     public function user() {return $this->belongsTo(User::class);}
     public function courseModules() { return $this->hasMany(CourseModule::class); }

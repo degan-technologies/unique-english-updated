@@ -20,16 +20,13 @@ class SocialController extends Controller
      */
     public function redirectToProvider($provider)
     {
-        // Define allowed providers
         $allowedProviders = ['google', 'facebook', 'twitter', 'linkedin'];
 
-        // Validate provider
         if (!in_array($provider, $allowedProviders)) {
             return response()->json(['error' => 'Invalid provider'], 400);
         }
 
-        // Redirect to provider login page
-        return Socialite::driver($provider)->redirect();
+        return Socialite::driver($provider)->stateless()->redirect();
     }
 
     /**
@@ -41,65 +38,55 @@ class SocialController extends Controller
     public function handleProviderCallback($provider)
     {
         try {
-            // Use stateless() for APIs
-        $socialUser = Socialite::driver($provider)->stateless()->user();
+            $socialUser = Socialite::driver($provider)->stateless()->user();
 
-        // Find or create the user
-        $user = User::where('provider', $provider)
-            ->where('provider_id', $socialUser->getId())
-            ->orWhere('email', $socialUser->getEmail())
-            ->first();
+            // First try to find by provider ID
+            $user = User::where('provider', $provider)
+                ->where('provider_id', $socialUser->getId())
+                ->first();
 
-            if (!$user) {
-                // If user is not registered, create a new account
-                $user = User::create([
-                    'slug'         => Str::uuid(),
-                    'first_name'   => $socialUser->getName(),
-                    'email'        => $socialUser->getEmail(),
-                    'provider'     => $provider,
-                    'phone'        => '+251000000000',
-                    'role'         => 3,
-                    'provider_id'  => $socialUser->getId(),
-                    'password'     => bcrypt(Str::random(16)),
-                    'profile'      => $socialUser->getAvatar(),
-                    'created_at'   => Carbon::now(),
-                    'updated_at'   => Carbon::now(),
-                ]);
-
-                // Log user in
+            // If not found, try by email (but ensure provider matches)
+            if (!$user && $socialUser->getEmail()) {
+                $user = User::where('email', $socialUser->getEmail())
+                    ->where('provider', $provider)
+                    ->first();
             }
 
-            // Create a Passport token for the user
-            $token = $user->createToken('AuthToken')->accessToken;
+            // If still not found, create new user
+            if (!$user) {
+                $user = User::create([
+                    'slug' => Str::uuid(),
+                    'first_name' => $socialUser->getName() ?? $socialUser->getNickname(),
+                    'email' => $socialUser->getEmail(),
+                    'provider' => $provider,
+                    'phone' => '+251000000000', // Consider making nullable
+                    'role' => 3,
+                    'provider_id' => $socialUser->getId(),
+                    'password' => bcrypt(Str::random(16)),
+                    'profile' => $socialUser->getAvatar(),
+                ]);
+            }
 
-            // Log token for debugging
-            \Log::info("Social Login Token: " . $token);
+           $token = $user->createToken('AuthToken')->accessToken;
 
-            // Set the token as a secure, HTTP-only cookie (aligned with AuthController)
-            $cookie = Cookie::make(
+            // Main auth token cookie (secure, encrypted)
+            $authCookie = Cookie::make(
                 'authToken',
                 $token,
                 60 * 24 * 7, // 7 days
-                '/',         // Path (root)
-                null,        // Domain (null for localhost)
-                false,       // Secure: false for local development (true for production with HTTPS)
-                true,        // HttpOnly: inaccessible to JavaScript
-                false,       // Raw
-                'Lax'        // SameSite policy
-            );
-
-            // Set logged-in status via a separate cookie (for JS usage in Vue)
-            $loginStatusCookie = Cookie::make('loggedin', 'true', 60 * 24 * 7, '/', null, false, false);
-
-            // Redirect to frontend with cookies
-            return redirect('http://127.0.0.1:8000/#/instructor')
-                ->withCookie($cookie)
-                ->withCookie($loginStatusCookie);
-            } catch (\Exception $e) {
-                \Log::error("Social Login Error: " . $e->getMessage());
-                return redirect('http://127.0.0.1:8000/#/login')
-                    ->with('error', 'Social login failed. Please try again.');
-            }
-
+                '/',
+                null,
+                config('app.env') === 'production', // Secure in production
+                true,  // HttpOnly
+                false,
+                'Lax'
+            ); 
+        return redirect(config('app.frontend_url') . '/')
+            ->withCookie($authCookie);
+        } catch (\Exception $e) {
+            \Log::error("Social Login Error: " . $e->getMessage());
+            return redirect(config('app.frontend_url') . '/login')
+                ->with('error', 'Social login failed. Please try again.');
+        }
     }
 }

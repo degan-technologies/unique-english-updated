@@ -1,8 +1,13 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import axios from 'axios';
+import Axios from 'axios';
+import { storeToRefs } from 'pinia';
+import { ref, onMounted, onBeforeUnmount, computed, onUnmounted } from 'vue';
 
+import { useAppStore } from "@/store/useAppStore";
 import Spinner from "@/components/Layout/Spinner.vue";
+
+const appStore = useAppStore();
+const { authUser, isLoggedIn } = storeToRefs(appStore);
 
 const jitsiAPI = ref(null);
 const loading = ref(true);
@@ -17,28 +22,58 @@ const fullRoomName = ref(`${JITSI_APP_ID}/${roomName.value}`);
 const jitsiContainer = ref(null);
 const participantCount = ref(0);
 const isInitialized = ref(false);
+const isSessionEnded = ref(false);
 
- const props = defineProps({
-   selectedRoom: Object,
-}); 
+const props = defineProps({
+    startSelectedSchedule: Object,
+});
 
 const emit = defineEmits(['closeStream']);
 
-if(props.selectedRoom){
-    roomName.value = props.selectedRoom;
+if (props.startSelectedSchedule.room_name) {
+    roomName.value = props.startSelectedSchedule.room_name;
     fullRoomName.value = `${JITSI_APP_ID}/${roomName.value}`;
 }
 
+const userDisplayName = computed(() => {
+    return `${authUser.value?.first_name}   ${authUser.value?.middle_name == null ? '' : authUser.value?.middle_name}` || 'Guest';
+});
+
+const userEmail = computed(() => {
+    return authUser.value?.email || '';
+});
+
+const userAvatar = computed(() => {
+    return authUser.value?.profile || '';
+});
+
+async function handleSessionEndStatus() {
+    if (props.startSelectedSchedule.status !== 'live') {
+        return;
+    }
+
+    let endpoint = `/api/update-instractor-attendance/${props.startSelectedSchedule.id}`;
+
+    if (authUser.value?.role === 'student') {
+        endpoint = `/api/update-student-attendance/${props.startSelectedSchedule.id}`;
+    }
+
+    Axios.post(endpoint).then(res => {
+        return res.data.data;
+    }).catch(err => {
+        return;
+    })
+}
 
 // JWT Token Generation with enhanced error handling
 const getJitsiToken = async () => {
     try {
-        const response = await axios.post('/api/jitsi/token', {
+        const response = await Axios.post('/api/jitsi/token', {
             room: roomName.value,
             user: {
-                name: "Host User",
-                email: "host@example.com",
-                avatar: ""  
+                name: userDisplayName.value,
+                email: userEmail.value,
+                avatar: userAvatar.value
             }
         });
 
@@ -55,6 +90,7 @@ const getJitsiToken = async () => {
 
 // Jitsi Initialization with improved configuration
 const initializeJitsi = async () => {
+    loading.value = true;
     try {
         const token = await getJitsiToken();
 
@@ -64,6 +100,11 @@ const initializeJitsi = async () => {
             width: '100%',
             height: 500,
             jwt: token,
+            userInfo: {
+                displayName: userDisplayName.value,
+                email: userEmail.value,
+                avatar: userAvatar.value
+            },
             configOverwrite: {
                 disableDeepLinking: true,
                 startWithAudioMuted: true,
@@ -89,7 +130,14 @@ const initializeJitsi = async () => {
                 SHOW_JITSI_WATERMARK: false,
                 SHOW_WATERMARK_FOR_GUESTS: false,
                 MOBILE_APP_PROMO: false,
-                HIDE_INVITE_MORE_HEADER: true
+                HIDE_INVITE_MORE_HEADER: true,
+                DISABLE_INVITE_FUNCTIONS: true,
+                TOOLBAR_BUTTONS: [
+                    'microphone', 'camera', 'closedcaptions',
+                    'desktop', 'fullscreen', 'fodeviceselection',
+                    'hangup', 'profile', 'settings', 'raisehand',
+                    'videoquality', 'filmstrip', 'feedback', 'stats'
+                ],
             }
         };
 
@@ -113,7 +161,6 @@ const initializeJitsi = async () => {
 
 // Enhanced Event Handlers
 const handleConferenceJoined = () => {
-    loading.value = false;
     participantCount.value = 1;
     jitsiAPI.value.executeCommand('displayName', 'Host');
 };
@@ -148,22 +195,42 @@ const endSession = () => {
             console.error('Cleanup error:', err);
         }
     }
-    loading.value = false;
+
 };
 
 const handleSessionEnd = () => {
+    isSessionEnded.value = true;
     endSession();
-    error.value = 'Session ended by remote participant';
+    emit('closeStream');
+    handleSessionEndStatus();
 };
 
 const handleInitializationError = (err) => {
     error.value = err.message;
-    loading.value = false;
+
     endSession();
+};
+
+const handleUnload = async () => {
+    if (!isSessionEnded.value) {
+        await handleSessionEndStatus();
+    }
+};
+
+const setupBeforeUnload = () => {
+    window.addEventListener('beforeunload', handleUnload);
+    window.addEventListener('pagehide', handleUnload); // For mobile browsers
+};
+
+const cleanupBeforeUnload = () => {
+    window.removeEventListener('beforeunload', handleUnload);
+    window.removeEventListener('pagehide', handleUnload);
 };
 
 // Component Lifecycle with cleanup
 onMounted(async () => {
+    setupBeforeUnload();
+    loading.value = true;
     try {
         if (!window.JitsiMeetExternalAPI) {
             const script = document.createElement('script');
@@ -180,45 +247,37 @@ onMounted(async () => {
     } catch (err) {
         handleInitializationError(err);
     }
+
 });
 
-function closeStream() {
-    emit('closeStream');
-
-    if (jitsiAPI.value) {
-        jitsiAPI.value.dispose();
-        jitsiAPI.value = null;
-        isInitialized.value = false;
-    }
-}
-
 onBeforeUnmount(() => {
+    cleanupBeforeUnload();
     endSession();
     const scripts = document.querySelectorAll('script[src*="8x8.vc"]');
     scripts.forEach(script => script.remove());
+});
+
+onUnmounted(() => {
+    if (!isSessionEnded.value) {
+        handleSessionEndStatus();
+    }
 });
 </script>
 
 <template>
     <div class="w-full h-full min-h-96 bg-white relative">
-        <div class="w-full h-full flex flex-col">
-            <div   
-                v-show="isInitialized && !error" 
-                ref="jitsiContainer" 
-                class="video-container h-full w-full">
+        <div v-if="loading" class="absolute bg-white w-full h-full flex justify-center items-center">
+            <div class="w-full h-full flex  justify-center items-center">
+                <Spinner />
             </div>
-            <button 
-                v-if="!loading"
-                @click="closeStream()"
+        </div>
+        <div class="w-full h-full flex flex-col">
+            <div v-show="isInitialized && !error" ref="jitsiContainer" class="video-container h-full w-full">
+            </div>
+            <button v-if="!loading && isInitialized && !error" @click="handleSessionEnd()"
                 class="bg-red-700 my-8 self-center text-white px-4 py-1 rounded hover:bg-red-800 transition">
                 Close Stream
             </button>
         </div>
-        <div  v-if="loading"
-            class="absolute bg-white w-full h-full flex justify-center items-center">
-            <div class="w-full h-full flex  justify-center items-center">
-                <Spinner />
-            </div>
-        </div> 
     </div>
 </template>

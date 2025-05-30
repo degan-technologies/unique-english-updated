@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Transaction;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Notifications\Trait\CreateNotificationTreate;
+use App\Http\Controllers\Notifications\Trait\CreateNotificationTrait;
 use App\Http\Controllers\Transaction\Trait\TransferTrait;
 use App\Http\Resources\Bank\TransactionHistoryResource;
-use App\Notifications\TransactionSuccessfulNotification;
 use App\Models\Book\Book;
 use App\Models\Course\Course;
 use App\Models\Plan\Plan;
@@ -15,9 +14,7 @@ use App\Models\Transaction\Transfer;
 use App\Models\User;
 use App\Services\ChapaService;
 use App\Services\LangService;
-use Carbon\Carbon;
 use App\Traits\AdminActivityLog;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class TransactionController extends Controller
 {
-    use TransferTrait, AdminActivityLog, CreateNotificationTreate;
+    use TransferTrait, AdminActivityLog, CreateNotificationTrait;
 
     protected $langService;
     protected $chapaService;
@@ -41,7 +38,7 @@ class TransactionController extends Controller
         $this->chapaService = $chapaService;
     }
 
-    public function handleTransferApproval(Request $request) {
+    public function handleTransferApproval(Request $request) { 
 
         $response = $this->chapaService->verifyWebhook($request);
 
@@ -62,10 +59,10 @@ class TransactionController extends Controller
         }
 
         try {
-            DB::beginTransaction();
+            // DB::beginTransaction();
 
             $transactions = Transaction::query()
-                ->where('tx_ref', $payload['tx_ref'])
+                ->where('tx_ref', 'TX-6832ddf051edb')
                 ->get();
 
             if ($transactions->isEmpty()) {
@@ -81,18 +78,22 @@ class TransactionController extends Controller
                     'updated_at' => now(),
                 ]);
 
-                $transaction->transfer()->update(['status' => $status]);
+                if($transaction->transfer) {
+                    $transaction->transfer()->update(['status' => $status]);
+                }
 
-                $this->enrollmentNotification($transaction->product_type, $transaction);
-            });
+                if($transaction->status === 'success') {
+                    $getresponse = $this->enrollmentNotification($transaction->product_type, $transaction);
+                }
+                
+            }); 
 
             DB::commit();
 
             return response()->json(['message' => 'Transfer processed'], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (\Exception $e) { 
             Log::error('Transfer approval processing failed: ' . $e->getMessage(), ['payload' => $payload]);
-            return response()->json(['message' => 'Processing failed'], Response::HTTP_INTERNAL_SERVER_ERROR);
+            return response()->json(['message' =>  $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -341,6 +342,7 @@ public function transferToBank(Request $request) {
 
             $existingTransaction->update([
                 'tx_ref' => $txRef,
+                'amount' => $price,
                 'enrolled_at' => now()
             ]);
 
@@ -379,10 +381,10 @@ public function transferToBank(Request $request) {
 
     private function prepareTransactionData($transactions, $monthlySummary = false): array
     {
-        $courseSell = $transactions->where('product_type', COURSE)->sum('amount');
-        $bookSell = $transactions->where('product_type', BOOK)->sum('amount');
-        $liveSell = $transactions->where('product_type', LIVE)->sum('amount');
-        $totalSell = $transactions->sum('amount');
+        $courseSell = $transactions->where('product_type', COURSE)->where('status', TRANSACTION_SUCCESS)->sum('amount');
+        $bookSell = $transactions->where('product_type', BOOK)->where('status', TRANSACTION_SUCCESS)->sum('amount');
+        $liveSell = $transactions->where('product_type', LIVE_CLASS)->where('status', TRANSACTION_SUCCESS)->sum('amount');
+        $totalSell = $transactions->where('status', TRANSACTION_SUCCESS)->sum('amount');
 
         $transactionSummary = $transactions->groupBy(function ($transaction) use ($monthlySummary) {
             return $monthlySummary
