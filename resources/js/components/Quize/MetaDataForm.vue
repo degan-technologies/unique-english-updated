@@ -22,8 +22,7 @@ const metaData = ref({
     instruction: "",
 });
 
-const props = defineProps({
-    courseID: Number,
+const props = defineProps({ 
     moduleID: Number
 });
 
@@ -109,16 +108,11 @@ function showAddQuestionForm() {
 async function fetchExams() {
     try {
         const res = await Axios.get("/api/get-module-quizes", {
-            params: {
-                course_id: props.courseID,
+            params: { 
                 module_id: props.moduleID
             }
         });
-        const allExams = res.data.data;
-        qMetaDatas.value = allExams.filter(
-            exam => exam.course_id === props.courseID &&
-                exam.course_module_id === props.moduleID
-        );
+       qMetaDatas.value  = res.data.data; 
     } catch {
         toast.error("Failed to fetch exams");
     }
@@ -133,8 +127,7 @@ async function saveExam() {
     const payload = {
         title: metaData.value.title,
         instruction: metaData.value.instruction,
-        module_id: props.moduleID,
-        course_id: props.courseID
+        module_id: props.moduleID, 
     };
 
     try {

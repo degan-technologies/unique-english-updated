@@ -350,9 +350,9 @@ onMounted(() => {
 
                         <!-- Form Actions -->
                         <div class="flex justify-end gap-3 pt-4">
-                            <button v-if="!isNewTestMode" @click="showTestForm = false" type="button"
+                            <button v-if="!isNewTestMode" @click="initNewTest" type="button"
                                 class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                                Cancel
+                                New Question 
                             </button>
                             <button type="submit" :disabled="!hasChanges && !isNewTestMode"
                                 class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed">

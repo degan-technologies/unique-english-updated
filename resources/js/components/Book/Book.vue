@@ -59,9 +59,9 @@ onMounted(() => {
 
                 <div class="p-4 flex flex-col">
                     <div class="h-20">
-                        <h2 class="text-lg font-bold mb-2">{{ book.title }}</h2>
+                        <h2 class="text-lg font-bold mb-2  line-clamp-2">{{ book.title }}</h2>
                         <div class="flex flex-1 justify-between">
-                            <p class="text-sm text-gray-600">
+                            <p class="text-sm text-gray-600  line-clamp-2">
                                 By: {{ book.auther }}
                             </p>
                             <div class="flex items-center gap-2 font-bold">

@@ -62,7 +62,7 @@ class TransactionController extends Controller
             // DB::beginTransaction();
 
             $transactions = Transaction::query()
-                ->where('tx_ref', 'TX-6832ddf051edb')
+                ->where('tx_ref', $payload['tx_ref'])
                 ->get();
 
             if ($transactions->isEmpty()) {
@@ -175,13 +175,16 @@ class TransactionController extends Controller
     }
 
     public function transactions(Request $request) {
-        $user = User::whereSystemAdminOrInstructor()->first();
+        $user = User::query()
+        ->where('id', Auth::id())
+        ->whereSystemAdminOrInstructor()
+        ->first();
 
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
 
-        $transactions = $user->has('systemAdmin')
+        $transactions = $user->systemAdmin()->exists()
             ? Transaction::query() 
                 ->orderBy('created_at','DESC')
                 ->paginate($request->rowsPerPageOptions)
@@ -208,6 +211,9 @@ class TransactionController extends Controller
         ]);
     } 
 public function transferToBank(Request $request) {
+    /**
+     * @var mixed $user
+     */
     $user = Auth::user();
     $txRef = 'Trf-' . uniqid(); 
 
@@ -286,7 +292,8 @@ public function transferToBank(Request $request) {
 
         return response()->json([
             'transfer' => $transfer['transfer'],
-            'response' => $response
+            'response' => $response,
+            'message' => 'Transfer initiated successfully'
         ]);
 
     } catch (\Exception $e) {

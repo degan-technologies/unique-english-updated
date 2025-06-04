@@ -33,6 +33,10 @@ class BookController extends Controller {
      * Display a listing of the resource.
      */
     public function index(Request $request) {
+        /**
+         * @var mixed $resources
+         */
+
         $resources = Book::with(['user'])
             ->where('user_id', Auth::id())
             ->when($request->searchQuery, fn($q) => $q->where('title', 'like', "%{$request->searchQuery}%"))
@@ -60,6 +64,10 @@ class BookController extends Controller {
     }
 
     public function allBooks() {
+        /**
+         * @var mixed $resources
+         */
+
         $resources = Book::with(['user']) 
             ->paginate(10);
 
@@ -104,8 +112,7 @@ class BookController extends Controller {
         
         $user = Auth::user();
 
-        $validationRules = [
-            'tag' => 'min:3',
+        $validationRules = [ 
             'price' => 'required|integer',
             'language' => 'required|string',
             'discount' => 'nullable|integer',
@@ -115,10 +122,8 @@ class BookController extends Controller {
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
             'file_url' => 'required|mimes:pdf',
-            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv   ',
-            'cover_page_url' => 'image',
-
-           
+            'intro_vedio' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv   ',
+            'cover_page_url' => 'required|image',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
@@ -176,7 +181,7 @@ if ($request->hasFile('file_url')) {
             'publish_date' => $request->publish_date,
             'page_number' => $pageNumber,
             'description' => $request->description,
-            'tag' => json_encode($request->tag),
+            'tag' => json_encode(value: 'English'),
             'file_url' => $imagePath,
             'cover_page_url' => $imagesPath,
             'intro_vedio'=>$videoPath ,
@@ -212,8 +217,7 @@ if ($request->hasFile('file_url')) {
             ], 404);
         }
     
-        $validationRules = [
-            'tag' => 'nullable|min:3',
+        $validationRules = [ 
             'price' => 'required|integer',
             'language' => 'required|string',
             'discount' => 'nullable|integer',
@@ -222,7 +226,7 @@ if ($request->hasFile('file_url')) {
             'description' => 'required|string',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            'file_url' => 'nullable|mimes:pdf',
+            'file_url' => 'nullable|mimes:pdf', 
             'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
             'cover_page_url' => 'nullable|image',
         ];

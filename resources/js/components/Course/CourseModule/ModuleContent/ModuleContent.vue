@@ -1,28 +1,49 @@
 <script setup>
 import Axios from 'axios';
+import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { ref, computed, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import Spinner from "@/components/Layout/Spinner";
+import { ref, computed, watch, onMounted } from 'vue';
 
 import { useInstructorStore } from "@/store/useInstructorStore";
+import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
 
-import LessonPdfReader from "@/components/Course/LessonPdfReader.vue";
+const InstructorStore = useInstructorStore();
+const { readlessonPdfTab, selectedLesson, addNewLesson } = storeToRefs(InstructorStore);
 
-const instructorStore = useInstructorStore();
-const { selectedCourse } = storeToRefs(instructorStore);
+const route = useRoute();
+const router = useRouter();
+// Constants
+const CONTENT_TYPES = {
+    1: { label: 'Video', icon: 'fa-play-circle', color: 'bg-blue-100 text-blue-600' },
+    2: { label: 'PDF', icon: 'fa-file-pdf', color: 'bg-red-100 text-red-600' },
+    3: { label: 'Image', icon: 'fa-image', color: 'bg-purple-100 text-purple-600' },
+    4: { label: 'Document', icon: 'fa-file-alt', color: 'bg-gray-100 text-gray-600' }
+};
+const rowsPerPageOptions = [5, 10, 15, 20];
+const gridView = ref(false);
+const addExam = ref(false)
 
-const showDeleteModal = ref(false);
-const editingContent = ref(false);
+const props = defineProps({ moduleId: Number });
+const emit = defineEmits(['cancelEdit', 'onAddModuleContent']);
+
+// Refs 
 const isLoading = ref(false);
+const isProcessing = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
-const deleteModule = ref(null);
-const isProcessing = ref(false);
-const selectedLesson = ref(null);
-const readeSelectedPdf = ref(false);
+const selectedContentTodelete = ref(null);
+const rowsPerPage = ref(10);
+const currentPage = ref(1);
+const loading = ref(true);
+
+const moduleContents = ref([]);
+const pagination = ref({});
+const totalPages = ref(0);
 
 const form = ref({
     title: "",
-    description: "",
     content_type: 1,
     content_url: null,
     thumbnail_url: null,
@@ -30,55 +51,8 @@ const form = ref({
     create_thumbnail_url: null,
 });
 
-const props = defineProps({
-    selectedContent: Object,
-});
-
-const emit = defineEmits(['cancelEdit', 'openPdf']);
-
-const selectedContent = computed(() => props.selectedContent);
-
-watch(
-    () => props.selectedContent,
-    (val) => {
-        if (val?.id) {
-            selectedLesson.value = val;
-            resetForm();
-            form.value = {
-                title: val.title,
-                description: val.description,
-                content_type: val.content_type,
-                content_url: null,
-                thumbnail_url: null,
-                create_content_url: val.course_content_url,
-                create_thumbnail_url: val.thumbnail_url,
-            };
-        }
-    },
-    { immediate: true }
-);
-
-const contentTypeLabels = {
-    1: 'Video',
-    2: 'PDF',
-    3: 'Image',
-    4: 'Document'
-};
-
-const contentTypeIcons = {
-    1: 'fa-play-circle',
-    2: 'fa-file-pdf',
-    3: 'fa-image',
-    4: 'fa-file-alt'
-};
-
-const contentTypeColors = {
-    1: 'bg-blue-100 text-blue-600',
-    2: 'bg-red-100 text-red-600',
-    3: 'bg-purple-100 text-purple-600',
-    4: 'bg-gray-100 text-gray-600'
-};
-
+// Computed
+const selectedContent = ref(null);
 const previewContent = computed(() => {
     if (form.value.create_content_url) {
         return {
@@ -95,60 +69,72 @@ const previewContent = computed(() => {
     return null;
 });
 
-function editSelectedContent() {
-    if (!selectedLesson.value?.id) return;
-    editingContent.value = true;
+
+// Methods
+const fetchModuleContents = async (page = currentPage.value) => {
+    try {
+        loading.value = true;
+        const res = await Axios.get(`/api/courses/module-contents/${props.moduleId}?page=${page}`, {
+            params: {
+                rowsPerPageOption: rowsPerPage.value
+            }
+        });
+
+        moduleContents.value = res.data.data;
+        pagination.value = res.data.pagination;
+        totalPages.value = res.data.pagination.last_page;
+        currentPage.value = res.data.pagination.current_page;
+    } catch (err) {
+        errorMessage.value = err.response?.data?.message || 'Failed to fetch module contents';
+    } finally {
+        loading.value = false;
+    }
+};
+
+function onNextPage() {
+    if (currentPage.value == totalPages.value) return;
+
+    fetchModuleContents(currentPage.value + 1);
 }
 
-function resetForm() {
-    form.value = {
-        title: "",
-        description: "",
-        content_type: 1,
-        content_url: null,
-        thumbnail_url: null,
-        create_content_url: null,
-        create_thumbnail_url: null,
-    };
-    errorMessage.value = '';
-    successMessage.value = '';
+function onPreviousPage() {
+    if (currentPage.value <= 1) return;
+
+    fetchModuleContents(currentPage.value - 1);
 }
 
-function cancelEdit() {
-    editingContent.value = false;
-    resetForm();
-    emit('cancelEdit');
+function coursePerPage(amount) {
+    rowsPerPage.value = amount;
+    fetchModuleContents(currentPage.value);
 }
 
-function handleFileUpload(field, event) {
+const handleFileUpload = (field, event) => {
     errorMessage.value = '';
     const file = event.target.files[0];
-
-    if (!file) return;
-
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-        errorMessage.value = 'File size must be less than 50MB';
-        return;
-    }
 
     if (field === 'content_url') {
         form.value.content_url = file;
         form.value.create_content_url = URL.createObjectURL(file);
         form.value.content_type = getContentType(file);
+    } else {
+        form.value.content_url = null;
     }
-}
+};
 
-function getContentType(file) {
+const getContentType = (file) => {
     if (!file) return 1;
     const type = file.type || '';
     if (type.startsWith('video/')) return 1;
     if (type.startsWith('application/pdf')) return 2;
     if (type.startsWith('image/')) return 3;
     return 4;
+};
+
+function isFileObject(obj) {
+    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
 }
 
-async function updateSelectedContent() {
+const updateSelectedContent = async () => {
     if (!form.value.title) {
         errorMessage.value = 'Title is required';
         return;
@@ -161,165 +147,310 @@ async function updateSelectedContent() {
     try {
         const formData = new FormData();
         formData.append("title", form.value.title);
-        formData.append("description", form.value.description);
-        if (form.value.content_url) {
+
+        if (isFileObject(form.value.content_url)) {
             formData.append("content_url", form.value.content_url);
+        } else {
+            formData.delete("content_url");
         }
 
         const contentIdToUpdate = selectedContent.value.id;
-        const moduleIdToUpdate = selectedContent.value.module_id;
 
-        const response = await Axios.post(
-            `/api/courses/update-content/${contentIdToUpdate}`,
+        const response = await Axios.post(`/api/courses/update-content/${contentIdToUpdate}`,
             formData
         );
- 
-         selectedCourse.value = {
-            ...selectedCourse.value,
-            courseModules: selectedCourse.value.courseModules.map(module => {
-                if (module.id === moduleIdToUpdate) {
-                    return {
-                        ...module,
-                        courseContents: module.courseContents.map(content => {
-                            if (content.id === contentIdToUpdate) {
-                                return {
-                                    ...content,
-                                    ...response.data.data  
-                                };
-                            }
-                            return content;
-                        })
-                    };
-                }
-                return module;
-            })
-        };
 
-        successMessage.value = 'Content updated successfully!';
+        moduleContents.value = moduleContents.value.map(content => {
+            if (content.id === contentIdToUpdate) {
+                return response.data.data;
+            }
+            return content;
+        })
 
         setTimeout(() => {
-            editingContent.value = false;
-            successMessage.value = ''; 
+            selectedContent.value = null;
+            successMessage.value = '';
         }, 1500);
     } catch (err) {
         errorMessage.value = err.response?.data?.message || 'Failed to update content';
     } finally {
         isLoading.value = false;
     }
-}
+};
 
-function openDeleteModal(newModule) {
-    deleteModule.value = newModule;
-    showDeleteModal.value = true;
-}
+const openDeleteModal = (content) => {
+    selectedContentTodelete.value = content;
+};
 
-async function deleteSelectedContent() {
+const deleteSelectedContent = async (contentIdToDelete) => {
     isProcessing.value = true;
-    const contentIdToDelete = selectedContent.value.id;
-    const moduleIdToDelete = selectedContent.value.module_id;
 
-    await Axios.delete(`/api/courses/content/${contentIdToDelete}`)
-        .then(res => {
-            selectedCourse.value = {
-                ...selectedCourse.value,
-                courseModules: selectedCourse.value.courseModules.map(module => {
-                    if (module.id === moduleIdToDelete) {
-                        return {
-                            ...module,
-                            courseContents: module.courseContents.filter(
-                                content => content.id !== contentIdToDelete
-                            )
-                        };
-                    }
-                    return module;
-                })
-            };
+    try {
+        await Axios.delete(`/api/courses/content/${contentIdToDelete}`);
+        moduleContents.value = moduleContents.value.filter(content => content.id !== contentIdToDelete);
+        selectedContentTodelete.value = null;
+    } catch (err) {
+        errorMessage.value = err.response?.data?.message;
+    } finally {
+        isProcessing.value = false;
+    }
+};
 
-            cancelEdit();
-            showDeleteModal.value = false;
+const openPdf = (content) => {
+    selectedLesson.value = content;
+    router.push({
+        name: "instructor",
+        query: {
+            currentTab: route.query.currentTab,
+            currentActiveTab: readlessonPdfTab.value,
+        },
+    })
+};
 
-        }).catch(err => {
-            errorMessage.value = err.response?.data?.message || 'Failed to delete content';
-        }).finally(() => {
-            isProcessing.value = false;
-        });
-}
+const editSelectedContent = (content) => {
+    if (!content.id) return;
+    selectedContent.value = content;
+    form.value = { ...selectedContent.value };
+};
 
-function openPdf() {
-    emit('openPdf');
-    readeSelectedPdf.value = true;
-}
+watch(() => addNewLesson.value, () => {
+    return moduleContents.value = [
+        addNewLesson.value,
+        ...moduleContents.value
+    ];
+});
+
+// Lifecycle hooks
+onMounted(() => {
+    fetchModuleContents();
+});
 </script>
 
 <template>
     <!-- Content Card -->
-    <div
-        class="w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
-        <!-- View Mode -->
-        <div v-if="!editingContent && selectedLesson" class="h-full flex flex-col">
-            <!-- Content Preview -->
-            <div class="relative aspect-video bg-gray-100 h-48">
-                <video v-if="selectedLesson.content_type === 1" controls class="w-full h-full object-contain"
-                    :poster="selectedLesson.thumbnail_url">
-                    <source :src="selectedLesson.course_content_url" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+    <div v-if="isLoading">
+        <Spinner />
+    </div>
+    <div v-else>
+        <div>
+            <div class="my-6 gap-4">
+                <button @click="gridView = !gridView" class="text-black p-2 rounded-full transition duration-200">
+                    <i :class="gridView
+                        ? 'fa-solid fa-list'
+                        : 'fa-solid fa-th-large'
+                        " class="text-xl"></i>
+                </button>
+                <button type="button" @click="addExam = !addExam"
+                    :class="{
+                        'bg-lime-500 text-white hover:bg-lime-600': addExam,
+                    }"
+                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                    {{ addExam ? 'Close' : 'Exams' }}
+                </button>
+            </div>
+        </div>
 
-                <div v-else-if="selectedLesson.content_type === 2"
-                    class="h-full flex flex-col items-center justify-center p-4">
-                    <div :class="['p-4 rounded-full mb-3', contentTypeColors[selectedLesson.content_type]]">
-                        <i :class="['fas text-2xl', contentTypeIcons[selectedLesson.content_type]]"></i>
+        <div v-if="addExam">
+            <MetaDataForm v-if="addExam" :moduleID="moduleId" />
+        </div>
+        <div v-else>
+            <div v-if="moduleContents.length">
+                <!-- grid view -->
+                <div v-if="gridView" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                    <div v-for="(content, index) in moduleContents" :key="index"
+                        class="w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                        <!-- View Mode -->
+                        <div v-if="!selectedContent" class="h-full flex flex-col">
+                            <!-- Content Preview -->
+                            <div class="relative aspect-video bg-gray-100 h-48">
+                                <template v-if="content.content_type === 1">
+                                    <video controls class="w-full h-full object-contain"
+                                        :poster="content.thumbnail_url">
+                                        <source :src="content.course_content_url" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </template>
+
+                                <template v-else-if="content.content_type === 2">
+                                    <div class="h-full flex flex-col items-center justify-center p-4">
+                                        <div
+                                            :class="['p-4 rounded-full mb-3', CONTENT_TYPES[content.content_type].color]">
+                                            <i :class="['fas text-2xl', CONTENT_TYPES[content.content_type].icon]"></i>
+                                        </div>
+                                        <p class="text-sm font-medium text-gray-700">
+                                            {{ CONTENT_TYPES[content.content_type].label }}
+                                        </p>
+                                        <button @click="openPdf(content)"
+                                            class="mt-2 text-xs text-lime-500 hover:underline inline-flex items-center">
+                                            <i class="fas fa-external-link-alt mr-1"></i> Open File
+                                        </button>
+                                    </div>
+                                </template>
+
+                                <img v-else-if="content.content_type === 3" :src="content.course_content_url"
+                                    class="w-full h-full object-cover" :alt="content.title">
+
+                                <div v-else class="h-full flex flex-col items-center justify-center p-4">
+                                    <div :class="['p-4 rounded-full mb-3', CONTENT_TYPES[content.content_type].color]">
+                                        <i :class="['fas text-2xl', CONTENT_TYPES[content.content_type].icon]"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-gray-700">
+                                        {{ CONTENT_TYPES[content.content_type].label }}
+                                    </p>
+                                </div>
+
+                                <div
+                                    class="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                    {{ CONTENT_TYPES[content.content_type].label }}
+                                </div>
+                            </div>
+
+                            <!-- Content Details -->
+                            <div class="p-4 flex-grow flex flex-col">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{{ content.title }}
+                                </h3>
+                                <div class="mt-auto flex justify-between items-center">
+                                    <span class="text-xs text-gray-400">
+                                        {{ content.created_at }}
+                                    </span>
+
+                                    <div class="flex space-x-2">
+                                        <button @click="editSelectedContent(content)"
+                                            class="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                                            aria-label="Edit content">
+                                            <i class="fas fa-pencil-alt text-sm"></i>
+                                        </button>
+                                        <button @click="openDeleteModal(content)"
+                                            class="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                            aria-label="Delete content">
+                                            <i class="fas fa-trash-alt text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-sm font-medium text-gray-700">{{ contentTypeLabels[selectedLesson.content_type] }}
-                    </p>
-                    <button @click="openPdf()"
-                        class="mt-2 text-xs text-lime-500 hover:underline inline-flex items-center">
-                        <i class="fas fa-external-link-alt mr-1"></i> Open File
+                </div>
+
+                <!-- list view -->
+                <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <!-- List Header -->
+                    <div
+                        class="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div class="col-span-5">Content</div>
+                        <div class="col-span-2">Type</div>
+                        <div class="col-span-3">Date Added</div>
+                        <div class="col-span-2 text-right">Actions</div>
+                    </div>
+
+                    <!-- List Items -->
+                    <div v-for="(content, index) in moduleContents" :key="index"
+                        class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors duration-150">
+                        <div class="grid grid-cols-12 gap-4 px-4 py-3 items-center">
+                            <!-- Content Title and Preview -->
+                            <div class="col-span-5 flex items-center">
+                                <div
+                                    class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md overflow-hidden mr-3 flex items-center justify-center">
+                                    <template v-if="content.content_type === 1">
+                                        <i class="fas fa-video text-gray-400"></i>
+                                    </template>
+                                    <template v-else-if="content.content_type === 2">
+                                        <i class="fas fa-file-pdf text-red-400"></i>
+                                    </template>
+                                    <template v-else-if="content.content_type === 3">
+                                        <img :src="content.course_content_url" class="w-full h-full object-cover"
+                                            :alt="content.title">
+                                    </template>
+                                    <template v-else>
+                                        <i class="fas fa-link text-blue-400"></i>
+                                    </template>
+                                </div>
+                                <h3 class="text-sm font-medium text-gray-800 truncate max-w-[30ch]">{{ content.title }}</h3>
+                            </div>
+
+                            <!-- Content Type -->
+                            <div class="col-span-2">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    :class="CONTENT_TYPES[content.content_type].color + ' bg-opacity-20'">
+                                    {{ CONTENT_TYPES[content.content_type].label }}
+                                </span>
+                            </div>
+
+                            <!-- Date Added -->
+                            <div class="col-span-3 text-sm text-gray-500">
+                                {{ content.created_at }}
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="col-span-2 flex justify-end space-x-2">
+                                <button v-if="content.content_type === 2" @click="openPdf(content)"
+                                    class="p-1.5 text-gray-500 hover:text-lime-500 hover:bg-lime-50 rounded transition-colors"
+                                    aria-label="Open PDF">
+                                    <i class="fas fa-external-link-alt text-sm"></i>
+                                </button>
+                                <button @click="editSelectedContent(content)"
+                                    class="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                    aria-label="Edit content">
+                                    <i class="fas fa-pencil-alt text-sm"></i>
+                                </button>
+                                <button @click="openDeleteModal(content)"
+                                    class="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                    aria-label="Delete content">
+                                    <i class="fas fa-trash-alt text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div v-else class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg mt-4">
+                <i class="fas fa-file-alt text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 mb-4">No content in this module</p>
+                <button @click="emit('onAddModuleContent')"
+                    class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add First Lesson
+                </button>
+            </div>
+            <!-- Pagination Footer -->
+            <div class="p-4 bg-white flex flex-row items-center justify-between">
+                <!-- Rows Per Page Selector -->
+
+                <Popper>
+                    <div class="flex flex-row md:gap-2">
+                        <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                        <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                        <i class="fa-solid fa-chevron-down text-lg"></i>
+                    </div>
+                    <template #content>
+                        <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                            class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
+                            :class="{
+                                'bg-gray-300 text-white font-bold':
+                                    rowsPerPage === option,
+                                'bg-white text-gray-700 hover:bg-gray-200':
+                                    rowsPerPage !== option,
+                            }">
+                            {{ option }}
+                        </div>
+                    </template>
+                </Popper>
+
+                <!-- Pagination Controls -->
+                <div class="flex items-center space-x-3">
+                    <button @click="onPreviousPage()" :disabled="currentPage === 1"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        Prev
                     </button>
 
-                    <teleport to="#pdfRead" v-if="readeSelectedPdf">
-                        <LessonPdfReader 
-                            :selectedLesson="selectedLesson" 
-                        />
-                    </teleport>
-                </div>
-
-                <img v-else-if="selectedLesson.content_type === 3" :src="selectedLesson.course_content_url"
-                    class="w-full h-full object-cover" :alt="selectedLesson.title">
-
-                <div v-else class="h-full flex flex-col items-center justify-center p-4">
-                    <div :class="['p-4 rounded-full mb-3', contentTypeColors[selectedLesson.content_type]]">
-                        <i :class="['fas text-2xl', contentTypeIcons[selectedLesson.content_type]]"></i>
-                    </div>
-                    <p class="text-sm font-medium text-gray-700">{{ contentTypeLabels[selectedLesson.content_type] }}
-                    </p>
-                </div>
-
-                <div class="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                    {{ contentTypeLabels[selectedLesson.content_type] }}
-                </div>
-            </div>
-
-            <!-- Content Details -->
-            <div class="p-4 flex-grow flex flex-col">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{{ selectedLesson.title }}</h3>
-                <div class="mt-auto flex justify-between items-center">
-                    <span class="text-xs text-gray-400">
-                        {{ selectedLesson.created_at }}
+                    <span class="text-sm text-gray-600">
+                        Page {{ currentPage }} of {{ totalPages }}
                     </span>
 
-                    <div class="flex space-x-2">
-                        <button @click="editSelectedContent"
-                            class="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
-                            aria-label="Edit content">
-                            <i class="fas fa-pencil-alt text-sm"></i>
-                        </button>
-                        <button @click="openDeleteModal(selectedLesson)"
-                            class="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                            aria-label="Delete content">
-                            <i class="fas fa-trash-alt text-sm"></i>
-                        </button>
-                    </div>
+                    <button @click="onNextPage()" :disabled="currentPage === totalPages"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                        Next
+                    </button>
                 </div>
             </div>
         </div>
@@ -328,14 +459,12 @@ function openPdf() {
     <!-- Edit Modal -->
     <teleport to="body">
         <transition name="modal-fade">
-            <div v-if="editingContent" class="fixed inset-0 z-50 overflow-y-auto">
+            <div v-if="selectedContent" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                     <!-- Background overlay -->
-                    <transition name="modal-fade">
-                        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-                        </div>
-                    </transition>
+                    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                    </div>
 
                     <!-- Modal container -->
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -348,7 +477,8 @@ function openPdf() {
                             <h3 class="text-lg leading-6 font-medium text-gray-900">
                                 Edit Lesson Content
                             </h3>
-                            <button @click="cancelEdit" class="text-gray-400 hover:text-gray-500 transition-colors">
+                            <button @click="selectedContent = null"
+                                class="text-gray-400 hover:text-gray-500 transition-colors">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -403,12 +533,13 @@ function openPdf() {
                                                     <div v-else-if="previewContent.type === 2"
                                                         class="h-full w-full flex flex-col items-center justify-center p-4">
                                                         <div
-                                                            :class="['p-4 rounded-full mb-3', contentTypeColors[previewContent.type]]">
+                                                            :class="['p-4 rounded-full mb-3', CONTENT_TYPES[previewContent.type].color]">
                                                             <i
-                                                                :class="['fas text-3xl', contentTypeIcons[previewContent.type]]"></i>
+                                                                :class="['fas text-3xl', CONTENT_TYPES[previewContent.type].icon]"></i>
                                                         </div>
-                                                        <p class="text-sm font-medium text-gray-700">{{
-                                                            contentTypeLabels[previewContent.type] }}</p>
+                                                        <p class="text-sm font-medium text-gray-700">
+                                                            {{ CONTENT_TYPES[previewContent.type].label }}
+                                                        </p>
                                                     </div>
 
                                                     <img v-else-if="previewContent.type === 3" :src="previewContent.url"
@@ -417,12 +548,13 @@ function openPdf() {
                                                     <div v-else
                                                         class="h-full w-full flex flex-col items-center justify-center p-4">
                                                         <div
-                                                            :class="['p-4 rounded-full mb-3', contentTypeColors[previewContent.type]]">
+                                                            :class="['p-4 rounded-full mb-3', CONTENT_TYPES[previewContent.type].color]">
                                                             <i
-                                                                :class="['fas text-3xl', contentTypeIcons[previewContent.type]]"></i>
+                                                                :class="['fas text-3xl', CONTENT_TYPES[previewContent.type].icon]"></i>
                                                         </div>
-                                                        <p class="text-sm font-medium text-gray-700">{{
-                                                            contentTypeLabels[previewContent.type] }}</p>
+                                                        <p class="text-sm font-medium text-gray-700">
+                                                            {{ CONTENT_TYPES[previewContent.type].label }}
+                                                        </p>
                                                     </div>
                                                 </div>
                                                 <div v-else class="h-48 flex items-center justify-center text-gray-400">
@@ -440,10 +572,8 @@ function openPdf() {
                                                             class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
                                                         <p class="text-sm text-gray-600 mb-1">
                                                             <span class="font-medium text-lime-600">Click to
-                                                                upload</span> or drag and drop
-                                                        </p>
-                                                        <p class="text-xs text-gray-500">
-                                                            Videos, PDFs, Images (Max 50MB)
+                                                                upload</span>
+                                                            or drag and drop
                                                         </p>
                                                     </div>
                                                     <input type="file" @change="handleFileUpload('content_url', $event)"
@@ -457,11 +587,11 @@ function openPdf() {
 
                                 <!-- Form actions -->
                                 <div class="mt-6 flex justify-end space-x-3">
-                                    <button type="button" @click="cancelEdit"
+                                    <button type="button" @click="selectedContent = null"
                                         class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500">
                                         Cancel
                                     </button>
-                                    <button type="submit" @click="updateSelectedContent()" :disabled="isLoading"
+                                    <button @click="updateSelectedContent" type="button" :disabled="isLoading"
                                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-70 disabled:cursor-not-allowed">
                                         <span v-if="isLoading">
                                             <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
@@ -482,7 +612,7 @@ function openPdf() {
     <!-- Delete Confirmation Modal -->
     <teleport to="body">
         <transition name="modal-fade">
-            <div v-if="showDeleteModal && deleteModule" class="fixed inset-0 z-50 overflow-y-auto">
+            <div v-if="selectedContentTodelete" class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                     <!-- Background overlay -->
                     <div class="fixed inset-0 transition-opacity" aria-hidden="true">
@@ -493,7 +623,7 @@ function openPdf() {
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                     <div
-                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        class=" bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all my-8 align-middle max-w-lg w-full">
                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <div class="sm:flex sm:items-start">
                                 <div
@@ -507,14 +637,14 @@ function openPdf() {
                                     <div class="mt-2">
                                         <p class="text-sm text-gray-500">
                                             Are you sure you want to delete <span class="font-medium">"{{
-                                                deleteModule?.title }}"</span>? This action cannot be undone.
+                                                selectedContentTodelete?.title }}"</span>? This action cannot be undone.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                            <button type="button" @click="deleteSelectedContent"
+                            <button type="button" @click="deleteSelectedContent(selectedContentTodelete?.id)"
                                 class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-70"
                                 :disabled="isProcessing">
                                 <span v-if="isProcessing">
@@ -524,7 +654,7 @@ function openPdf() {
                                     Delete
                                 </span>
                             </button>
-                            <button type="button" @click="showDeleteModal = false"
+                            <button type="button" @click="selectedContentTodelete = null"
                                 class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
                                 Cancel
                             </button>
@@ -561,7 +691,6 @@ function openPdf() {
     overflow: hidden;
 }
 
-/* Smooth transitions for hover effects */
 .transition-all {
     transition-property: all;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);

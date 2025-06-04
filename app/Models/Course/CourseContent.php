@@ -13,6 +13,10 @@ class CourseContent extends Model {
         'hour', 'status', 'isDownloadable', 'user_id','course_module_id',
     ];
 
+    protected $casts = [
+        'content_type' => 'integer', 
+    ]; 
+
     public function user() { return $this->belongsTo(User::class); }
     public function course() { return $this->belongsTo(Course::class); }
     public function courseContentProgress() { return $this->hasOne(CourseContentProgress::class); }

@@ -160,7 +160,7 @@ async function handleSubmit() {
 async function fetchRooms() {
     isLoading.value = true;
     try {
-        const response = await Axios.get("/api/get-rooms");
+        const response = await Axios.get("/api/get-my-rooms");
         rooms.value = response.data.data;
     } catch (error) {
         toast.error("Failed to fetch rooms", { timeout: 3000 });

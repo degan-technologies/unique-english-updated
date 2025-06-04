@@ -247,6 +247,7 @@ class AttendanceController extends Controller
                 $query->where('user_id', $supervisor->id)
                     ->orWhere('id', $supervisor->id);
             })
+            ->doesntHave('student')
             ->paginate($request->rowsPerPageOptions);
 
         if ($instructors->isEmpty()) {

@@ -7,8 +7,8 @@ import { ref, onMounted, watch, watchEffect, computed } from "vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
-import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
 import Spinner from "@/components/Layout/Spinner"; 
+import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
 
 const InstructorStore = useInstructorStore();
 const {
@@ -272,7 +272,7 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                                     <img :src="course.thumbnail_url" alt="Course Image"
                                         class="w-12 h-12 rounded-md object-cover" />
                                     <div>
-                                        <h3 class="text-sm font-semibold text-gray-800">
+                                        <h3 class="text-sm font-semibold text-gray-800 truncate max-w-[30ch]">
                                             {{ course.course_name }}
                                         </h3>
                                         <p class="text-xs text-gray-500">
@@ -381,6 +381,7 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                         </button>
                     </div>
                 </div>
+                
             </div>
         </div>
         <AddCourseModule v-if="courseId" :courseId="courseId" :actionType="actionType" />

@@ -87,7 +87,7 @@ const mainItems = [
         route: attendance.value,
         description: "Attendance Tracking.",
         icon: "signature",
-        role: true,
+        role: "systemAdmin",
     },
     {
         label: "Announcements",

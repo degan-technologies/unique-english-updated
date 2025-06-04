@@ -36,7 +36,7 @@
                             </li>
                             <li class="flex items-start md:items-center gap-2">
                                 <i class="fas fa-phone-alt text-lime-400 mt-1"></i>
-                                <span>+251 94639 5752 </span>
+                                <span>+251 946 39 57 52 / +251 938 04 52 38 </span>
                             </li>
                             <li class="flex items-start md:items-center gap-2">
                                 <i class="fas fa-envelope text-lime-400 mt-1"></i>

@@ -7,6 +7,10 @@ export const useInstructorStore = defineStore('useInstructorStore', ()=>{
     const videoPlayerTab = ref(false);
     const courseEditTab = ref('edit');
     const courseModuleTab = ref('details');
+    const readlessonPdfTab = ref('readlessonPdf');
+
+    const selectedLesson = ref(null);
+    const addNewLesson = ref(null);
 
     const analytics = ref({
         total: 0,
@@ -24,6 +28,10 @@ export const useInstructorStore = defineStore('useInstructorStore', ()=>{
         videoPlayerTab,
         courseEditTab,
         courseModuleTab,
+        readlessonPdfTab,
+        
+        selectedLesson,
+        addNewLesson,
         
         instructorCourses,
         analytics,

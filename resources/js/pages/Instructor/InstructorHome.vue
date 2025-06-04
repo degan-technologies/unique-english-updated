@@ -63,7 +63,9 @@ watch(
 
         <div
             class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300">
-            <Navbar class="transition-all duration-300 z-40" />
+            <div class="transition-all duration-300 z-40">
+                <Navbar />
+            </div>
 
             <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300">
                 <div class="w-full bg-gray-100">

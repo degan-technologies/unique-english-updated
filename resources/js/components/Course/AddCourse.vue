@@ -8,9 +8,7 @@ import 'video.js/dist/video-js.css';
 import OverviewEditor from '@/components/Layout/overviewEditor.vue';
 import { useInstructorStore } from "@/store/useInstructorStore";
 
-// Constants
-const MAX_THUMBNAIL_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
+// Constants 
 const SUCCESS_MESSAGE_TIMEOUT = 3000;
 const THUMBNAIL_HEIGHT = '200px'; // Specific height for thumbnails
 
@@ -96,15 +94,7 @@ function initializeFormFromSelectedCourse() {
     };
 }
 
-function validateFile(file, field) {
-    const maxSize = field === thumbnail_url.value ? MAX_THUMBNAIL_SIZE : MAX_VIDEO_SIZE;
-    const maxSizeMB = maxSize / (1024 * 1024);
-
-    if (file.size > maxSize) {
-        errors.value[field] = `File size must be less than ${maxSizeMB}MB`;
-        return false;
-    }
-
+function validateFile(file, field) { 
     if (field === thumbnail_url.value && !file.type.startsWith('image/')) {
         errors.value[field] = 'Please upload an image file';
         return false;
@@ -193,6 +183,10 @@ async function submitCourse(status) {
     }
 }
 
+function isFileObject(obj) {
+    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
+}
+
 function createFormData(status) {
     const formData = new FormData();
     const { upload_thumbnail, upload_intro_video, ...rest } = course.value;
@@ -208,13 +202,18 @@ function createFormData(status) {
     formData.append("status", status);
 
     // Add files if they exist
-    if (upload_thumbnail instanceof File) {
+    if (isFileObject(upload_thumbnail)) {
         formData.append('thumbnail_url', upload_thumbnail);
-    }
-    if (upload_intro_video instanceof File) {
-        formData.append('intro_video', upload_intro_video);
+    } else {
+        formData.delete('thumbnail_url');
     }
 
+    if (isFileObject(upload_intro_video)) {
+        formData.append('intro_video', upload_intro_video);
+    } else {
+        formData.delete('intro_video');
+    }
+    
     return formData;
 }
 
@@ -325,12 +324,7 @@ watch(successMessage, (newVal) => {
                 <i class="fas fa-exclamation-circle mr-2"></i>
                 {{ errors.general }}
             </div>
-
-            <div v-if="loading" class="flex justify-center items-center py-12">
-                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-600"></div>
-            </div>
-
-            <div v-else class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div  class="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 <!-- Main Content Column -->
                 <div class="lg:col-span-3 space-y-6">
                     <!-- Course Name -->
@@ -373,7 +367,6 @@ watch(successMessage, (newVal) => {
                                         <template v-else>
                                             <i class="fas fa-image text-2xl mb-2"></i>
                                             <span class="text-sm">Click to upload thumbnail</span>
-                                            <span class="text-xs mt-1">(Max 10MB, JPG/PNG)</span>
                                         </template>
                                     </div>
                                     <input type="file" accept="image/jpeg, image/png"
@@ -415,7 +408,6 @@ watch(successMessage, (newVal) => {
                                         <template v-else>
                                             <i class="fas fa-video text-2xl mb-2"></i>
                                             <span class="text-sm">Click to upload video</span>
-                                            <span class="text-xs mt-1">(Max 50MB, MP4)</span>
                                         </template>
                                     </div>
                                     <input type="file" accept="video/mp4"

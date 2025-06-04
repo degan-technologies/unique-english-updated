@@ -1,7 +1,7 @@
 <script setup>
 import Axios from "axios";
 import { storeToRefs } from "pinia";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { UseStudentStore } from "@/store/UseStudentStore";
 import {
     onMounted,
@@ -36,6 +36,7 @@ const TAB_TYPES = {
 // Stores and routing
 const studentStore = UseStudentStore();
 const route = useRoute();
+const router = useRouter();
 const { selectedCourseSlug, courses, completedLessons } = storeToRefs(studentStore);
 
 // Refs
@@ -296,7 +297,25 @@ function fetchSelectedCourse() {
     if (!selectedCourseSlug.value) return;
     Axios.get(`/api/show-course/${selectedCourseSlug.value}`).then((res) => {
         selectedCourse.value = res.data.data; 
+    }).catch(err=>{
+        redirectRoute();
     });
+}
+
+async function redirectRoute() {
+    if (!selectedCourse.value?.isMyCourse) {
+        await router.push({
+            name: "student",
+            query: {
+                tab: landingPageTab.value,
+            },
+        });
+    }
+
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+    }
+    return;
 }
 
 // Watchers

@@ -26,17 +26,14 @@ const error = ref("");
 const loading = ref(false);
 const introVideoPreview = ref(null);
 const coverPagePreview = ref(null);
-const tagInput = ref("");
 const errors = ref({});
-
-const MAX_FILE_SIZE = {
-    COVER: 5 * 1024 * 1024, // 5MB
-    VIDEO: 50 * 1024 * 1024, // 50MB
-    BOOK: 100 * 1024 * 1024 // 100MB
-};
-
+ 
 const cancelEdit = () => {
     emit('cancel-edit')
+}
+
+function isFileObject(obj) {
+    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
 }
 
 const onFileChange = (field, event) => {
@@ -44,23 +41,7 @@ const onFileChange = (field, event) => {
     const file = event.target.files[0];
 
     if (!file) return;
-
-    // Validate file size
-    if (field === "cover_page_url" && file.size > MAX_FILE_SIZE.COVER) {
-        errors.value[field] = "Cover image must be less than 5MB";
-        return;
-    }
-
-    if (field === "intro_vedio" && file.size > MAX_FILE_SIZE.VIDEO) {
-        errors.value[field] = "Video must be less than 50MB";
-        return;
-    }
-
-    if (field === "file_url" && file.size > MAX_FILE_SIZE.BOOK) {
-        errors.value[field] = "Book file must be less than 100MB";
-        return;
-    }
-
+ 
     // Validate file types
     if (field === "cover_page_url" && !file.type.match(/image.*/)) {
         errors.value[field] = "Please upload an image file (JPEG/PNG)";
@@ -130,7 +111,6 @@ const handleUpdateCourse = async () => {
     error.value = "";
 
     const formData = new FormData();
-    formData.append("_method", "PUT");
     formData.append("title", props.selectedbook.title);
     formData.append("auther", props.selectedbook.auther);
     formData.append("price", props.selectedbook.price);
@@ -138,27 +118,28 @@ const handleUpdateCourse = async () => {
     formData.append("discount", props.selectedbook.discount || 0);
     formData.append("publish_date", props.selectedbook.publish_date);
     formData.append("description", props.selectedbook.description);
-    formData.append("language", props.selectedbook.language);
+    formData.append("language", props.selectedbook.language); 
 
-    const parsedTags = tagInput.value
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-    formData.append("tag", JSON.stringify(parsedTags));
-
-    if (props.selectedbook.cover_page_url instanceof File) {
+   if (isFileObject(props.selectedbook.cover_page_url)) {
         formData.append("cover_page_url", props.selectedbook.cover_page_url);
+    } else {
+        formData.delete("cover_page_url");
     }
-    if (props.selectedbook.file_url instanceof File) {
+
+    if (isFileObject(props.selectedbook.file_url)) {
         formData.append("file_url", props.selectedbook.file_url);
+    } else {
+        formData.delete("file_url");
     }
-    if (props.selectedbook.intro_vedio instanceof File) {
+
+    if (isFileObject(props.selectedbook.intro_vedio)) {
         formData.append("intro_vedio", props.selectedbook.intro_vedio);
+    } else {
+        formData.delete("intro_vedio");
     }
 
     try {
-        const response = await Axios.post(
-            `/api/books/books/${props.selectedbook.id}`,
+        const response = await Axios.post( `/api/books/update-books/${props.selectedbook.id}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
         );
@@ -194,11 +175,7 @@ const safeParseTag = (rawTag) => {
     } catch (err) {
         return typeof rawTag === 'string' ? rawTag : ''
     }
-}
-
-onMounted(() => {
-    tagInput.value = safeParseTag(props.selectedbook.tag)
-})
+} 
 
 </script>
 
@@ -233,8 +210,7 @@ onMounted(() => {
                                 :class="{ 'border-red-500': errors.cover_page_url }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-image text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload cover image</p>
-                                    <p class="text-xs mt-1">JPG or PNG (Max 5MB)</p>
+                                    <p class="text-sm font-medium">Click to upload cover image</p> 
                                 </div>
                                 <input type="file" @change="onFileChange('cover_page_url', $event)"
                                     accept="image/jpeg,image/png"
@@ -263,8 +239,7 @@ onMounted(() => {
                                 :class="{ 'border-red-500': errors.intro_vedio }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-video text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload intro video</p>
-                                    <p class="text-xs mt-1">MP4 (Max 50MB)</p>
+                                    <p class="text-sm font-medium">Click to upload intro video</p> 
                                 </div>
                                 <input type="file" @change="onFileChange('intro_vedio', $event)" accept="video/mp4"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
@@ -285,8 +260,7 @@ onMounted(() => {
                                 :class="{ 'border-red-500': errors.file_url }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-file-pdf text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload book file</p>
-                                    <p class="text-xs mt-1">PDF (Max 100MB)</p>
+                                    <p class="text-sm font-medium">Click to upload book file</p> 
                                 </div>
                                 <input type="file" @change="onFileChange('file_url', $event)" accept=".pdf"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
@@ -374,16 +348,7 @@ onMounted(() => {
                             <option value="Other">Other</option>
                         </select>
                         <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Tags (comma separated)
-                        </label>
-                        <input v-model="tagInput" type="text"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            placeholder="fiction, science, novel" />
-                    </div>
+                    </div>  
                 </div>
             </div>
 

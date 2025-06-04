@@ -20,9 +20,8 @@ class CourseModuleResource extends JsonResource {
             'sequence' => $this->sequence,
             'description' => $this->description,
             'slug' => $this->slug,
-            'course_id' => $this->course_id,      
-            'QMetaDatas' => QMetaDataResource::collection($this->QMetaDatas),
-            'courseContents' => CourseContentResource::collection($this->courseContents->sortBy('sequence')),
+            'course_id' => $this->course_id,   
+            'lessons' => $this->courseContents->count(),    
         ];
-    }
+    } 
 }

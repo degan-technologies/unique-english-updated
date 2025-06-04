@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QMetaDataResource;
 use App\Http\Resources\Quiz\QuizResource;
+use App\Models\Course\CourseModule;
 use App\Models\Quiz\Quiz;
 class QMetaDataController extends Controller{
     protected $langService;
@@ -33,15 +34,29 @@ class QMetaDataController extends Controller{
     }
 
     public function fetchInstructorExam(Request $request){
+        /**
+         * @var mixed $qMetaData
+         */
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
 
         if(!$user) return;
 
-        $qMetaData = QMetaData::query()  
-            ->where('course_id', $request->course_id)
-            ->where('course_module_id', $request->module_id)
+        $moduleId = $request->module_id?? null;
+
+        $courseModule = CourseModule::query()
+            ->where('user_id', $user->id)
+            ->find($moduleId);
+
+        if (!$courseModule) {
+            return response()->json([
+               'message' => $this->langService->getLang('course_module_not_found'),
+            ], 404);
+        }
+
+        $qMetaData = QMetaData::query()   
+            ->where('course_module_id', $moduleId)
             ->where('user_id', Auth::id())
             ->paginate(10);
 
@@ -67,8 +82,7 @@ class QMetaDataController extends Controller{
 
         if(!$user) return;
         
-        $moduleId = $request->module_id ?? null;
-        $courseId = $request->course_id ?? null;
+        $moduleId = $request->module_id ?? null; 
 
         $validationRules = [
             'title' => 'required|string|min:5|max:255',
@@ -84,12 +98,22 @@ class QMetaDataController extends Controller{
             ], 422);
         }
 
+        $courseModule = CourseModule::query()
+            ->where('user_id', $user->id)
+            ->find($moduleId);
+
+        if (!$courseModule) {
+            return response()->json([
+               'message' => $this->langService->getLang('course_module_not_found'),
+            ], 404);
+        }
+
         $qMetaData = $user->qMetaDatas()->create([ 
             'slug' => Str::uuid(), 
             'instruction' => $request->instruction,
             'title' => $request->title,  
             'course_module_id' => $moduleId, 
-            'course_id' => $courseId, 
+            'course_id' => $courseModule->course_id, 
         ]);
 
         return response()->json([
@@ -127,7 +151,10 @@ class QMetaDataController extends Controller{
             ], 422);
         }
 
-        $qMetaData->update($validator->validated());
+        $qMetaData->update([
+            'title' => $request->title,
+            'instruction' => $request->instruction,
+        ]);
 
         return response()->json([
             'message' => $this->langService->getLang('q_meta_data_updated_successfully'),

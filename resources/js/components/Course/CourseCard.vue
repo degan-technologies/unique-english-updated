@@ -110,7 +110,7 @@ onMounted(() => {
                 <!-- Course Info -->
                 <div class="p-4 flex flex-col">
                     <div class="h-20">
-                        <h2 class="text-lg font-bold mb-2">
+                        <h2 class="text-lg font-bold mb-2 line-clamp-2">
                             {{ course.course_name }}
                         </h2>
                         <div class="flex flex-1 justify-between">

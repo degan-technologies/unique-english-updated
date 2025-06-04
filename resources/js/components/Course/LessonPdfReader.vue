@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
@@ -8,6 +9,10 @@ GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
     import.meta.url
 ).toString();
+
+import { useAppStore } from '@/store/useAppStore';
+const appStore = useAppStore();
+const { authToken } = storeToRefs(appStore);
 
 const props = defineProps({
     selectedLesson: {
@@ -26,9 +31,15 @@ const isFullScreen = ref(false);
 const searchPage = ref("");
 
 async function loadPdf() {
-    if (!props.selectedLesson?.content_url) return;
+    if (!props.selectedLesson?.course_content_url) return;
     try {
-        pdfDoc = await getDocument({ url: props.selectedLesson.content_url })
+        pdfDoc = await getDocument({
+            url: props.selectedLesson.course_content_url,
+            withCredentials: true,  
+            httpHeaders: {
+                Authorization: `Bearer ${authToken.value}`,
+            },
+            })
             .promise;
         totalPages.value = pdfDoc.numPages;
         currentPage.value = 1;
@@ -143,9 +154,12 @@ watch(
 </script>
 
 <template>
-    <div v-if="openPdf" class="relative flex flex-col items-center p-4 h-fit">
+    <div v-if="!openPdf" class="p-4">
+        <Spinner />
+    </div>
+    <div v-else class="relative flex flex-col items-center p-4 h-fit">
         <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full bg-white rounded-lg pdf-container">
+            class="w-full items-center justify-center bg-white rounded-lg pdf-container">
             <div class="overflow-auto">
                 <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
                     @contextmenu.prevent @dragstart.prevent></canvas>
@@ -179,9 +193,6 @@ watch(
                 </button>
             </div>
         </div>
-    </div>
-    <div v-else class="p-4">
-        <Spinner />
     </div>
 </template>
 

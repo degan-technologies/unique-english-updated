@@ -10,8 +10,7 @@ import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { useInstructorStore } from '@/store/useInstructorStore';
 
 import QA from "@/components/Exam/QA.vue";
-import ReviewList from "@/components/Course/ReviewList.vue";
-import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
+import ReviewList from "@/components/Course/ReviewList.vue"; 
 import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
 import ModuleContent from "@/components/Course/CourseModule/ModuleContent/ModuleContent.vue";
 import AddModuleContent from "@/components/Course/CourseModule/ModuleContent/AddModuleContent.vue";
@@ -33,8 +32,7 @@ const selectedContent = ref(null);
 const addNewContent = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref(null);
-const isProcessing = ref(false);
-const readPdf = ref(false);
+const isProcessing = ref(false); 
 
 // Video Player
 const videoPlayer = ref(null);
@@ -159,8 +157,7 @@ onMounted(() => {
             .then(res => {
                 selectedCourse.value = res.data.data;
             })
-            .catch(error => {
-                console.error("Failed to fetch course:", error);
+            .catch(error => { 
                 showToast("Failed to load course details", "error");
             });
     }
@@ -179,11 +176,7 @@ onMounted(() => {
             }]
         });
     }
-});
-
-const openPdf = () => {
-    readPdf.value = !readPdf.value;
-}
+}); 
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
@@ -229,7 +222,7 @@ onBeforeUnmount(() => {
 
             <!-- Course Header Section -->
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2  gap-8 p-6">
                     <!-- Video Thumbnail/Player -->
                     <div class="relative rounded-lg overflow-hidden bg-gray-100 aspect-video">
                         <div v-if="!isPlaying" class="absolute inset-0 cursor-pointer group" @click="isPlaying = true"
@@ -288,7 +281,7 @@ onBeforeUnmount(() => {
                                 <div class="bg-lime-100 p-2 rounded-lg mr-4">
                                     <i class="fas fa-user-graduate text-lime-600 text-lg"></i>
                                 </div>
-                                <div>
+                                <div class="flex flex-row gap-4">
                                     <h3 class="text-sm font-medium text-gray-500">Level</h3>
                                     <p class="text-gray-800 font-medium">{{ selectedCourse?.skill_level || 'Not specified' }}</p>
                                 </div>
@@ -298,7 +291,7 @@ onBeforeUnmount(() => {
                                 <div class="bg-blue-100 p-2 rounded-lg mr-4">
                                     <i class="fas fa-language text-blue-600 text-lg"></i>
                                 </div>
-                                <div>
+                                <div class="flex flex-row gap-4">
                                     <h3 class="text-sm font-medium text-gray-500">Language</h3>
                                     <p class="text-gray-800 font-medium">{{ selectedCourse?.language || 'Not specified' }} </p>
                                 </div>
@@ -308,7 +301,7 @@ onBeforeUnmount(() => {
                                 <div class="bg-purple-100 p-2 rounded-lg mr-4">
                                     <i class="fas fa-clock text-purple-600 text-lg"></i>
                                 </div>
-                                <div>
+                                <div class="flex flex-row gap-4">
                                     <h3 class="text-sm font-medium text-gray-500">Duration</h3>
                                     <p class="text-gray-800 font-medium">{{ selectedCourse?.credit_hour || 'Not specified' }}</p>
                                 </div>
@@ -393,7 +386,7 @@ onBeforeUnmount(() => {
                                                     }}
                                                 </h4>
                                                 <p class="text-sm text-gray-500">
-                                                    {{ module.courseContents?.length || 0 }} lessons
+                                                    {{ module.lessons || 0 }} lessons
                                                 </p>
                                             </div>
                                         </div>
@@ -438,25 +431,9 @@ onBeforeUnmount(() => {
 
                                 <!-- Module Contents -->
                                 <div v-if="expandedModule === module.id" class="px-4 pb-4">
-                                    <div v-if="module.courseContents?.length"
-                                        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                                        <ModuleContent v-for="content in module.courseContents" :key="content.id"
-                                            :selectedContent="content" :selectedModule="null" @openPdf="openPdf" />
-                                    </div>
-
-                                    <div v-else
-                                        class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg mt-4">
-                                        <i class="fas fa-file-alt text-4xl text-gray-300 mb-3"></i>
-                                        <p class="text-gray-500 mb-4">No content in this module</p>
-                                        <button @click="onAddModuleContent(module)"
-                                            class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors">
-                                            <i class="fas fa-plus mr-2"></i>Add First Lesson
-                                        </button>
-                                    </div>
-
-                                    <div class="mt-6 pt-6 border-t border-gray-200">
-                                        <MetaDataForm :courseID="module?.course_id" :moduleID="module?.id" />
-                                    </div>
+                                    <ModuleContent v-if="module.id" 
+                                            :moduleId="module.id"
+                                            @onAddModuleContent="onAddModuleContent(module)" />                                       
                                 </div>
                             </div>
                         </div>
@@ -552,20 +529,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
             </transition>
-        </div>
-
-        <div v-if="readPdf" class="fixed inset-0 z-50 bg-white overflow-y-auto scrollbar">
-            <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <button @click="openPdf"
-                    class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
-                    aria-label="Go back">
-                    <i class="fas fa-arrow-left text-lg group-hover:-translate-x-1 transition-transform"></i>
-                    <span class="ml-2 font-medium">Back to Courses</span>
-                </button>
-
-                <div id="pdfRead"></div>
-            </div>
-        </div>
+        </div>        
     </div>
 </template>
 

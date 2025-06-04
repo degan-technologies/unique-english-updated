@@ -343,7 +343,7 @@ onUnmounted(() => {
                                         class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-3">
                                         <img :src="book.cover_page_url" alt="Cover Page"
                                             class="w-12 h-12 rounded-md object-cover" />
-                                        <h3 class="text-sm font-semibold text-gray-800">{{ book.title }}</h3>
+                                        <h3 class="text-sm font-semibold text-gray-800  truncate max-w-[30ch]">{{ book.title }}</h3>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ book.auther }}

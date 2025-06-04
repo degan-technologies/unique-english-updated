@@ -30,16 +30,20 @@ class CourseContentController extends Controller {
     public function __construct(LangService $langService) {
         $this->langService = $langService;
     }
+ 
+    public function getModuleContents(Request $request, $moduleId) {
+        $courseContent = CourseContent::query()
+            ->where('course_module_id', $moduleId)
+            ->when($request->contentType, fn($q) => $q->where('content_type', 'like', "%{$request->contentType}%"))
+            ->paginate($request->rowsPerPageOption);
 
-
-
-    public function index() {
-        $courses = CourseContent::all();
+        $pagination = $courseContent->toArray();
+        unset($pagination['data']);
 
         return response() -> json([
-            'data' => CourseContentResource::collection($courses)
+            'data' => CourseContentResource::collection($courseContent),
+            'pagination' => $pagination,
         ]);
-    
     }
     /**
      * Store a newly created resource in storage.
@@ -163,6 +167,7 @@ class CourseContentController extends Controller {
     
         $validationRules = [
             'title' => ['required', 'min:1'],   
+            'content_url' => ['nullable', 'file'],
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courseContent'));

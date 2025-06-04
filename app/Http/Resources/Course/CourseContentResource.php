@@ -33,13 +33,11 @@ class CourseContentResource extends JsonResource {
                 : $this->hour,
             'duration' =>$duration, 
             'status' => $this->status, 
-            'content_url' => $this->content_url
-                ? Storage::disk('public')->url($this->content_url)
-                : 'no-content_url.png',
+            // 'content_url' => $this->content_url
+            //     ? Storage::disk('public')->url($this->content_url)
+            //     : 'no-content_url.png',
 
-            'course_content_url' => $this->content_url 
-            ? url('/api/coursecontent/stream/video/' . basename($this->content_url))
-            : 'no-intro_video.png',
+            'course_content_url' => $this->getContentUrl($this->content_type, $this->content_url),
 
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
@@ -47,5 +45,18 @@ class CourseContentResource extends JsonResource {
 
             'courseContentProgress' => new CourseContentProgressResource($this->courseContentProgress, $duration),
         ]; 
+    }
+
+    public function getContentUrl($contentType, $content) { 
+        switch ($contentType) {
+            case VIDEO:
+                return url('/api/coursecontent/stream/video/' . basename($content));
+            case PDF:
+                return url('/api/coursecontent/stream/pdf-stream/' . basename($content));
+            case IMAGE:
+                return Storage::disk('public')->url($content);
+            default:
+                return 'no-content_url.png';
+        }
     }
 } 

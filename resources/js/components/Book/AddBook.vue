@@ -19,51 +19,27 @@ const newBook = ref({
     file_format: "pdf",
     cover_page_url: null,
     file_url: null,
-    intro_video: null,
-    tag: "",
+    intro_vedio: null, 
 });
 
 const coverPreview = ref(null);
-const videoPreview = ref(null);
-const tagInput = ref("");
+const videoPreview = ref(null); 
 const loading = ref(false);
-const errors = ref({});
-
-const MAX_FILE_SIZE = {
-    COVER: 5 * 1024 * 1024, // 5MB
-    VIDEO: 50 * 1024 * 1024, // 50MB
-    BOOK: 100 * 1024 * 1024 // 100MB
-};
+const errors = ref({}); 
 
 const onFileChange = (field, event) => {
     errors.value[field] = "";
     const file = event.target.files[0];
     
     if (!file) return;
-
-    // Validate file size
-    if (field === "cover_page_url" && file.size > MAX_FILE_SIZE.COVER) {
-        errors.value[field] = "Cover image must be less than 5MB";
-        return;
-    }
-    
-    if (field === "intro_video" && file.size > MAX_FILE_SIZE.VIDEO) {
-        errors.value[field] = "Video must be less than 50MB";
-        return;
-    }
-    
-    if (field === "file_url" && file.size > MAX_FILE_SIZE.BOOK) {
-        errors.value[field] = "Book file must be less than 100MB";
-        return;
-    }
-
+ 
     // Validate file types
     if (field === "cover_page_url" && !file.type.match(/image.*/)) {
         errors.value[field] = "Please upload an image file";
         return;
     }
     
-    if (field === "intro_video" && !file.type.match(/video.*/)) {
+    if (field === "intro_vedio" && !file.type.match(/video.*/)) {
         errors.value[field] = "Please upload a video file";
         return;
     }
@@ -73,7 +49,7 @@ const onFileChange = (field, event) => {
     if (field === "cover_page_url") {
         coverPreview.value = URL.createObjectURL(file);
     }
-    if (field === "intro_video") {
+    if (field === "intro_vedio") {
         videoPreview.value = URL.createObjectURL(file);
     }
 };
@@ -134,12 +110,7 @@ const addBook = async () => {
     if (!validateForm()) return;
 
     loading.value = true;
-    
-    const tagsArray = tagInput.value
-        .split(",")
-        .map(t => t.trim())
-        .filter(t => t !== "");
-
+     
     const formData = new FormData();
     formData.append("title", newBook.value.title);
     formData.append("auther", newBook.value.auther);
@@ -154,11 +125,9 @@ const addBook = async () => {
     formData.append("cover_page_url", newBook.value.cover_page_url);
     formData.append("file_url", newBook.value.file_url);
     
-    if (newBook.value.intro_video) {
-        formData.append("intro_video", newBook.value.intro_video);
-    }
-    
-    formData.append("tag", JSON.stringify(tagsArray));
+    if (newBook.value.intro_vedio) {
+        formData.append("intro_vedio", newBook.value.intro_vedio);
+    } 
 
     try {
         await Axios.post("/api/books/books", formData, {
@@ -193,10 +162,9 @@ const resetForm = () => {
         file_format: "pdf",
         cover_page_url: null,
         file_url: null,
-        intro_video: null,
+        intro_vedio: null,
         tag: "",
     };
-    tagInput.value = "";
     coverPreview.value = null;
     videoPreview.value = null;
     errors.value = {};
@@ -255,8 +223,7 @@ function goBack() {
                                 :class="{ 'border-red-500': errors.cover_page_url }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-image text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload cover image</p>
-                                    <p class="text-xs mt-1">JPG or PNG (Max 5MB)</p>
+                                    <p class="text-sm font-medium">Click to upload cover image</p> 
                                 </div>
                                 <input type="file"
                                     @change="onFileChange('cover_page_url', $event)"
@@ -282,19 +249,18 @@ function goBack() {
                         </div>
                         <div class="relative">
                             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition"
-                                :class="{ 'border-red-500': errors.intro_video }">
+                                :class="{ 'border-red-500': errors.intro_vedio }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-video text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload intro video</p>
-                                    <p class="text-xs mt-1">MP4 (Max 50MB)</p>
+                                    <p class="text-sm font-medium">Click to upload intro video</p> 
                                 </div>
                                 <input type="file"
-                                    @change="onFileChange('intro_video', $event)"
+                                    @change="onFileChange('intro_vedio', $event)"
                                     accept="video/mp4"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                             </div>
-                            <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">
-                                {{ errors.intro_video }}
+                            <p v-if="errors.intro_vedio" class="mt-1 text-red-500 text-sm">
+                                {{ errors.intro_vedio }}
                             </p>
                         </div>
                     </div>
@@ -309,8 +275,7 @@ function goBack() {
                                 :class="{ 'border-red-500': errors.file_url }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <i class="fas fa-file-pdf text-3xl mb-2"></i>
-                                    <p class="text-sm font-medium">Click to upload book file</p>
-                                    <p class="text-xs mt-1">PDF (Max 100MB)</p>
+                                    <p class="text-sm font-medium">Click to upload book file</p> 
                                 </div>
                                 <input type="file"
                                     @change="onFileChange('file_url', $event)"
@@ -425,16 +390,6 @@ function goBack() {
                             <option value="Amharic">Amharic</option>
                             <option value="Other">Other</option>
                         </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Tags (comma separated)
-                        </label>
-                        <input v-model="tagInput"
-                            type="text"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            placeholder="fiction, science, novel" />
                     </div>
                 </div>
             </div>

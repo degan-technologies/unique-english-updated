@@ -283,7 +283,7 @@ watch(
 
             <div class="flex items-center gap-4 pr-4">
                 <!-- Notification Button -->
-                <div class="relative flex justify-center">
+                <div v-if="isLoggedIn"  class="relative flex justify-center">
                     <Popper v-model:visible="notificationOpen" :offset-distance="'0'" placement="bottom">
                         <!-- Notification Icon with Count -->
                         <div class="relative flex justify-center items-center text-2xl cursor-pointer"

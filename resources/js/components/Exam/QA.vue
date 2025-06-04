@@ -5,7 +5,7 @@ import Axios from "axios";
 import Spinner from "@/components/Layout/Spinner.vue";
 
 const props = defineProps({
-    courseId: String,
+    courseId: Number,
     selectedCourseSlug: String,
 });
 

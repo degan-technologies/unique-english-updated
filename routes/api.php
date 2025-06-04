@@ -39,15 +39,17 @@ Route::resource('test', TestController::class);
 Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
+Route::get('/hero-section', [HeroController::class, 'index']);
+Route::get('/get-plans',[ PlanController::class, 'index']);
 Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']); 
 Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
 
-Route::get('/hero-section', [HeroController::class, 'index']);
-Route::get('/get-plans',[ PlanController::class, 'index']);
-
 Route::middleware('auth:api')
-    ->group(function () {
+->group(function () {
+        
+        Route::get('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream']);
+
         Route::post('/log-out', [AuthController::class, 'logout']);
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
         Route::post('/add-student', [UserController::class, 'addStudent']);
@@ -79,6 +81,7 @@ Route::middleware('auth:api')
         Route::get('/check/answer/{qmId}', [QMetaDataController::class, 'checkAnswer']);
  
         Route::get('/get-rooms', [LiveController::class, 'getAllRooms']);
+        Route::get('/get-my-rooms', [LiveController::class, 'getMyRooms']);
         Route::post('/rooms', [LiveController::class, 'store']);
         Route::put('/rooms/{id}', [LiveController::class, 'update']);
         Route::post('/assign-class/{id}', [LiveController::class, 'assignClass']);
@@ -138,6 +141,7 @@ Route::middleware('auth:api')
         Route::resource('/module', CourseModuleController::class);
         Route::get('/my-courses', [CourseController::class, 'myCourse']);
         Route::get('/my-books', [BookController::class, 'myBooks']);
+        Route::get('/module-contents/{moduleId}', [CourseContentController::class, 'getModuleContents']);
         });
         
 Route::middleware('auth:api')
@@ -172,6 +176,7 @@ Route::middleware('auth:api')
     ->group(function(){
         Route::resource('/books', BookController::class);
         Route::resource('/order-books', orderdController::class);
+        Route::post('/update-books/{id}', [BookController::class, 'update']);
     });
 
 Route::middleware('auth:api')

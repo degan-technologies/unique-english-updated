@@ -1,11 +1,16 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from "pinia";
 
 import ProfileSettings from './profileSetting.vue';
 import ChangePassword from './ChangePassword.vue';
 import BankAccount from './Bank/BankAccount.vue';
 
+import { useAppStore } from "@/store/useAppStore";
+
+const appStore = useAppStore();
+const { authUser } = storeToRefs(appStore);
 const route = useRoute();
 const router = useRouter();
 
@@ -20,6 +25,9 @@ onMounted(() => {
 });
 
 function setActiveTab(tab) {
+    if(tab === 'account' && authUser.role =='student'){
+        return;        
+    }
     activeTab.value = tab;
 }
 </script>
@@ -47,6 +55,7 @@ function setActiveTab(tab) {
                             🔒 Password
                         </li>
                         <li @click="setActiveTab('account')"
+                            v-if="authUser.role!=='student'"
                             :class="{
                                 'bg-lime-700 text-white': activeTab === 'account',
                                 'hover:bg-lime-500': activeTab !== 'account'
@@ -60,7 +69,7 @@ function setActiveTab(tab) {
                 <div class="flex-1 bg-white p-5 rounded-lg shadow">
                     <ProfileSettings v-if="activeTab === 'profile'" />
                     <ChangePassword v-if="activeTab === 'password'" />
-                    <BankAccount v-if="activeTab === 'account'" />
+                    <BankAccount v-if="activeTab === 'account' && authUser.role !== 'student'" />
                 </div>
             </div>
         </section>

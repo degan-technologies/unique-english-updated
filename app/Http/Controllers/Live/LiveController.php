@@ -48,6 +48,23 @@ class LiveController extends Controller {
             'data' => RoomResource::collection($rooms),
         ]);
     }
+
+    public function getMyRooms() {
+        $rooms = LiveRooms::query()
+            ->where('instructor_id', Auth::id())
+            ->orderBy("created_at","asc")
+            ->get();
+
+        if (!$rooms) {
+            return response()->json([
+                'data' => 'No rooms found',
+            ]);
+        }
+
+        return response()->json([
+            'data' => RoomResource::collection($rooms),
+        ]);
+    }
     
     public function getParticipants(Request $request) { 
 

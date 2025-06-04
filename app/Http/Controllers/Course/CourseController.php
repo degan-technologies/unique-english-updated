@@ -69,7 +69,7 @@ class CourseController extends Controller {
         if(!$user) return;
         
         $validationRules = [
-            'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
+            'course_name' => ['required'],
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
@@ -165,12 +165,12 @@ class CourseController extends Controller {
         }
         
        $validationRules = [
-            'course_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
+            'course_name' => ['required'],
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
             'discount' => 'numeric', 
-            'thumbnail_url' => 'nullable',
+            'thumbnail_url' => 'nullable|file|mimes:jpeg,png,jpg,gif',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
         ];
 

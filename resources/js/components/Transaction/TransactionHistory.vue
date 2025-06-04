@@ -163,6 +163,7 @@ function getMyBankInfo() {
 onMounted(() => {
     fetchTransferTransactions();
     getCurrentBalance();
+    getMyBankInfo();
 });
 </script>
 

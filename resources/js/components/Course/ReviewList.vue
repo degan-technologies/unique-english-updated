@@ -16,9 +16,9 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    averageRating: String,
+    averageRating: Number,
     starDistribution: Object,
-    showOnly: String,
+    showOnly: Boolean,
     addFeedbackType: String,
 });
 

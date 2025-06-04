@@ -23,6 +23,7 @@ import MyCourse from "@/components/Course/EnrolledManagement.vue";
 import MeetingAction from "@/components/Live/MeetingAction.vue";
 import WhatExpect from "@/components/Layout/WhatExpect.vue";
 import Test from "@/components/Course/Test.vue";
+import ProfileForm from "@/components/Profile/ProfileForm.vue";
 import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 
 const appStore = useAppStore();
@@ -41,6 +42,7 @@ const {
     myCourseTab,
     TestTab,
     courses,
+    profile,
     selectedCourseSlug,
 } = storeToRefs(studentStore);
 
@@ -52,7 +54,8 @@ const currentTab = ref({
     slug: route.query.slug,
 });
 
-const isBookLoading = ref(false); // Specific loading state for book reading
+const isBookLoading = ref(false);
+const profileTab = computed(() => route.query.currentTab);
 
 selectedCourseSlug.value = route.query.slug;
 
@@ -63,22 +66,6 @@ const selectedCourse = computed(() => {
     return null;
 });
 
-async function redirectRoute() {
-    if (!selectedCourse.value?.isMyCourse) {
-        await router.push({
-            name: "student",
-            query: {
-                tab: landingPageTab.value,
-            },
-        });
-    }
-
-    if (!isLoggedIn.value) {
-        showLoginForm.value = true;
-    }
-    return;
-}
-
 function redirectToLogin() {
     if (!isLoggedIn.value) {
         showLoginForm.value = true;
@@ -88,10 +75,9 @@ function redirectToLogin() {
 watch(
     () => route.query.tab,
     async (newTab) => {
-        // Special handling for book reading tab
         if (newTab === bookReadingTab.value) {
             isBookLoading.value = true;
-            await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate loading
+            await new Promise((resolve) => setTimeout(resolve, 1000)); 
         }
 
         currentTab.value = {
@@ -132,8 +118,7 @@ watch(
                     <CourseDetail />
                 </div>
 
-                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug">
-                    {{ redirectRoute() }}
+                <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug"> 
                     <VideoPlayer />
                 </div>
 
@@ -157,6 +142,9 @@ watch(
                 <div v-else-if="currentTab.tab == liveSchedulTab">
                     <LiveStreamingVue />
                 </div>
+                <div class="md:w-[80%] mx-auto my-24" v-if="profileTab === profile">
+                    <ProfileForm />
+                </div>
 
                 <div v-else-if="currentTab.tab == landingPageTab">
                     <Hero class="w-full mb-10" />
@@ -164,8 +152,8 @@ watch(
                     <MeetingAction />
                     <Book />
                     <YoutubeEmbed />
-                    <AboutUs />
                     <WhatExpect />
+                    <AboutUs />
                 </div>
 
                 <div v-else-if="currentTab.tab == TestTab">

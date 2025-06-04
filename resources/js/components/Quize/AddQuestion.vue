@@ -1,83 +1,3 @@
-<template>
-    <div class="max-w-xl mx-auto p-4">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
-            {{ selectedQuestion ? "Update Question" : "Add Question" }}
-        </h2>
-        <form class="space-y-6">
-            <!-- Question Field -->
-            <div>
-                <label class="block text-base font-medium text-gray-700 mb-1">
-                    Question
-                </label>
-                <textarea
-                    v-model.trim="quizForm.question"
-                    placeholder="Enter test question"
-                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
-                ></textarea>
-            </div>
-            <!-- Hint Field -->
-            <div>
-                <label class="block text-base font-medium text-gray-700 mb-1">
-                    Hint (optional)
-                </label>
-                <textarea
-                    v-model.trim="quizForm.hint"
-                    placeholder="Add hint here (at least 10 characters)"
-                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
-                ></textarea>
-            </div>
-            <!-- Choices Section -->
-            <div>
-                <label class="block text-base font-medium text-gray-700 mb-1">
-                    Choices
-                    <span
-                        @click="addChoice"
-                        class="cursor-pointer ml-2 text-lime-600 hover:text-lime-500"
-                    >
-                        <i class="fa-solid fa-plus text-lg"></i>
-                    </span>
-                </label>
-                <div class="space-y-3 mt-2">
-                    <div
-                        v-for="(choice, index) in quizForm.choice"
-                        :key="index"
-                        class="flex items-center space-x-3"
-                    >
-                        <input
-                            type="radio"
-                            v-model="quizForm.answer"
-                            :value="choice"
-                            name="choice"
-                            class="w-5 h-5 text-lime-600"
-                        />
-                        <input
-                            v-model.trim="quizForm.choice[index]"
-                            type="text"
-                            placeholder="Enter choice"
-                            class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"
-                        />
-                        <button
-                            type="button"
-                            @click="removeChoice(index)"
-                            class="text-red-500 hover:text-red-700"
-                        >
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- Submit Button -->
-            <button
-                type="button"
-                @click="selectedQuestion ? updateQuiz() : storeQuiz()"
-                class="w-full py-3 bg-lime-600 text-white font-semibold rounded-lg hover:bg-lime-700 transition duration-200 text-base"
-            >
-                {{ selectedQuestion ? "Update Question" : "Add Question" }}
-            </button>
-        </form>
-    </div>
-</template>
-
 <script setup>
 import { ref, watch } from "vue";
 import Axios from "axios";
@@ -101,8 +21,7 @@ const quizForm = ref({
     question_type: "choice",
     answer: null,
 });
-
-// Populate or reset the form when selectedQuestion changes.
+ 
 watch(
     () => props.selectedQuestion,
     (newVal) => {
@@ -222,3 +141,54 @@ function updateQuiz() {
         });
 }
 </script>
+
+<template>
+    <div class="max-w-xl mx-auto p-4">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+            {{ selectedQuestion ? "Update Question" : "Add Question" }}
+        </h2>
+        <form class="space-y-6">
+            <!-- Question Field -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Question
+                </label>
+                <textarea v-model.trim="quizForm.question" placeholder="Enter test question"
+                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"></textarea>
+            </div>
+            <!-- Hint Field -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Hint (optional)
+                </label>
+                <textarea v-model.trim="quizForm.hint" placeholder="Add hint here (at least 10 characters)"
+                    class="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base"></textarea>
+            </div>
+            <!-- Choices Section -->
+            <div>
+                <label class="block text-base font-medium text-gray-700 mb-1">
+                    Choices
+                    <span @click="addChoice" class="cursor-pointer ml-2 text-lime-600 hover:text-lime-500">
+                        <i class="fa-solid fa-plus text-lg"></i>
+                    </span>
+                </label>
+                <div class="space-y-3 mt-2">
+                    <div v-for="(choice, index) in quizForm.choice" :key="index" class="flex items-center space-x-3">
+                        <input type="radio" v-model="quizForm.answer" :value="choice" name="choice"
+                            class="w-5 h-5 text-lime-600" />
+                        <input v-model.trim="quizForm.choice[index]" type="text" placeholder="Enter choice"
+                            class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 text-base" />
+                        <button type="button" @click="removeChoice(index)" class="text-red-500 hover:text-red-700">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Submit Button -->
+            <button type="button" @click="selectedQuestion ? updateQuiz() : storeQuiz()"
+                class="w-full py-3 bg-lime-600 text-white font-semibold rounded-lg hover:bg-lime-700 transition duration-200 text-base">
+                {{ selectedQuestion ? "Update Question" : "Add Question" }}
+            </button>
+        </form>
+    </div>
+</template>

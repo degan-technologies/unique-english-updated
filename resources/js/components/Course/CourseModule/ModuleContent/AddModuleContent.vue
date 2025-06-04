@@ -7,7 +7,7 @@ import { ref, computed, watch } from 'vue';
 import { useInstructorStore } from "@/store/useInstructorStore";
 
 const instructorStore = useInstructorStore();
-const { selectedCourse } = storeToRefs(instructorStore);
+const { addNewLesson } = storeToRefs(instructorStore);
 
 const props = defineProps({
     selectedModule: Object,
@@ -57,18 +57,14 @@ function handleFileUpload(field, event) {
     errorMessage.value = '';
     const file = event.target.files[0];
 
-    if (!file) return;
-
-    // Validate file size (e.g., 50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-        errorMessage.value = 'File size must be less than 50MB';
-        return;
-    }
-
+    if (!file) return; 
+    
     if (field === 'content_url') {
         form.value.content_url = file;
         form.value.create_content_url = URL.createObjectURL(file);
         form.value.content_type = getContentType(file);
+    } else {
+        form.value.content_url = null;
     }
 }
 
@@ -100,20 +96,13 @@ async function storeModuleContent() {
             }
         });
 
+        addNewLesson.value = response.data.data;
+
         successMessage.value = 'Content added successfully!';
 
-        selectedCourse.value = {
-            ...selectedCourse.value,  
-            courseModules: selectedCourse.value.courseModules.map(module => {
-                if (module.id === props.selectedModule.id) {
-                    return {
-                        ...module,
-                        courseContents: [ response.data.data, ...module.courseContents]  
-                    };
-                }
-                return module;  
-            })
-        }
+        setTimeout(() => { 
+            successMessage.value = '';
+        }, 1500);
 
         setTimeout(() => {
             closeModal();
@@ -214,10 +203,7 @@ function closeModal() {
                             <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-600">
                                 <span class="font-medium text-lime-600">Click to upload</span> or drag and drop
-                            </p>
-                            <p class="text-xs text-gray-500 mt-1">
-                                Videos, PDFs, Images (Max 50MB)
-                            </p>
+                            </p> 
                         </div>
                         <input type="file" @change="handleFileUpload('content_url', $event)"
                             accept="video/*,application/pdf,image/*"

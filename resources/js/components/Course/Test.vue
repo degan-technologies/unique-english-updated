@@ -294,7 +294,7 @@ onMounted(fetchQuizzes);
                             class="px-6 py-3 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2">
                             {{
                                 currentQuestion === quizzes.length - 1
-                                    ? "Finish Test"
+                                    ? "Finish"
                                     : "Next"
                             }}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
