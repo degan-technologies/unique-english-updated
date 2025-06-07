@@ -12,8 +12,7 @@ import Book from "@/components/Book/Book.vue";
 import Hero from "@/components/Layout/Hero.vue";
 import AboutUs from "@/pages/common/AboutUs.vue";
 import Header from "@/components/Layout/Header.vue";
-import Footer from "@/components/Layout/Footer.vue";
-import Spinner from "@/components/Layout/Spinner.vue";
+import Footer from "@/components/Layout/Footer.vue"; 
 import BookDetails from "@/components/Book/BookDetails.vue";
 import CourseCard from "@/components/Course/CourseCard.vue";
 import VideoPlayer from "@/components/Course/VideoPlayer.vue";
@@ -46,15 +45,14 @@ const {
     selectedCourseSlug,
 } = storeToRefs(studentStore);
 
-const route = useRoute();
+const route = useRoute(); 
 const router = useRouter();
 
 const currentTab = ref({
     tab: route.query.tab,
     slug: route.query.slug,
 });
-
-const isBookLoading = ref(false);
+ 
 const profileTab = computed(() => route.query.currentTab);
 
 selectedCourseSlug.value = route.query.slug;
@@ -66,17 +64,17 @@ const selectedCourse = computed(() => {
     return null;
 });
 
-function redirectToLogin() {
+function redirectToLogin() { 
     if (!isLoggedIn.value) {
         showLoginForm.value = true;
+        router.push('/'); 
     }
 }
 
 watch(
     () => route.query.tab,
     async (newTab) => {
-        if (newTab === bookReadingTab.value) {
-            isBookLoading.value = true;
+        if (newTab === bookReadingTab.value) { 
             await new Promise((resolve) => setTimeout(resolve, 1000)); 
         }
 
@@ -85,8 +83,7 @@ watch(
             slug: route?.query.slug,
         };
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        isBookLoading.value = false;
+        await new Promise((resolve) => setTimeout(resolve, 1000)); 
     },
     { immediate: true }
 );
@@ -96,29 +93,17 @@ watch(
     <div class="flex flex-col min-h-screen bg-gray-50 text-gray-800">
         <div class="sticky top-0 z-50 shadow bg-white w-full">
             <Header />
-        </div>
-
-        <!-- Loading State for general content -->
-        <div v-if="isLoading && !isBookLoading" class="flex-grow flex items-center justify-center">
-            <Spinner class="h-12 w-12" />
-        </div>
-
-        <!-- Special Loading State for book reading -->
-        <div v-else-if="isBookLoading" class="flex-grow flex items-center justify-center">
-            <div class="text-center">
-                <Spinner class="text-lime-700 mx-auto" />
-                <p class="text-lg text-gray-600">Loading your book...</p>
-            </div>
-        </div>
-
+        </div> 
+ 
         <!-- Main Content -->
-        <div v-else class="flex-grow overflow-y-auto scrollbar">
+        <div  class="flex-grow overflow-y-auto scrollbar">
             <div class="w-full mt-18 min-h-[calc(100vh-144px)]">
                 <div v-if="currentTab.tab == courseDetailTab && currentTab.slug">
                     <CourseDetail />
                 </div>
 
                 <div v-else-if="currentTab.tab == videoPlayerTab && currentTab.slug"> 
+                    {{ redirectToLogin() }}
                     <VideoPlayer />
                 </div>
 

@@ -55,7 +55,9 @@ onMounted(() => {
                 <i class="fas fa-video text-lime-700 text-xl"></i>
                 <h3 class="text-lg font-bold">Live Sessions Overview</h3>
             </div>
-            <button  class="text-gray-500 hover:text-gray-800">
+            <button 
+                @click="getTodaySchedules()"
+                class="text-gray-500 hover:text-gray-800">
                 <i class="fas fa-sync-alt"></i>
             </button>
         </div>

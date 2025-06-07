@@ -42,6 +42,21 @@ const {
 } = storeToRefs(sidebarStore);
  
 const route = useRoute(); 
+const router = useRouter();
+ 
+const updateInstructorRoute = computed(()=>{
+    if(authUser.value.role === 'instructor') {
+         selectedContent.value = courses.value; 
+    } else {
+        selectedContent.value;
+    }
+
+    return authUser.value.role;
+})
+
+if(!authUser.value) {
+    router.push('/');
+}
 
 watch(
     () => route.query.currentTab,
@@ -69,7 +84,7 @@ watch(
 
             <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300">
                 <div class="w-full bg-gray-100">
-                    <div v-if="authUser?.role !== 'instructor'">
+                    <div v-if="updateInstructorRoute !== 'instructor'">
                         <div v-if="selectedContent === dashboard">
                             <DashboardHome />
                         </div>
@@ -93,7 +108,7 @@ watch(
                         <div v-if="selectedContent === profile">
                             <ProfileForm />
                         </div>
-                        <div v-else-if="selectedContent === courses">
+                        <div v-else-if="selectedContent === courses ">
                             <CourseManagement />
                         </div>
                         <div v-else-if="selectedContent === payments">

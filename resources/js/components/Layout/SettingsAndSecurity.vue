@@ -8,8 +8,7 @@ const appStore = useAppStore();
 const { profileUpdated, hero } = storeToRefs(appStore);
 
 
-import Hero from "@/components/Layout/Hero.vue";
-import LandingHeader from "@/components/Layout/Header.vue"; 
+import Hero from "@/components/Layout/Hero.vue"; 
 
 const settingTab = ref('setting');
 const securityTab = ref('security');
@@ -179,8 +178,7 @@ onMounted(()=>{
                                 </div>
                                 <!-- Live Preview Panel -->
                                 <div class="flex-1 relative bg-gray-50 rounded-lg shadow-inner p-4">
-                                    <!-- Actions disabled -->
-                                    <LandingHeader class="relative pointer-events-none " />
+                                    <!-- Actions disabled --> 
                                     <div class="pointer-events-none">
                                         <Hero class="w-full h-full pointer-events-none " />
                                     </div>

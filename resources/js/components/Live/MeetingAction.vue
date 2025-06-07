@@ -21,7 +21,7 @@ function changeTab() {
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center px-6 py-20">
+    <div class="min-h-screen flex items-center justify-center px-6 py-20" id="live">
         <div class="flex flex-col-reverse md:flex-row items-center justify-between w-full max-w-7xl gap-8 lg:gap-16">
             <!-- Left Section -->
             <div class="flex-1 text-center md:text-left space-y-6">

@@ -31,7 +31,8 @@ use App\Http\Controllers\Quiz\AnswerController;
 use App\Http\Controllers\Logo\LogoController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
-use App\Http\Controllers\System\HeroController; 
+use App\Http\Controllers\System\HeroController;
+use App\Http\Middleware\EnsureSignature;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -42,13 +43,21 @@ Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 Route::get('/hero-section', [HeroController::class, 'index']);
 Route::get('/get-plans',[ PlanController::class, 'index']);
 Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']); 
-Route::get('/coursecontent/stream/video/{filename}', [CourseContentVideoController::class, 'stream']);
 Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
-
+  
+Route::get('/stream/video/{filename}', [CourseContentVideoController::class, 'stream'])
+    ->name('stream.video')
+    ->middleware(EnsureSignature::class);
+ 
 Route::middleware('auth:api')
-->group(function () {
-        
-        Route::get('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream']);
+->group(function () { 
+        Route::post('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream'])
+            ->name('stream.pdf')
+            ->middleware(EnsureSignature::class);
+ 
+        Route::post('/book/pdf-stream/{filename}', [BookVideoController::class, 'bookPdfStream'])
+        ->name('book.pdf')
+        ->middleware(EnsureSignature::class);
 
         Route::post('/log-out', [AuthController::class, 'logout']);
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
@@ -108,7 +117,7 @@ Route::middleware('auth:api')
         Route::resource('quize',QuizController::class);
         Route::resource('schedules', ScheduleController::class);
         Route::resource('QMetaData', QMetaDataController::class);
-        // Route::get('/exams', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::get('/get-student-module-exam', [QMetaDataController::class,'fetchStudentExam']); 
         Route::get('/get-module-quizes', [QMetaDataController::class,'fetchInstructorExam']); 
         Route::resource('tests', TestController::class);
         Route::resource('/results', ResultController::class);

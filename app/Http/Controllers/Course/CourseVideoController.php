@@ -10,6 +10,14 @@ use Illuminate\Support\Facades\Log;
 
 class CourseVideoController extends Controller
 {
+
+    /**
+     * Stream a video file with support for range requests and no-cache headers.
+     *
+     * @param Request $request
+     * @param string $filename
+     * @return StreamedResponse
+     */ 
     public function stream(Request $request, $filename)
     {
         $disk = Storage::disk('public');
@@ -83,4 +91,6 @@ class CourseVideoController extends Controller
             readfile($filePath);
         }, 200, $headers);
     }
+
+    
 }

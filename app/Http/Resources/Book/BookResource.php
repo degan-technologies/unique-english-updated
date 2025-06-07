@@ -2,9 +2,11 @@
 
 namespace App\Http\Resources\Book;
 
+use App\Helper\TokenGenerator;
 use App\Http\Resources\userResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 class BookResource extends JsonResource {
     /**
@@ -22,9 +24,7 @@ class BookResource extends JsonResource {
             'title' => $this->title,
             'auther' => $this->auther,
             'language' => $this->language,
-            'file_url' => $this->file_url
-            ? Storage::disk('public')->url($this->file_url)
-            : 'no-file_url.png',
+            'file_url' => TokenGenerator::generateSecurePdfUrl('book.pdf', basename($this->file_url), Auth::id()),
             
             'eddition' => $this->eddition,
             'discount' => $this->discount,

@@ -30,6 +30,7 @@ const emit = defineEmits(['cancelEdit', 'onAddModuleContent']);
 
 // Refs 
 const isLoading = ref(false);
+const loadingTosave = ref(false);
 const isProcessing = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
@@ -139,8 +140,8 @@ const updateSelectedContent = async () => {
         errorMessage.value = 'Title is required';
         return;
     }
-
-    isLoading.value = true;
+ 
+    loadingTosave.value = true;
     errorMessage.value = '';
     successMessage.value = '';
 
@@ -173,8 +174,8 @@ const updateSelectedContent = async () => {
         }, 1500);
     } catch (err) {
         errorMessage.value = err.response?.data?.message || 'Failed to update content';
-    } finally {
-        isLoading.value = false;
+    }  finally  {
+        loadingTosave.value = false
     }
 };
 
@@ -591,9 +592,9 @@ onMounted(() => {
                                         class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500">
                                         Cancel
                                     </button>
-                                    <button @click="updateSelectedContent" type="button" :disabled="isLoading"
+                                    <button @click="updateSelectedContent" type="button" :disabled="loadingTosave"
                                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-70 disabled:cursor-not-allowed">
-                                        <span v-if="isLoading">
+                                        <span v-if="loadingTosave">
                                             <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
                                         </span>
                                         <span v-else>

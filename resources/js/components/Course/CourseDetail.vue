@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
                         <div class="text-lg text-gray-700 mt-2">
                             <p>A course by</p>
                             <p class="font-bold">
-                                {{ selectedCourse?.user.first_name }}
+                                {{ selectedCourse?.user.first_name }} {{ selectedCourse?.user.middle_name }}
                             </p>
                         </div>
                     </div>

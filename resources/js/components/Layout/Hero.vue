@@ -34,9 +34,10 @@ const scrollToSection = (id) => {
 };
 
 watch(
-    () => exploreCourses.value,
+    () => selectedComponentId.value,
     () => {
         scrollToSection(selectedComponentId.value);
+        selectedComponentId.value = null;
     },
     { immediate: true }
 );

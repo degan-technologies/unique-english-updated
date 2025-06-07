@@ -199,15 +199,12 @@ class ScheduleController extends Controller
         }
     }
 
-    public function getMySchedules()
-    {
+    public function getMySchedules() {
         $user = Auth::user();
 
         $schedules = Schedule::query()
-            ->where(function ($query) use ($user) {
-                $query->orWhere('user_id', $user->id)
-                    ->orWhere('user_id', $user->id);
-            }) 
+            ->where('user_id', $user->id)
+            ->whereHas('peredicTable.liveRoom', fn($query) => $query->where('instructor_id', $user->id))
             ->where('student_id', null)
             ->get();
 

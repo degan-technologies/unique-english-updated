@@ -85,4 +85,9 @@ return [
         'webhook_secret' => env('WEBHOOK_SECRET'),
     ],
 
+    'auth_api' => [
+        'url' => env('APP_URL'). '/api/auth/verify-token',  
+        'timeout' => env('AUTH_API_TIMEOUT', 5), 
+    ],
+
 ];

@@ -15,6 +15,7 @@ const { authUser, unreadNotifications, notifications, readNotifications, isLogge
 const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
 
 const searchOpen = ref(false); 
+const notificationsLoading = ref(false);
 const notificationOpen = ref(false);
 const profileOpen = ref(false);
 const showAllNotifications = ref(false);
@@ -82,6 +83,14 @@ const toggleNotifications = () => {
         showAllNotifications.value = !showAllNotifications.value; 
     }
 
+    const refreshNOtification = () =>{
+        notificationsLoading.value = true;
+        appStore.fetchUnreadNotifications();
+
+        notificationsLoading.value = false;
+        return;
+    }
+
     onMounted(() => {
         appStore.fetchUnreadNotifications(); 
     }); 
@@ -118,6 +127,18 @@ const toggleNotifications = () => {
                             <h3 class="font-semibold text-gray-700">
                                 Notifications
                             </h3>
+                            <div class="flex flex-row gap-4">
+                                <button 
+                                    @click="refreshNotification"
+                                    class="text-gray-500 hover:text-gray-800"
+                                    :disabled="notificationsLoading"
+                                >
+                                    <i
+                                        class="fas fa-sync-alt transition-transform"
+                                        :class="{ 'animate-spin': notificationsLoading }"
+                                    />
+                                </button>
+
                             <button @click="toggleShowAllNotifications"
                                 class="text-xs text-lime-600 hover:text-lime-800">
                                 {{
@@ -127,7 +148,7 @@ const toggleNotifications = () => {
                                 }}
                             </button>
                         </div>
-
+                        </div> 
                         <!-- No notifications -->
                         <div v-if="
                             notifications.length === 0 &&

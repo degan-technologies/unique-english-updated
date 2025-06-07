@@ -51,32 +51,35 @@ function getSelectedBook() {
         selectedBook.value = res.data.data;
     });
 }
-
-// Load PDF with quality adjustments
-const loadPdf = async () => {
+ 
+async function loadPdf() {
     if (!selectedBook.value.file_url) return;
 
-    const filename = selectedBook.value.file_url.split("/").pop();
-
-    const proxyUrl = `/api/book-pdf/${filename}`;
-
     try {
-        pdfDoc = await getDocument({
-            url: proxyUrl,
-            httpHeaders: {
+        const response = await fetch(`/api${selectedBook.value.file_url}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${authToken.value}`,
             },
-            cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.10.377/cmaps/",
-            cMapPacked: true,
-        }).promise;
+            body: JSON.stringify({
+                filename: selectedBook.value.file_url,  
+            }),
+        });
 
+        if (!response.ok) throw new Error("Failed to load PDF");
+
+        const pdfData = await response.arrayBuffer();
+
+        pdfDoc = await getDocument({ data: pdfData }).promise;
         totalPages.value = pdfDoc.numPages;
-        renderPage(currentPage.value);
+        currentPage.value = 1;
+        await renderPage(currentPage.value);
         openPdf.value = true;
-    } catch (error) {
-        console.error("Error loading PDF via proxy:", error);
+    } catch (err) {
+        console.error("PDF Load Error:", err);
     }
-};
+}
 
 const renderPage = async (pageNumber) => {
     const page = await pdfDoc.getPage(pageNumber);

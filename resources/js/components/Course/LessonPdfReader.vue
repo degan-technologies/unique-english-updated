@@ -32,23 +32,33 @@ const searchPage = ref("");
 
 async function loadPdf() {
     if (!props.selectedLesson?.course_content_url) return;
+
     try {
-        pdfDoc = await getDocument({
-            url: props.selectedLesson.course_content_url,
-            withCredentials: true,  
-            httpHeaders: {
+        const response = await fetch(`/api${props.selectedLesson?.course_content_url}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${authToken.value}`,
             },
-            })
-            .promise;
+            body: JSON.stringify({
+                filename: props.selectedLesson.content_url, // pass only safe filename like "example.pdf"
+            }),
+        });
+
+        if (!response.ok) throw new Error("Failed to load PDF");
+
+        const pdfData = await response.arrayBuffer();
+
+        pdfDoc = await getDocument({ data: pdfData }).promise;
         totalPages.value = pdfDoc.numPages;
         currentPage.value = 1;
         await renderPage(currentPage.value);
         openPdf.value = true;
     } catch (err) {
-        console.error(err);
+        console.error("PDF Load Error:", err);
     }
 }
+
 
 async function renderPage(pageNumber) {
     if (!pdfDoc) return;

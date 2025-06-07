@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\StudentResources\StdBook;
 
+use App\Helper\TokenGenerator;
 use App\Http\Resources\Comment\FeedBackResource;
 use App\Http\Resources\userResource;
 use App\Models\Book\Book;
@@ -82,12 +83,16 @@ class StdBookResource extends JsonResource {
             ->has('systemAdmin')
             ->first(); 
 
-        if(Book::checkEligibility($this->id) || $user !== null ) {
-            return $this->file_url
-                ? Storage::disk('public')->url($this->file_url)
-                : 'no-file_url.png';
-        } 
+        if (!$user) {
+             return 'not-allowed.png';
+        }
 
-        return 'not-allowed.png';
+        $checklegibility = Book::checkEligibility($this->id);
+
+        if(!$checklegibility) { 
+            return 'not-allowed.png';
+        }
+ 
+        return  TokenGenerator::generateSecurePdfUrl('book.pdf', basename($this->file_url), Auth::id());
     }
 }

@@ -32,6 +32,9 @@ class CourseContentController extends Controller {
     }
  
     public function getModuleContents(Request $request, $moduleId) {
+        /**
+         * @var User $courseContent
+         */
         $courseContent = CourseContent::query()
             ->where('course_module_id', $moduleId)
             ->when($request->contentType, fn($q) => $q->where('content_type', 'like', "%{$request->contentType}%"))
@@ -92,7 +95,7 @@ class CourseContentController extends Controller {
         if ($request->hasFile('content_url')) {
             $file = $request->file('content_url');
             $fileExtension = $file->getClientOriginalExtension();
-            $filePath = $file->store('/course', 'public');
+            $filePath = $file->store('/course', 'private');
 
             switch ($fileExtension) {
                 case in_array($fileExtension, VIDEO_EXTENTION):
@@ -187,7 +190,7 @@ class CourseContentController extends Controller {
 
             $file = $request->file('content_url');
             $fileExtension = $file->getClientOriginalExtension();
-            $filePath = $file->store('/course', 'public');
+            $filePath = $file->store('/course', 'private');
  
             switch ($fileExtension) {
                 case in_array($fileExtension, VIDEO_EXTENTION):

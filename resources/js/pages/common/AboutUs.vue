@@ -10,7 +10,7 @@ const toggleExpanded = () => {
 </script>
 
 <template>
-    <section class="bg-gray-50 py-12 px-4" id="about">
+    <section  class="bg-gray-50 py-12 px-4" id="about">
         <div
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >

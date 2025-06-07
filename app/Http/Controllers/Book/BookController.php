@@ -134,9 +134,10 @@ class BookController extends Controller {
                 'errors' => $validator->errors()
             ], 422);
         }
+
         $imagePath = null;
         if($request->hasFile('file_url')) {
-            $imagePath = $request->file('file_url')->store('/books/images', 'public');
+            $imagePath = $request->file('file_url')->store('/books/images', 'private');
         }
         $imagesPath = null;
         if($request->hasFile('cover_page_url')) {
@@ -148,25 +149,25 @@ class BookController extends Controller {
         }
 
         // ...
-$pageNumber = null;
+        $pageNumber = null;
 
-if ($request->hasFile('file_url')) {
-    $pdfFile = $request->file('file_url');
-    $fileFormat = $pdfFile->getClientOriginalExtension();  
- 
-    if (strtolower($fileFormat) !== 'pdf') {
-        return response()->json([
-            'message' => 'Only PDF files are allowed.',
-        ], 422);
-    }
-    $imagePath = $pdfFile->store('/books/images', 'public');
- 
-    $parser = new Parser();
-    $pdf = $parser->parseFile($pdfFile->getPathname());
-    $pages = $pdf->getPages();
-    $pageNumber = count($pages);
-    
-}
+        if ($request->hasFile('file_url')) {
+            $pdfFile = $request->file('file_url');
+            $fileFormat = $pdfFile->getClientOriginalExtension();  
+        
+            if (strtolower($fileFormat) !== 'pdf') {
+                return response()->json([
+                    'message' => 'Only PDF files are allowed.',
+                ], 422);
+            }
+            $imagePath = $pdfFile->store('/books/images', 'public');
+        
+            $parser = new Parser();
+            $pdf = $parser->parseFile($pdfFile->getPathname());
+            $pages = $pdf->getPages();
+            $pageNumber = count($pages);
+            
+        }
 
 
         $books = $user->books()->create([
@@ -185,8 +186,7 @@ if ($request->hasFile('file_url')) {
             'file_url' => $imagePath,
             'cover_page_url' => $imagesPath,
             'intro_vedio'=>$videoPath ,
-            'isDownloadable' => false,
-
+            'isDownloadable' => false, 
         ]);
 
         return response()->json([
@@ -253,7 +253,7 @@ if ($request->hasFile('file_url')) {
                 ], 422);
             }
     
-            $filePath = $pdfFile->store('/books/images', 'public');
+            $filePath = $pdfFile->store('/books/images', 'private');
             $data['file_url'] = $filePath;
      
             $parser = new Parser();

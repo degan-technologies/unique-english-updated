@@ -3,17 +3,83 @@
 namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course\Course;
+use App\Models\Course\CourseContent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Laravel\Passport\Token;
 
 class CourseContentVideoController extends Controller
 {
-    public function stream(Request $request, $filename)
+    protected $user;
+
+    public function __construct(Request $request)
     {
-        $disk = Storage::disk('public');
+        // Authenticate user using Passport token_id
+        if ($request->has('token_id')) {
+            $this->authenticateUser($request->token_id);
+
+            // Optional: Verify token expiration from request
+            if ($request->has('expires') && time() > $request->expires) {
+                abort(401, 'Token has expired');
+            }
+        }
+    }
+
+    protected function authenticateUser($tokenId)
+    {
+        // Find the Passport token
+        $token = Token::find($tokenId);
+
+        if (!$token) {
+            abort(401, 'Unauthorized - Invalid token');
+        }
+
+        // Check if token is revoked
+        if ($token->revoked) {
+            abort(401, 'Unauthorized - Token revoked');
+        }
+
+        // Get the user associated with the token
+        $this->user = $token->user;
+
+        if (!$this->user) {
+            abort(401, 'Unauthorized - User not found');
+        }
+
+        // Set the authenticated user globally
+        auth()->setUser($this->user);
+    }
+    
+public function stream(Request $request, $filename) {
+        // Verify authentication
+        if (!$this->user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        } 
+
         $path = "course/$filename";
+
+        $courseContent = CourseContent::query()
+            ->where('content_url', $path) 
+            ->first();
+
+        if (!$courseContent) { 
+            return response()->json([
+                'error' => 'Video not found'
+            ], 404);
+        } 
+        
+        // $checkEligibility = Course::checkEligibility($courseContent->course_id);
+        
+
+        // if (!($checkEligibility || $courseContent->user_id === Auth::id())) {
+        //     return response()->json(['error' => 'You are not eligible to view this video'], 403);
+        // }
+
+        $disk = Storage::disk('private');
 
         if (!$disk->exists($path)) {
             Log::error("Video not found: $filename");

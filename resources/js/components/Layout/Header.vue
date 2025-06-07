@@ -29,7 +29,7 @@ const { items, itemCount, totalPrice } = storeToRefs(cartStore);
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
 
 // App & user refs
-const { isLoggedIn, loggingIn, logoImage, unreadNotifications, notifications, readNotifications, authUser, exploreCourses } =
+const { isLoggedIn, loggingIn, logoImage, unreadNotifications, notifications, readNotifications, authUser, exploreCourses, selectedComponentId } =
     storeToRefs(appStore);
 
 // Student refs
@@ -38,6 +38,7 @@ const { landingPageTab, selectedCourseSlug, myCourseTab } =
 
 // Notification refs
 const notificationOpen = ref(false);
+const notificationsLoading = ref(false);
 const showAllNotifications = ref(false);
 const currentNotification = ref(null);
 const showNotificationModal = ref(false);
@@ -109,22 +110,22 @@ async function markAsUnread(notificationId) {
 }
 
 function showNotificationDetails(notification) {
-        currentNotification.value = notification;
-        showNotificationModal.value = true;
-        notificationOpen.value = false;  
+    currentNotification.value = notification;
+    showNotificationModal.value = true;
+    notificationOpen.value = false;
 
-        if(notification.data.read_at == null){
-            appStore.markNotificationAsRead(notification.id);
-        }
+    if (notification.data.read_at == null) {
+        appStore.markNotificationAsRead(notification.id);
     }
+}
 
 function closeNotificationModal() {
     showNotificationModal.value = false;
 }
 
 function toggleShowAllNotifications() {
-    if(notifications.length === 0) return;
-    showAllNotifications.value = !showAllNotifications.value; 
+    if (notifications.length === 0) return;
+    showAllNotifications.value = !showAllNotifications.value;
 }
 
 // Mobile menu
@@ -155,12 +156,10 @@ function handleClickOutside(event) {
 // Get initials for fallback avatar
 const getInitials = (name) => (name ? name.charAt(0).toUpperCase() : "");
 
-// Navigation actions
-function onExploreCourses() {
-    isCartOpen.value = false;
-    router.push("/").then(() => {
-        exploreCourses.value = !exploreCourses.value;
-    });
+async function navigationToggle(id) {
+    await router.push('/');
+    selectedComponentId.value = id;
+    isMenuOpen.value = false;
 }
 
 // Checkout flow
@@ -252,6 +251,14 @@ onMounted(() => {
     }
 });
 
+const refreshNOtification = () => {
+    notificationsLoading.value = true;
+    appStore.fetchUnreadNotifications();
+
+    notificationsLoading.value = false;
+    return;
+}
+
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
 });
@@ -283,7 +290,7 @@ watch(
 
             <div class="flex items-center gap-4 pr-4">
                 <!-- Notification Button -->
-                <div v-if="isLoggedIn"  class="relative flex justify-center">
+                <div v-if="isLoggedIn" class="relative flex justify-center">
                     <Popper v-model:visible="notificationOpen" :offset-distance="'0'" placement="bottom">
                         <!-- Notification Icon with Count -->
                         <div class="relative flex justify-center items-center text-2xl cursor-pointer"
@@ -308,15 +315,23 @@ watch(
                                         <h3 class="text-xl font-semibold text-gray-700">
                                             Notifications
                                         </h3>
-                                        <button @click.stop="
-                                            toggleShowAllNotifications
-                                        " class="text-xs text-lime-600 hover:text-lime-800">
-                                            {{
-                                                showAllNotifications
-                                                    ? "Show Unread Only"
-                                                    : "Show All"
-                                            }}
-                                        </button>
+                                        <div class="flex flex-row gap-4">
+                                            <button @click="refreshNotification"
+                                                class="text-gray-500 hover:text-gray-800"
+                                                :disabled="notificationsLoading">
+                                                <i class="fas fa-sync-alt transition-transform"
+                                                    :class="{ 'animate-spin': notificationsLoading }" />
+                                            </button>
+
+                                            <button @click="toggleShowAllNotifications"
+                                                class="text-xs text-lime-600 hover:text-lime-800">
+                                                {{
+                                                    showAllNotifications
+                                                        ? "Show Unread Only"
+                                                        : "Show All"
+                                                }}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <!-- No notifications -->
@@ -331,11 +346,10 @@ watch(
 
                                     <!-- Unread Notifications -->
                                     <ul v-if="notifications.length > 0" class="space-y-2">
-                                        <li v-for="notification in notifications" :key="notification.id"
-                                            :class="{
-                                                'hidden': showAllNotifications && notification.data.read_at,
-                                            }"
-                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition" @click="
+                                        <li v-for="notification in notifications" :key="notification.id" :class="{
+                                            'hidden': showAllNotifications && notification.data.read_at,
+                                        }" class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                                            @click="
                                                 showNotificationDetails(
                                                     notification
                                                 )
@@ -356,7 +370,8 @@ watch(
                                                         }}
                                                     </p>
                                                 </div>
-                                                <span v-if="currentNotification?.id == notification?.id ? false : !notification.read_at"
+                                                <span
+                                                    v-if="currentNotification?.id == notification?.id ? false : !notification.read_at"
                                                     class="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0"></span>
                                             </div>
                                         </li>
@@ -444,7 +459,7 @@ watch(
                                         <h1 class="text-center text-base">
                                             No items in cart
                                         </h1>
-                                        <button @click="onExploreCourses"
+                                        <button @click="navigationToggle('courses')"
                                             class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition">
                                             <i class="fa-solid fa-book-open-reader mr-2"></i>Explore Courses
                                         </button>
@@ -480,7 +495,7 @@ watch(
                                                 <span>Total:</span>
                                                 <span>${{
                                                     totalPrice.toFixed(2)
-                                                    }}</span>
+                                                }}</span>
                                             </div>
 
                                             <button @click="enrollCourse" :disabled="isLoading"
@@ -600,24 +615,29 @@ watch(
             <div v-if="isMenuOpen" class="p-4 text-white border-t bottom-3 w-full mt-3 md:hidden">
                 <ul class="flex flex-col items-center gap-4">
                     <li>
-                        <a href="/" @click="toggleMenu" class="text-white hover:text-lime-200">
+                        <button @click="navigationToggle('hero')" class="text-white hover:text-lime-200">
                             Home
-                        </a>
+                        </button>
                     </li>
                     <li>
-                        <a href="#about" @click="toggleMenu" class="text-white hover:text-lime-200">
-                            About
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#courses" @click="toggleMenu" class="text-white hover:text-lime-200">
+                        <button @click="navigationToggle('courses')" class="text-white hover:text-lime-200">
                             Courses
-                        </a>
+                        </button>
                     </li>
                     <li>
-                        <a href="/" @click="toggleMenu" class="text-white hover:text-lime-200 mt-5">
+                        <button @click="navigationToggle('books')" class="text-white hover:text-lime-200">
                             Books
-                        </a>
+                        </button>
+                    </li>
+                    <li>
+                        <button @click="navigationToggle('live')" class="text-white hover:text-lime-200">
+                            Live
+                        </button>
+                    </li>
+                    <li>
+                        <button @click="navigationToggle('about')" class="text-white hover:text-lime-200">
+                            About
+                        </button>
                     </li>
 
                     <!-- Simplified auth section -->
@@ -665,7 +685,7 @@ watch(
                     <i class="fa-regular fa-clock mr-2"></i>
                     <span>{{
                         formatTime(currentNotification.created_at)
-                    }}</span>
+                        }}</span>
                 </div>
 
                 <!-- Additional details based on notification type -->
@@ -682,7 +702,7 @@ watch(
             </div>
 
             <!-- Modal Footer -->
-            <div class="flex justify-end p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg"> 
+            <div class="flex justify-end p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
                 <button @click="closeNotificationModal"
                     class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition">
                     Close

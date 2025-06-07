@@ -1,8 +1,13 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 import Spinner from "@/components/Layout/Spinner.vue";
+
+import { useAppStore } from '@/store/useAppStore';
+const appStore = useAppStore();
+const { authToken } = storeToRefs(appStore);
 
 GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -25,21 +30,36 @@ const scale = ref(1);
 const openPdf = ref(false);
 const isFullScreen = ref(false);
 const searchPage = ref("");
-
-const loadPdf = async () => {
+ 
+async function loadPdf() {
     if (!props.selectedBook || !props.selectedBook?.file_url) return;
+
     try {
-        pdfDoc = await getDocument({
-            url: props.selectedBook.file_url
-        }).promise;
+        const response = await fetch(`/api${props.selectedBook?.file_url}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${authToken.value}`,
+            },
+            body: JSON.stringify({
+                filename: props.selectedBook?.file_url,  
+            }),
+        });
+
+
+        if (!response.ok) throw new Error("Failed to load PDF");
+
+        const pdfData = await response.arrayBuffer();
+
+        pdfDoc = await getDocument({ data: pdfData }).promise;
         totalPages.value = pdfDoc.numPages;
         currentPage.value = 1;
         await renderPage(currentPage.value);
         openPdf.value = true;
-    } catch (error) {
-        console.error("Error loading PDF:", error);
+    } catch (err) {
+        console.error("PDF Load Error:", err);
     }
-};
+}
 
 const renderPage = async (pageNumber) => {
     if (!pdfDoc) return;

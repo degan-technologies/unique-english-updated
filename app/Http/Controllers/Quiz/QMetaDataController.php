@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Resources\Quiz\QMetaDataResource;
 use App\Http\Resources\Quiz\QuizResource;
+use App\Models\Course\Course;
 use App\Models\Course\CourseModule;
 use App\Models\Quiz\Quiz;
 class QMetaDataController extends Controller{
@@ -74,6 +75,44 @@ class QMetaDataController extends Controller{
             'data'=> QMetaDataResource::collection($qMetaData),
         ]);
     }
+
+    public function fetchStudentExam(Request $request) {
+        /**
+         * @var mixed $qMetaData
+         */
+        $user = Auth::user();
+
+        if (!$user) return;
+
+        $moduleId = $request->module_id ?? null;
+
+        $courseModule = CourseModule::query() 
+            ->find($moduleId);
+
+        $eligibleCourse = Course::checkEligibility($courseModule->course_id);
+
+        if (!$eligibleCourse) {
+            return response()->json([
+                'message' => $this->langService->getLang('course_not_found'),
+            ], 404);
+        }
+
+        $qMetaData = QMetaData::query()
+            ->where('course_module_id', $moduleId) 
+            ->get();
+ 
+
+        if ($qMetaData->isEmpty()) {
+            return response()->json([
+                'message' => $this->langService->getLang('no_data_found'),
+            ], 404);
+        }
+
+        return response()->json([ 
+            'data' => QMetaDataResource::collection($qMetaData),
+        ]);
+    }
+
 
     public function store(Request $request){
         $user = User::query()
