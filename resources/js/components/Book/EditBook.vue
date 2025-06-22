@@ -1,26 +1,28 @@
 <script setup>
-import { ref, defineProps, defineEmits, onMounted, watch } from 'vue'
 import Axios from 'axios'
+import { storeToRefs } from 'pinia';
 import { useToast } from "vue-toastification";
+import { ref, defineProps, defineEmits, onMounted, watch } from 'vue'
 import DescriptionEditor from "@/components/Book/DescriptionEditor.vue";
+
+import { useInstructorStore } from "@/store/useInstructorStore";
+
+const InstructorStore = useInstructorStore();
+const { booksAdmin } = storeToRefs(InstructorStore);
 
 const props = defineProps({
     selectedbook: {
         type: Object,
         required: true,
         validator: (book) => book && book.id
-    },
-    booksAdmin: {
-        type: Array,
-        default: () => []
-    },
+    }, 
     editingBookId: {
         type: Number,
         default: null
     }
 })
 
-const emit = defineEmits(['cancel-edit', 'book-updated'])
+const emit = defineEmits(['cancel-edit'])
 const toast = useToast();
 const error = ref("");
 const loading = ref(false);
@@ -144,8 +146,13 @@ const handleUpdateCourse = async () => {
             { headers: { "Content-Type": "multipart/form-data" } }
         );
 
-        toast.success("Book updated successfully!", { position: "top-right" });
-        emit('book-updated', response.data.data);
+        booksAdmin.value = booksAdmin.value.filter(book => book.id !== props.selectedbook.id);
+        booksAdmin.value = [
+            response.data.data,
+            ... booksAdmin.value
+        ];
+
+        toast.success("Book updated successfully!", { position: "top-right" }); 
         cancelEdit();
     } catch (err) {
         error.value = err.response?.data?.message || "Failed to update book.";
@@ -180,7 +187,7 @@ const safeParseTag = (rawTag) => {
 </script>
 
 <template>
-    <div class="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-200">
         <!-- Error Message -->
         <div v-if="error" class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
             <div class="flex items-center">
@@ -194,8 +201,20 @@ const safeParseTag = (rawTag) => {
         <form @submit.prevent="handleUpdateCourse" class="space-y-8">
             <!-- 60/40 layout -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
                 <!-- LEFT: Uploads (2/3) -->
                 <div class="lg:col-span-2 space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Title
+                        </label>
+                        <input v-model="props.selectedbook.title" type="text"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                            :class="{ 'border-red-500': errors.title }" placeholder="Book title" />
+                        <p v-if="errors.title" class="mt-1 text-red-500 text-sm">{{ errors.title }}</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Cover Upload -->
                     <div>
                         <label class="block text-gray-700 font-medium text-sm mb-2">
@@ -203,7 +222,7 @@ const safeParseTag = (rawTag) => {
                         </label>
                         <div v-if="coverPagePreview || props.selectedbook?.cover_page_url" class="mb-3">
                             <img :src="coverPagePreview || props.selectedbook.cover_page_url" alt="Book Cover Preview"
-                                class="w-full max-w-md max-h-64 object-contain rounded-md border border-gray-200" />
+                                class="w-full max-w-md h-48 object-contain rounded-md border border-gray-200" />
                         </div>
                         <div class="relative">
                             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition"
@@ -228,7 +247,7 @@ const safeParseTag = (rawTag) => {
                             Intro Video
                         </label>
                         <div v-if="introVideoPreview || props.selectedbook?.intro_video_url" class="mb-3">
-                            <video controls class="w-full max-w-md max-h-64 rounded-md border border-gray-200 bg-black">
+                            <video controls class="w-full max-w-md h-48 rounded-md border border-gray-200 bg-black">
                                 <source :src="introVideoPreview || props.selectedbook.intro_video_url"
                                     type="video/mp4" />
                                 Your browser does not support the video tag.
@@ -249,7 +268,7 @@ const safeParseTag = (rawTag) => {
                             </p>
                         </div>
                     </div>
-
+                </div>
                     <!-- Book File Upload -->
                     <div>
                         <label class="block text-gray-700 font-medium text-sm mb-2">
@@ -274,19 +293,10 @@ const safeParseTag = (rawTag) => {
 
                 <!-- RIGHT: Fields (1/3) -->
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Title <span class="text-red-500">*</span>
-                        </label>
-                        <input v-model="props.selectedbook.title" type="text"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.title }" placeholder="Book title" />
-                        <p v-if="errors.title" class="mt-1 text-red-500 text-sm">{{ errors.title }}</p>
-                    </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Author <span class="text-red-500">*</span>
+                            Author
                         </label>
                         <input v-model="props.selectedbook.auther" type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
@@ -294,30 +304,19 @@ const safeParseTag = (rawTag) => {
                         <p v-if="errors.auther" class="mt-1 text-red-500 text-sm">{{ errors.auther }}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Price (Birr) <span class="text-red-500">*</span>
+                                Price (Birr)
                             </label>
                             <input v-model.number="props.selectedbook.price" type="number" min="0" step="0.01"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
                                 :class="{ 'border-red-500': errors.price }" placeholder="0.00" />
                             <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Discount (Birr)
-                            </label>
-                            <input v-model.number="props.selectedbook.discount" type="number" min="0" step="0.01"
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                                placeholder="0.00" />
-                        </div>
-                    </div>
+                        </div> 
 
-                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Edition <span class="text-red-500">*</span>
+                                Edition
                             </label>
                             <input v-model.number="props.selectedbook.eddition" type="number" min="1"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
@@ -326,7 +325,7 @@ const safeParseTag = (rawTag) => {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">
-                                Publish Date <span class="text-red-500">*</span>
+                                Publish Date
                             </label>
                             <input v-model="props.selectedbook.publish_date" type="date"
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
@@ -334,11 +333,10 @@ const safeParseTag = (rawTag) => {
                             <p v-if="errors.publish_date" class="mt-1 text-red-500 text-sm">{{ errors.publish_date }}
                             </p>
                         </div>
-                    </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
-                            Language <span class="text-red-500">*</span>
+                            Language
                         </label>
                         <select v-model="props.selectedbook.language"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
@@ -355,7 +353,7 @@ const safeParseTag = (rawTag) => {
             <!-- DESCRIPTION (Full Width) -->
             <div>
                 <label class="block text-gray-700 font-medium text-sm mb-2">
-                    Book Description <span class="text-red-500">*</span>
+                    Book Description
                 </label>
                 <DescriptionEditor :selected="props.selectedbook" @update-description="updateDescription" />
                 <p v-if="errors.description" class="mt-1 text-red-500 text-sm">{{ errors.description }}</p>

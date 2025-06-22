@@ -34,6 +34,9 @@ const totalPages = ref("");
 const currentPage = ref(1);
 const skillLevelFilter = ref("");
 
+const courseToDelete = ref(null);
+const isLoading = ref(null);
+
 const viewMode = ref(localStorage.getItem("viewMode") || "auto");
 
 const editingCourseId = ref(null);
@@ -116,6 +119,19 @@ function getSelectedCourse(tab, course) {
     editingCourseId.value = course.id;
     selectedCourse.value = course;
 }
+
+async function deleteCourse(id) {
+    isLoading.value = true; 
+
+    try {
+        const res = await Axios.delete(`/api/courses/course/${id}`);
+        instructorCourses.value = instructorCourses.value.filter(course => course.id !== id);
+        courseToDelete.value = null
+    } catch (error) { 
+    } finally {
+        isLoading.value = false;
+    }
+};
 
 function changCourseStatus(courseId) {
     Axios.post(`/api/courses-status/${courseId}`)
@@ -334,6 +350,21 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
                                             Details
                                         </button>
                                     </div>
+
+                                    <!-- <Popper>
+                                        <div class="bg-white border border-gray-100 rounded-md p-1 relative"> 
+                                            <i class="fa-solid fa-ellipsis-v text-lg"></i>
+                                        </div>
+                                        <template #content>
+                                            <div  
+                                                class="absolute right-0 bg-white shadow-lg rounded-md border border-gray-300 z-50 w-32 text-xs flex flex-col">
+                                                <button @click="courseToDelete = course"
+                                                    class="w-full px-2 py-1.5 text-left text-red-600 hover:bg-red-100 transition">
+                                                    Delete
+                                                </button>
+                                        </div>
+                                        </template>
+                                    </Popper>  -->
                                 </td>
                             </tr>
                         </tbody>
@@ -386,6 +417,48 @@ watch([() => props.searchQuery, skillLevelFilter], () => {
         </div>
         <AddCourseModule v-if="courseId" :courseId="courseId" :actionType="actionType" />
     </div>
+
+    <!-- deletecourse modal -->
+    <transition name="fade">
+                <div v-if="courseToDelete"
+                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4">
+                        <div class="p-6">
+                            <div class="flex items-center mb-4">
+                                <div class="bg-red-100 p-2 rounded-full mr-4">
+                                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-800">Confirm Deletion</h3>
+                            </div>
+
+                            <p class="text-gray-600 mb-6">
+                                Are you sure you want to delete the module <strong class="text-gray-800">"{{
+                                    courseToDelete?.course_name }}"</strong>?
+                                This action cannot be undone.
+                            </p>
+
+                            <div class="flex justify-end space-x-3">
+                                <button @click="courseToDelete = null"
+                                    class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button @click="deleteCourse(courseToDelete?.id)"
+                                    class="px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                                    :disabled="isProcessing">
+                                    <span v-if="isProcessing" class="flex items-center">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        Deleting...
+                                    </span>
+                                    <span v-else>
+                                        <i class="fas fa-trash mr-2"></i>
+                                        Delete Course
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
 </template>
 
 <style scoped>

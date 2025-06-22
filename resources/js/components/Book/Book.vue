@@ -55,6 +55,12 @@ onMounted(() => {
                 class="relative bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 cursor-pointer flex flex-col">
                 <div class="relative group">
                     <img :src="book.cover_page_url" :alt="book.title" class="w-full h-40 object-cover rounded-t-lg" />
+                    <div
+                        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button class="bg-lime-500 rounded-full p-3 shadow-md text-white hover:text-white">
+                            <i class="fas fa-book text-lg"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="p-4 flex flex-col">
@@ -68,10 +74,10 @@ onMounted(() => {
                                 <span class="text-yellow-500 text-lg">&#9733;</span>
                                 <span class="ml-1 text-md text-gray-600">{{
                                     book.averageRating
-                                    }}</span>
+                                }}</span>
                             </div>
                         </div>
-                    </div> 
+                    </div>
 
                     <div class="h-fit bottem-0">
                         <div class="text-lg font-semibold flex flex-row items-center justify-between">

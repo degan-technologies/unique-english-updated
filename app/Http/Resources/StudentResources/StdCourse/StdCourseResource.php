@@ -40,13 +40,11 @@ class StdCourseResource extends JsonResource {
             'user' => new userResource($this->user),
 
             'intro_video_url' => $this->intro_video
-                ? url('/api/courses/stream/video/' . basename($this->intro_video))
+                ? '/api/courses/stream/video/' . basename($this->intro_video)
                 : 'no-intro_video.png',
-
-            'feedBacks' => FeedBackResource::collection($this->feedbacks->sortByDesc('created_at')),
+ 
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
-
 
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)

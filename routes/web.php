@@ -3,13 +3,13 @@
 use App\Helper\Lang\Back\Amharic;
 use App\Helper\Lang\Back\English;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Auth\SocialController;
+use App\Http\Controllers\Auth\SocialController; 
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Home and Login views
 Route::get('/', fn() => view('welcome'))->name('home');
-Route::get('/login', fn() => view('welcome'))->name('login');
+Route::get('/', fn() => view('welcome'))->name('login');
 
 // Auth routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -36,9 +36,9 @@ Route::post('/reset-password', [AuthController::class, 'resetPasswordViaOtp']);
 // Not Found page
 Route::get('/not-found', function () {
     return view('notFound');
-});
+})->name('notFound');
 
 // Fallback route for unknown paths
 Route::fallback(function () {
-    return redirect()->route('home');
+    return redirect()->route('notFound');
 });

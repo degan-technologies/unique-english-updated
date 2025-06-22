@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\URL;
 class TokenGenerator {
     public static function generateSecureUrl(string $routeName, string $filename): string
     {
+        /**
+         * @var User $user
+         */
+        
         $user = Auth::user();
         $token = $user->token(); // Gets the current Passport token
 
@@ -29,6 +33,9 @@ class TokenGenerator {
 
     public static function generateSecurePdfUrl(string $routeName, string $filename): string
     {
+        /**
+         * @var User $user
+         */ 
         $user = Auth::user();
         $token = $user->token(); // Gets the current Passport token
 

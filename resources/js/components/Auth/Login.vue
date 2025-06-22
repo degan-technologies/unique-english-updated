@@ -289,25 +289,6 @@ const socialLogin = (provider) => {
                         </button>
                     </div>
 
-                    <!-- Social Login Section -->
-                    <div class="mt-6 text-center">
-                        <p class="text-gray-600 mb-2">{{ frontLang.lang?.Or_log_in_with }}</p>
-                        <div class="flex justify-center space-x-4">
-                            <button @click="socialLogin('google')" class="social-btn">
-                                <i class="fab fa-google"></i>
-                            </button>
-                            <button @click="socialLogin('facebook')" class="social-btn">
-                                <i class="fab fa-facebook-f"></i>
-                            </button>
-                            <button @click="socialLogin('linkedin')" class="social-btn">
-                                <i class="fab fa-linkedin-in"></i>
-                            </button>
-                            <button @click="socialLogin('twitter')" class="social-btn">
-                                <i class="fab fa-twitter"></i>
-                            </button>
-                        </div>
-                    </div>
-
                     <!-- Register Link -->
                     <div class="mt-5 text-center">
                         <span @click="roteToLogin()"

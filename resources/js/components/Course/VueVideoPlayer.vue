@@ -1,6 +1,4 @@
-<script setup>
-import _ from 'lodash';
-import Axios from 'axios';
+<script setup> 
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
@@ -10,42 +8,15 @@ import 'videojs-contrib-quality-levels';
 import 'videojs-hls-quality-selector';
 
 const props = defineProps({
-    selectedLesson: { type: Object, required: true },
+    videoSource: { type: String, required: true },
+    posterImage:  { type: String, required: false },
     options: { type: Object, default: () => ({}) }
 });
 
 const videoPlayer = ref(null);
 const player = ref(null);
 const videoWatched = ref(false);
-const totalDuration = ref(0);
-
-const storeContentProgress = _.throttle(() => {
-    if (!player.value || !props.selectedLesson?.id) return;
-
-    const currentTime = player.value.currentTime();
-    const videoDuration = player.value.duration();
-    totalDuration.value = videoDuration;
-
-    const formattedProgress = new Date(currentTime * 1000)
-        .toISOString()
-        .substr(11, 8);
-    
-    const completionPercentage = videoDuration > 0 
-        ? Math.min(100, (currentTime / videoDuration) * 100)
-        : 0;
-    
-    const isCompleted = completionPercentage >= 95 || videoWatched.value;
-
-    Axios.post('/api/coursecontent/progress', {
-        course_content_id: props.selectedLesson?.id,
-        progress: formattedProgress,
-        duration_watched: currentTime,
-        total_duration: videoDuration,
-        is_completed: isCompleted,
-        completion_percentage: completionPercentage.toFixed(2),
-        last_watched_at: new Date().toISOString()
-    }).catch(error => console.error("Progress save error:", error));
-}, 30000);
+const totalDuration = ref(0); 
 
 function formatTime(seconds) {
     if (Number.isNaN(seconds)) return '0:00';
@@ -124,15 +95,12 @@ onMounted(() => {
             displayCurrentQuality: true,
             vjsIconClass: 'vjs-icon-hd'
         });
- 
-        this.on('timeupdate', storeContentProgress);
+  
         this.on('loadedmetadata', () => {
             totalDuration.value = this.duration();
         });
         this.on('ended', () => {
-            videoWatched.value = true;
-            storeContentProgress();
-            storeContentProgress.flush();
+            videoWatched.value = true; 
         });
     });
 
@@ -143,12 +111,11 @@ onMounted(() => {
         }
     });
 
-    player.value.src(getSourceObj(props.selectedLesson?.course_content_url));
- 
-    window.addEventListener('beforeunload', storeContentProgress);
+    player.value.src(getSourceObj(props.videoSource));
+  
 });
 
-watch(() => props.selectedLesson?.course_content_url, newUrl => {
+watch(() => props.videoSource, newUrl => {
     if (player.value && newUrl) {
         player.value.pause();
         player.value.src(getSourceObj(newUrl));
@@ -158,11 +125,9 @@ watch(() => props.selectedLesson?.course_content_url, newUrl => {
 });
 
 onBeforeUnmount(() => { 
-    if (player.value) {
-        player.value.off('timeupdate', storeContentProgress);
+    if (player.value) { 
         player.value.off('ended');
-    }
-    window.removeEventListener('beforeunload', storeContentProgress);
+    } 
     player.value?.dispose();
 });
 </script>
@@ -170,7 +135,8 @@ onBeforeUnmount(() => {
 <template>
     <div class="w-full h-full aspect-video rounded-lg mt-3 bg-black relative overflow-hidden">
         <video ref="videoPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls playsinline
-            crossorigin="anonymous" preload="auto" width="100%" height="auto" />
+            crossorigin="anonymous" preload="auto" width="100%" height="auto" 
+            :poster="posterImage" />
     </div>
 </template>
 
@@ -200,9 +166,7 @@ onBeforeUnmount(() => {
 :deep(.vjs-combined-time-display .vjs-time-divider) {
     padding: 0 0.2em;
     display: inline-block;
-}
-
-:deep(.vjs-big-play-button) {
+}:deep(.vjs-big-play-button) {
     background-color: rgba(0, 216, 7, 0.7) !important;
     border: none !important;
     border-radius: 50% !important;
@@ -211,13 +175,84 @@ onBeforeUnmount(() => {
     line-height: 2em !important;
     margin-top: -1em !important;
     margin-left: -1em !important;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 0 0 rgba(0, 216, 7, 0.7);
+    animation: pulse-ring 2s infinite;
 }
 
 :deep(.vjs-big-play-button:hover) {
     background-color: rgba(0, 216, 14, 0.9) !important;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
 }
- 
+
+/* Dramatic pulse animation */
+:deep(.vjs-big-play-button::before) {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    background: rgba(0, 216, 7, 0.4);
+    border-radius: 50%;
+    animation: pulse-dramatic 2s infinite;
+    z-index: -1;
+}
+
+:deep(.vjs-big-play-button::after) {
+    content: '';
+    position: absolute;
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    background: rgba(0, 216, 7, 0.4);
+    border-radius: 50%;
+    animation: pulse-dramatic 2s infinite 0.5s;
+    z-index: -1;
+}
+
+@keyframes pulse-dramatic {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.9;
+    }
+    70% {
+        transform: scale(1.5);
+        opacity: 0.2;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0.1;
+    }
+}
+
+@keyframes pulse-ring {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 216, 7, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 216, 7, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 216, 7, 0);
+    }
+}
+
 :deep(.vjs-play-progress) {
     background-color: #00d824 !important;
+}
+:deep(.vjs-poster) {
+  position: absolute;
+  inset: 0;
+}
+
+:deep(.vjs-poster img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 </style>

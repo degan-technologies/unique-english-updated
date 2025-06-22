@@ -55,20 +55,31 @@ class CourseModuleController extends Controller {
 
         $courseModules = CourseModule::query()
             ->where('course_id', $courseId)
-            ->get(); 
+            ->get();
 
-        $examStatus = QMetaData::where('course_id', $courseId)
-            ->with(['results' => function($query) use ($user) {
+        $exams = QMetaData::where('course_id', $courseId)
+            ->with(['results' => function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             }])
-            ->get()
-            ->map(function ($exam) {
-                return [
-                    'exam_id' => $exam->id,
-                    'taken' => $exam->results->isNotEmpty(),
-                    'passed' => $exam->results->first()?->result > 70 ?? false
-                ];
-            });
+            ->get();
+
+        // Check if there are any exams
+        if ($exams->isEmpty()) {
+            return response()->json([
+                'data' => CourseModuleResource::collection($courseModules),
+                'certify' => $certify,
+            ]);
+        }
+
+        // Continue mapping exam status
+        $examStatus = $exams->map(function ($exam) {
+            return [
+                'exam_id' => $exam->id,
+                'taken'   => $exam->results->isNotEmpty(),
+                'passed'  => $exam->results->first()?->result > 70 ?? false
+            ];
+        });
+
 
         $missingCount = $examStatus->where('taken', false)->count();
         $failedCount = $examStatus->where('taken', true)->where('passed', false)->count();
@@ -96,10 +107,16 @@ class CourseModuleController extends Controller {
 
         $qaSections = QASection::query()
             ->where('course_id', $courseId)
-            ->get(); 
+            ->paginate(2);
+        
+
+        $pagination = $qaSections->toArray();
+        unset($pagination['data']);
 
         return response()->json([ 
+            'pagination' => $pagination,
             'data' => QASectionResource::collection($qaSections), 
+
         ]);
     }
 

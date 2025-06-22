@@ -10,14 +10,14 @@ import {
     computed,
     onBeforeUnmount,
     watchEffect,
-} from "vue";
+} from "vue"; 
 
 // Components
 import QA from "@/components/Exam/QA.vue";
-import QuizReader from "./QuizReader.vue";
 import Spinner from "@/components/Layout/Spinner.vue";
 import TextEditor from "@/components/Layout/TextEditor.vue";
 import CourseList from "@/components/Course/CourseList.vue";
+import QuizReader from "@/components/Course/QuizReader.vue";
 import ReviewList from "@/components/Course/ReviewList.vue";
 import certificate from "@/components/Course/certificate.vue";
 import LessonPdfReader from "@/components/Course/LessonPdfReader.vue";
@@ -61,11 +61,7 @@ const contentType = ref({
     quizeId: null,
 });
 const activeTab = ref(TAB_TYPES.QA);
-
-// Computed properties
-const feedBacks = computed(() => selectedCourse.value?.feedBacks);
-const averageRating = computed(() => selectedCourse.value?.averageRating);
-const starDistribution = computed(() => selectedCourse.value?.starDistribution);
+ 
 
 // Initialize course slug from route
 selectedCourseSlug.value = route.query.slug; 
@@ -91,7 +87,7 @@ function openedLesson(lesson) {
     };
 }
 
-function openedQuiz(qMetaData) {
+function openedQuiz(qMetaData) { 
     selectedLesson.value = null;
     selectedQuiz.value = qMetaData;
 
@@ -199,7 +195,7 @@ onMounted(() => {
     <div v-else>
         <div v-if="selectedCourseSlug" class="w-[90%] mx-auto mt-24">
             <div class="flex flex-col md:flex-row gap-4 relative"> 
-                <div class="flex-1 flex  flex-col gap-4"> 
+                <div class="flex-1 flex h-full flex-col gap-4"> 
                     <div class="flex-1 flex flex-col gap-4"> 
                         <template v-if="contentType.type === LESSON_TYPE && selectedLesson?.content_type === 1">
                             <LessonVideoPlayer :selectedLesson="selectedLesson" />
@@ -215,7 +211,7 @@ onMounted(() => {
                         </template>
 
                         <!-- Quiz -->
-                        <template v-else-if="contentType.type === QUIZ_TYPE">
+                        <template v-else-if="contentType.type === QUIZ_TYPE && selectedQuiz">
                             <QuizReader :quizData="selectedQuiz" />
                         </template>
 
@@ -280,8 +276,8 @@ onMounted(() => {
                                     :courseId="selectedCourse?.id" />
                                 <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
                                     :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
-                                <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
-                                    :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
+                                <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW"
+                                    :showOnly="false"  :courseSlug ="selectedCourseSlug"/>
                             </div>
                         </div>
                     </div>
@@ -364,8 +360,8 @@ onMounted(() => {
                             :courseId="selectedCourse?.id" />
                         <TextEditor v-else-if="activeTab === TAB_TYPES.NOTE" :selectedLesson="selectedLesson"
                             :selectedCourse="selectedCourse" :openedLesson="openedLesson" />
-                        <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW" :feedBacks="feedBacks"
-                            :averageRating="averageRating" :starDistribution="starDistribution" :showOnly="false" />
+                        <ReviewList v-else-if="activeTab === TAB_TYPES.REVIEW"
+                             :showOnly="false"  :courseSlug ="selectedCourseSlug"/>
                     </div>
                 </div>
             </div>

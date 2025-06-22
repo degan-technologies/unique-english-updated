@@ -56,6 +56,21 @@ class AuthController extends Controller {
             'password' => $request->password
         ];
 
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => $this->langService->getLang('invalid_credentials'),
+            ], 404);
+        }
+
+        if ($user->user_banned_at) {
+            return response()->json([
+                'message' => 'User is banned, please contact support.'
+            ], 403);
+        }
+
+
         if (!Auth::guard('web')->attempt($credentials)) {
             return response()->json([
                 'message' => $this->langService->getLang('invalid_credentials')
@@ -148,7 +163,7 @@ class AuthController extends Controller {
             ], 404);
         } 
 
-        $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
+        $url = url();
 
         Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
 

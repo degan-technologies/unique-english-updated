@@ -1,26 +1,27 @@
 <script setup>
 import Axios from "axios";
+import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
- 
+import { ref, onMounted, onUnmounted } from "vue";
+
 import { useAppStore } from "@/store/useAppStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
 const router = useRouter();
 const appStore = useAppStore();
 const sidebarStore = useSidebarStore();
-const { authUser, unreadNotifications, notifications, readNotifications, isLoggedIn } =
+const { authUser, unreadNotifications, notifications, readNotifications, isLoggedIn, otpEmail } =
     storeToRefs(appStore);
 const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
 
-const searchOpen = ref(false); 
+const searchOpen = ref(false);
 const notificationsLoading = ref(false);
 const notificationOpen = ref(false);
 const profileOpen = ref(false);
 const showAllNotifications = ref(false);
 const currentNotification = ref(null);
-const showNotificationModal = ref(false); 
+const showNotificationModal = ref(false);
 
 function formatTime(date) {
     const options = {
@@ -34,66 +35,73 @@ function formatTime(date) {
 }
 
 const toggleNotifications = () => {
-        notificationOpen.value = !notificationOpen.value;
-        profileOpen.value = false; 
-    };
-    
-    const toggleProfile = () => {
-        profileOpen.value = !profileOpen.value;
-        notificationOpen.value = false;
-    };
+    notificationOpen.value = !notificationOpen.value;
+    profileOpen.value = false;
+};
 
-    const toggleSidebar = () => {
-        sidebarStore.toggleSidebar();
-    };
+const toggleProfile = () => {
+    profileOpen.value = !profileOpen.value;
+    notificationOpen.value = false;
+};
 
-    const openProfile = () => {
-        selectedContent.value = "profile";
-        profileOpen.value = false;
-    };
+const toggleSidebar = () => {
+    sidebarStore.toggleSidebar();
+};
 
-    async function signOut() {
-        try {
-            await Axios.post("/api/log-out");
-            authUser.value = null;
-            appStore.setAuthToken("");
-            isLoggedIn.value = false;
-        } catch (error) {
-            console.error("Logout failed:", error);
-        }
-    } 
+function openProfile() {
+    router.push({
+        name: "instructor",
+        query: {
+            currentTab: 'profile',
+        },
+    });
 
-    function showNotificationDetails(notification) {
-        currentNotification.value = notification;
-        showNotificationModal.value = true;
-        notificationOpen.value = false;  
+    selectedContent.value = 'profile';
+    profileOpen.value = false;
+}
 
-        if(notification.data.read_at == null){
-            appStore.markNotificationAsRead(notification.id);
-        }
+async function signOut() {
+    otpEmail.value = '';
+    try {
+        await Axios.post("/api/log-out");
+        authUser.value = null;
+        appStore.setAuthToken("");
+        isLoggedIn.value = false;
+    } catch (error) {
+        console.error("Logout failed:", error);
     }
- 
+}
 
-    function closeNotificationModal() {
-        showNotificationModal.value = false;
+function showNotificationDetails(notification) {
+    currentNotification.value = notification;
+    showNotificationModal.value = true;
+    notificationOpen.value = false;
+
+    if (notification.data.read_at == null) {
+        appStore.markNotificationAsRead(notification.id);
     }
+}
 
-    function toggleShowAllNotifications() {
-        if(notifications.length === 0) return;
-        showAllNotifications.value = !showAllNotifications.value; 
-    }
 
-    const refreshNOtification = () =>{
-        notificationsLoading.value = true;
-        appStore.fetchUnreadNotifications();
+function closeNotificationModal() {
+    showNotificationModal.value = false;
+}
 
-        notificationsLoading.value = false;
-        return;
-    }
+function toggleShowAllNotifications() {
+    if (!notifications.value || notifications.value.length === 0) return;
+    showAllNotifications.value = !showAllNotifications.value;
+}
 
-    onMounted(() => {
-        appStore.fetchUnreadNotifications(); 
-    }); 
+const refreshNotification = () => {
+    notificationsLoading.value = true;
+    appStore.fetchUnreadNotifications();
+    notificationsLoading.value = false;
+    return;
+}
+
+onMounted(() => {
+    appStore.fetchUnreadNotifications();
+}); 
 </script>
 
 <template>
@@ -104,86 +112,142 @@ const toggleNotifications = () => {
                 <button class="md:hidden text-gray-600 hover:text-lime-500 transition-colors duration-300"
                     @click="toggleSidebar" title="Toggle Sidebar">
                     <i class="fa-solid fa-bars text-xl"></i>
-                </button> 
+                </button>
             </div>
             <div class="flex items-center space-x-4 text-gray-600">
                 <!-- Notification Button -->
-                <div class="relative">
-                    <button @click="toggleNotifications"
-                        class="hover:text-lime-500 relative transition-colors duration-300 z-50" title="Notifications">
-                        <i class="fa-solid fa-bell text-xl"></i>
-                        <span 
-                            v-if="unreadNotifications > 0"
-                            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                            {{ unreadNotifications }}
-                        </span>
-                    </button>
-
-                    <!-- Notifications Dropdown -->
-                    <div v-if="notificationOpen"
-                        class="absolute top-12 right-0 bg-white border border-gray-200 shadow-xl text-gray-700 rounded-lg w-80 max-h-96 overflow-y-auto transition-all duration-300 z-50"
-                        v-click-outside="() => (notificationOpen = false)">
-                        <div class="sticky top-0 bg-white p-2 border-b flex justify-between items-center">
-                            <h3 class="font-semibold text-gray-700">
-                                Notifications
-                            </h3>
-                            <div class="flex flex-row gap-4">
-                                <button 
-                                    @click="refreshNotification"
-                                    class="text-gray-500 hover:text-gray-800"
-                                    :disabled="notificationsLoading"
-                                >
-                                    <i
-                                        class="fas fa-sync-alt transition-transform"
-                                        :class="{ 'animate-spin': notificationsLoading }"
-                                    />
-                                </button>
-
-                            <button @click="toggleShowAllNotifications"
-                                class="text-xs text-lime-600 hover:text-lime-800">
-                                {{
-                                    showAllNotifications
-                                        ? "Show Unread Only"
-                                        : "Show All"
-                                }}
-                            </button>
-                        </div>
-                        </div> 
-                        <!-- No notifications -->
-                        <div v-if="
-                            notifications.length === 0 &&
-                            (!showAllNotifications ||
-                                readNotifications.length === 0)
-                        " class="p-4 text-gray-500 text-sm">
-                            No new notifications.
+                <!-- Notification Button -->
+                <div v-if="isLoggedIn" class="relative flex justify-center">
+                    <Popper v-model:visible="notificationOpen" :offset-distance="'0'" placement="bottom">
+                        <!-- Notification Icon with Count -->
+                        <div class="relative flex justify-center items-center text-2xl cursor-pointer"
+                            @click="toggleNotifications">
+                            <div class="relative">
+                                <i class="fa-solid fa-bell text-2xl text-lime-500"></i>
+                                <span v-if="unreadNotifications > 0"
+                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow">
+                                    {{ unreadNotifications }}
+                                </span>
+                            </div>
                         </div>
 
-                        <!-- Unread Notifications -->
-                        <ul v-if="notifications.length > 0">
-                            <li v-for="notification in notifications" :key="notification.id"
-                                :class="{
-                                    'hidden': showAllNotifications && notification.data.read_at,
-                                }"
-                                class="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b text-sm leading-snug break-words whitespace-normal"
-                                @click="showNotificationDetails(notification)">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <p class="font-medium">
-                                            {{ notification.data.message }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            {{
-                                                formatTime(
-                                                    notification.created_at
-                                                )
-                                            }}
-                                        </p>
+                        <!-- Dropdown -->
+                        <template #content>
+                            <div
+                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4">
+                                <div
+                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+                                    <!-- Header -->
+                                    <div class="border-b pb-3 mb-3 flex justify-between items-center">
+                                        <h3 class="text-xl font-semibold text-gray-700">
+                                            Notifications
+                                        </h3>
+                                        <div class="flex flex-row gap-4">
+                                            <button @click="refreshNotification"
+                                                class="text-gray-500 hover:text-gray-800"
+                                                :disabled="notificationsLoading">
+                                                <i class="fas fa-sync-alt transition-transform"
+                                                    :class="{ 'animate-spin': notificationsLoading }" />
+                                            </button>
+
+                                            <button @click="toggleShowAllNotifications"
+                                                class="text-xs text-lime-600 hover:text-lime-800">
+                                                {{
+                                                    showAllNotifications
+                                                        ? "Show Unread Only"
+                                                        : "Show All"
+                                                }}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <span v-if="currentNotification?.id == notification?.id ? false : !notification.read_at" class="w-2 h-2 bg-lime-500 rounded-full mt-1 flex-shrink-0"></span>
+
+                                    <!-- No notifications -->
+                                    <div v-if="
+                                        notifications.length === 0 &&
+                                        (!showAllNotifications ||
+                                            readNotifications?.length === 0)
+                                    " class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40">
+                                        <i class="fa-regular fa-bell-slash text-4xl text-gray-400 mb-3"></i>
+                                        <p>No new notifications</p>
+                                    </div>
+
+                                    <!-- Unread Notifications -->
+                                    <ul v-if="notifications.length > 0" class="space-y-2">
+                                        <li v-for="notification in notifications" :key="notification.id" :class="{
+                                            'hidden': showAllNotifications && notification.data.read_at,
+                                        }" class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition" @click="
+                                            showNotificationDetails(
+                                                notification
+                                            )
+                                            ">
+                                            <div class="flex items-start gap-3">
+                                                <div>
+                                                    <p class="font-medium text-sm">
+                                                        {{
+                                                            notification.data
+                                                                .message
+                                                        }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500 mt-1">
+                                                        {{
+                                                            formatTime(
+                                                                notification.created_at
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <span
+                                                    v-if="currentNotification?.id == notification?.id ? false : !notification.read_at"
+                                                    class="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0"></span>
+                                            </div>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Read Notifications (when showAll is true) -->
+                                    <ul v-if="
+                                        showAllNotifications &&
+                                        readNotifications?.length > 0
+                                    " class="space-y-2">
+                                        <li v-for="notification in readNotifications" :key="notification.id"
+                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
+                                            @click="
+                                                showNotificationDetails(
+                                                    notification
+                                                )
+                                                ">
+                                            <div class="flex items-start gap-3">
+                                                <span
+                                                    class="w-2 h-2 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                                <div class="flex-1">
+                                                    <p class="text-gray-600 text-sm">
+                                                        {{
+                                                            notification.data
+                                                                .message
+                                                        }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-400 mt-1">
+                                                        {{
+                                                            formatTime(
+                                                                notification.created_at
+                                                            )
+                                                        }}
+                                                    </p>
+                                                </div>
+                                                <button @click.stop="
+                                                    markAsUnread(
+                                                        notification.id
+                                                    )
+                                                    " class="text-xs text-gray-400 hover:text-gray-600 ml-2"
+                                                    title="Mark as unread">
+                                                    <i class="fa-solid fa-envelope"></i>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    </ul>
                                 </div>
-                            </li>
-                        </ul> 
-                    </div>
+                            </div>
+                        </template>
+                    </Popper>
                 </div>
 
                 <!-- Profile Button -->
@@ -196,11 +260,8 @@ const toggleNotifications = () => {
                     <div v-if="profileOpen"
                         class="absolute top-14 right-0 bg-white border border-gray-200 shadow-xl text-gray-700 rounded-lg w-48 transition-all duration-300 cursor-pointer z-50"
                         v-click-outside="() => (profileOpen = false)">
-                        <div @click="openProfile" class="block px-4 py-2 hover:bg-gray-200" title="Account">
+                        <div @click="openProfile()" class="block px-4 py-2 hover:bg-gray-200" title="Account">
                             Account
-                        </div>
-                        <div class="block px-4 py-2 hover:bg-gray-200" title="Settings">
-                            Settings
                         </div>
                         <div @click="signOut()" class="block px-4 py-2 hover:bg-gray-200" title="Logout">
                             SignOut
@@ -211,35 +272,35 @@ const toggleNotifications = () => {
         </div>
     </div>
 
-        <!-- Custom Notification Modal -->
-        <div v-if="showNotificationModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div class="p-4 border-b">
-                    <h3 class="text-lg font-semibold">Notification Details</h3>
-                </div>
-                <div class="p-4" v-if="currentNotification">
-                    <h1 class="text-gray-600 my-2 font-bold"> {{ currentNotification.data.title }} </h1>
-                    <h6 class="mb-3 font-normal">
-                        {{ currentNotification.data.message }}
-                    </h6>
-                    <p class="text-gray-500 text-sm mb-2">
-                        Date Received:
-                        {{ formatTime(currentNotification.created_at) }}
+    <!-- Custom Notification Modal -->
+    <div v-if="showNotificationModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="p-4 border-b">
+                <h3 class="text-lg font-semibold">Notification Details</h3>
+            </div>
+            <div class="p-4" v-if="currentNotification">
+                <h1 class="text-gray-600 my-2 font-bold"> {{ currentNotification.data.title }} </h1>
+                <h6 class="mb-3 font-normal">
+                    {{ currentNotification.data.message }}
+                </h6>
+                <p class="text-gray-500 text-sm mb-2">
+                    Date Received:
+                    {{ formatTime(currentNotification.created_at) }}
+                </p>
+                <div v-if="currentNotification.data.details" class="mt-3">
+                    <p class="text-sm text-gray-600">
+                        {{ currentNotification.data.details }}
                     </p>
-                    <div v-if="currentNotification.data.details" class="mt-3">
-                        <p class="text-sm text-gray-600">
-                            {{ currentNotification.data.details }}
-                        </p>
-                    </div>
-                </div>
-                <div class="p-4 border-t flex justify-end space-x-2">
-                    <button @click="closeNotificationModal" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
-                        Close
-                    </button>  
                 </div>
             </div>
+            <div class="p-4 border-t flex justify-end space-x-2">
+                <button @click="closeNotificationModal" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">
+                    Close
+                </button>
+            </div>
         </div>
+    </div>
 </template>
 
 <style scoped>

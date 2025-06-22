@@ -168,6 +168,8 @@ Route::middleware('auth:api')
         Route::post('favorite/{id}', [FeedBackController::class, 'addFavorite']);
         Route::post('{id}/report', [FeedBackController::class, 'report']);
     });
+    
+Route::get('/feedbacks/course/{slug}', [FeedBackController::class, 'getFeedbacksByCourse']);
 
 // SMS endpoints added here 
 Route::middleware('auth:api')->group(function () {

@@ -24,12 +24,13 @@ import WhatExpect from "@/components/Layout/WhatExpect.vue";
 import Test from "@/components/Course/Test.vue";
 import ProfileForm from "@/components/Profile/ProfileForm.vue";
 import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
-
+import VerifyOtp from "@/components/Auth/VerifyOtp.vue";
+ 
 const appStore = useAppStore();
 const AuthStore = useAuthStore();
 const studentStore = UseStudentStore();
 
-const { isLoggedIn } = storeToRefs(appStore);
+const { isLoggedIn,  otpEmail, authUser } = storeToRefs(appStore);
 const { showLoginForm } = storeToRefs(AuthStore);
 const {
     liveSchedulTab,
@@ -127,10 +128,15 @@ watch(
                 <div v-else-if="currentTab.tab == liveSchedulTab">
                     <LiveStreamingVue />
                 </div>
-                <div class="md:w-[80%] mx-auto my-24" v-if="profileTab === profile">
+                <div class="md:w-[80%] mx-auto my-24" v-if="profileTab === profile && isLoggedIn">
                     <ProfileForm />
                 </div>
 
+                <div v-else-if="otpEmail !== ''  &&  !authUser?.is_verified" class="h-screen">
+                    <VerifyOtp/>
+                </div>
+
+                
                 <div v-else-if="currentTab.tab == landingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard />

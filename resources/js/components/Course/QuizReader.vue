@@ -3,7 +3,7 @@ import Axios from "axios";
 import confetti from "canvas-confetti";
 import Spinner from "@/components/Layout/Spinner.vue";
 import { toast } from "vue3-toastify";
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from "vue";
 import "vue3-toastify/dist/index.css";
 
 const props = defineProps({
@@ -159,12 +159,12 @@ function checkAnswer() {
 </script>
 
 <template>
-    <div class="container mx-auto p-6">
+    <div class="container mx-auto sm:p-6">
         <Spinner v-if="loading" />
         <div v-else>
             <!-- Exam Information -->
             <div v-if="examData"
-                class="bg-gradient-to-r from-lime-300 to-lime-500 p-6 rounded-lg shadow-md mb-8 text-gray-800">
+                class="bg-gradient-to-r from-lime-300 to-lime-500 p-2 sm:p-6 rounded-lg shadow-md mb-8 text-gray-800">
                 <h2 class="text-3xl font-bold mb-2">{{ examData.title }}</h2>
                 <p class="mb-4 text-lg">
                     <strong>Instruction: </strong>
@@ -249,8 +249,8 @@ function checkAnswer() {
             </div>
 
             <!-- Result Section -->
-            <div v-if="showResult && scorePercentage"
-                class="bg-gradient-to-br from-indigo-100 via-purple-100 to-blue-100 p-8 rounded-2xl shadow-xl border-2 border-lime-400 result-container relative mt-8 w-full max-w-2xl mx-auto flex items-center justify-center overflow-hidden min-h-[400px] backdrop-blur-sm">
+            <div v-if="showResult"
+                class="bg-gradient-to-br from-indigo-100 via-purple-100 to-blue-100 py-4 sm:p-8 rounded-2xl sm:shadow-xl border sm:border-2 border-lime-400 result-container relative mt-8 w-full max-w-2xl mx-auto flex items-center justify-center overflow-hidden min-h-[400px] backdrop-blur-sm">
                 <canvas ref="confettiCanvas" class="absolute inset-0 pointer-events-none w-full h-full"></canvas>
 
                 <div class="z-10 text-center w-full">

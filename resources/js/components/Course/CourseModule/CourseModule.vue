@@ -11,6 +11,7 @@ import { useInstructorStore } from '@/store/useInstructorStore';
 
 import QA from "@/components/Exam/QA.vue";
 import ReviewList from "@/components/Course/ReviewList.vue"; 
+import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 import AddCourseModule from "@/components/Course/CourseModule/AddCourseModule.vue";
 import ModuleContent from "@/components/Course/CourseModule/ModuleContent/ModuleContent.vue";
 import AddModuleContent from "@/components/Course/CourseModule/ModuleContent/AddModuleContent.vue";
@@ -20,9 +21,7 @@ const { selectedCourse, editCourseModule, courseEditTab, courseId, instructorCou
 
 const route = useRoute();
 const router = useRouter();
-
-// UI State
-const isPlaying = ref(false);
+ 
 const expandedModule = ref(null);
 const selectedModule = ref(null);
 const actionType = ref('');
@@ -33,10 +32,7 @@ const addNewContent = ref(null);
 const isLoading = ref(false);
 const errorMessage = ref(null);
 const isProcessing = ref(false); 
-
-// Video Player
-const videoPlayer = ref(null);
-let playerInstance = null;
+ 
 const showDeleteModal = ref(false);
 const deleteModule = ref(null);
 
@@ -46,10 +42,7 @@ const reviewTab = ref("review");
 const activeTab = ref(qaTab.value);
 
 // Computed
-const courseModules = computed(() => selectedCourse.value?.courseModules || []);
-const feedBacks = computed(() => selectedCourse.value?.feedBacks);
-const averageRating = computed(() => selectedCourse.value?.averageRating);
-const starDistribution = computed(() => selectedCourse.value?.starDistribution);
+const courseModules = computed(() => selectedCourse.value?.courseModules || []); 
 
 // Methods
 function startEditing(module) {
@@ -65,23 +58,7 @@ function openModuleForm(id) {
 function showDeleteConfirmation(module) {
     deleteModule.value = module;
     showDeleteModal.value = true;
-}
-
-async function deleteCourse(id) {
-    isLoading.value = true;
-    errorMessage.value = null;
-
-    try {
-        await Axios.delete(`/api/courses/course/${id}`);
-        instructorCourses.value = instructorCourses.value.filter(course => course.id !== id);
-        goBack();
-    } catch (error) {
-        console.error("Failed to delete course:", error);
-        errorMessage.value = "Failed to delete course. Please try again.";
-    } finally {
-        isLoading.value = false;
-    }
-};
+} 
 
 async function deleteCourseModule(moduleId) {
     isProcessing.value = true;
@@ -144,14 +121,8 @@ const setActiveTab = (tab) => {
 function showToast(message, type = "info") {
     console.log(`${type.toUpperCase()}: ${message}`);
 }
-
-// Handle image errors
-function handleImageError(event, fallbackImage = '/images/default-course-thumbnail.jpg') {
-    event.target.src = fallbackImage;
-    event.target.onerror = null;
-}
-
-onMounted(() => {
+ 
+function getshowCourse() {
     if (!selectedCourse.value) {
         Axios.get(`/api/show-course/${route.query.slug}`)
             .then(res => {
@@ -161,35 +132,22 @@ onMounted(() => {
                 showToast("Failed to load course details", "error");
             });
     }
+}
 
-    document.addEventListener("click", handleClickOutside);
-
-    if (videoPlayer.value) {
-        playerInstance = videojs(videoPlayer.value, {
-            controls: true,
-            autoplay: false,
-            responsive: true,
-            fluid: true,
-            sources: [{
-                src: selectedCourse.value?.intro_video_url,
-                type: 'video/mp4'
-            }]
-        });
-    }
+onMounted(() => {
+    getshowCourse();
+    document.addEventListener("click", handleClickOutside); 
 }); 
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
-
-    if (playerInstance) {
-        playerInstance.dispose();
-    }
+ 
 });
 </script>
 
 <template>
     <div class="relative">
-        <div class="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="w-full mx-auto sm:px-6 lg:px-8 py-8">
             <!-- Back Button -->
             <button @click="goBack()"
                 class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
@@ -224,86 +182,45 @@ onBeforeUnmount(() => {
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2  gap-8 p-6">
                     <!-- Video Thumbnail/Player -->
-                    <div class="relative rounded-lg overflow-hidden bg-gray-100 aspect-video">
-                        <div v-if="!isPlaying" class="absolute inset-0 cursor-pointer group" @click="isPlaying = true"
-                            role="button" aria-label="Play course introduction video">
-
-                            <img :src="selectedCourse?.thumbnail_url || '/images/default-course-thumbnail.jpg'"
-                                :alt="`Thumbnail for ${selectedCourse?.course_name || 'course'}`"
-                                @error="handleImageError"
-                                class="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90">
-
-                            <div v-if="selectedCourse?.intro_video_url"
-                                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 group-hover:bg-opacity-30 transition-all">
-                                <div class="relative">
-                                    <div class="absolute inset-0 bg-lime-500 rounded-full opacity-20 animate-ping">
-                                    </div>
-                                    <div
-                                        class="relative w-16 h-16 bg-lime-500 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                                        <i class="fas fa-play text-white text-xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div v-else
-                                class="absolute inset-0 bg-gray-100 flex flex-col items-center justify-center text-gray-400">
-                                <i class="fas fa-video-slash text-4xl mb-2"></i>
-                                <p class="text-sm">No video available</p>
-                            </div>
-                        </div>
-
-                        <div v-else class="h-full w-full bg-black">
-                            <video v-if="selectedCourse?.intro_video_url" ref="videoPlayer"
-                                class="video-js vjs-default-skin w-full h-full object-contain" controls preload="auto"
-                                :poster="selectedCourse.thumbnail_url">
-                                <source :src="selectedCourse.intro_video_url" type="video/mp4" />
-                                <track kind="captions" src="" srclang="en" label="English" default />
-                                <p class="vjs-no-js">
-                                    To view this video please enable JavaScript, and consider upgrading to a
-                                    web browser that
-                                    <a href="https://videojs.com/html5-video-support/" target="_blank">
-                                        supports HTML5 video
-                                    </a>
-                                </p>
-                            </video>
-                            <div v-else
-                                class="h-full w-full flex flex-col items-center justify-center bg-gray-100 text-gray-400">
-                                <i class="fas fa-video-slash text-4xl mb-2"></i>
-                                <p class="text-sm">No video available</p>
-                            </div>
-                        </div>
+                    <div class="relative rounded-lg max-w-full overflow-hidden bg-gray-100 aspect-video">
+                        <template v-if="selectedCourse?.intro_video_url">
+                            <VueVideoPlayer 
+                                :videoSource="selectedCourse?.intro_video_url" 
+                                :posterImage="selectedCourse?.thumbnail_url"/>
+                        </template>  
                     </div>
 
                     <!-- Course Details -->
-                    <div class="flex flex-col">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6">Course Details</h2>
+                    <div class="flex flex-col border border-gray-100 p-4 rounded-md"> 
                         <div class="space-y-4">
-                            <div class="flex items-start">
-                                <div class="bg-lime-100 p-2 rounded-lg mr-4">
-                                    <i class="fas fa-user-graduate text-lime-600 text-lg"></i>
-                                </div>
+                            <div class="flex items-start gap-4"> 
+                                <i class="fas fa-user-graduate pt-2 text-lime-600"></i>
                                 <div class="flex flex-row gap-4">
-                                    <h3 class="text-sm font-medium text-gray-500">Level</h3>
-                                    <p class="text-gray-800 font-medium">{{ selectedCourse?.skill_level || 'Not specified' }}</p>
+                                    <h3 class="text-sm font-medium pt-1 text-gray-500">Level</h3>
+                                    <p class="text-gray-500 font-medium">{{ selectedCourse?.skill_level || 'Not specified' }}</p>
                                 </div>
                             </div>
 
-                            <div class="flex items-start">
-                                <div class="bg-blue-100 p-2 rounded-lg mr-4">
-                                    <i class="fas fa-language text-blue-600 text-lg"></i>
-                                </div>
+                            <div class="flex items-start gap-4"> 
+                                <i class="fas fa-language pt-2 text-blue-600"></i>
                                 <div class="flex flex-row gap-4">
-                                    <h3 class="text-sm font-medium text-gray-500">Language</h3>
-                                    <p class="text-gray-800 font-medium">{{ selectedCourse?.language || 'Not specified' }} </p>
+                                    <h3 class="text-sm font-medium pt-1 text-gray-500">Language</h3>
+                                    <p class="text-gray-500 font-medium">{{ selectedCourse?.language || 'Not specified' }} </p>
                                 </div>
                             </div>
 
-                            <div class="flex items-start">
-                                <div class="bg-purple-100 p-2 rounded-lg mr-4">
-                                    <i class="fas fa-clock text-purple-600 text-lg"></i>
-                                </div>
+                            <div class="flex items-start gap-4"> 
+                                <i class="fas fa-clock pt-2 text-purple-600"></i>
                                 <div class="flex flex-row gap-4">
-                                    <h3 class="text-sm font-medium text-gray-500">Duration</h3>
-                                    <p class="text-gray-800 font-medium">{{ selectedCourse?.credit_hour || 'Not specified' }}</p>
+                                    <h3 class="text-sm font-medium pt-1 text-gray-500">Duration</h3>
+                                    <p class="text-gray-500 font-medium">{{ selectedCourse?.credit_hour || 'Not specified' }} hour</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4"> 
+                                <i class="fas fa-tag pt-2 text-purple-600"></i>  <!-- Changed from fa-clock -->
+                                <div class="flex flex-row gap-4">
+                                    <h3 class="text-sm font-medium pt-1 text-gray-500">Price</h3>
+                                    <p class="text-gray-500 font-medium">{{ selectedCourse?.price || 'Not specified' }} ETB</p>
                                 </div>
                             </div>
                         </div>
@@ -365,9 +282,10 @@ onBeforeUnmount(() => {
                             </button>
                         </div>
 
-                        <div class="space-y-4">
+                        <div class="w-full overflow-x-auto scrollbar sm:overflow-hidden ">
+                            <div class="w-fit sm:w-full space-y-4">
                             <div v-for="module in courseModules" :key="module.id"
-                                class="bg-white rounded-lg border border-gray-200 overflow-hidden transition-all duration-200 hover:shadow-md">
+                                class="bg-white rounded-lg w-full border border-gray-200 transition-all duration-200 hover:shadow-md">
 
                                 <div class="flex flex-row">
                                     <!-- Module Header -->
@@ -436,6 +354,7 @@ onBeforeUnmount(() => {
                                             @onAddModuleContent="onAddModuleContent(module)" />                                       
                                 </div>
                             </div>
+                            </div>
                         </div>
                     </div>
 
@@ -479,8 +398,10 @@ onBeforeUnmount(() => {
                             :courseId="selectedCourse?.id" />
                     </div>
                     <div v-if="activeTab === reviewTab">
-                        <ReviewList v-if="feedBacks" :feedBacks="feedBacks" :averageRating="averageRating"
-                            :starDistribution="starDistribution" :showOnly="false" />
+                        <ReviewList 
+                            :courseSlug ="selectedCourse?.slug"
+                            :addFeedbackType="'course'"
+                            :showOnly="false" />
                     </div>
                 </div>
             </div>

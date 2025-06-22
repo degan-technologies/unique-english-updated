@@ -25,9 +25,9 @@ function changeTab() {
         <div class="flex flex-col-reverse md:flex-row items-center justify-between w-full max-w-7xl gap-8 lg:gap-16">
             <!-- Left Section -->
             <div class="flex-1 text-center md:text-left space-y-6">
-                <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight text-gray-800">
+                <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">
                     Join Our <br />
-                    <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">
+                    <span class="text-3xl  bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">
                         Live Video Sessions
                     </span>
                 </h1>
@@ -38,7 +38,7 @@ function changeTab() {
                 </p>
                  
                  <button @click="changeTab"
-                        class="text-center  mt-4 bg-lime-600  hover:bg-lime-700 text-white font-semibold text-lg p-3 w-40 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
+                        class="bg-lime-700 text-white px-4 py-2 rounded-md hover:bg-lime-800 transition">
                         Get Plans
                     </button>
 

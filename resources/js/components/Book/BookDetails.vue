@@ -9,9 +9,9 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 import { onMounted, ref, watch, nextTick, onBeforeUnmount } from "vue";
 
-import ReviewList from "@/components/Course/ReviewList.vue";
 import Spinner from "@/components/Layout/Spinner.vue";
-
+import ReviewList from "@/components/Course/ReviewList.vue";
+import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 
 const AuthStore = useAuthStore();
 const appStore = useAppStore();
@@ -30,39 +30,12 @@ const selectedbook = ref(null);
 const isLoading = ref(false);
 const startLoading = ref(false);
 selectedbookslug.value = route.query.slug;
-
-// Video player related refs
+ 
 const currentTime = ref(0);
 const duration = ref(0);
-const bufferProgress = ref(0);
-const videoPlayer = ref(null);
-const player = ref(null);
-const videoSource = ref("");
-const isPlaying = ref(false);
-const showPdfViewer = ref(false);
-
-// Video player event handlers
-const onTimeUpdate = () => {
-    if (player.value) {
-        currentTime.value = player.value.currentTime();
-    }
-};
-
-const onLoadedMetadata = () => {
-    if (player.value) {
-        duration.value = player.value.duration();
-    }
-};
-
-const onProgress = () => {
-    if (player.value && duration.value > 0) {
-        const buffered = player.value.buffered();
-        if (buffered.length) {
-            bufferProgress.value = (buffered.end(0) / duration.value * 100);
-        }
-    }
-};
-
+const bufferProgress = ref(0); 
+const player = ref(null); 
+ 
 async function enrollBook(item) {
     if (!isLoggedIn.value) {
         showLoginForm.value = true;
@@ -128,49 +101,7 @@ watch(
             ) || null;
         }
     }
-);
-
-function playVideo() {
-    if (isPlaying.value || !selectedbook.value?.intro_video_url?.trim()) {
-        return;
-    }
-
-    isPlaying.value = true;
-    videoSource.value = selectedbook.value.intro_video_url;
-
-    nextTick(() => {
-        if (player.value) {
-            player.value.dispose();
-        }
-
-        player.value = videojs(videoPlayer.value, {
-            controls: true,
-            autoplay: true,
-            preload: "auto",
-            fluid: true,
-            aspectRatio: "16:9",
-            responsive: true,
-            sources: [{
-                src: videoSource.value,
-                type: "video/mp4"
-            }]
-        });
-
-        player.value.on("timeupdate", onTimeUpdate);
-        player.value.on("loadedmetadata", onLoadedMetadata);
-        player.value.on("progress", onProgress);
-        player.value.on("error", (error) => {
-            console.error("Video player error:", error);
-        });
-    });
-}
-
-onBeforeUnmount(() => {
-    if (player.value) {
-        player.value.dispose();
-        player.value = null;
-    }
-});
+); 
 </script>
 
 <template>
@@ -179,12 +110,12 @@ onBeforeUnmount(() => {
             <Spinner />
         </div>
 
-        <div v-else-if="selectedbookslug" class="p-6 mt-24 pb-16 rounded-lg bg-slate-50">
+        <div v-else class="p-6 mt-24 pb-16 rounded-lg bg-slate-50">
             <div class="grid w-[90%] mx-auto grid-cols-1 md:grid-cols-[2fr_1fr] gap-8 relative">
                 <!-- Left Side: Book Info & Description -->
                 <div>
                     <div class="text-left">
-                        <h1 class="text-4xl text-gray-900 font-bold">
+                        <h1 class="text-3xl text-gray-900 font-bold">
                             {{ selectedbook?.title }}
                         </h1>
                         <div class="flex my-2 gap-4">
@@ -193,10 +124,10 @@ onBeforeUnmount(() => {
                                     :alt="selectedbook?.user?.first_name"
                                     class="w-12 h-12 object-cover mt-4 rounded-full" />
                             </div>
-                            <div class="text-lg text-gray-700 mt-2">
-                                <p>Book Offered by</p>
+                            <div class="text-gray-700 mt-2">
+                                <p class="text-sm">Book Offered by</p>
                                 <p class="font-bold">
-                                    {{ selectedbook?.user?.first_name || 'Unknown Author' }}
+                                    {{ selectedbook?.user?.first_name || 'Unknown Author' }}   {{ selectedbook?.user?.middle_name }}
                                 </p>
                             </div>
                         </div>
@@ -204,30 +135,11 @@ onBeforeUnmount(() => {
 
                     <!-- Video/Thumbnail Section -->
                     <div class="w-full aspect-video rounded-lg mt-3 bg-black relative overflow-hidden">
-                        <!-- Thumbnail with play icon -->
-                        <div v-if="!isPlaying" class="w-full h-full cursor-pointer relative group" @click="playVideo">
-                            <img :src="selectedbook?.cover_page_url || '/images/default-book-cover.jpg'"
-                                alt="Book Cover"
-                                class="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90" />
-
-                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                                <div class="relative">
-                                    <span class="animate-pulse-circle absolute inset-0"></span>
-                                    <div
-                                        class="relative z-10 p-4 w-14 h-14 bg-lime-500 rounded-full flex items-center justify-center shadow-lg hover:bg-lime-600 transition-colors">
-                                        <i class="fas fa-play text-white text-2xl"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Video Player -->
-                        <div v-else class="w-full h-full">
-                            <video ref="videoPlayer" class="video-js vjs-default-skin w-full h-full" playsinline>
-                                <source :src="videoSource" type="video/mp4" />
-                                Your browser does not support the video tag.
-                            </video>
-                        </div>
+                        <template v-if="selectedbook?.intro_video_url">
+                            <VueVideoPlayer 
+                                :videoSource="selectedbook?.intro_video_url" 
+                                :posterImage="selectedbook?.cover_page_url"/>
+                        </template>  
                     </div>
 
                     <!-- Book Description -->
@@ -244,8 +156,9 @@ onBeforeUnmount(() => {
 
                     <!-- Reviews Section -->
                     <div v-if="selectedbook" class="mt-4">
-                        <ReviewList :feedBacks="selectedbook?.feedBacks" :averageRating="selectedbook?.averageRating"
-                            :starDistribution="selectedbook?.starDistribution" :showOnly="!selectedbook?.isMyBook" />
+                        <ReviewList 
+                            :courseSlug ="selectedbookslug"
+                            :showOnly="!selectedbook?.isMyBook" />
                     </div>
                 </div>
 
@@ -266,7 +179,7 @@ onBeforeUnmount(() => {
                                     ? "Processing..."
                                     : selectedbook?.isMyBook
                                         ? "Continue Reading"
-                                        : `Buy for ${selectedbook?.discount || selectedbook?.price} Birr`
+                                        :  `Buy now` 
                             }}
                         </span>
                     </button>
@@ -338,90 +251,6 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div v-else class="flex justify-center items-center h-screen">
-            <div class="text-center">
-                <i class="fas fa-book-open text-5xl text-gray-400 mb-4"></i>
-                <p class="text-xl text-gray-600">Book not found</p>
-                <button @click="router.push('/books')"
-                    class="mt-4 bg-lime-600 hover:bg-lime-700 text-white px-4 py-2 rounded-lg transition-colors">
-                    Browse Books
-                </button>
-            </div>
-        </div>
+        </div> 
     </div>
-</template>
-
-<style scoped>
-.video-js {
-    width: 100%;
-    height: 100%;
-    border-radius: 0.5rem;
-}
-
-.video-js .vjs-big-play-button {
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    border: none;
-    background-color: rgba(101, 163, 13, 0.8);
-}
-
-.video-js .vjs-big-play-button:hover {
-    background-color: rgba(101, 163, 13, 1);
-}
-
-@keyframes pulse-circle {
-    0% {
-        transform: scale(1);
-        opacity: 0.7;
-        box-shadow: 0 0 5px rgba(132, 204, 22, 0.6);
-    }
-
-    50% {
-        transform: scale(1.6);
-        opacity: 0.4;
-        box-shadow: 0 0 20px rgba(91, 150, 9, 0.8);
-    }
-
-    100% {
-        transform: scale(2);
-        opacity: 0;
-        box-shadow: 0 0 30px rgba(72, 118, 12, 0.5);
-    }
-}
-
-.animate-pulse-circle {
-    width: 70px;
-    height: 70px;
-    background-color: rgba(132, 204, 22, 0.5);
-    border-radius: 50%;
-    animation: pulse-circle 2s infinite ease-out;
-    position: absolute;
-}
-
-.prose :deep(img) {
-    max-width: 100%;
-    height: auto;
-    border-radius: 0.5rem;
-}
-
-.prose :deep(a) {
-    color: #3b82f6;
-    text-decoration: underline;
-}
-
-.prose :deep(ul) {
-    list-style-type: disc;
-    padding-left: 1.5rem;
-}
-
-.prose :deep(ol) {
-    list-style-type: decimal;
-    padding-left: 1.5rem;
-}
-</style>
+</template> 

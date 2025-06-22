@@ -113,9 +113,10 @@ trait TransferTrait
             'reference' => $trf,
         ]);
 
-        $commission = $amount * $platformComission;
-
-        if ($commission > 0) {
+        
+        if ($platformComission) {
+            $commission = $amount * $platformComission;
+            
             $getComission = Transfer::create([
                 'withdrawals' => $commission,
                 'user_id' => $user->id,

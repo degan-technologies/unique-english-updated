@@ -15,7 +15,8 @@ const toggleExpanded = () => {
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >
             <!-- Image Section -->
-            <div class="lg:w-1/3 lg:block">
+            <div class="lg:w-1/3 lg:block text-center">
+                <h2 class="text-3xl lg:hidden font-bold text-lime-700 mb-4">About Us</h2>
                 <img
                     src="/images/mehari.JPG"
                     alt="About Us"
@@ -25,7 +26,7 @@ const toggleExpanded = () => {
 
             <!-- Text Content -->
             <div class="lg:w-2/3 text-center lg:text-left">
-                <h2 class="text-3xl font-bold text-lime-700 mb-4">About Us</h2>
+                <h2 class="text-3xl hidden lg:flex font-bold text-lime-700 mb-4">About Us</h2>
                 <p class="text-gray-600 text-base leading-relaxed mb-4">
                     Welcome to our platform! We specialize in offering engaging
                     and effective English learning experiences tailored to all

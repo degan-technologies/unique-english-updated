@@ -1,9 +1,14 @@
+import { defineStore, storeToRefs } from "pinia";
 import { ref, computed, onMounted } from "vue";
-import { defineStore } from "pinia";
+
+import { useAppStore } from '@/store/useAppStore'
 
 export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
-    const sidebarCollapsed = ref(false);
+    const sidebarCollapsed = ref(false); 
+    
+    const appStore = useAppStore();
+    const { authUser } = storeToRefs(appStore);
 
     const profile = ref("profile");
     const dashboard = ref("dashboard");
@@ -15,7 +20,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const messaging = ref("messaging");
     const schedule=ref("schedule");
     const attendance = ref("attendance");
-    const selectedContent = ref(dashboard.value);
+    const selectedContent = ref( authUser?.value?.role === 'systemAdmin' ?  dashboard.value : courses.value);
 
     function loadSidebarState() {
         sideBarOpen.value =

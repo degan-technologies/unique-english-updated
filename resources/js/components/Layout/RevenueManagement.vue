@@ -99,7 +99,7 @@
 <template>
     <div class="min-h-screen overflow-hidden bg-gray-100">
         <!-- Header -->
-        <header class="bg-white shadow p-4 flex items-center justify-between">
+        <header class="bg-white shadow p-4 block  md:flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Payment & Revenue Management</h1> 
                  <nav class="text-gray-500 text-sm mb-4">
@@ -172,9 +172,9 @@
                         <section  v-if="activeTab === 'transactions' ">
                             <div class="bg-white p-6 rounded shadow overflow-hidden">
                                 <h2 class="text-xl font-semibold text-gray-800 mb-4">Transaction List</h2>
-                                <div class="flex justify-between items-center mb-4">
-                                <div>
-                                    <select v-model="filters.status" class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <div class="block sm:flex justify-between items-center mb-4">
+                                <div class="w-full my-2 sm:w-fit sm:my-0">
+                                    <select v-model="filters.status" class="border rounded px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
                                         <option value="">All Status</option>
                                         <option class="capitalize" :value="transactionStatus.success">{{ transactionStatus.success }}</option>
                                         <option class="capitalize" :value="transactionStatus.pending">{{ transactionStatus.pending }}</option>
@@ -195,7 +195,7 @@
                                 </div>
                                 </div>
                                 <div class="w-full overflow-x-auto scrollbar">
-                                <table>
+                                <table class="w-full">
                                     <thead>
                                         <tr>
                                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>

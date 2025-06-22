@@ -18,6 +18,7 @@ export const useInstructorStore = defineStore('useInstructorStore', ()=>{
     });
 
     const instructorCourses = ref([]);
+    const booksAdmin = ref([]);
     const selectedCourse = ref(null);
     const editCourseModule = ref(null); 
     const courseId = ref(null);
@@ -34,6 +35,7 @@ export const useInstructorStore = defineStore('useInstructorStore', ()=>{
         addNewLesson,
         
         instructorCourses,
+        booksAdmin,
         analytics,
         selectedCourse,
         editCourseModule,

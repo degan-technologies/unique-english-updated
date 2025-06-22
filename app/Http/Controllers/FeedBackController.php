@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Comment\FeedbackUserInteraction;
 use App\Models\Course\Course;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class FeedBackController extends Controller
@@ -30,17 +31,73 @@ class FeedBackController extends Controller
             ->whereSystemAdminOrInstructor()
             ->first();
         if(!$user) return;
-        // Eager-load the "user" relationship to get the reviewer's name.
+
         $feedbacks = FeedBack::query()
             ->where('instractor_id', $user->id)
             ->get();
         $review = FeedBack::reviewRate($feedbacks);
+
         return response()->json([
             'data'             => FeedBackResource::collection($feedbacks),
             'averageRating'    => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
         ]);
     }
+
+    public function getFeedbacksByCourse(Request $request, $slug) {
+        $modelClass = null;
+        $foreignID = null;
+
+        if ($request->feedbackType === 'course') {
+            $modelClass = Course::class;
+            $foreignID = 'course_id';
+        } elseif ($request->feedbackType === 'book') {
+            $modelClass = Book::class;
+            $foreignID = 'book_id';
+        } else {
+            return response()->json([
+                'message' => $this->langService->getLang('not_found')
+            ], 400);
+        }
+
+
+        $currentModelClass = $modelClass::query()
+            ->where('slug', $slug)
+            ->first();
+
+        if (!$currentModelClass) {
+            return response()->json([
+                'message' => $this->langService->getLang('not_found')
+            ], 404);
+        }
+
+        $allFeedbacks = FeedBack::query()
+            ->where($foreignID, $currentModelClass->id)
+            ->get();
+
+        $feedbacks = FeedBack::query()
+            ->where($foreignID, $currentModelClass->id)
+            ->paginate(2);
+
+        if ($feedbacks->isEmpty()) {
+            return response()->json([
+                'message' => $this->langService->getLang('no_feedbacks_found')
+            ], 404);
+        }
+
+        $pagination = $feedbacks->toArray();
+        unset($pagination['data']);
+
+        $review = FeedBack::reviewRate($allFeedbacks);
+
+        return response()->json([
+            'pagination'       => $pagination,
+            'data'             => FeedBackResource::collection($feedbacks),
+            'averageRating'    => $review['averageRating'],
+            'starDistribution' => $review['starDistribution'],
+        ]);
+    }
+    
     /**
      * Store a newly created feedback in storage.
      */
@@ -183,18 +240,66 @@ class FeedBackController extends Controller
     /**
      * Remove the specified feedback from storage.
      */
-    public function destroy($id)
-    {
-        $feedback = FeedBack::findOrFail($id);
-        $feedback->delete();
+    public function destroy($id) {
+
+        $user = Auth::user();
+
+        if(!$user){
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action')
+            ], 403);
+        }
+
+        $feedback = FeedBack::query()
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere('instractor_id', $user->id)
+                    ->orWhereHas('course', function ($q) use ($user) {
+                        $q->where('user_id', $user->id); 
+                    });
+            })
+            ->where('id', $id)
+            ->first();
+
+
+        if (!$feedback) {
+            return response()->json([
+                'message' => $this->langService->getLang('feedback_not_found')
+            ], 404);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $feedback->deleted_at = now();
+            $interactions = $feedback->feedbackUserInteractions;
+
+            if ($interactions->isNotEmpty()) {
+                foreach ($interactions as $interaction) {
+                    $interaction->delete();
+                }
+            }
+            $feedback->save();
+
+            DB::commit();
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+            return response()->json([
+                'message' => $this->langService->getLang('error_deleting_feedback'),
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+        
         return response()->json(['message' => 'Feedback deleted successfully!']);
     }
     /**
      * Like the specified feedback.
      */
     public function addFavorite(Request $request, $id) {
-        /* @var \App\Models\User $user
-        */
+        /**
+         * @var User $user
+         */
         $user = Auth::user();
         $favorite = FeedbackUserInteraction::query()
         ->where('user_id', $user->id)

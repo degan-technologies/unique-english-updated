@@ -1,7 +1,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import AdminPdfReader from '@/components/Book/AdminPdfReader.vue'
+
 import ReviewList from "@/components/Course/ReviewList.vue";
+import AdminPdfReader from '@/components/Book/AdminPdfReader.vue'
+import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 
 const props = defineProps({
     selectedbook: {
@@ -18,8 +20,7 @@ const props = defineProps({
 })
 
 // State management
-const isReadingMode = ref(false)
-const isVideoLoading = ref(true)
+const isReadingMode = ref(false) 
 const selectedBookRead = ref(props.selectedbook)
 
 // Computed properties
@@ -61,15 +62,11 @@ const continueReading = () => {
 const cancelBookRead = () => {
     isReadingMode.value = false
 }
-
-onMounted(() => {
-    const video = new Audio(props.selectedbook.intro_video_url)
-    video.preload = 'auto'
-})
+ 
 </script>
 
 <template>
-    <div v-if="!isReadingMode" class="p-6 mt-2 pb-16 rounded-lg bg-slate-50 mx-auto w-full"> 
+    <div v-if="!isReadingMode" class="p-4 mt-2 sm:pb-16 rounded-lg bg-slate-50 mx-auto w-full"> 
         <button @click="goBack"
             class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
             aria-label="Go back">
@@ -78,22 +75,15 @@ onMounted(() => {
         </button>
  
         <div class="grid w-full mx-auto mt-4">
-            <div class="rounded-lg p-4 sm:p-6 flex flex-col gap-6 w-full">
+            <div class="rounded-lg sm:p-6 flex flex-col gap-6 w-full">
                 <div class="flex flex-col lg:flex-row w-full mx-auto gap-6">
-                    <div class="w-full lg:w-2/3 aspect-video rounded-md overflow-hidden bg-gray-200 relative">
-                        <div v-if="isVideoLoading" class="absolute inset-0 flex items-center justify-center">
-                            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-lime-600">
-                            </div>
-                        </div> 
-                        <video v-if="selectedbook?.intro_video_url" ref="videoPlayer"
-                            class="video-js vjs-default-skin w-full h-full rounded-t-lg shadow-md border" controls
-                            preload="auto" 
-                            :poster="selectedbook?.cover_page_url">
-                            <source :src="selectedbook?.intro_video_url" 
-                            type="video/mp4" /> 
-                        </video>
-                    </div>
- 
+                    <div class="relative rounded-lg overflow-hidden bg-gray-100 aspect-video">
+                        <template v-if="selectedbook?.intro_video_url">
+                            <VueVideoPlayer 
+                                :videoSource="selectedbook?.intro_video_url" 
+                                :posterImage="selectedbook?.cover_page_url"/>
+                        </template>  
+                    </div> 
                     <div
                         class="w-full lg:w-1/3 border border-gray-200 rounded-lg p-4 flex flex-col justify-between bg-white shadow-sm">
                         <div class="mb-4">
@@ -138,15 +128,13 @@ onMounted(() => {
 
          <div v-if="selectedbook"  class="mt-4">
             <ReviewList 
-                :feedBacks="selectedbook?.feedBacks" 
-                :averageRating="selectedbook?.averageRating"
-                :starDistribution="selectedbook?.starDistribution"
+                :courseSlug ="selectedbook.slug"
                 :showOnly="false" 
                 :addFeedbackType="'book'"/>
         </div>
     </div>  
 
-    <div v-else class="p-6 mt-2 pb-16 rounded-lg bg-slate-50 mx-auto w-full">        
+    <div v-else class="p-4 mt-2 rounded-lg bg-white mx-auto w-full">        
         <button @click="cancelBookRead"
             class="flex items-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
             aria-label="Go back">
@@ -156,40 +144,4 @@ onMounted(() => {
 
         <AdminPdfReader :selectedBook="selectedBookRead" />
     </div>
-</template>
-
-<style scoped>
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.prose {
-    line-height: 1.6;
-}
-
-.prose :where(p):not(:where([class~="not-prose"] *)) {
-    margin-top: 1em;
-    margin-bottom: 1em;
-}
-
-/* Better video transition */
-video {
-    transition: opacity 0.3s ease;
-}
-
-/* Accessibility improvements */
-button:focus {
-    outline: 2px solid #84cc16;
-    outline-offset: 2px;
-}
-</style>
+</template> 

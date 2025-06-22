@@ -41,7 +41,7 @@ async function loadPdf() {
                 Authorization: `Bearer ${authToken.value}`,
             },
             body: JSON.stringify({
-                filename: props.selectedLesson.content_url, // pass only safe filename like "example.pdf"
+                filename: props.selectedLesson.content_url,  
             }),
         });
 
@@ -169,38 +169,38 @@ watch(
     </div>
     <div v-else class="relative flex flex-col items-center p-4 h-fit">
         <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full items-center justify-center bg-white rounded-lg pdf-container">
+            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
             <div class="overflow-auto">
-                <canvas ref="canvasRef" class="w-full h-auto object-contain shadow-lg border rounded-lg select-none"
+                <canvas ref="canvasRef"
+                    class="w-full max-w-full h-auto object-contain shadow-lg border rounded-lg select-none"
                     @contextmenu.prevent @dragstart.prevent></canvas>
-            </div>
-            <!-- Pagination & Controls -->
+            </div> 
             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
                     <button @click="prevPage" :disabled="currentPage === 1"
-                        class="px-2 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
-                        <i class="fas fa-chevron-left"></i>
+                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group">
+                        <i class="fas fa-chevron-left text-balck"></i>
                     </button>
+
                     <span class="font-semibold text-gray-700">
-                        Page {{ currentPage }} / {{ totalPages }}
+                        {{ currentPage }} / {{ totalPages }}
                     </span>
+
                     <button @click="nextPage" :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
-                        <i class="fas fa-chevron-right"></i>
+                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group">
+                        <i class="fas fa-chevron-right text-black"></i>
                     </button>
                 </div>
+
+                <!-- Search Input -->
                 <div class="flex items-center gap-2">
-                    <input type="number" v-model="searchPage" placeholder="Page #"
-                        class="px-2 py-1 border border-gray-500 rounded w-24" />
-                    <button @click="goToPage" class="px-2 py-1 bg-white rounded text-black relative group">
+                    <input type="number" v-model="searchPage" placeholder="Go to page"
+                        class="px-2 py-1 border border-gray-500 rounded w-24" @keyup.enter="goToPage" />
+                    <button @click="goToPage" class="px-3 py-1 bg-slate-50 text-black rounded relative group">
                         <i class="fas fa-search"></i>
-                    </button>
+                    </button> 
                 </div>
-                <button @click="toggleFullScreen"
-                    class="px-2 py-2 bg-white rounded text-black flex items-center relative group">
-                    <i :class="isFullScreen ? 'fas fa-compress' : 'fas fa-expand'
-                        "></i>
-                </button>
             </div>
         </div>
     </div>

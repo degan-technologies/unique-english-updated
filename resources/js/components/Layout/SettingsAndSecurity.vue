@@ -14,6 +14,7 @@ const settingTab = ref('setting');
 const securityTab = ref('security');
 const selectedTab = ref(settingTab.value); 
 const eExpandView = ref(true);
+const isProcessing = ref(false);
 
 const logs = ref([]);
 
@@ -47,19 +48,41 @@ const handleLogoUpload = async (event) => {
     return;
  }
 
+ function isFileObject(obj) {
+    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
+}
+
 function storeOrUpdate() {
+    isProcessing.value = true;
 
     const formData = new FormData()
 
     formData.append('title', hero.value.title);
     formData.append('description', hero.value.description);
-    formData.append('logo', hero.value.selectedLogo);
-    formData.append('banner', hero.value.selectedbanner);
-    formData.append('background_image', hero.value.selectedBackground )
+
+    if (isFileObject(hero.value.selectedLogo)) {
+        formData.append('logo', hero.value.selectedLogo);
+    } else {
+        formData.delete('logo');
+    }
+    
+    if (isFileObject(hero.value.selectedbanner)) {
+        formData.append('banner', hero.value.selectedbanner);
+    } else {
+        formData.delete('banner');
+    }
+
+    if (isFileObject(hero.value.selectedBackground)) {
+        formData.append('background_image', hero.value.selectedBackground);
+    } else {
+        formData.delete('background_image');
+    }
+      
 
     Axios
         .post('/api/hero-section', formData)
-        .then(res => {});
+        .then(res => { isProcessing.value = false});
+ 
 }
 
 function onExpandView() {
@@ -119,7 +142,7 @@ onMounted(()=>{
         </div>
 
         <div class="flex flex-1 w-full overflow-hidden"> 
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 p-6">
                 <!-- Platform Settings Panel -->
                 <transition name="fade" mode="out-in">
                     <div v-if="selectedTab === settingTab" key="theme">
@@ -172,7 +195,13 @@ onMounted(()=>{
                                     <div class="flex flex-row gap-4"> 
                                         <button @click="storeOrUpdate()"
                                             class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors">
-                                            save
+                                            <span v-if="isProcessing">
+                                                <span
+                                                    class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                                </span>
+                                                <span class="text-sm">Processing ...</span>
+                                            </span>
+                                            <span v-else >save</span>
                                         </button>
                                     </div>
                                 </div>
@@ -199,7 +228,7 @@ onMounted(()=>{
 
                 <!-- Security Management Panel -->
                 <transition name="fade" mode="out-in">
-                    <div v-if="selectedTab === securityTab" key="security">
+                    <div v-if="selectedTab === securityTab" key="security" class="h-full">
                         <div class="bg-white rounded-lg shadow p-6 mb-6">
                             <div class="flex items-center mb-4">
                                 <div class="text-3xl text-red-500 mr-2">
@@ -210,7 +239,7 @@ onMounted(()=>{
                             <!-- Activity Logs -->
                             <div>
                                 <h3 class="font-medium text-gray-700 mb-2">Activity Logs</h3> 
-                                <div class="overflow-auto max-h-60">
+                                <div class="h-full">
                                     <table class="min-w-full text-sm">
                                         <thead>
                                             <tr class="border-b">

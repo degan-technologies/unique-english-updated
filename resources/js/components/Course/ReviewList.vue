@@ -5,51 +5,55 @@ import { useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
-const emit = defineEmits(['feedback-added', 'feedback-updated']);
+import Spinner from "@/components/Layout/Spinner.vue";
 
 const studentStore = UseStudentStore();
 const { bookOverviewTab, videoPlayerTab } = storeToRefs(studentStore);
 const route = useRoute();
 
 const props = defineProps({
-    feedBacks: {
-        type: Array,
-        default: () => [],
-    },
-    averageRating: Number,
-    starDistribution: Object,
     showOnly: Boolean,
     addFeedbackType: String,
+    courseSlug: String,
 });
 
 // State
 const newComment = ref("");
 const commentError = ref("");
 const feedbackType = ref(null);
-const isLoading = ref(false);
+const isLoading = ref(true);
+const processng = ref(false);
+const currentPage = ref(0);
+const lastPage = ref(1);
+
+const averageRating = ref(null);
+const starDistribution = ref(null);
+const feedbacks = ref([]);
 
 // Rating state
 const userRating = ref(0);
 const userHoverRating = ref(0);
 const userRatingError = ref("");
+const feedbackId = ref(null);
+const feedbackerror = ref("");
+const page = ref(1);
 
-// Reviews display
-const showAllReviews = ref(false);
-const localFeedbacks = ref([...props.feedBacks]);
+function getfeedbacks() { 
+    Axios.get(`/api/feedbacks/course/${props.courseSlug}?page=${currentPage.value + 1}`, {
+        params: {
+            feedbackType: feedbackType.value,
+        }
+    })
+        .then(res => {
+            averageRating.value = res.data.averageRating;
+            starDistribution.value = res.data.starDistribution;
+            lastPage.value = res.data.pagination.last_page; 
+            currentPage.value = res.data.pagination.current_page;
 
-// Update localFeedbacks when props.feedBacks changes
-watch(() => props.feedBacks, (newVal) => {
-    localFeedbacks.value = [...newVal];
-}, { immediate: true });
+            feedbacks.value = [...feedbacks.value, ...res.data.data]; 
+        })
+}
 
-// Computed
-const visibleFeedBacks = computed(() => {
-    return showAllReviews.value ? localFeedbacks.value : localFeedbacks.value.slice(0, 2);
-});
-
-const shouldShowToggle = computed(() => {
-    return localFeedbacks.value.length > 2;
-});
 
 const userHoverRatingOrValue = computed(() => {
     return userHoverRating.value || userRating.value;
@@ -106,7 +110,7 @@ const addComment = async () => {
     getfeedbackTypes();
 
     try {
-        isLoading.value = true;
+        processng.value = true;
         const response = await Axios.post("/api/feedbacks", {
             rate: userRating.value,
             comment: newComment.value,
@@ -120,8 +124,7 @@ const addComment = async () => {
         userHoverRating.value = 0;
 
         // Update local feedbacks and emit event
-        localFeedbacks.value = [response.data.data, ...localFeedbacks.value];
-        emit('feedback-added', response.data.data);
+        feedbacks.value = [response.data.data, ...feedbacks.value];
 
         // Show success message
         commentError.value = "Thank you for your feedback!";
@@ -135,7 +138,7 @@ const addComment = async () => {
             commentError.value = "";
         }, 3000);
     } finally {
-        isLoading.value = false;
+        processng.value = false;
     }
 };
 
@@ -145,13 +148,13 @@ const likeComment = async (comment, action) => {
             action: action,
         });
 
-        emit('feedback-updated', {
-            id: comment.id,
-            likes: response.data.like,
-            dislikes: response.data.dislike
-        });
+        const item = feedbacks.value.find(item => item.id === comment.id);
+        if (item) {
+            item.likes = response.data.like;
+            item.dislikes = response.data.dislike;
+        }
+
     } catch (error) {
-        console.error("Failed to update feedback reaction:", error);
     }
 };
 
@@ -159,154 +162,203 @@ const getInitials = (name) => {
     return name?.charAt(0).toUpperCase() || "";
 };
 
-const toggleShowMore = () => {
-    showAllReviews.value = !showAllReviews.value;
+function openModal(id) {
+    feedbackId.value = id;
+}
+
+const removeFeedback = async (id) => {
+    try {
+        await Axios.delete(`/api/feedbacks/${id}`);
+        feedbacks.value = feedbacks.value.filter(item => item.id === id);
+        feedbackId.value = null;
+    } catch (error) {
+        feedbackerror.value = "Failed to delete question. Please try again.";
+    }
 };
+
+const toggleShowLess = () => {
+    if(currentPage.value === 1) return;
+    feedbacks.value = feedbacks.value.slice(0, -3);
+    currentPage.value -= 1;
+}
 
 onMounted(() => {
     getfeedbackTypes();
+    getfeedbacks();
+    isLoading.value = false;
 });
 </script>
 
 <template>
-    <div class="feedback-container">
-        <!-- Rating Summary -->
-        <div class="rating-summary">
-            <h2 class="section-title">Student Feedback</h2>
-            <div class="rating-content">
-                <!-- Average Rating -->
-                <div class="average-rating">
-                    <div class="rating-value">{{ averageRating }}</div>
-                    <div class="rating-meta">
-                        <p class="rating-label">Course Rating</p>
-                        <p class="rating-count">
-                            Based on {{ localFeedbacks.length }} review{{ localFeedbacks.length !== 1 ? 's' : '' }}
-                        </p>
-                    </div>
-                </div>
 
-                <!-- Star Distribution -->
-                <div class="star-distribution">
-                    <div v-for="(count, index) in starDistribution" :key="index" class="star-row">
-                        <span class="star-label">{{ 5 - index }}</span>
-                        <i class="fas fa-star star-icon"></i>
-                        <div class="progress-bar">
-                            <div class="progress-fill" :style="{ width: `${(count / localFeedbacks.length) * 100}%` }">
-                            </div>
+    <div>
+        <div v-if="isLoading && feedbacks.length" class="text-center py-8">
+            <Spinner />
+        </div>
+        <div v-else class="feedback-container">
+            <!-- Rating Summary -->
+            <div class="rating-summary">
+                <h2 class="section-title">Student Feedback</h2>
+                <div class="rating-content">
+                    <!-- Average Rating -->
+                    <div class="average-rating">
+                        <div class="rating-value">{{ averageRating }}</div>
+                        <div class="rating-meta">
+                            <p class="rating-label">Course Rating</p>
+                            <p class="rating-count">
+                                Based on {{ feedbacks.length }} review{{ feedbacks.length !== 1 ? 's' : '' }}
+                            </p>
                         </div>
-                        <span class="star-count">({{ count }})</span>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- User Rating Section -->
-        <div v-if="!showOnly" class="user-rating-section">
-            <h2 class="section-title">Your Rating</h2>
-
-            <!-- Star Rating Input -->
-            <div class="star-rating-input">
-                <div v-for="star in 5" :key="star" class="star-container" @mousemove="handleHover($event, star)"
-                    @mouseleave="userHoverRating = 0" @click="setUserRating($event, star)">
-                    <i class="fas fa-star star-empty"></i>
-                    <i class="fas fa-star star-filled" :style="{
-                        clipPath: isStarHalf(star, userHoverRatingOrValue)
-                            ? 'inset(0 50% 0 0)'
-                            : isStarFull(star, userHoverRatingOrValue)
-                                ? 'inset(0)'
-                                : 'inset(0 100% 0 0)',
-                    }"></i>
-                </div>
-            </div>
-
-            <p class="rating-selection">
-                You selected: <span class="selected-rating">{{ userRating }}</span> / 5
-            </p>
-
-            <!-- Review Form -->
-            <div class="review-form">
-                <textarea v-model="newComment" placeholder="Write a review..." class="review-input"
-                    :disabled="isLoading" maxlength="500" rows="3"></textarea>
-                <button @click="addComment" class="submit-button" :disabled="isLoading">
-                    <span v-if="isLoading">Posting...</span>
-                    <span v-else>Post</span>
-                </button>
-            </div>
-            <p v-if="newComment.length > 0" class="text-right text-xs text-gray-500 mt-1">
-                {{ newComment.length }}/500 characters
-            </p>
-        </div>
-
-        <!-- Error Messages -->
-        <div v-if="commentError || userRatingError" class="error-messages">
-            <p v-if="userRatingError" class="error">{{ userRatingError }}</p>
-            <p v-if="commentError" class="error" :class="{ 'text-green-500': commentError.includes('Thank you') }">
-                {{ commentError }}
-            </p>
-        </div>
-
-        <!-- Reviews Section -->
-        <div class="reviews-section">
-            <h2 class="section-title">Reviews</h2>
-
-            <template v-if="localFeedbacks.length > 0">
-                <div v-for="feedback in visibleFeedBacks" :key="feedback.id" class="feedback-item">
-                    <!-- User Info -->
-                    <div class="user-info">
-                        <div class="user-avatar">
-                            {{ getInitials(feedback.user?.full_name) }}
-                        </div>
-                        <div class="user-meta">
-                            <span class="user-name">{{ feedback.user?.full_name }}</span>
-                            <div class="user-rating">
-                                <div v-for="star in 5" :key="star" class="star-container small">
-                                    <i class="fas fa-star star-empty"></i>
-                                    <i class="fas fa-star star-filled" :style="{
-                                        clipPath: isStarHalf(star, feedback.rating)
-                                            ? 'inset(0 50% 0 0)'
-                                            : isStarFull(star, feedback.rating)
-                                                ? 'inset(0)'
-                                                : 'inset(0 100% 0 0)',
-                                    }"></i>
+                    <!-- Star Distribution -->
+                    <div class="star-distribution">
+                        <div v-for="(count, index) in starDistribution" :key="index" class="star-row">
+                            <span class="star-label">{{ 5 - index }}</span>
+                            <i class="fas fa-star star-icon"></i>
+                            <div class="progress-bar">
+                                <div class="progress-fill" :style="{ width: `${(count / feedbacks.length) * 100}%` }">
                                 </div>
                             </div>
-                            <span class="feedback-date">{{ feedback.timestamp }}</span>
+                            <span class="star-count">({{ count }})</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Rating Section -->
+            <div v-if="!showOnly" class="user-rating-section">
+                <h2 class="section-title">Your Rating</h2>
+
+                <!-- Star Rating Input -->
+                <div class="star-rating-input">
+                    <div v-for="star in 5" :key="star" class="star-container" @mousemove="handleHover($event, star)"
+                        @mouseleave="userHoverRating = 0" @click="setUserRating($event, star)">
+                        <i class="fas fa-star star-empty"></i>
+                        <i class="fas fa-star star-filled" :style="{
+                            clipPath: isStarHalf(star, userHoverRatingOrValue)
+                                ? 'inset(0 50% 0 0)'
+                                : isStarFull(star, userHoverRatingOrValue)
+                                    ? 'inset(0)'
+                                    : 'inset(0 100% 0 0)',
+                        }"></i>
+                    </div>
+                </div>
+
+                <p class="rating-selection">
+                    You selected: <span class="selected-rating">{{ userRating }}</span> / 5
+                </p>
+
+                <!-- Review Form -->
+                <div class="review-form">
+                    <textarea v-model="newComment" placeholder="Write a review..." class="review-input"
+                        :disabled="processng" maxlength="500" rows="3"></textarea>
+                    <button @click="addComment" class="submit-button" :disabled="processng">
+                        <span v-if="processng">Posting...</span>
+                        <span v-else>Post</span>
+                    </button>
+                </div>
+                <p v-if="newComment.length > 0" class="text-right text-xs text-gray-500 mt-1">
+                    {{ newComment.length }}/500 characters
+                </p>
+            </div>
+
+            <!-- Error Messages -->
+            <div v-if="commentError || userRatingError" class="error-messages">
+                <p v-if="userRatingError" class="error">{{ userRatingError }}</p>
+                <p v-if="commentError" class="error" :class="{ 'text-green-500': commentError.includes('Thank you') }">
+                    {{ commentError }}
+                </p>
+            </div>
+
+            <!-- Reviews Section -->
+            <div class="reviews-section">
+                <h2 class="section-title">Reviews</h2>
+
+                <template v-if="feedbacks.length > 0">
+                    <div v-for="feedback in feedbacks" :key="feedback.id" class="feedback-item">
+                        <!-- User Info -->
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                {{ getInitials(feedback.user?.full_name) }}
+                            </div>
+                            <div class="user-meta">
+                                <span class="user-name">{{ feedback.user?.full_name }}</span>
+                                <div class="user-rating">
+                                    <div v-for="star in 5" :key="star" class="star-container small">
+                                        <i class="fas fa-star star-empty"></i>
+                                        <i class="fas fa-star star-filled" :style="{
+                                            clipPath: isStarHalf(star, feedback.rating)
+                                                ? 'inset(0 50% 0 0)'
+                                                : isStarFull(star, feedback.rating)
+                                                    ? 'inset(0)'
+                                                    : 'inset(0 100% 0 0)',
+                                        }"></i>
+                                    </div>
+                                </div>
+                                <span class="feedback-date">{{ feedback.timestamp }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Feedback Content -->
+                        <p class="feedback-content">
+                            {{ feedback.comment }}
+                        </p>
+
+                        <!-- Feedback Actions -->
+                        <div class="feedback-actions">
+                            <button @click="likeComment(feedback, 'liked')" class="action-button like"
+                                :class="{ active: feedback.userLiked }">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>{{ feedback.likes || 0 }}</span>
+                            </button>
+                            <button @click="likeComment(feedback, 'disliked')" class="action-button dislike"
+                                :class="{ active: feedback.userDisliked }">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span>{{ feedback.dislikes || 0 }}</span>
+                            </button>
+                            <button v-if="feedback.myFeedback" @click="openModal(feedback.id)"
+                                class="text-red-600 hover:underline">
+                                Delete
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Feedback Content -->
-                    <p class="feedback-content">
-                        {{ feedback.comment }}
-                    </p>
-
-                    <!-- Feedback Actions -->
-                    <div class="feedback-actions">
-                        <button @click="likeComment(feedback, 'liked')" class="action-button like"
-                            :class="{ active: feedback.userLiked }">
-                            <i class="fas fa-thumbs-up"></i>
-                            <span>{{ feedback.likes || 0 }}</span>
-                        </button>
-                        <button @click="likeComment(feedback, 'disliked')" class="action-button dislike"
-                            :class="{ active: feedback.userDisliked }">
-                            <i class="fas fa-thumbs-down"></i>
-                            <span>{{ feedback.dislikes || 0 }}</span>
+                    <!-- Show More/Less Toggle -->
+                    <div class="show-more-container">
+                        <button @click="currentPage < lastPage ? getfeedbacks() : toggleShowLess()" class="mt-2 text-sm text-lime-600 hover:underline">
+                            <span v-if="isLoading"><i class="fa fa-spinner fa-spin"></i> Loading...</span>
+                            <span v-else-if="lastPage !== 1">{{ currentPage < lastPage  ? 'Show More': 'Show Less' }}</span>
                         </button>
                     </div>
-                </div>
+                </template>
 
-                <!-- Show More/Less Toggle -->
-                <div v-if="shouldShowToggle" class="show-more-container">
-                    <button @click="toggleShowMore" class="show-more-button">
-                        {{ showAllReviews ? 'Show Less' : `Show More (${localFeedbacks.length - 2})` }}
-                    </button>
+                <div v-else class="no-reviews">
+                    No reviews yet. Be the first to review!
                 </div>
-            </template>
-
-            <div v-else class="no-reviews">
-                No reviews yet. Be the first to review!
             </div>
         </div>
     </div>
+    <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+        <div v-if="feedbackId" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div class="bg-white rounded shadow-lg w-96 p-6">
+                <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
+                <p class="mb-6">
+                    Are you sure you want to delete ?
+                </p>
+                <div class="flex justify-end space-x-2">
+                    <button @click="feedbackId = null" class="px-4 py-3 border rounded hover:bg-gray-100">
+                        Cancel
+                    </button>
+                    <button @click="removeFeedback(feedbackId)"
+                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </transition>
 </template>
 
 <style scoped>

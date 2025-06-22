@@ -63,7 +63,7 @@ onMounted(() => {
         </div>
 
         <!-- Live Sessions List -->
-        <div v-if="schedules.length" class="max-h-[400px] overflow-y-auto scrollable-container space-y-2 pr-1">
+        <div v-if="schedules.length" class="max-h-[400px] overflow-y-auto scrollbar space-y-2 pr-1">
             <div v-for="schedule in schedules" :key="schedule.id"
                 class="p-4 rounded-lg border border-gray-200 mb-3 cursor-pointer transition hover:bg-gray-100">
                 <div class="flex justify-between items-center">

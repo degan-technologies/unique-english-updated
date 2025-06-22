@@ -60,7 +60,7 @@ onUnmounted(() => chartInstance.value?.destroy())
                     <i class="fas fa-book-reader text-2xl mx-3 font-bold text-blue-500"></i>
                     <div>
                         <h3 class="text-gray-700 text-sm">Course Sales</h3>
-                        <p class="text-gray-500 text-md font-bold">${{ courseSalesDisplay }}</p>
+                        <p class="text-gray-500 text-md font-bold">ETB {{ courseSalesDisplay }}</p>
                     </div>
                 </div>
             </div>
@@ -71,7 +71,7 @@ onUnmounted(() => chartInstance.value?.destroy())
                     <i class="fas fa-book text-2xl mx-3 font-bold text-green-500"></i>
                     <div>
                         <h3 class="text-gray-700 text-sm">Book Sales</h3>
-                        <p class="text-gray-500 text-md font-bold">${{ bookSalesDisplay }}</p>
+                        <p class="text-gray-500 text-md font-bold">ETB {{ bookSalesDisplay }}</p>
                     </div>
                 </div>
             </div>
@@ -82,7 +82,7 @@ onUnmounted(() => chartInstance.value?.destroy())
                     <i class="fas fa-video text-2xl mx-3 font-bold text-purple-500"></i>
                     <div>
                         <h3 class="text-gray-700 text-sm">Live Classes</h3>
-                        <p class="text-gray-500 text-md font-bold">${{ virtualClassesDisplay }}</p>
+                        <p class="text-gray-500 text-md font-bold">ETB {{ virtualClassesDisplay }}</p>
                     </div>
                 </div>
             </div>
@@ -93,7 +93,7 @@ onUnmounted(() => chartInstance.value?.destroy())
                     <i class="fas fa-dollar-sign text-2xl mx-3 font-bold text-indigo-500"></i>
                     <div>
                         <h3 class="text-gray-700 text-sm">Overall Revenue</h3>
-                        <p class="text-gray-500 text-md font-bold">${{ totalSellDisplay }}</p>
+                        <p class="text-gray-500 text-md font-bold">ETB {{ totalSellDisplay }}</p>
                     </div>
                 </div>
             </div>

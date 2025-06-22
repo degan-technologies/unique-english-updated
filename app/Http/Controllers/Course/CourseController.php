@@ -72,8 +72,7 @@ class CourseController extends Controller {
             'course_name' => ['required'],
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
-            'price' => 'numeric',
-            'discount' => 'numeric', 
+            'price' => 'numeric', 
             'thumbnail_url' => 'image',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
         ];
@@ -103,7 +102,7 @@ class CourseController extends Controller {
             'tag' =>json_encode(['courses']),
             'skill_level' => $request->skill_level,
             'price' => $request->price,
-            'discount' => $request->discount,
+            'discount' => 0,
             'credit_hour' => 0,
             'thumbnail_url' => $imagePath,
             'intro_video' => $videoPath,
@@ -169,7 +168,6 @@ class CourseController extends Controller {
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
-            'discount' => 'numeric', 
             'thumbnail_url' => 'nullable|file|mimes:jpeg,png,jpg,gif',
             'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
         ];

@@ -95,7 +95,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <div class="flex-1 my-8">
-            <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="w-full mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Announcements History -->
                 <div class="bg-white rounded-lg shadow-sm border col-span-1">
                     <div class="p-5 border-b sticky top-0 bg-white z-10">

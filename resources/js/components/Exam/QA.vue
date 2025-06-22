@@ -11,6 +11,9 @@ const props = defineProps({
 
 // State
 const qaSections = ref([]);
+const currentPage = ref(0);
+const lastPage = ref(1);
+
 const newQuestion = ref("");
 const questionError = ref("");
 
@@ -24,28 +27,24 @@ const updatedData = ref({
     answerId: null,
 });
 
-// UI Controls
-const showAllQuestions = ref(false);
+// UI Controls 
 const showAllAnswers = ref({});
-const isLoading = ref(false);
+const isLoading = ref(false); 
 
 const showDeleteModal = ref(false);
 const selectedData = ref(null);
 const selectedType = ref(null);
 
-// Computed
-const displayedQuestions = computed(() => {
-    return showAllQuestions.value ? qaSections.value : qaSections.value.slice(0, 2);
-});
-
 // Methods
 const fetchQA = async () => {
-
-    console.log("Fetching Q&A...");
+    isLoading.value = true;
     try {
-        isLoading.value = true;
-        const response = await Axios.get(`/api/get-course-qa/${props.selectedCourseSlug}`);
-        qaSections.value = response.data.data;
+        const response = await Axios.get(`/api/get-course-qa/${props.selectedCourseSlug}?page=${currentPage.value + 1}`);
+        currentPage.value = response.data.pagination.current_page;
+        lastPage.value = response.data.pagination.last_page;
+
+        qaSections.value = [...qaSections.value, ...response.data.data];
+
     } catch (error) {
         console.error("Failed to fetch Q&A:", error);
         questionError.value = "Failed to load questions. Please try again.";
@@ -79,10 +78,17 @@ const updateQuestion = async () => {
         const response = await Axios.put(`/api/QASection/${editableQa.value.id}`, {
             question: editableQa.value.question,
         });
-        editableQa.value = {};
-        qaSections.value = qaSections.value.map(item => item.id === response.data.data.id ? response.data.data : item);
+
+        qaSections.value = qaSections.value.filter(item => item.id === editableQa.value.id);
+
+        qaSections.value = [
+            response.data.data,
+            ...qaSections.value,
+        ];
+
+        editableQa.value = null;
+
     } catch (error) {
-        console.error("Failed to update question:", error);
         questionError.value = "Failed to update question. Please try again.";
     }
 };
@@ -94,7 +100,6 @@ const removeQuestion = async (id) => {
         showDeleteModal.value = false;
         selectedData.value = null;
     } catch (error) {
-        console.error("Failed to delete question:", error);
         questionError.value = "Failed to delete question. Please try again.";
     }
 };
@@ -106,20 +111,36 @@ const submitAnswer = async (questionId) => {
             question_id: questionId,
         };
 
+        const getId = updatedData.value.answerId;
+        let res = null;
+
         if (actionEditReplay.value) {
-            await Axios.put(`/api/answers/${updatedData.value.answerId}`, payload);
+            res = await Axios.put(`/api/answers/${getId}`, payload);
         } else {
-            await Axios.post("/api/answers", payload);
+            res = await Axios.post("/api/answers", payload);
         }
 
-        // Reset form and refresh data
+        qaSections.value = qaSections.value.map(qa => {
+            if (qa.id === questionId) {
+                const filteredAnswers = qa.answers.filter(item => item.id !== getId);
+
+                return {
+                    ...qa,
+                    answers: [
+                        res.data.data,
+                        ...filteredAnswers
+                    ]
+                };
+            }
+
+            return qa;
+        });
+
         updatedData.value.answer = "";
         replayQaId.value = null;
         actionEditReplay.value = false;
-        await fetchQA();
     } catch (error) {
         console.error("Failed to submit answer:", error);
-        questionError.value = "Failed to submit answer. Please try again.";
     }
 };
 
@@ -173,6 +194,12 @@ const toggleShowAnswers = (questionId) => {
     };
 };
 
+const toggleShowLess = () => {
+    if(currentPage.value === 1) return;
+    qaSections.value = qaSections.value.slice(0, -3);
+    currentPage.value -= 1;
+}
+
 // Lifecycle
 onMounted(fetchQA);
 </script>
@@ -211,9 +238,9 @@ onMounted(fetchQA);
                 No questions yet. Be the first to ask!
             </div>
 
-            <div v-else class="space-y-6"> 
-                <article v-for="qa in displayedQuestions" :key="qa.id"
-                    class="bg-white p-5 rounded-lg shadow border border-gray-200"> 
+            <div v-else class="space-y-6">
+                <article v-for="qa in qaSections" :key="qa.id"
+                    class="bg-white p-5 rounded-lg shadow border border-gray-200">
                     <header class="flex items-center gap-3 mb-3">
                         <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-100">
                             <img v-if="qa.user?.profile" :src="qa.user.profile" :alt="qa.user.full_name"
@@ -226,13 +253,13 @@ onMounted(fetchQA);
                         <span class="text-sm text-gray-500 ml-auto">
                             {{ new Date(qa.created_at).toLocaleDateString() }}
                         </span>
-                    </header> 
+                    </header>
 
                     <div class="mb-4">
                         <p v-if="editableQa.id !== qa.id" class="text-gray-700">
                             {{ qa.question }}
                         </p>
- 
+
                         <div v-else class="flex gap-2">
                             <textarea v-model="editableQa.question" rows="2"
                                 class="flex-grow p-2 border rounded-lg focus:ring-2 focus:ring-lime-400"></textarea>
@@ -242,7 +269,7 @@ onMounted(fetchQA);
                             </button>
                         </div>
                     </div>
- 
+
                     <div class="flex gap-4 text-sm">
                         <button v-if="qa.editable && editableQa.id !== qa.id"
                             @click="editableQa = { id: qa.id, question: qa.question }"
@@ -314,10 +341,12 @@ onMounted(fetchQA);
                         </button>
                     </div>
                 </article>
- 
-                <button v-if="qaSections.length > 2" @click="showAllQuestions = !showAllQuestions"
+
+
+                <button @click="currentPage < lastPage ? fetchQA() : toggleShowLess()"
                     class="mt-2 text-sm text-lime-600 hover:underline">
-                    {{ showAllQuestions ? 'Show fewer questions' : `Show all questions (${qaSections.length})` }}
+                    <span v-if="isLoading"><i class="fa fa-spinner fa-spin"></i> Loading...</span>
+                    <span v-else-if="lastPage !== 1">{{ currentPage < lastPage ? 'Show More' : 'Show Less' }}</span>
                 </button>
             </div>
         </section>

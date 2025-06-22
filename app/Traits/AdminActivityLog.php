@@ -20,7 +20,6 @@ trait AdminActivityLog {
     public function adminActivities($activity) {
 
         $user = User::query()
-            ->has('systemAdmin')
             ->where('id', Auth::id())
             ->first();
 

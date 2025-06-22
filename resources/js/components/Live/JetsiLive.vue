@@ -107,13 +107,14 @@ const initializeJitsi = async () => {
             },
             configOverwrite: {
                 disableDeepLinking: true,
-                startWithAudioMuted: true,
+                startWithAudioMuted: false,
                 startWithVideoMuted: false,
                 enableNoisyMicDetection: false,
                 disableSimulcast: true,
                 enableLayerSuspension: false,
                 disableThirdPartyRequests: true,
                 constraints: {
+                    audio: true,
                     video: {
                         aspectRatio: 16 / 9,
                         height: { ideal: 720, max: 720, min: 240 }
@@ -140,6 +141,7 @@ const initializeJitsi = async () => {
                 ],
             }
         };
+
 
         jitsiAPI.value = new window.JitsiMeetExternalAPI(JITSI_DOMAIN, options);
 

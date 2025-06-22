@@ -23,7 +23,7 @@ class CurrentUserResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'full_name' => $this->full_name,
-
+            'is_verified' => $this->email_verified_at ? true : false,
             'profile' => $this->profile
                 ? Storage::disk('public')->url($this->profile)
                 : 'images/no-profile.png',

@@ -62,7 +62,7 @@ onMounted(() => {
 
 <template>
     <div class="w-full bg-white flex justify-center items-start">
-        <div class="bg-white rounded-lg p-1 w-full max-w-5xl">
+        <div class="bg-white rounded-lg p-1 w-full">
             <div
                 id="overview-editor-container"
                 class="border border-gray-300 rounded-lg p-4 bg-white"

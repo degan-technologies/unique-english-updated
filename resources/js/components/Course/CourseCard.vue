@@ -15,7 +15,7 @@ const { items, itemCount, image } = storeToRefs(cartStore);
 
 const router = useRouter();
 
-const words = ["Vocabulary", "Grammar", "Idioms", "Phrases"];
+const words = ["Vocabulary", "Grammar", "Speaking", "Writing", "Listening", "Reading"];
 const displayedText = ref("");
 const typingSpeed = 150;
 const erasingSpeed = 100;
@@ -97,7 +97,7 @@ onMounted(() => {
                         class="w-full h-40 object-cover rounded-t-lg" />
                     <div
                         class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button class="bg-white rounded-full p-3 shadow-md text-blue-500 hover:text-blue-700">
+                        <button class="bg-lime-500 rounded-full p-3 shadow-md text-white hover:text-white">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                 stroke="currentColor" class="w-6 h-6">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -110,7 +110,7 @@ onMounted(() => {
                 <!-- Course Info -->
                 <div class="p-4 flex flex-col">
                     <div class="h-20">
-                        <h2 class="text-lg font-bold mb-2 line-clamp-2">
+                        <h2 class="text-lg font-bold mb-2 line-clamp-1">
                             {{ course.course_name }}
                         </h2>
                         <div class="flex flex-1 justify-between">

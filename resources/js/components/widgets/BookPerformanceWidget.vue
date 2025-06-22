@@ -34,7 +34,7 @@ const monthlySales = ref([]);
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'ETB',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);

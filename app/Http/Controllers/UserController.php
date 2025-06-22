@@ -146,7 +146,7 @@ class UserController extends Controller {
             $user->student()->create();
 
             
-            $url = url('/verify-otp?email=' . $user->email . '&otp=' . $otp);
+            $url = url();
 
             Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
 
@@ -193,8 +193,9 @@ class UserController extends Controller {
                 'message' => 'OTP has expired. Please request a new one.'
             ], 422);
         }
+ 
 
-        if ($user->otp !== intval(trim($request->otp))) {
+        if ($user->otp !== $request->otp) {
             return response()->json([
                 'message' => 'Invalid OTP.'
             ], 422);

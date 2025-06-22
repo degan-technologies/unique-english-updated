@@ -4,9 +4,11 @@ namespace App\Http\Resources\Comment;
 
 use App\Http\Resources\UserDataResource;
 use App\Http\Resources\userResource;
+use App\Models\Comment\FeedBack;
 use App\Models\Comment\FeedbackUserInteraction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Auth;
 
 class FeedBackResource extends JsonResource
 {
@@ -27,6 +29,7 @@ class FeedBackResource extends JsonResource
             'dislikes'  => $this->getInteraction()['dislike'],
             'reports'   => $this->reports,
             'user'      => new UserDataResource($this->user),
+            'myFeedback' => $this->myFeedback(),
         ];
     }
 
@@ -43,5 +46,23 @@ class FeedBackResource extends JsonResource
             'like' => $countLike,
             'dislike' => $countDislike,
         ];
+    }
+
+    public function myFeedback() {
+        $user = Auth::guard('api')->user(); 
+
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->id === $this->user_id) {
+            return true;
+        }
+
+        if ($user->id === $this->instractor_id) {
+            return true;
+        }
+
+        return false;
     }
 }

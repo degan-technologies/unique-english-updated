@@ -59,7 +59,7 @@ class BookController extends Controller {
             'newToday'   => $stats->newToday,
             'total'      => $stats->total,
             'pagination' => $pagination,
-            'data'       => StdBookResource::collection($resources),
+            'data'       => BookResource::collection($resources),
         ]);
     }
 
@@ -114,8 +114,7 @@ class BookController extends Controller {
 
         $validationRules = [ 
             'price' => 'required|integer',
-            'language' => 'required|string',
-            'discount' => 'nullable|integer',
+            'language' => 'required|string', 
             'eddition' => 'required|integer',
             'publish_date' => 'required',
             'description' => 'required|string',
@@ -176,7 +175,7 @@ class BookController extends Controller {
             'price' => $request->price,
             'auther' => $request->auther,
             'eddition' => $request->eddition,
-            'discount' => $request->discount,
+            'discount' => 0,
             'language' => $request->language,
             'file_format' => $fileFormat,
             'publish_date' => $request->publish_date,
@@ -219,8 +218,7 @@ class BookController extends Controller {
     
         $validationRules = [ 
             'price' => 'required|integer',
-            'language' => 'required|string',
-            'discount' => 'nullable|integer',
+            'language' => 'required|string', 
             'eddition' => 'required|integer',
             'publish_date' => 'required',
             'description' => 'required|string',

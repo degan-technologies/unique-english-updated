@@ -5,8 +5,10 @@ import { useRoute } from "vue-router";
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
-import { UseStudentStore } from "@/store/UseStudentStore";
 import { useAppStore } from "@/store/useAppStore";
+import { UseStudentStore } from "@/store/UseStudentStore";
+
+import Spinner from "@/components/Layout/Spinner.vue";
 
 const appStore = useAppStore();
 const studentStore = UseStudentStore();
@@ -49,7 +51,10 @@ const handleResize = () => {
 function getSelectedBook() {
     Axios.get(`/api/get-book/${selectedbookslug.value}`).then((res) => {
         selectedBook.value = res.data.data;
+    }).then(()=>{
+        loadPdf();
     });
+    
 }
  
 async function loadPdf() {
@@ -118,33 +123,7 @@ const renderPage = async (pageNumber) => {
     };
 
     await page.render(renderContext).promise;
-};
-
-// Fullscreen functions
-const toggleFullScreen = () => {
-    if (!isFullScreen.value) {
-        if (containerRef.value.requestFullscreen) {
-            containerRef.value.requestFullscreen();
-        } else if (containerRef.value.mozRequestFullScreen) {
-            containerRef.value.mozRequestFullScreen();
-        } else if (containerRef.value.webkitRequestFullscreen) {
-            containerRef.value.webkitRequestFullscreen();
-        } else if (containerRef.value.msRequestFullscreen) {
-            containerRef.value.msRequestFullscreen();
-        }
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-    }
-    isFullScreen.value = !isFullScreen.value;
-};
+}; 
 
 // Pagination handlers
 const nextPage = () => {
@@ -170,11 +149,7 @@ const goToPage = () => {
     ) {
         currentPage.value = pageNumber;
         renderPage(pageNumber);
-    } else {
-        alert(
-            "Invalid page number. Please enter a number between 1 and " +
-            totalPages.value
-        );
+    } else { 
     }
 };
 
@@ -206,21 +181,7 @@ const blockPrtSc = (event) => {
             showOverlay.value = false;
         }, 5000);
     }
-};
-
-const detectSnippingTool = () => {
-    setInterval(() => {
-        let screenWidth = window.outerWidth - window.innerWidth > 200;
-        let screenHeight = window.outerHeight - window.innerHeight > 200;
-
-        if (screenWidth || screenHeight) {
-            showOverlay.value = true;
-            alert("Screen capture detected! Content hidden.");
-        } else {
-            showOverlay.value = false;
-        }
-    }, 500);
-};
+}; 
 
 const hideOnWindowBlur = () => {
     showOverlay.value = true;
@@ -254,8 +215,7 @@ watch(selectedBook, (newVal) => {
 });
 
 onMounted(() => {
-    getSelectedBook();
-    loadPdf();
+    getSelectedBook();    
     window.addEventListener("resize", handleResize);
     document.addEventListener("contextmenu", preventCopy);
     document.addEventListener("keydown", preventDevTools);
@@ -278,14 +238,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div v-if="openPdf" class="relative flex flex-col mt-24 items-center p-4 bg-gray-100 min-h-screen">
+    <div v-if="!openPdf">
+        <Spinner/>
+    </div>
+    <div v-else class="relative flex flex-col mt-24 items-center p-4 min-h-screen">
         <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
             class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
             <div class="overflow-auto">
                 <canvas ref="canvasRef"
                     class="w-full max-w-full h-auto object-contain shadow-lg border rounded-lg select-none"
                     @contextmenu.prevent @dragstart.prevent></canvas>
-            </div>
+            </div> 
             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
                 <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
@@ -310,86 +273,9 @@ onBeforeUnmount(() => {
                         class="px-2 py-1 border border-gray-500 rounded w-24" @keyup.enter="goToPage" />
                     <button @click="goToPage" class="px-3 py-1 bg-slate-50 text-black rounded relative group">
                         <i class="fas fa-search"></i>
-                    </button>
-
-                    <!-- Full Screen Toggle -->
-                    <button @click="toggleFullScreen"
-                        class="px-4 py-2 bg-slate-50 text-black rounded flex items-center gap-2 relative group">
-                        <i :class="isFullScreen
-                                ? 'fas fa-compress'
-                                : 'fas fa-expand'
-                            "></i>
-                    </button>
+                    </button> 
                 </div>
             </div>
         </div>
     </div>
-</template>
-
-<style scoped>
-/* Improved responsive styles */
-@media (max-width: 768px) {
-    .relative {
-        margin-top: 1rem;
-        padding: 0.5rem;
-    }
-
-    .max-w-3xl {
-        width: 100%;
-        padding: 0.5rem;
-    }
-
-    canvas {
-        max-width: 100%;
-        height: auto !important;
-    }
-
-    .flex-col {
-        gap: 0.5rem;
-    }
-
-    button {
-        padding: 0.5rem 1rem;
-    }
-}
-
-/* High-quality rendering for canvas */
-canvas {
-    image-rendering: -moz-crisp-edges;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated;
-    -ms-interpolation-mode: nearest-neighbor;
-}
-
-/* Hide scrollbars */
-.overflow-auto {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.overflow-auto::-webkit-scrollbar {
-    display: none;
-}
-
-/* Fullscreen adjustments */
-:fullscreen canvas {
-    max-height: 90vh;
-    object-fit: contain;
-}
-
-:-webkit-full-screen canvas {
-    max-height: 90vh;
-    object-fit: contain;
-}
-
-:-moz-full-screen canvas {
-    max-height: 90vh;
-    object-fit: contain;
-}
-
-:-ms-fullscreen canvas {
-    max-height: 90vh;
-    object-fit: contain;
-}
-</style>
+</template> 

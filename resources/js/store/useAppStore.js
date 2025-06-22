@@ -16,6 +16,8 @@ export const useAppStore = defineStore("useAppStore", () => {
     const profileUpdated = ref(false);
     const exploreCourses = ref(false);
     const selectedComponentId = ref(null);
+    const otpEmail = ref('');
+    
 
     //hero section
 
@@ -23,7 +25,7 @@ export const useAppStore = defineStore("useAppStore", () => {
 
     // Use js-cookie to store token and login status
     const authToken = ref(Cookies.get("authToken") || "");
-    const loggedIn = ref(Cookies.get("loggedin") === "true"); // Cookies store boolean as string
+    const loggedIn = ref(Cookies.get("loggedin") === "true"); 
 
     const otpPhoneNumber = ref(null);
 
@@ -80,6 +82,7 @@ export const useAppStore = defineStore("useAppStore", () => {
         Axios.get("/api/current")
             .then((response) => {
                 authUser.value = response.data;
+                otpEmail.value = response.data.email;
             })
             .catch((error) => changeLoginStatus(false));
     }
@@ -148,5 +151,7 @@ export const useAppStore = defineStore("useAppStore", () => {
         getHeroSection,
         exploreCourses,
         selectedComponentId,
+
+        otpEmail,
     };
 });

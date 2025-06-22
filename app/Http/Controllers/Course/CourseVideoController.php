@@ -20,6 +20,7 @@ class CourseVideoController extends Controller
      */ 
     public function stream(Request $request, $filename)
     {
+        
         $disk = Storage::disk('public');
         $path = "course/video/$filename";
         $filePath = $disk->path($path);

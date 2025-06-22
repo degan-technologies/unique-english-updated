@@ -114,6 +114,11 @@ function selectContent(changeTab) {
     });
 
     selectedContent.value = changeTab;
+
+    // Ensure sidebar is closed on small screens
+    if (window.innerWidth < 768) {
+        sideBarOpen.value = false;
+    }
 }
 
 // Function to fetch logo from backend
@@ -145,7 +150,7 @@ watch(profileUpdated, (updated) => {
 <template>
     <!-- Sidebar container: slides in/out on mobile -->
     <aside :class="[
-        'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0',
+        'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 xl:w-full',
         sideBarOpen ? 'translate-x-0' : '-translate-x-full',
     ]">
         <!-- Sidebar panel: width changes when sidebarCollapsed -->
@@ -156,7 +161,7 @@ watch(profileUpdated, (updated) => {
             <!-- Header with logo and mobile close button (desktop: no close icon) -->
             <div class="flex items-center justify-between h-20 px-4 border-b border-lime-300">
                 <div v-if="!sidebarCollapsed" class="flex items-center animate-fadeIn">
-                    <span class="ml-2 font-semibold text-xl text-lime-500">Unique English</span>
+                    <span class="ml-2 font-semibold text-xl xl:text-3xl text-lime-500">Unique English</span>
                 </div>
                 <div v-else class="hidden md:flex items-center animate-fadeIn w-full justify-center">
                     <i

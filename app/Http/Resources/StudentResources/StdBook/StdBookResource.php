@@ -52,7 +52,6 @@ class StdBookResource extends JsonResource {
             'isMyBook' => Book::checkEligibility($this->id),
             'user' => new userResource($this->user),
 
-            'feedBacks' => FeedBackResource::collection($this->feedbacks->sortByDesc('created_at')),
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
         ];

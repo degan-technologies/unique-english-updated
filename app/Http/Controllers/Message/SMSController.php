@@ -167,7 +167,7 @@ class SMSController extends Controller
                     try {
                         Mail::raw($request->message, function ($mail) use ($user) {
                             $mail->to($user->email)
-                                 ->subject('Your Message');
+                                 ->subject('Message from unique english');
                         });
                         $response = ['success' => true, 'data' => 'Email sent successfully'];
                         $newStatus = 'sent';

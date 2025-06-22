@@ -42,17 +42,7 @@ const {
 } = storeToRefs(sidebarStore);
  
 const route = useRoute(); 
-const router = useRouter();
- 
-const updateInstructorRoute = computed(()=>{
-    if(authUser.value.role === 'instructor') {
-         selectedContent.value = courses.value; 
-    } else {
-        selectedContent.value;
-    }
-
-    return authUser.value.role;
-})
+const router = useRouter(); 
 
 if(!authUser.value) {
     router.push('/');
@@ -71,20 +61,20 @@ watch(
 </script>
 
 <template>
-    <div class="bg-gray-200 leading-normal tracking-normal flex min-h-screen transition-all duration-300">
-        <div class="relative md:flex z-40 transition-all duration-300">
+    <div class="bg-gray-200 leading-normal tracking-normal flex min-h-screen   transition-all duration-300">
+        <div class="relative md:flex z-40 transition-all duration-300 ">
             <DashboardSidebar />
         </div>
 
         <div
-            class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300">
+            class="flex flex-col bg-gray-100 min-h-screen border-4 mx-auto w-full overflow-hidden h-screen overflow-y-auto scrollbar transition-all duration-300 ">
             <div class="transition-all duration-300 z-40">
                 <Navbar />
             </div>
 
             <div class="flex-grow flex md:p-6 bg-gray-100 transition-all duration-300">
                 <div class="w-full bg-gray-100">
-                    <div v-if="updateInstructorRoute !== 'instructor'">
+                    <div v-if="authUser.role !== 'instructor'">
                         <div v-if="selectedContent === dashboard">
                             <DashboardHome />
                         </div>
@@ -102,7 +92,7 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === attendance">
                             <Attendance />
-                        </div>
+                        </div> 
                     </div>
                    <div>
                         <div v-if="selectedContent === profile">
@@ -119,7 +109,7 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === exams">
                             <ManageTest />
-                        </div>
+                        </div> 
                    </div>
                 </div>
             </div>

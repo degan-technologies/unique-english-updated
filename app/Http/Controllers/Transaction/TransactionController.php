@@ -154,11 +154,9 @@ class TransactionController extends Controller
                     'message' => 'Payment gateway error'
                 ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
- 
-            $this->studentActivities(
-            $user->full_name . ' enrolled at ' . now()->format('Y-m-d H:i:s') .
-                    ' with transaction ID: ' . $txRef
-            );
+
+            $this->adminActivities($user->full_name . ' enrolled at ' . now()->format('Y-m-d H:i:s') .
+                ' with transaction ID: ' . $txRef);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -174,36 +172,42 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function transactions(Request $request) {
+    public function transactions(Request $request)
+    { 
         $user = User::query()
-        ->where('id', Auth::id())
-        ->whereSystemAdminOrInstructor()
-        ->first();
+            ->where('id', Auth::id())
+            ->whereSystemAdminOrInstructor()
+            ->first();
 
         if (!$user) {
             return response()->json(['message' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
         }
+ 
+        $baseQuery = Transaction::query()->orderByDesc('created_at');
 
-        $transactions = $user->systemAdmin()->exists()
-            ? Transaction::query() 
-                ->orderBy('created_at','DESC')
-                ->paginate($request->rowsPerPageOptions)
-            : Transaction::query() 
-                ->where('user_id', $user->id)
-                ->orderBy('created_at','DESC')
-                ->paginate($request->rowsPerPageOptions);
+        if (!$user->systemAdmin()->exists()) {
+            $baseQuery->where('user_id', $user->id);
+        }
+ 
+        $transactions = (clone $baseQuery)->paginate($request->rowsPerPageOptions);
+ 
+        $allRows = (clone $baseQuery)->get();
 
-        $transactionData = $this->prepareTransactionData($transactions, $request->summryLength === 'true');
+        $transactionData = $this->prepareTransactionData(
+            $allRows,                                    
+            $request->summaryLength === 'true'          
+        ); 
 
         $pagination = $transactions->toArray();
         unset($pagination['data']);
 
         return response()->json([
-            'data' => TransactionHistoryResource::collection($transactions),
-            'pagination' =>$pagination,
-            ...$transactionData
+            'data'        => TransactionHistoryResource::collection($transactions),
+            'pagination'  => $pagination,
+            ...$transactionData,
         ]);
     }
+
     public function getBankList()
     {
         return response()->json([
@@ -289,6 +293,8 @@ public function transferToBank(Request $request) {
         ]); 
         
         DB::commit();
+
+        $this->adminActivities('Transfer initiated by ' . $user->full_name . ' with transaction ID: ' . $txRef);
 
         return response()->json([
             'transfer' => $transfer['transfer'],
@@ -387,26 +393,32 @@ public function transferToBank(Request $request) {
     }
 
     private function prepareTransactionData($transactions, $monthlySummary = false): array
-    {
-        $courseSell = $transactions->where('product_type', COURSE)->where('status', TRANSACTION_SUCCESS)->sum('amount');
-        $bookSell = $transactions->where('product_type', BOOK)->where('status', TRANSACTION_SUCCESS)->sum('amount');
-        $liveSell = $transactions->where('product_type', LIVE_CLASS)->where('status', TRANSACTION_SUCCESS)->sum('amount');
-        $totalSell = $transactions->where('status', TRANSACTION_SUCCESS)->sum('amount');
-
-        $transactionSummary = $transactions->groupBy(function ($transaction) use ($monthlySummary) {
-            return $monthlySummary
-                ? $transaction->created_at->format('Y-m')
-                : $transaction->created_at->format('Y-m-d');
-        })->map->sum('amount')->all();
+    { 
+        $successful = $transactions->where('status', TRANSACTION_SUCCESS);
+ 
+        $courseSell = $successful->where('product_type', COURSE)->sum('amount');
+        $bookSell   = $successful->where('product_type', BOOK)->sum('amount');
+        $liveSell   = $successful->where('product_type', LIVE_CLASS)->sum('amount');
+        $totalSell  = $successful->sum('amount');
+ 
+        $transactionSummary = $successful
+            ->groupBy(
+                fn($t) =>
+                $monthlySummary
+                    ? $t->created_at->format('Y-m')    
+                    : $t->created_at->format('Y-m-d') // e.g. "2025-06-13"
+            )
+            ->map->sum('amount')
+            ->all();
 
         return [
-            'courseSell' => $courseSell,
-            'bookSell' => $bookSell,
-            'liveSell' => $liveSell,
-            'totalSell' => $totalSell,
-            'transactionSummary' => $transactionSummary,
-            'transactionToday' => $transactions->where('created_at', '>=', today())->sum('amount'),
-            'transactionThisMonth' => $transactions->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
+            'courseSell'          => $courseSell,
+            'bookSell'            => $bookSell,
+            'liveSell'            => $liveSell,
+            'totalSell'           => $totalSell,
+            'transactionSummary'  => $transactionSummary,
+            'transactionToday'    => $successful->where('created_at', '>=', today())->sum('amount'),
+            'transactionThisMonth' => $successful->where('created_at', '>=', now()->startOfMonth())->sum('amount'),
         ];
     }
 

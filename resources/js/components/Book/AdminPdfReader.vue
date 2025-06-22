@@ -103,32 +103,7 @@ const goToPage = async () => {
     } else {
         alert("Invalid page number. Please enter a number between 1 and " + totalPages.value);
     }
-};
-
-const toggleFullScreen = () => {
-    if (!isFullScreen.value) {
-        if (containerRef.value.requestFullscreen) {
-            containerRef.value.requestFullscreen();
-        } else if (containerRef.value.mozRequestFullScreen) {
-            containerRef.value.mozRequestFullScreen();
-        } else if (containerRef.value.webkitRequestFullscreen) {
-            containerRef.value.webkitRequestFullscreen();
-        } else if (containerRef.value.msRequestFullscreen) {
-            containerRef.value.msRequestFullscreen();
-        }
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-    }
-    isFullScreen.value = !isFullScreen.value;
-};
+}; 
 
 const preventCopy = (event) => {
     event.preventDefault();
@@ -198,16 +173,18 @@ watch(() => props.selectedBook, (newVal) => {
 
 <template>
     <div v-if="openPdf"
-        class="relative w-full flex flex-col items-center min-h-screen">
-        <div ref="containerRef"
-            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full  rounded-lg">
-            <div class="w-full">
-                <canvas ref="canvasRef"
-                    class="w-full h-full  select-none"
+        class="relative flex-col bg-white w-full rounded-lg  h-fit flex items-center justify-center">
+        <div ref="containerRef" 
+            class="w-full rounded-lg">
+            <div class="relative w-full pt-[141.42%]">
+                <canvas
+                    ref="canvasRef"
+                    class="absolute top-0 left-0 w-full h-full select-none"
                     @contextmenu.prevent
-                    @dragstart.prevent></canvas>
-            </div>
+                    @dragstart.prevent
+                ></canvas>
+                </div>
+
             <!-- Pagination & Controls -->
             <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
@@ -248,15 +225,7 @@ watch(() => props.selectedBook, (newVal) => {
                             Go to Page
                         </span>
                     </button>
-                </div>
-                <button @click="toggleFullScreen"
-                    class="px-2 py-2 bg-white rounded text-black flex items-center relative group">
-                    <i :class="isFullScreen ? 'fas fa-compress' : 'fas fa-expand'"></i>
-                    <span
-                        class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
-                        {{ isFullScreen ? "Exit Full Screen" : "Go Full Screen" }}
-                    </span>
-                </button>
+                </div> 
             </div>
 
         </div>

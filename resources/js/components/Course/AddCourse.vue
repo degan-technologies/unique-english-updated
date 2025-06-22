@@ -6,15 +6,16 @@ import { useRoute } from "vue-router";
 import videojs from 'video.js';
 import 'video.js/dist/video-js.css';
 import OverviewEditor from '@/components/Layout/overviewEditor.vue';
+
 import { useInstructorStore } from "@/store/useInstructorStore";
 
 // Constants 
 const SUCCESS_MESSAGE_TIMEOUT = 3000;
-const THUMBNAIL_HEIGHT = '200px'; // Specific height for thumbnails
+const THUMBNAIL_HEIGHT = '200px';
 
 // Store and Router
 const InstructorStore = useInstructorStore();
-const { selectedCourse } = storeToRefs(InstructorStore);
+const { selectedCourse, instructorCourses } = storeToRefs(InstructorStore);
 const route = useRoute();
 
 // Refs
@@ -31,7 +32,6 @@ const course = ref({
     overview: '',
     skill_level: '',
     price: '',
-    discount: '',
     upload_thumbnail: null,
     upload_intro_video: null,
     language: '',
@@ -94,7 +94,7 @@ function initializeFormFromSelectedCourse() {
     };
 }
 
-function validateFile(file, field) { 
+function validateFile(file, field) {
     if (field === thumbnail_url.value && !file.type.startsWith('image/')) {
         errors.value[field] = 'Please upload an image file';
         return false;
@@ -213,19 +213,36 @@ function createFormData(status) {
     } else {
         formData.delete('intro_video');
     }
-    
+
     return formData;
 }
 
 function handleSuccessResponse(response, status) {
     successMessage.value = response.data.message ||
-        (status === 'draft' ? 'Course saved as draft successfully' :
-            isEditing.value ? 'Course updated successfully' : 'Course published successfully');
+        (status === 'draft'
+            ? 'Course saved as draft successfully'
+            : isEditing.value
+                ? 'Course updated successfully'
+                : 'Course published successfully');
 
     if (!isEditing.value && status === 'published') {
         selectedCourse.value = response.data.data;
+
+        instructorCourses.value = instructorCourses.value.filter(course => course?.id !== selectedCourse.value?.id);
+
+        instructorCourses.value = [
+            selectedCourse.value,
+            ...instructorCourses.value
+        ];
+
         resetForm();
+        return;
     }
+
+    instructorCourses.value = [
+        response.data.data,
+        ...instructorCourses.value
+    ];
 }
 
 function handleSubmissionError(error) {
@@ -243,7 +260,6 @@ function resetForm() {
         overview: '',
         skill_level: '',
         price: '',
-        discount: '',
         upload_thumbnail: null,
         upload_intro_video: null,
         language: '',
@@ -266,6 +282,10 @@ function resetLoadingStates() {
 const updateOverview = (newOverview) => {
     course.value.overview = newOverview;
 };
+
+function goBack() {
+    window.history.back();
+}
 
 // Lifecycle Hooks
 onMounted(() => {
@@ -304,203 +324,186 @@ watch(successMessage, (newVal) => {
 </script>
 
 <template>
-    <div class="flex justify-center items-start min-h-screen py-8">
-        <div class="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-2xl font-bold text-lime-700 mb-6">
-                {{ formTitle }}
-            </h2>
+    <div class="w-full bg-white rounded-lg shadow-md p-6">
+        <button @click="goBack()"
+            class="flex items-center gap-4 justify-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
+            aria-label="Go back">
+            <i class="fas fa-arrow-left  self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"></i>
+            <span class="text-2xl font-bold self-center  text-lime-700 mb-6"> {{ editCourse ? 'Edit' : 'Add'}} New Course</span>
+        </button>
 
-            <!-- Success Message -->
-            <transition name="fade">
-                <div v-if="successMessage"
-                    class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                    <i class="fas fa-check-circle mr-2"></i>
-                    {{ successMessage }}
-                </div>
-            </transition>
-
-            <!-- Error Message -->
-            <div v-if="errors.general" class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                {{ errors.general }}
+        <!-- Success Message -->
+        <transition name="fade">
+            <div v-if="successMessage" class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                <i class="fas fa-check-circle mr-2"></i>
+                {{ successMessage }}
             </div>
-            <div  class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <!-- Main Content Column -->
-                <div class="lg:col-span-3 space-y-6">
-                    <!-- Course Name -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">
-                            Course Name <span class="text-red-500">*</span>
-                        </label>
-                        <input v-model.trim="course.course_name" type="text"
-                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                            :class="{ 'border-red-500': errors.course_name }" placeholder="Enter course name"
-                            maxlength="100" />
-                        <p v-if="errors.course_name" class="mt-1 text-red-500 text-sm">{{ errors.course_name }}</p>
-                    </div>
+        </transition>
 
-                    <!-- Media Uploads -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Thumbnail Upload -->
-                        <div>
-                            <div v-if="course.create_thumbnail_url || course?.thumbnail_url" class="mb-2 relative">
-                                <img :src="course.create_thumbnail_url || course.thumbnail_url" alt="Course Thumbnail"
-                                    class="w-full object-cover rounded-md shadow-md border border-gray-200"
-                                    :style="{ height: THUMBNAIL_HEIGHT }" />
-                                <div v-if="isProcessingThumbnail"
-                                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
-                                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
-                                    </div>
-                                </div>
-                            </div>
-                            <label class="block text-gray-700 font-medium mb-2">Course Thumbnail</label>
-                            <div class="relative">
-                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                    :class="{ 'border-lime-500 bg-lime-50': isProcessingThumbnail }">
-                                    <div class="flex flex-col items-center text-gray-500">
-                                        <template v-if="isProcessingThumbnail">
-                                            <div
-                                                class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
-                                            </div>
-                                            <span class="text-sm">Processing thumbnail...</span>
-                                        </template>
-                                        <template v-else>
-                                            <i class="fas fa-image text-2xl mb-2"></i>
-                                            <span class="text-sm">Click to upload thumbnail</span>
-                                        </template>
-                                    </div>
-                                    <input type="file" accept="image/jpeg, image/png"
-                                        @change="handleFileUpload(thumbnail_url, $event)"
-                                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                        :disabled="isProcessingThumbnail" />
-                                </div>
-                                <p v-if="errors.thumbnail_url" class="mt-1 text-red-500 text-sm">{{ errors.thumbnail_url
-                                    }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Intro Video Upload -->
-                        <div>
-                            <div v-if="course.create_intro_video || course?.intro_video_url" class="mb-2 relative">
-                                <video ref="videoPlayer"
-                                    class="video-js w-full rounded-md border border-gray-200 bg-black" controls
-                                    preload="auto" :style="{ height: THUMBNAIL_HEIGHT }">
-                                    <source :src="course.create_intro_video || course.intro_video_url"
-                                        type="video/mp4" />
-                                </video>
-                                <div v-if="isProcessingVideo"
-                                    class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
-                                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
-                                    </div>
-                                </div>
-                            </div>
-                            <label class="block text-gray-700 font-medium mb-2">Intro Video</label>
-                            <div class="relative">
-                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                    :class="{ 'border-lime-500 bg-lime-50': isProcessingVideo }">
-                                    <div class="flex flex-col items-center text-gray-500">
-                                        <template v-if="isProcessingVideo">
-                                            <div
-                                                class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
-                                            </div>
-                                            <span class="text-sm">Processing video...</span>
-                                        </template>
-                                        <template v-else>
-                                            <i class="fas fa-video text-2xl mb-2"></i>
-                                            <span class="text-sm">Click to upload video</span>
-                                        </template>
-                                    </div>
-                                    <input type="file" accept="video/mp4"
-                                        @change="handleFileUpload(intro_video, $event)"
-                                        class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                        :disabled="isProcessingVideo" />
-                                </div>
-                                <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Course Overview -->
-                    <div>
-                        <label class="block text-gray-700 font-semibold mb-2">
-                            Course Overview <span class="text-red-500">*</span>
-                        </label>
-                        <OverviewEditor :selectedCourse="course" @update-overview="updateOverview" />
-                        <p v-if="errors.overview" class="mt-1 text-red-500 text-sm">{{ errors.overview }}</p>
-                    </div>
+        <!-- Error Message -->
+        <div v-if="errors.general" class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            {{ errors.general }}
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Main Content Column -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Course Name -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        Course Name <span class="text-red-500">*</span>
+                    </label>
+                    <input v-model.trim="course.course_name" type="text"
+                        class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                        :class="{ 'border-red-500': errors.course_name }" placeholder="Enter course name"
+                        maxlength="100" />
+                    <p v-if="errors.course_name" class="mt-1 text-red-500 text-sm">{{ errors.course_name }}</p>
                 </div>
 
-                <!-- Sidebar Column -->
-                <div class="space-y-6">
-                    <!-- Skill Level -->
+                <!-- Media Uploads -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Thumbnail Upload -->
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2">
-                            Skill Level <span class="text-red-500">*</span>
-                        </label>
-                        <select v-model="course.skill_level"
-                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                            :class="{ 'border-red-500': errors.skill_level }">
-                            <option value="" disabled>Select skill level</option>
-                            <option value="1">Beginner</option>
-                            <option value="2">Intermediate</option>
-                            <option value="3">Advanced</option>
-                            <option value="4">All Levels</option>
-                        </select>
-                        <p v-if="errors.skill_level" class="mt-1 text-red-500 text-sm">{{ errors.skill_level }}
-                        </p>
-                    </div>
-
-                    <!-- Pricing -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">Price ($)</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-3 text-gray-500">$</span>
-                                <input v-model.number="course.price" type="number" min="0" step="0.01"
-                                    class="w-full border border-gray-300 rounded-md pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                                    placeholder="0.00" />
+                        <div v-if="course.create_thumbnail_url || course?.thumbnail_url" class="mb-2 relative">
+                            <img :src="course.create_thumbnail_url || course.thumbnail_url" alt="Course Thumbnail"
+                                class="w-full object-cover rounded-md shadow-md border border-gray-200"
+                                :style="{ height: THUMBNAIL_HEIGHT }" />
+                            <div v-if="isProcessingThumbnail"
+                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
+                                </div>
                             </div>
-                            <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
                         </div>
-                        <div>
-                            <label class="block text-gray-700 font-semibold mb-2">Discount (%)</label>
-                            <div class="relative">
-                                <span class="absolute right-3 top-3 text-gray-500">%</span>
-                                <input v-model.number="course.discount" type="number" min="0" max="100"
-                                    class="w-full border border-gray-300 rounded-md px-4 pr-8 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                                    placeholder="0" />
+                        <label class="block text-gray-700 font-medium mb-2">Course Thumbnail</label>
+                        <div class="relative">
+                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{ 'border-lime-500 bg-lime-50': isProcessingThumbnail }">
+                                <div class="flex flex-col items-center text-gray-500">
+                                    <template v-if="isProcessingThumbnail">
+                                        <div
+                                            class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                        </div>
+                                        <span class="text-sm">Processing thumbnail...</span>
+                                    </template>
+                                    <template v-else>
+                                        <i class="fas fa-image text-2xl mb-2"></i>
+                                        <span class="text-sm">Click to upload thumbnail</span>
+                                    </template>
+                                </div>
+                                <input type="file" accept="image/jpeg, image/png"
+                                    @change="handleFileUpload(thumbnail_url, $event)"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    :disabled="isProcessingThumbnail" />
                             </div>
-                            <p v-if="errors.discount" class="mt-1 text-red-500 text-sm">{{ errors.discount }}</p>
+                            <p v-if="errors.thumbnail_url" class="mt-1 text-red-500 text-sm">{{ errors.thumbnail_url
+                            }}</p>
                         </div>
                     </div>
 
-                    <!-- Language -->
+                    <!-- Intro Video Upload -->
                     <div>
-                        <label class="block text-gray-700 font-semibold mb-2">Language</label>
-                        <input v-model.trim="course.language" type="text"
-                            class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                            placeholder="e.g. English, Amharic" />
-                        <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
+                        <div v-if="course.create_intro_video || course?.intro_video_url" class="mb-2 relative">
+                            <video ref="videoPlayer" class="video-js w-full rounded-md border border-gray-200 bg-black"
+                                controls preload="auto" :style="{ height: THUMBNAIL_HEIGHT }">
+                                <source :src="course.create_intro_video || course.intro_video_url" type="video/mp4" />
+                            </video>
+                            <div v-if="isProcessingVideo"
+                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
+                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
+                                </div>
+                            </div>
+                        </div>
+                        <label class="block text-gray-700 font-medium mb-2">Intro Video</label>
+                        <div class="relative">
+                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{ 'border-lime-500 bg-lime-50': isProcessingVideo }">
+                                <div class="flex flex-col items-center text-gray-500">
+                                    <template v-if="isProcessingVideo">
+                                        <div
+                                            class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                        </div>
+                                        <span class="text-sm">Processing video...</span>
+                                    </template>
+                                    <template v-else>
+                                        <i class="fas fa-video text-2xl mb-2"></i>
+                                        <span class="text-sm">Click to upload video</span>
+                                    </template>
+                                </div>
+                                <input type="file" accept="video/mp4" @change="handleFileUpload(intro_video, $event)"
+                                    class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    :disabled="isProcessingVideo" />
+                            </div>
+                            <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Form Actions -->
-            <div class="flex justify-end mt-8 space-x-4"> 
-                <button type="button" @click="submitCourse('published')"
-                    :disabled="isStoringCourse || isUpdatingCourse || loading"
-                    class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
-                    <span v-if="isStoringCourse || isUpdatingCourse">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>
-                        {{ submitButtonText }}
-                    </span>
-                    <span v-else>
-                        <i class="fas fa-upload mr-2"></i>
-                        {{ submitButtonText }}
-                    </span>
-                </button>
+            <!-- Sidebar Column -->
+            <div class="space-y-6">
+                <!-- Skill Level -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">
+                        Skill Level <span class="text-red-500">*</span>
+                    </label>
+                    <select v-model="course.skill_level"
+                        class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                        :class="{ 'border-red-500': errors.skill_level }">
+                        <option value="" disabled>Select skill level</option>
+                        <option value="1">Beginner</option>
+                        <option value="2">Intermediate</option>
+                        <option value="3">Advanced</option>
+                        <option value="4">All Levels</option>
+                    </select>
+                    <p v-if="errors.skill_level" class="mt-1 text-red-500 text-sm">{{ errors.skill_level }}
+                    </p>
+                </div>
+
+                <!-- Pricing -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Price in ETB</label>
+                    <div class="relative">
+                        <input v-model.number="course.price" type="number" min="0" step="0.01"
+                            class="w-full border border-gray-300 rounded-md pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                            placeholder="0.00" />
+                    </div>
+                    <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
+                </div>
+
+                <!-- Language -->
+                <div>
+                    <label class="block text-gray-700 font-semibold mb-2">Language</label>
+                    <input v-model.trim="course.language" type="text"
+                        class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
+                        placeholder="e.g. English, Amharic" />
+                    <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
+                </div>
             </div>
+        </div>
+        <!-- Course Overview -->
+        <div>
+            <label class="block text-gray-700 font-semibold mb-2">
+                Course Overview <span class="text-red-500">*</span>
+            </label>
+            <OverviewEditor class="w-full" :selectedCourse="course" @update-overview="updateOverview" />
+            <p v-if="errors.overview" class="mt-1 text-red-500 text-sm">{{ errors.overview }}</p>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end mt-8 space-x-4">
+            <button type="button" @click="submitCourse('published')"
+                :disabled="isStoringCourse || isUpdatingCourse || loading"
+                class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+                <span v-if="isStoringCourse || isUpdatingCourse">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                    {{ submitButtonText }}
+                </span>
+                <span v-else>
+                    <i class="fas fa-upload mr-2"></i>
+                    {{ submitButtonText }}
+                </span>
+            </button>
         </div>
     </div>
 </template>

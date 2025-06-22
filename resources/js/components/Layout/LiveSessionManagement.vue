@@ -128,7 +128,7 @@ onMounted(async () => {
     <div class="min-h-screen">
         <!-- Header -->
         <header class="bg-white shadow-sm">
-            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+            <div class="w-full mx-auto px-4 py-4 sm:px-6 lg:px-8">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div class="flex-1 min-w-0">
                         <h1 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
@@ -192,7 +192,7 @@ onMounted(async () => {
 
        <div v-if="activeTab === 'group'">
              <!-- Main Content -->
-            <main class="max-w-7xl mx-auto py-6">
+            <main class="w-full mx-auto py-6">
                 <div v-if="isLoading" class="flex justify-center items-center h-64">
                     <Spinner />
                 </div>

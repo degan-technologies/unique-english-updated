@@ -3,18 +3,20 @@ import Axios from "axios";
 import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 import { storeToRefs } from "pinia";
 import Editor from "primevue/editor";
+import Popper from "vue3-popper";
 import { useToast } from "vue-toastification";
 import { useRoute, useRouter } from "vue-router"
-import Spinner from "@/components/Layout/Spinner";
+
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 import { useInstructorStore } from "@/store/useInstructorStore";
+
+import Spinner from "@/components/Layout/Spinner";
 import EditBookForm from "@/components/Book/EditBook.vue";
 import BookDetail from "@/components/Book/AdminBookDetail.vue";
-import Popper from "vue3-popper";
 
 const InstructorStore = useInstructorStore();
-const { analytics } = storeToRefs(InstructorStore);
+const { analytics, booksAdmin } = storeToRefs(InstructorStore);
 
 const toast = useToast();
 
@@ -37,8 +39,6 @@ const studentStore = UseStudentStore();
 const { books, bookOverviewTab, selectedBook } = storeToRefs(studentStore);
 const { items, itemCount, image } = storeToRefs(cartStore);
 
-
-const booksAdmin = ref([]);
 const loading = ref(true);
 const error = ref("");
 const selectedbook = ref(null);
@@ -77,12 +77,10 @@ const fetchBooksAdmin = async (page = 1) => {
         const response = await Axios.get("/api/books/books", {
             params: {
                 page,
-                rowsPerPageOptions: rowsPerPage.value // ✅ Add this line
+                rowsPerPageOptions: rowsPerPage.value  
             },
             headers: { "Content-Type": "application/json" },
-        });
-        console.log("Fetching page:", page, "with per page:", rowsPerPage.value);
-
+        });  
         booksAdmin.value = response.data.data;
         pagination.value = response.data.pagination;
         analytics.value.total = response.data.total;

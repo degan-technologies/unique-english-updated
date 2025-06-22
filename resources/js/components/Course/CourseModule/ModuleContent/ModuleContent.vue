@@ -8,6 +8,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
+import LessonVideoPlayer from "@/components/Course/LessonVideoPlayer.vue";
 
 const InstructorStore = useInstructorStore();
 const { readlessonPdfTab, selectedLesson, addNewLesson } = storeToRefs(InstructorStore);
@@ -265,11 +266,7 @@ onMounted(() => {
                             <!-- Content Preview -->
                             <div class="relative aspect-video bg-gray-100 h-48">
                                 <template v-if="content.content_type === 1">
-                                    <video controls class="w-full h-full object-contain"
-                                        :poster="content.thumbnail_url">
-                                        <source :src="content.course_content_url" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
+                                    <LessonVideoPlayer :videoSource="content" />
                                 </template>
 
                                 <template v-else-if="content.content_type === 2">
@@ -624,7 +621,7 @@ onMounted(() => {
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
                     <div
-                        class=" bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all my-8 align-middle max-w-lg w-full">
+                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <div class="sm:flex sm:items-start">
                                 <div

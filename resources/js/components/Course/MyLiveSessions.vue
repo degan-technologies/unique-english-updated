@@ -1,9 +1,11 @@
 <script setup>
 import Axios from "axios";
 import { ref, onMounted } from "vue";
+import { useToast } from "vue-toastification";
 import JetsiLive from "@/components/Live/JetsiLive.vue";
 import Spinner from "@/components/Layout/Spinner.vue";
 
+const toast = useToast();
 // Reactive state
 const sessions = ref([]);
 const privateSchedule = ref([]);
@@ -35,12 +37,12 @@ const fetchSchedules = async () => {
 
 function joinNewSession(newSession) {
     if(newSession.status !== 'live'){
-        toast.warning("This room is not live yet", { timeout: 3000 });
+        toast.warning("The live is not started Yet", { timeout: 3000 });
         return;
     }
 
     if (!newSession) {
-        toast.warning("No room selected", { timeout: 3000 });
+        toast.warning("Contact Instructor", { timeout: 3000 });
         return;
     }
 
@@ -50,7 +52,7 @@ function joinNewSession(newSession) {
             toast.success(res.data.data, { timeout: 3000 });
         })
         .catch(error => {
-            toast.warning("No room selected", { timeout: 3000 });
+            toast.warning("Contact Instructor", { timeout: 3000 });
             return;
         })  
 }

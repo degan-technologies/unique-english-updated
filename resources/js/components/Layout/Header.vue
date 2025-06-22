@@ -29,7 +29,7 @@ const { items, itemCount, totalPrice } = storeToRefs(cartStore);
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
 
 // App & user refs
-const { isLoggedIn, loggingIn, logoImage, unreadNotifications, notifications, readNotifications, authUser, exploreCourses, selectedComponentId } =
+const { isLoggedIn, loggingIn, logoImage, unreadNotifications, notifications, readNotifications, authUser, exploreCourses, selectedComponentId, otpEmail } =
     storeToRefs(appStore);
 
 // Student refs
@@ -124,7 +124,7 @@ function closeNotificationModal() {
 }
 
 function toggleShowAllNotifications() {
-    if (notifications.length === 0) return;
+    if (notifications.value?.length === 0) return;
     showAllNotifications.value = !showAllNotifications.value;
 }
 
@@ -164,6 +164,12 @@ async function navigationToggle(id) {
 
 // Checkout flow
 async function enrollCourse() {
+
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+        return;
+    }
+    
     if (isLoading.value) return;
     isLoading.value = true;
     try {
@@ -205,15 +211,23 @@ function openProfile() {
         query: { currentTab: "profile" },
     });
     closeDropdown();
-}
+} 
 
-function signOut() {
-    appStore.setAuthToken("");
-    loggingIn.value = false;
-    closeDropdown();
-}
+async function signOut() {
+        otpEmail.value = '';
+        try {
+            await Axios.post("/api/log-out");
+            authUser.value = null;
+            appStore.setAuthToken("");
+            isLoggedIn.value = false;
+            closeDropdown();
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    } 
 
 function toggleAuthActions(actionType) {
+    isMenuOpen.value = false;
     if (actionType === actionTypeLogin.value) {
         showLoginForm.value = true;
         showRegistrationForm.value = false;
@@ -338,7 +352,7 @@ watch(
                                     <div v-if="
                                         notifications.length === 0 &&
                                         (!showAllNotifications ||
-                                            readNotifications.length === 0)
+                                            readNotifications?.length === 0)
                                     " class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40">
                                         <i class="fa-regular fa-bell-slash text-4xl text-gray-400 mb-3"></i>
                                         <p>No new notifications</p>
@@ -348,12 +362,11 @@ watch(
                                     <ul v-if="notifications.length > 0" class="space-y-2">
                                         <li v-for="notification in notifications" :key="notification.id" :class="{
                                             'hidden': showAllNotifications && notification.data.read_at,
-                                        }" class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
-                                            @click="
-                                                showNotificationDetails(
-                                                    notification
-                                                )
-                                                ">
+                                        }" class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition" @click="
+                                            showNotificationDetails(
+                                                notification
+                                            )
+                                            ">
                                             <div class="flex items-start gap-3">
                                                 <div>
                                                     <p class="font-medium text-sm">
@@ -380,7 +393,7 @@ watch(
                                     <!-- Read Notifications (when showAll is true) -->
                                     <ul v-if="
                                         showAllNotifications &&
-                                        readNotifications.length > 0
+                                        readNotifications?.length > 0
                                     " class="space-y-2">
                                         <li v-for="notification in readNotifications" :key="notification.id"
                                             class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
@@ -473,7 +486,7 @@ watch(
                                                 <img :src="item.image" alt="Item Image"
                                                     class="w-14 h-14 rounded-lg object-cover border" />
                                                 <div class="flex-1">
-                                                    <p class="font-medium text-sm truncate">
+                                                    <p class="font-medium text-sm truncate max-w-[20ch]">
                                                         {{ item.name }}
                                                     </p>
                                                     <p class="text-gray-500 text-sm">
@@ -495,7 +508,7 @@ watch(
                                                 <span>Total:</span>
                                                 <span>${{
                                                     totalPrice.toFixed(2)
-                                                }}</span>
+                                                    }}</span>
                                             </div>
 
                                             <button @click="enrollCourse" :disabled="isLoading"
@@ -596,7 +609,7 @@ watch(
 
                 <!-- Language Toggle -->
                 <button
-                    class="px-2 text-sm font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600">
+                    class="px-2 text-sm hidden font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600">
                     አማ
                 </button>
 
@@ -685,7 +698,7 @@ watch(
                     <i class="fa-regular fa-clock mr-2"></i>
                     <span>{{
                         formatTime(currentNotification.created_at)
-                        }}</span>
+                    }}</span>
                 </div>
 
                 <!-- Additional details based on notification type -->
