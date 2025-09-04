@@ -37,6 +37,7 @@ class CourseResource extends JsonResource {
             'status' => $this->status,  
             'total_enroll' => $this->totalEnroll($this->id),
             'revenue' => $this->totalRevenue($this->id),
+            'video_optimized' => $this->video_optimized ? true : false,
 
             'intro_video_url' => $this->intro_video
                     ? url('/api/courses/stream/video/' . basename($this->intro_video))

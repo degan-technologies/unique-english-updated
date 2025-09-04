@@ -33,6 +33,7 @@ class BookResource extends JsonResource {
             'revenue' => $this->totalRevenue($this->id),
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
+            'video_optimized' => $this->video_optimized,
 
             'file_url' => TokenGenerator::generateSecurePdfUrl('book.pdf', basename($this->file_url), Auth::id()),
             

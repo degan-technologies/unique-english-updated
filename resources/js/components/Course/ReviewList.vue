@@ -22,6 +22,7 @@ const newComment = ref("");
 const commentError = ref("");
 const feedbackType = ref(null);
 const isLoading = ref(true);
+const isDeleting = ref(false);
 const processng = ref(false);
 const currentPage = ref(0);
 const lastPage = ref(1);
@@ -38,22 +39,25 @@ const feedbackId = ref(null);
 const feedbackerror = ref("");
 const page = ref(1);
 
-function getfeedbacks() { 
-    Axios.get(`/api/feedbacks/course/${props.courseSlug}?page=${currentPage.value + 1}`, {
-        params: {
-            feedbackType: feedbackType.value,
+function getfeedbacks() {
+    Axios.get(
+        `/api/feedbacks/course/${props.courseSlug}?page=${
+            currentPage.value + 1
+        }`,
+        {
+            params: {
+                feedbackType: feedbackType.value,
+            },
         }
-    })
-        .then(res => {
-            averageRating.value = res.data.averageRating;
-            starDistribution.value = res.data.starDistribution;
-            lastPage.value = res.data.pagination.last_page; 
-            currentPage.value = res.data.pagination.current_page;
+    ).then((res) => {
+        averageRating.value = res.data.averageRating;
+        starDistribution.value = res.data.starDistribution;
+        lastPage.value = res.data.pagination.last_page;
+        currentPage.value = res.data.pagination.current_page;
 
-            feedbacks.value = [...feedbacks.value, ...res.data.data]; 
-        })
+        feedbacks.value = [...feedbacks.value, ...res.data.data];
+    });
 }
-
 
 const userHoverRatingOrValue = computed(() => {
     return userHoverRating.value || userRating.value;
@@ -131,7 +135,6 @@ const addComment = async () => {
         setTimeout(() => {
             commentError.value = "";
         }, 3000);
-
     } catch (error) {
         commentError.value = "Failed to submit feedback. Please try again.";
         setTimeout(() => {
@@ -144,18 +147,19 @@ const addComment = async () => {
 
 const likeComment = async (comment, action) => {
     try {
-        const response = await Axios.post(`/api/feedbacks/favorite/${comment.id}`, {
-            action: action,
-        });
+        const response = await Axios.post(
+            `/api/feedbacks/favorite/${comment.id}`,
+            {
+                action: action,
+            }
+        );
 
-        const item = feedbacks.value.find(item => item.id === comment.id);
+        const item = feedbacks.value.find((item) => item.id === comment.id);
         if (item) {
             item.likes = response.data.like;
             item.dislikes = response.data.dislike;
         }
-
-    } catch (error) {
-    }
+    } catch (error) {}
 };
 
 const getInitials = (name) => {
@@ -167,20 +171,23 @@ function openModal(id) {
 }
 
 const removeFeedback = async (id) => {
+    isDeleting.value = true;
     try {
-        await Axios.delete(`/api/feedbacks/${id}`);
-        feedbacks.value = feedbacks.value.filter(item => item.id === id);
-        feedbackId.value = null;
+        await Axios.delete(`/api/feedbacks/${id}`).then((res) => {
+            feedbacks.value = feedbacks.value.filter((item) => item.id !== id);
+            feedbackId.value = null;
+            isDeleting.value = false;
+        });
     } catch (error) {
         feedbackerror.value = "Failed to delete question. Please try again.";
     }
 };
 
 const toggleShowLess = () => {
-    if(currentPage.value === 1) return;
+    if (currentPage.value === 1) return;
     feedbacks.value = feedbacks.value.slice(0, -3);
     currentPage.value -= 1;
-}
+};
 
 onMounted(() => {
     getfeedbackTypes();
@@ -190,7 +197,6 @@ onMounted(() => {
 </script>
 
 <template>
-
     <div>
         <div v-if="isLoading && feedbacks.length" class="text-center py-8">
             <Spinner />
@@ -206,19 +212,31 @@ onMounted(() => {
                         <div class="rating-meta">
                             <p class="rating-label">Course Rating</p>
                             <p class="rating-count">
-                                Based on {{ feedbacks.length }} review{{ feedbacks.length !== 1 ? 's' : '' }}
+                                Based on {{ feedbacks.length }} review{{
+                                    feedbacks.length !== 1 ? "s" : ""
+                                }}
                             </p>
                         </div>
                     </div>
 
                     <!-- Star Distribution -->
                     <div class="star-distribution">
-                        <div v-for="(count, index) in starDistribution" :key="index" class="star-row">
+                        <div
+                            v-for="(count, index) in starDistribution"
+                            :key="index"
+                            class="star-row"
+                        >
                             <span class="star-label">{{ 5 - index }}</span>
                             <i class="fas fa-star star-icon"></i>
                             <div class="progress-bar">
-                                <div class="progress-fill" :style="{ width: `${(count / feedbacks.length) * 100}%` }">
-                                </div>
+                                <div
+                                    class="progress-fill"
+                                    :style="{
+                                        width: `${
+                                            (count / feedbacks.length) * 100
+                                        }%`,
+                                    }"
+                                ></div>
                             </div>
                             <span class="star-count">({{ count }})</span>
                         </div>
@@ -232,41 +250,75 @@ onMounted(() => {
 
                 <!-- Star Rating Input -->
                 <div class="star-rating-input">
-                    <div v-for="star in 5" :key="star" class="star-container" @mousemove="handleHover($event, star)"
-                        @mouseleave="userHoverRating = 0" @click="setUserRating($event, star)">
+                    <div
+                        v-for="star in 5"
+                        :key="star"
+                        class="star-container"
+                        @mousemove="handleHover($event, star)"
+                        @mouseleave="userHoverRating = 0"
+                        @click="setUserRating($event, star)"
+                    >
                         <i class="fas fa-star star-empty"></i>
-                        <i class="fas fa-star star-filled" :style="{
-                            clipPath: isStarHalf(star, userHoverRatingOrValue)
-                                ? 'inset(0 50% 0 0)'
-                                : isStarFull(star, userHoverRatingOrValue)
+                        <i
+                            class="fas fa-star star-filled"
+                            :style="{
+                                clipPath: isStarHalf(
+                                    star,
+                                    userHoverRatingOrValue
+                                )
+                                    ? 'inset(0 50% 0 0)'
+                                    : isStarFull(star, userHoverRatingOrValue)
                                     ? 'inset(0)'
                                     : 'inset(0 100% 0 0)',
-                        }"></i>
+                            }"
+                        ></i>
                     </div>
                 </div>
 
                 <p class="rating-selection">
-                    You selected: <span class="selected-rating">{{ userRating }}</span> / 5
+                    You selected:
+                    <span class="selected-rating">{{ userRating }}</span> / 5
                 </p>
 
                 <!-- Review Form -->
                 <div class="review-form">
-                    <textarea v-model="newComment" placeholder="Write a review..." class="review-input"
-                        :disabled="processng" maxlength="500" rows="3"></textarea>
-                    <button @click="addComment" class="submit-button" :disabled="processng">
+                    <textarea
+                        v-model="newComment"
+                        placeholder="Write a review..."
+                        class="review-input"
+                        :disabled="processng"
+                        maxlength="500"
+                        rows="3"
+                    ></textarea>
+                    <button
+                        @click="addComment"
+                        class="submit-button"
+                        :disabled="processng"
+                    >
                         <span v-if="processng">Posting...</span>
                         <span v-else>Post</span>
                     </button>
                 </div>
-                <p v-if="newComment.length > 0" class="text-right text-xs text-gray-500 mt-1">
+                <p
+                    v-if="newComment.length > 0"
+                    class="text-right text-xs text-gray-500 mt-1"
+                >
                     {{ newComment.length }}/500 characters
                 </p>
             </div>
 
             <!-- Error Messages -->
             <div v-if="commentError || userRatingError" class="error-messages">
-                <p v-if="userRatingError" class="error">{{ userRatingError }}</p>
-                <p v-if="commentError" class="error" :class="{ 'text-green-500': commentError.includes('Thank you') }">
+                <p v-if="userRatingError" class="error">
+                    {{ userRatingError }}
+                </p>
+                <p
+                    v-if="commentError"
+                    class="error"
+                    :class="{
+                        'text-green-500': commentError.includes('Thank you'),
+                    }"
+                >
                     {{ commentError }}
                 </p>
             </div>
@@ -276,27 +328,48 @@ onMounted(() => {
                 <h2 class="section-title">Reviews</h2>
 
                 <template v-if="feedbacks.length > 0">
-                    <div v-for="feedback in feedbacks" :key="feedback.id" class="feedback-item">
+                    <div
+                        v-for="feedback in feedbacks"
+                        :key="feedback.id"
+                        class="feedback-item"
+                    >
                         <!-- User Info -->
                         <div class="user-info">
                             <div class="user-avatar">
                                 {{ getInitials(feedback.user?.full_name) }}
                             </div>
                             <div class="user-meta">
-                                <span class="user-name">{{ feedback.user?.full_name }}</span>
+                                <span class="user-name">{{
+                                    feedback.user?.full_name
+                                }}</span>
                                 <div class="user-rating">
-                                    <div v-for="star in 5" :key="star" class="star-container small">
+                                    <div
+                                        v-for="star in 5"
+                                        :key="star"
+                                        class="star-container small"
+                                    >
                                         <i class="fas fa-star star-empty"></i>
-                                        <i class="fas fa-star star-filled" :style="{
-                                            clipPath: isStarHalf(star, feedback.rating)
-                                                ? 'inset(0 50% 0 0)'
-                                                : isStarFull(star, feedback.rating)
+                                        <i
+                                            class="fas fa-star star-filled"
+                                            :style="{
+                                                clipPath: isStarHalf(
+                                                    star,
+                                                    feedback.rating
+                                                )
+                                                    ? 'inset(0 50% 0 0)'
+                                                    : isStarFull(
+                                                          star,
+                                                          feedback.rating
+                                                      )
                                                     ? 'inset(0)'
                                                     : 'inset(0 100% 0 0)',
-                                        }"></i>
+                                            }"
+                                        ></i>
                                     </div>
                                 </div>
-                                <span class="feedback-date">{{ feedback.timestamp }}</span>
+                                <span class="feedback-date">{{
+                                    feedback.timestamp
+                                }}</span>
                             </div>
                         </div>
 
@@ -307,18 +380,27 @@ onMounted(() => {
 
                         <!-- Feedback Actions -->
                         <div class="feedback-actions">
-                            <button @click="likeComment(feedback, 'liked')" class="action-button like"
-                                :class="{ active: feedback.userLiked }">
+                            <button
+                                @click="likeComment(feedback, 'liked')"
+                                class="action-button like"
+                                :class="{ active: feedback.userLiked }"
+                            >
                                 <i class="fas fa-thumbs-up"></i>
                                 <span>{{ feedback.likes || 0 }}</span>
                             </button>
-                            <button @click="likeComment(feedback, 'disliked')" class="action-button dislike"
-                                :class="{ active: feedback.userDisliked }">
+                            <button
+                                @click="likeComment(feedback, 'disliked')"
+                                class="action-button dislike"
+                                :class="{ active: feedback.userDisliked }"
+                            >
                                 <i class="fas fa-thumbs-down"></i>
                                 <span>{{ feedback.dislikes || 0 }}</span>
                             </button>
-                            <button v-if="feedback.myFeedback" @click="openModal(feedback.id)"
-                                class="text-red-600 hover:underline">
+                            <button
+                                v-if="feedback.myFeedback"
+                                @click="openModal(feedback.id)"
+                                class="text-red-600 hover:underline"
+                            >
                                 Delete
                             </button>
                         </div>
@@ -326,9 +408,23 @@ onMounted(() => {
 
                     <!-- Show More/Less Toggle -->
                     <div class="show-more-container">
-                        <button @click="currentPage < lastPage ? getfeedbacks() : toggleShowLess()" class="mt-2 text-sm text-lime-600 hover:underline">
-                            <span v-if="isLoading"><i class="fa fa-spinner fa-spin"></i> Loading...</span>
-                            <span v-else-if="lastPage !== 1">{{ currentPage < lastPage  ? 'Show More': 'Show Less' }}</span>
+                        <button
+                            @click="
+                                currentPage < lastPage
+                                    ? getfeedbacks()
+                                    : toggleShowLess()
+                            "
+                            class="mt-2 text-sm text-lime-600 hover:underline"
+                        >
+                            <span v-if="isLoading"
+                                ><i class="fa fa-spinner fa-spin"></i>
+                                Loading...</span
+                            >
+                            <span v-else-if="lastPage !== 1">{{
+                                currentPage < lastPage
+                                    ? "Show More"
+                                    : "Show Less"
+                            }}</span>
                         </button>
                     </div>
                 </template>
@@ -341,19 +437,32 @@ onMounted(() => {
     </div>
     <!-- Delete Confirmation Modal -->
     <transition name="fade">
-        <div v-if="feedbackId" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+        <div
+            v-if="feedbackId"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50"
+        >
             <div class="bg-white rounded shadow-lg w-96 p-6">
                 <h3 class="text-xl font-bold mb-4">Confirm Deletion</h3>
-                <p class="mb-6">
-                    Are you sure you want to delete ?
-                </p>
+                <p class="mb-6">Are you sure you want to delete ?</p>
                 <div class="flex justify-end space-x-2">
-                    <button @click="feedbackId = null" class="px-4 py-3 border rounded hover:bg-gray-100">
+                    <button
+                        @click="feedbackId = null"
+                        class="px-4 py-3 border rounded hover:bg-gray-100"
+                    >
                         Cancel
                     </button>
-                    <button @click="removeFeedback(feedbackId)"
-                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
-                        Delete
+                    <button
+                        @click="removeFeedback(feedbackId)"
+                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                        <span v-if="isDeleting" class="flex items-center">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Deleting...
+                        </span>
+                        <span v-else>
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete
+                        </span>
                     </button>
                 </div>
             </div>

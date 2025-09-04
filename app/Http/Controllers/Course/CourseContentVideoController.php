@@ -60,7 +60,7 @@ public function stream(Request $request, $filename) {
             return response()->json(['error' => 'Unauthorized'], 401);
         } 
 
-        $path = "course/$filename";
+        $path = "lesson/video/optimized/$filename";
 
         $courseContent = CourseContent::query()
             ->where('content_url', $path) 
@@ -155,4 +155,3 @@ public function stream(Request $request, $filename) {
         }, 200, $headers);
     }
 }
-

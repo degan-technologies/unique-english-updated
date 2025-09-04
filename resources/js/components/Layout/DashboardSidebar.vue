@@ -149,30 +149,50 @@ watch(profileUpdated, (updated) => {
 
 <template>
     <!-- Sidebar container: slides in/out on mobile -->
-    <aside :class="[
-        'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 xl:w-full',
-        sideBarOpen ? 'translate-x-0' : '-translate-x-full',
-    ]">
+    <aside
+        :class="[
+            'fixed top-0 left-0 h-screen z-50 transition-transform duration-300 ease-in-out md:relative md:translate-x-0 xl:w-full',
+            sideBarOpen ? 'translate-x-0' : '-translate-x-full',
+        ]"
+    >
         <!-- Sidebar panel: width changes when sidebarCollapsed -->
-        <div :class="[
-            sidebarCollapsed ? 'w-16' : 'w-64',
-            'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
-        ]">
+        <div
+            :class="[
+                sidebarCollapsed ? 'w-16' : 'w-64',
+                'bg-gray-50 border-r border-lime-300 h-full relative flex flex-col transition-all duration-300',
+            ]"
+        >
             <!-- Header with logo and mobile close button (desktop: no close icon) -->
-            <div class="flex items-center justify-between h-20 px-4 border-b border-lime-300">
-                <div v-if="!sidebarCollapsed" class="flex items-center animate-fadeIn">
-                    <span class="ml-2 font-semibold text-xl xl:text-3xl text-lime-500">Unique English</span>
+            <div
+                class="flex items-center justify-between h-20 px-4 border-b border-lime-300"
+            >
+                <div
+                    v-if="!sidebarCollapsed"
+                    class="flex items-center animate-fadeIn"
+                >
+                    <span
+                        class="ml-2 font-semibold text-xl xl:text-3xl text-lime-500"
+                        >Maraki English</span
+                    >
                 </div>
-                <div v-else class="hidden md:flex items-center animate-fadeIn w-full justify-center">
+                <div
+                    v-else
+                    class="hidden md:flex items-center animate-fadeIn w-full justify-center"
+                >
                     <i
-                        class="fa-solid w-6 fa-arrow-right font-extrabold text-lime-500 transition-colors duration-200 text-2xl"></i>
+                        class="fa-solid w-6 fa-arrow-right font-extrabold text-lime-500 transition-colors duration-200 text-2xl"
+                    ></i>
                 </div>
 
                 <!-- Mobile Close Icon (only visible on mobile) -->
-                <button @click="sidebarStore.toggleSidebar()"
-                    class="text-lime-500 hover:text-lime-600 md:hidden transition-colors" title="Close Sidebar">
+                <button
+                    @click="sidebarStore.toggleSidebar()"
+                    class="text-lime-500 hover:text-lime-600 md:hidden transition-colors"
+                    title="Close Sidebar"
+                >
                     <i
-                        class="fas fa-times animate-spinIn font-extrabold text-lime-500 transition-colors duration-200 text-2xl"></i>
+                        class="fas fa-times animate-spinIn font-extrabold text-lime-500 transition-colors duration-200 text-2xl"
+                    ></i>
                 </button>
             </div>
 
@@ -181,21 +201,35 @@ watch(profileUpdated, (updated) => {
                 <!-- MAIN Section -->
                 <div class="px-4 py-4">
                     <div>
-                        <div v-for="(item, index) in mainItems" :key="index" @click="selectContent(item?.route)">
-                            <div v-if="
-                                item.role == true
-                                    ? true
-                                    : authUser?.role === item.role"
+                        <div
+                            v-for="(item, index) in mainItems"
+                            :key="index"
+                            @click="selectContent(item?.route)"
+                        >
+                            <div
+                                v-if="
+                                    item.role == true
+                                        ? true
+                                        : authUser?.role === item.role
+                                "
                                 :class="{
-                                    'bg-green-100': selectedContent === item.route,
-                                }" 
+                                    'bg-orange-100':
+                                        selectedContent === item.route,
+                                }"
                                 class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"
-                                :title="item.description">
-                                <i :class="{
-                                    ['fa-' + item.icon]: true,
-                                }" class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"></i>
-                                <span v-if="!sidebarCollapsed" class="text-gray-800 animate-fadeIn">{{ item.label
-                                    }}</span>
+                                :title="item.description"
+                            >
+                                <i
+                                    :class="{
+                                        ['fa-' + item.icon]: true,
+                                    }"
+                                    class="fa-solid w-6 text-lime-500 transition-colors duration-200 text-lg"
+                                ></i>
+                                <span
+                                    v-if="!sidebarCollapsed"
+                                    class="text-gray-800 animate-fadeIn"
+                                    >{{ item.label }}</span
+                                >
                             </div>
                         </div>
                     </div>
@@ -203,10 +237,14 @@ watch(profileUpdated, (updated) => {
             </div>
 
             <!-- Collapse/Expand Button at bottom right -->
-            <button @click="sidebarStore.toggleCollapse()"
-                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 hover:bg-lime-200 transition-colors duration-200">
-                <i :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
-                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-lime-900 transform transition-transform duration-300"></i>
+            <button
+                @click="sidebarStore.toggleCollapse()"
+                class="absolute bottom-2 right-2 p-2 rounded-full bg-lime-300 transition-colors duration-200"
+            >
+                <i
+                    :class="sidebarCollapsed ? 'rotate-0' : 'rotate-180'"
+                    class="fa-solid fa-angle-left text-2xl w-6 h-6 text-white transform transition-transform duration-300"
+                ></i>
             </button>
         </div>
     </aside>

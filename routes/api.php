@@ -151,7 +151,10 @@ Route::middleware('auth:api')
         Route::get('/my-courses', [CourseController::class, 'myCourse']);
         Route::get('/my-books', [BookController::class, 'myBooks']);
         Route::get('/module-contents/{moduleId}', [CourseContentController::class, 'getModuleContents']);
-        });
+        Route::post('/upload-intro-video', [CourseController::class, 'uploadIntroVideo']);
+        Route::post('/upload-thumbnail', [CourseController::class, 'uploadThumbnail']);
+        Route::post('/upload-lesson-file', [CourseContentController::class, 'uploadLessonFile']);
+});
         
 Route::middleware('auth:api')
     ->prefix('feedbacks')
@@ -188,6 +191,10 @@ Route::middleware('auth:api')
         Route::resource('/books', BookController::class);
         Route::resource('/order-books', orderdController::class);
         Route::post('/update-books/{id}', [BookController::class, 'update']);
+
+        Route::post('/upload-pdf', [BookController::class, 'uploadPdf']);
+        Route::post('/upload-thumbnail', [BookController::class, 'uploadCoverImage']);
+        Route::post('/upload-intro-video', [BookController::class, 'uploadIntroVideo']);
     });
 
 Route::middleware('auth:api')
