@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseContentResource;
+use App\Jobs\ProcessLessonVideo;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
@@ -56,6 +57,8 @@ class CourseContentController extends Controller {
         if (!$user) return;
     
         $moduleId = $request->course_module_id ?? null;
+        $contentType = (int) ($request->content_type ?? 0);
+
         $courseModule = CourseModule::query()
             ->where('user_id', $user->id)
             ->find($moduleId);
@@ -75,7 +78,7 @@ class CourseContentController extends Controller {
     
         $rules = [
             'title' => ['required',  'min:4'],  
-            'content_url' => ['required', 'file'],
+            'content_url' => ['required'],
         ]; 
 
         $validator = Validator::make($request->all(), $rules, $this->langService->getLang('courseContent'));
@@ -85,42 +88,8 @@ class CourseContentController extends Controller {
                 'message' => $validator->errors()->all()[0],
                 'errors' => $validator->errors()
             ], 422);
-        }
-
-        $fileExtension = null;
-        $filePath = null;    
-        $durarion = null;
-        $fileType = null; 
-    
-        if ($request->hasFile('content_url')) {
-            $file = $request->file('content_url');
-            $fileExtension = $file->getClientOriginalExtension();
-            $filePath = $file->store('/course', 'private');
-
-            switch ($fileExtension) {
-                case in_array($fileExtension, VIDEO_EXTENTION):
-                    $fileType = VIDEO; 
-                    $getID3 = new \getID3();
-                    $fileInfo = $getID3->analyze($file->getPathname());
-                    if (isset($fileInfo['playtime_seconds'])) {
-                        $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
-                    }
-                    break;
-                case in_array($fileExtension, PDF_EXTENTION):
-                    $fileType = PDF;
-                    break;
-                case in_array($fileExtension, IMAGE_EXTENTION):
-                    $fileType = IMAGE;
-                    break;
-                default:  
-                dd($fileExtension);
-                    return response()->json([
-                        'message' => $this->langService->getLang('invalid_file_type'),
-                    ], 422);
-            }
         } 
-     
-        
+
         // Create the course content record
         $courseContent = $user->courseContents()->create([
             'course_module_id' => $moduleId,  
@@ -128,22 +97,33 @@ class CourseContentController extends Controller {
             'slug' => Str::uuid(),
             'title' => $request->title,
             'description' => 'well described',
-            'content_type' => $fileType,
-            'content_url' => $filePath,
+            'content_type' => $contentType,  
+            'content_url' => $request->content_url,  
             'thumbnail_url' => Str::uuid(),
-            'hour' => $durarion,
+            'hour' => $request->duration,
             'sequence' => $sequence,
             'isDownloadable' => false,
+            'video_optimized'=> false,
             'created_at' => Carbon::now(),
-        ]);
+        ]); 
+ 
+
+        if ($request->content_url !== null &&  $contentType=== VIDEO) {
+            $filePath = $request->content_url;
+            ProcessLessonVideo::dispatch($filePath, $courseContent->id);
+
+            return response()->json([
+                'filePath' => $filePath,
+                'courseContent' => $courseContent,
+                'message' => 'ProcessLessonVideo job dispatched successfully.',
+            ]);
+        }
     
         return response()->json([
             'message' => $this->langService->getLang('course_content_successfully_added'),
             'data' => new CourseContentResource($courseContent),
         ]);
-    }
-    
-    
+    } 
 
     /**
      * Update the specified resource in storage.
@@ -155,10 +135,7 @@ class CourseContentController extends Controller {
     
         if (!$user) return;
 
-        $fileExtension = null;
-        $filePath = null;
-        $durarion = null; 
-        $fileType = null; 
+        $contentType = (int) ($request->content_type ?? 0);
 
         $courseContent = CourseContent::findOrFail($id);
     
@@ -170,7 +147,7 @@ class CourseContentController extends Controller {
     
         $validationRules = [
             'title' => ['required', 'min:1'],   
-            'content_url' => ['nullable', 'file'],
+            'content_url' => ['nullable'],
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courseContent'));
@@ -183,39 +160,21 @@ class CourseContentController extends Controller {
             ], 422);
         } 
 
-       if ($request->hasFile('content_url')) {
-            if ($courseContent->content_url) {
-                Storage::disk('public')->delete($courseContent->content_url);
-            }
+       if ($request->content_url !== null && $request->content_type !== null) {
+            // if ($courseContent->content_url) {
+            //     Storage::disk('private')->delete($courseContent->content_url);
+            // }
 
-            $file = $request->file('content_url');
-            $fileExtension = $file->getClientOriginalExtension();
-            $filePath = $file->store('/course', 'private');
+            if (($request->content_url !== null &&  $contentType === VIDEO)) {
+
+                $filePath = $request->content_url;
+                ProcessLessonVideo::dispatch($filePath, $courseContent->id);
+                $courseContent->video_optimized = false;
+            }
  
-            switch ($fileExtension) {
-                case in_array($fileExtension, VIDEO_EXTENTION):
-                    $fileType = VIDEO; 
-                    $getID3 = new \getID3();
-                    $fileInfo = $getID3->analyze($file->getPathname());
-                    if (isset($fileInfo['playtime_seconds'])) {
-                        $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
-                    }
-                    break;
-                case in_array($fileExtension, PDF_EXTENTION):
-                    $fileType = PDF;
-                    break;
-                case in_array($fileExtension, IMAGE_EXTENTION):
-                    $fileType = IMAGE;
-                    break;
-                default:  
-                    return response()->json([
-                        'message' => $this->langService->getLang('invalid_file_type'),
-                    ], 422);
-            }
-
-            $courseContent->content_type = $fileType;
-            $courseContent->content_url = $filePath;
-            $courseContent->hour = $durarion ?? null;
+            $courseContent->content_type = $contentType;
+            $courseContent->content_url = $request->content_url;
+            $courseContent->hour = $request->durarion ?? null;
         }
 
 
@@ -270,6 +229,72 @@ class CourseContentController extends Controller {
             ->where('customer_id', $user->id)
             ->where('status', TRANSACTION_SUCCESS)
             ->get();
+    }
+
+    public function uploadLessonFile(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+         
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'uploaded_file' => 'required|file',
+        ], $this->langService->getLang('courseContent'));
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $fileExtension = null;
+        $filePath = null;
+        $durarion = null;
+        $fileType = null;
+
+        if ($request->hasFile('uploaded_file')) {
+            $file = $request->file('uploaded_file');
+            $fileExtension = $file->getClientOriginalExtension();
+            $filePath = $file->store('/course', 'public');
+
+            switch ($fileExtension) {
+                case in_array($fileExtension, VIDEO_EXTENTION):
+                    $fileType = VIDEO;
+                    $getID3 = new \getID3();
+                    $fileInfo = $getID3->analyze($file->getPathname());
+                    if (isset($fileInfo['playtime_seconds'])) {
+                        $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
+                    }
+
+                    $filePath = $request->file('uploaded_file')->store('lesson/video/original', 'private');
+                    break;
+                case in_array($fileExtension, PDF_EXTENTION):
+                    $fileType = PDF;
+                    $filePath = $file->store('/course', 'private');
+                    break;
+                case in_array($fileExtension, IMAGE_EXTENTION):
+                    $fileType = IMAGE;
+                    break;
+                default:
+                    dd($fileExtension);
+                    return response()->json([
+                        'message' => $this->langService->getLang('invalid_file_type'),
+                    ], 422);
+            }
+        } 
+
+        return response()->json([
+            'message' => $this->langService->getLang('file_uploaded_successfully'),
+             'data' => [
+                'content_url' => $filePath,
+                'content_type' => $fileType,
+                'duration' => $durarion,
+            ]
+        ]);
     }
     
 }

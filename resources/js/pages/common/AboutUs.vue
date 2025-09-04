@@ -10,33 +10,40 @@ const toggleExpanded = () => {
 </script>
 
 <template>
-    <section  class="bg-gray-50 py-12 px-4" id="about">
+    <section class="bg-gray-50 py-12 px-4" id="about">
         <div
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >
             <!-- Image Section -->
             <div class="lg:w-1/3 lg:block text-center">
-                <h2 class="text-3xl lg:hidden font-bold text-lime-700 mb-4">About Us</h2>
+                <h2 class="text-3xl lg:hidden font-bold text-orange-500 mb-4">
+                    About Us
+                </h2>
                 <img
-                    src="/images/mehari.JPG"
+                    src="/images/maraki-eng.webp"
                     alt="About Us"
-                    class="rounded-lg shadow-md w-full"
+                    class="rounded-lg w-full h-80 object-cover"
                 />
             </div>
 
             <!-- Text Content -->
             <div class="lg:w-2/3 text-center lg:text-left">
-                <h2 class="text-3xl hidden lg:flex font-bold text-lime-700 mb-4">About Us</h2>
+                <h2
+                    class="text-3xl hidden lg:flex font-bold text-orange-500 mb-4"
+                >
+                    About Us
+                </h2>
                 <p class="text-gray-600 text-base leading-relaxed mb-4">
-                    Welcome to our platform! We specialize in offering engaging
-                    and effective English learning experiences tailored to all
-                    levels—from beginners to advanced learners.
+                    Unlock Your Potential with Our English Learning Platform!
+                    Whether you're just starting out or aiming to refine your
+                    fluency, we’re here to guide you every step of the way.
                 </p>
                 <p class="text-gray-600 text-base leading-relaxed mb-4">
-                    Whether you’re preparing for exams, improving your
-                    communication skills, or expanding your vocabulary, our
-                    mission is to help you achieve your goals with confidence
-                    and ease.
+                    Our platform is designed to support learners at every
+                    level—offering structured lessons, engaging practice
+                    activities, and live sessions led by professional English
+                    tutors. From grammar and vocabulary to conversation skills
+                    and exam prep, we cover it all.
                 </p>
 
                 <!-- Expandable Text -->
@@ -44,27 +51,26 @@ const toggleExpanded = () => {
                     v-if="isExpanded"
                     class="text-gray-600 text-base leading-relaxed mb-4"
                 >
-                    Our platform offers interactive lessons, personalized
-                    quizzes, and live sessions with certified instructors. We
-                    emphasize practical learning by incorporating real-life
-                    scenarios, idioms, and phrases commonly used in everyday
-                    conversations. Additionally, you can track your progress,
-                    set learning goals, and connect with a vibrant community of
-                    language enthusiasts.
+                    You’ll enjoy interactive content that mirrors real-world
+                    situations, helping you speak and understand English with
+                    confidence. Track your improvement, set personal milestones,
+                    and join a global community of motivated learners just like
+                    you. Let’s make learning English an exciting and rewarding
+                    journey—together!
                 </p>
 
                 <!-- See More Button -->
                 <button
                     v-if="!isExpanded"
                     @click="toggleExpanded"
-                    class="text-lime-700 text-sm font-semibold hover:underline block mb-6"
+                    class="text-orange-500 text-sm font-semibold hover:underline block mb-6"
                 >
                     See More...
                 </button>
                 <button
                     v-if="isExpanded"
                     @click="toggleExpanded"
-                    class="text-lime-700 text-sm font-semibold hover:underline block mb-6"
+                    class="text-orange-500 text-sm font-semibold hover:underline block mb-6"
                 >
                     See Less
                 </button>

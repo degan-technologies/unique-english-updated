@@ -19,6 +19,7 @@ class Book extends Model {
         'eddition', 'price', 'discount', 'description', 'language',
         'file_format', 'cover_page_url', 'file_url', 'tag',
         'isDownloadable', 'download_status', 'user_id','intro_vedio',
+        'video_optimized', 
     ];
 
     protected $casts = [

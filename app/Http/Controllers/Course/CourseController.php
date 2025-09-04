@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseResource;
 use App\Http\Resources\Course\MyCourseResource;
 use App\Http\Resources\StudentResources\StdCourse\StdCourseResource;
+use App\Jobs\ProcessCourseVideo;
 use App\Models\Course\Course;
 use App\Models\User;
 use App\Services\LangService;
@@ -73,8 +74,8 @@ class CourseController extends Controller {
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric', 
-            'thumbnail_url' => 'image',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+            'thumbnail_url' => 'required',
+            'intro_video' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -86,15 +87,8 @@ class CourseController extends Controller {
                 'message' => $message,
                 'errors' => $validator->errors()
             ], 422);
-        }
-        $imagePath = null;
-        if($request->hasFile('thumbnail_url')) {
-            $imagePath = $request->file('thumbnail_url')->store('/course/images', 'public');
-        }
-        $videoPath = null;
-        if($request->hasFile('intro_video')) {
-            $videoPath = $request->file('intro_video')->store('course/video', 'public');
-        }
+        } 
+ 
         $course = $user->courses()->create([
             'slug' => Str::uuid(),
             'course_name' => $request->course_name,
@@ -104,11 +98,16 @@ class CourseController extends Controller {
             'price' => $request->price,
             'discount' => 0,
             'credit_hour' => 0,
-            'thumbnail_url' => $imagePath,
-            'intro_video' => $videoPath,
+            'thumbnail_url' => $request->thumbnail_url,
+            'intro_video' => $request->intro_video,
             'language' => $request->language,
             'status' => DRAFT,
+            'video_optimized' => false,  
         ]);
+
+        if ($request->intro_video !== null) { 
+            ProcessCourseVideo::dispatch($request->intro_video, $course->id); 
+        }
 
         return response()->json([
         'message' => $this->langService->getLang('course_successfully_added'),
@@ -168,8 +167,8 @@ class CourseController extends Controller {
             'overview' => 'min:10', 
             'skill_level' =>[Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
-            'thumbnail_url' => 'nullable|file|mimes:jpeg,png,jpg,gif',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+            'thumbnail_url' => 'nullable',
+            'intro_video' => 'nullable'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -185,19 +184,25 @@ class CourseController extends Controller {
 
         $data = $validator->validated(); 
 
-        if ($request->hasFile('thumbnail_url')) {
+        if ($request->thumbnail_url !== null) {
 
             if ($course->thumbnail_url) {
                 Storage::disk('public')->delete($course->thumbnail_url);
             }
-            $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course/images', 'public');
+            $data['thumbnail_url'] = $request->thumbnail_url;
         }
-
-        if ($request->hasFile('intro_video')) {
+         
+        if ($request->intro_video !== null) {
             if ($course->intro_video) {
                 Storage::disk('public')->delete($course->intro_video);
             }
-            $data['intro_video'] = $request->file('intro_video')->store('course/video', 'public');
+
+            $uploadedPath = $request->intro_video;
+
+            ProcessCourseVideo::dispatch($uploadedPath, $course->id);
+
+            $data['intro_video'] = $request->intro_video;  
+            $data['video_optimized'] = false;  
         }
 
         $course->update($data);
@@ -370,5 +375,47 @@ class CourseController extends Controller {
             'data' => MyCourseResource::collection($courses)
         ]);
     }
-    
+
+    public function uploadIntroVideo(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return ;
+        }
+
+        $request->validate([
+            'intro_video' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+        ]);
+
+        $path = $request->file('intro_video')->store('course/video/original', 'public');
+
+        return response()->json([
+            'message' => 'Video uploaded successfully',
+            'path' => $path
+        ]);
+    }
+
+    public function uploadThumbnail(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return ;
+        }
+
+        $request->validate([
+            'thumbnail_url' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $path = $request->file('thumbnail_url')->store('course/images', 'public');
+
+        return response()->json([
+            'message' => 'Thumbnail uploaded successfully',
+            'path' => $path
+        ]);
+    }
+     
 }

@@ -27,6 +27,7 @@ return new class extends Migration {
             $table->string('cover_page_url')->unique();
             $table->string('file_url')->unique();
             $table->string('intro_vedio')->nullable()->unique();
+            $table->boolean('video_optimized')->nullable();
             
             $table->json('tag');
             $table->boolean('isDownloadable');
