@@ -1,26 +1,39 @@
 <script setup>
-import Axios from 'axios';
+import Axios from "axios";
 import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter } from "vue-router";
 import Spinner from "@/components/Layout/Spinner";
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from "vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 import MetaDataForm from "@/components/Quize/MetaDataForm.vue";
 import LessonVideoPlayer from "@/components/Course/LessonVideoPlayer.vue";
 
 const InstructorStore = useInstructorStore();
-const { readlessonPdfTab, selectedLesson, addNewLesson } = storeToRefs(InstructorStore);
+const { readlessonPdfTab, selectedLesson, addNewLesson } =
+    storeToRefs(InstructorStore);
 
 const route = useRoute();
 const router = useRouter();
 // Constants
 const CONTENT_TYPES = {
-    1: { label: 'Video', icon: 'fa-play-circle', color: 'bg-blue-100 text-blue-600' },
-    2: { label: 'PDF', icon: 'fa-file-pdf', color: 'bg-red-100 text-red-600' },
-    3: { label: 'Image', icon: 'fa-image', color: 'bg-purple-100 text-purple-600' },
-    4: { label: 'Document', icon: 'fa-file-alt', color: 'bg-gray-100 text-gray-600' }
+    1: {
+        label: "Video",
+        icon: "fa-play-circle",
+        color: "bg-blue-100 text-blue-600",
+    },
+    2: { label: "PDF", icon: "fa-file-pdf", color: "bg-red-100 text-red-600" },
+    3: {
+        label: "Image",
+        icon: "fa-image",
+        color: "bg-purple-100 text-purple-600",
+    },
+    4: {
+        label: "Document",
+        icon: "fa-file-alt",
+        color: "bg-gray-100 text-gray-600",
+    },
 };
 const rowsPerPageOptions = [5, 10, 15, 20];
 const gridView = ref(false);
@@ -28,14 +41,14 @@ const addExam = ref(false)
 const uploadProgress = ref(0);
 
 const props = defineProps({ moduleId: Number });
-const emit = defineEmits(['cancelEdit', 'onAddModuleContent']);
+const emit = defineEmits(["cancelEdit", "onAddModuleContent"]);
 
-// Refs 
+// Refs
 const isLoading = ref(false);
 const loadingTosave = ref(false);
 const isProcessing = ref(false);
-const errorMessage = ref('');
-const successMessage = ref('');
+const errorMessage = ref("");
+const successMessage = ref("");
 const selectedContentTodelete = ref(null);
 const rowsPerPage = ref(10);
 const currentPage = ref(1);
@@ -60,36 +73,40 @@ const previewContent = computed(() => {
     if (form.value.create_content_url) {
         return {
             url: form.value.create_content_url,
-            type: form.value.content_type
+            type: form.value.content_type,
         };
     }
+
 
     if (selectedContent.value?.course_content_url) {
         return {
             url: selectedContent.value.course_content_url,
-            type: selectedContent.value.content_type
+            type: selectedContent.value.content_type,
         };
     }
     return null;
 });
 
-
 // Methods
 const fetchModuleContents = async (page = currentPage.value) => {
     try {
         loading.value = true;
-        const res = await Axios.get(`/api/courses/module-contents/${props.moduleId}?page=${page}`, {
-            params: {
-                rowsPerPageOption: rowsPerPage.value
+        const res = await Axios.get(
+            `/api/courses/module-contents/${props.moduleId}?page=${page}`,
+            {
+                params: {
+                    rowsPerPageOption: rowsPerPage.value,
+                },
             }
-        });
+        );
 
         moduleContents.value = res.data.data;
         pagination.value = res.data.pagination;
         totalPages.value = res.data.pagination.last_page;
         currentPage.value = res.data.pagination.current_page;
     } catch (err) {
-        errorMessage.value = err.response?.data?.message || 'Failed to fetch module contents';
+        errorMessage.value =
+            err.response?.data?.message || "Failed to fetch module contents";
     } finally {
         loading.value = false;
     }
@@ -112,6 +129,7 @@ function coursePerPage(amount) {
     fetchModuleContents(currentPage.value);
 }
 
+function uploadIntroVideo(event) {
 function uploadIntroVideo(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -148,13 +166,14 @@ function uploadIntroVideo(event) {
 
 const updateSelectedContent = async () => {
     if (!form.value.title) {
-        errorMessage.value = 'Title is required';
+        errorMessage.value = "Title is required";
         return;
     }
 
+
     loadingTosave.value = true;
-    errorMessage.value = '';
-    successMessage.value = '';
+    errorMessage.value = "";
+    successMessage.value = "";
 
     try {
         const formData = new FormData();
@@ -162,7 +181,11 @@ const updateSelectedContent = async () => {
         formData.append("content_url", form.value.content_url);
         formData.append("content_type", form.value.content_type);
         formData.append("duration", form.value.duration);
+        formData.append("content_url", form.value.content_url);
+        formData.append("content_type", form.value.content_type);
+        formData.append("duration", form.value.duration);
 
+        if (form.value.content_url !== null) {
         if (form.value.content_url !== null) {
             formData.append("content_url", form.value.content_url);
         } else {
@@ -171,21 +194,27 @@ const updateSelectedContent = async () => {
 
         const contentIdToUpdate = selectedContent.value.id;
 
-        const response = await Axios.post(`/api/courses/update-content/${contentIdToUpdate}`,
+        const response = await Axios.post(
+            `/api/courses/update-content/${contentIdToUpdate}`,
             formData
         );
 
-        moduleContents.value = moduleContents.value.map(content => {
+        moduleContents.value = moduleContents.value.map((content) => {
             if (content.id === contentIdToUpdate) {
                 return response.data.data;
             }
             return content;
-        })
+        });
 
         setTimeout(() => {
             selectedContent.value = null;
-            successMessage.value = '';
+            successMessage.value = "";
         }, 1500);
+
+        selectedContent.value = null;
+        form.value.content_url = null;
+        form.value.content_type = null;
+        uploadProgress.value = 0;
 
         selectedContent.value = null;
         form.value.content_url = null;
@@ -207,7 +236,9 @@ const deleteSelectedContent = async (contentIdToDelete) => {
 
     try {
         await Axios.delete(`/api/courses/content/${contentIdToDelete}`);
-        moduleContents.value = moduleContents.value.filter(content => content.id !== contentIdToDelete);
+        moduleContents.value = moduleContents.value.filter(
+            (content) => content.id !== contentIdToDelete
+        );
         selectedContentTodelete.value = null;
     } catch (err) {
         errorMessage.value = err.response?.data?.message;
@@ -224,7 +255,7 @@ const openPdf = (content) => {
             currentTab: route.query.currentTab,
             currentActiveTab: readlessonPdfTab.value,
         },
-    })
+    });
 };
 
 const editSelectedContent = (content) => {
@@ -261,11 +292,18 @@ onMounted(() => {
     <div v-else>
         <div>
             <div class="my-6 gap-4">
-                <button @click="gridView = !gridView" class="text-black p-2 rounded-full transition duration-200">
-                    <i :class="gridView
-                        ? 'fa-solid fa-list'
-                        : 'fa-solid fa-th-large'
-                        " class="text-xl"></i>
+                <button
+                    @click="gridView = !gridView"
+                    class="text-black p-2 rounded-full transition duration-200"
+                >
+                    <i
+                        :class="
+                            gridView
+                                ? 'fa-solid fa-list'
+                                : 'fa-solid fa-th-large'
+                        "
+                        class="text-xl"
+                    ></i>
                 </button>
                 <button type="button" @click="addExam = !addExam" :class="{
                     'bg-lime-500 text-white hover:bg-lime-600': addExam,
@@ -281,11 +319,20 @@ onMounted(() => {
         <div v-else>
             <div v-if="moduleContents.length">
                 <!-- grid view -->
-                <div v-if="gridView" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                    <div v-for="(content, index) in moduleContents" :key="index"
-                        class="w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                <div
+                    v-if="gridView"
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4"
+                >
+                    <div
+                        v-for="(content, index) in moduleContents"
+                        :key="index"
+                        class="w-full h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                    >
                         <!-- View Mode -->
-                        <div v-if="!selectedContent" class="h-full flex flex-col">
+                        <div
+                            v-if="!selectedContent"
+                            class="h-full flex flex-col"
+                        >
                             <!-- Content Preview -->
                             <div class="relative aspect-video bg-gray-100 h-48"> 
                                     <template v-if="content.content_type === 1 && content.course_content_url">
@@ -339,23 +386,38 @@ onMounted(() => {
 
                             <!-- Content Details -->
                             <div class="p-4 flex-grow flex flex-col">
-                                <h3 class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{{ content.title }}
+                                <h3
+                                    class="text-lg font-semibold text-gray-800 mb-2 line-clamp-2"
+                                >
+                                    {{ content.title }}
                                 </h3>
-                                <div class="mt-auto flex justify-between items-center">
+                                <div
+                                    class="mt-auto flex justify-between items-center"
+                                >
                                     <span class="text-xs text-gray-400">
                                         {{ content.created_at }}
                                     </span>
 
                                     <div class="flex space-x-2">
-                                        <button @click="editSelectedContent(content)"
+                                        <button
+                                            @click="
+                                                editSelectedContent(content)
+                                            "
                                             class="p-2 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
-                                            aria-label="Edit content">
-                                            <i class="fas fa-pencil-alt text-sm"></i>
+                                            aria-label="Edit content"
+                                        >
+                                            <i
+                                                class="fas fa-pencil-alt text-sm"
+                                            ></i>
                                         </button>
-                                        <button @click="openDeleteModal(content)"
+                                        <button
+                                            @click="openDeleteModal(content)"
                                             class="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                                            aria-label="Delete content">
-                                            <i class="fas fa-trash-alt text-sm"></i>
+                                            aria-label="Delete content"
+                                        >
+                                            <i
+                                                class="fas fa-trash-alt text-sm"
+                                            ></i>
                                         </button>
                                     </div>
                                 </div>
@@ -365,10 +427,14 @@ onMounted(() => {
                 </div>
 
                 <!-- list view -->
-                <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div
+                    v-else
+                    class="bg-white rounded-lg border border-gray-200 overflow-hidden"
+                >
                     <!-- List Header -->
                     <div
-                        class="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        class="grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                         <div class="col-span-5">Content</div>
                         <div class="col-span-2">Type</div>
                         <div class="col-span-3">Date Added</div>
@@ -376,26 +442,44 @@ onMounted(() => {
                     </div>
 
                     <!-- List Items -->
-                    <div v-for="(content, index) in moduleContents" :key="index"
-                        class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors duration-150">
-                        <div class="grid grid-cols-12 gap-4 px-4 py-3 items-center">
+                    <div
+                        v-for="(content, index) in moduleContents"
+                        :key="index"
+                        class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors duration-150"
+                    >
+                        <div
+                            class="grid grid-cols-12 gap-4 px-4 py-3 items-center"
+                        >
                             <!-- Content Title and Preview -->
                             <div class="col-span-5 flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md overflow-hidden mr-3 flex items-center
                 justify-center">
 
                                     <template v-if="content.content_type === 1">
-                                        <i class="fas fa-video text-gray-400"></i>
+                                        <i
+                                            class="fas fa-video text-gray-400"
+                                        ></i>
                                     </template>
-                                    <template v-else-if="content.content_type === 2">
-                                        <i class="fas fa-file-pdf text-red-400"></i>
+                                    <template
+                                        v-else-if="content.content_type === 2"
+                                    >
+                                        <i
+                                            class="fas fa-file-pdf text-red-400"
+                                        ></i>
                                     </template>
-                                    <template v-else-if="content.content_type === 3">
-                                        <img :src="content.course_content_url" class="w-full h-full object-cover"
-                                            :alt="content.title">
+                                    <template
+                                        v-else-if="content.content_type === 3"
+                                    >
+                                        <img
+                                            :src="content.course_content_url"
+                                            class="w-full h-full object-cover"
+                                            :alt="content.title"
+                                        />
                                     </template>
                                     <template v-else>
-                                        <i class="fas fa-link text-blue-400"></i>
+                                        <i
+                                            class="fas fa-link text-blue-400"
+                                        ></i>
                                     </template>
                                 </div>
                                 <h3 class="text-sm font-medium text-gray-800 truncate max-w-[30ch]">{{ content.title }}
@@ -404,9 +488,17 @@ onMounted(() => {
 
                             <!-- Content Type -->
                             <div class="col-span-2">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                    :class="CONTENT_TYPES[content.content_type].color + ' bg-opacity-20'">
-                                    {{ CONTENT_TYPES[content.content_type].label }}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    :class="
+                                        CONTENT_TYPES[content.content_type]
+                                            .color + ' bg-opacity-20'
+                                    "
+                                >
+                                    {{
+                                        CONTENT_TYPES[content.content_type]
+                                            .label
+                                    }}
                                 </span>
                             </div>
 
@@ -417,54 +509,77 @@ onMounted(() => {
 
                             <!-- Actions -->
                             <div class="col-span-2 flex justify-end space-x-2">
-                                <button v-if="content.content_type === 2" @click="openPdf(content)"
+                                <button
+                                    v-if="content.content_type === 2"
+                                    @click="openPdf(content)"
                                     class="p-1.5 text-gray-500 hover:text-lime-500 hover:bg-lime-50 rounded transition-colors"
-                                    aria-label="Open PDF">
-                                    <i class="fas fa-external-link-alt text-sm"></i>
+                                    aria-label="Open PDF"
+                                >
+                                    <i
+                                        class="fas fa-external-link-alt text-sm"
+                                    ></i>
                                 </button>
-                                <button @click="editSelectedContent(content)"
+                                <button
+                                    @click="editSelectedContent(content)"
                                     class="p-1.5 text-gray-500 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
-                                    aria-label="Edit content">
+                                    aria-label="Edit content"
+                                >
                                     <i class="fas fa-pencil-alt text-sm"></i>
                                 </button>
-                                <button @click="openDeleteModal(content)"
+                                <button
+                                    @click="openDeleteModal(content)"
                                     class="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                    aria-label="Delete content">
+                                    aria-label="Delete content"
+                                >
                                     <i class="fas fa-trash-alt text-sm"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
-            <div v-else class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg mt-4">
+            <div
+                v-else
+                class="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg mt-4"
+            >
                 <i class="fas fa-file-alt text-4xl text-gray-300 mb-3"></i>
                 <p class="text-gray-500 mb-4">No content in this module</p>
-                <button @click="emit('onAddModuleContent')"
-                    class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors">
+                <button
+                    @click="emit('onAddModuleContent')"
+                    class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition-colors"
+                >
                     <i class="fas fa-plus mr-2"></i>Add First Lesson
                 </button>
             </div>
             <!-- Pagination Footer -->
-            <div class="p-4 bg-white flex flex-row items-center justify-between">
+            <div
+                class="p-4 bg-white flex flex-row items-center justify-between"
+            >
                 <!-- Rows Per Page Selector -->
 
                 <Popper>
                     <div class="flex flex-row md:gap-2">
-                        <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
-                        <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                        <span class="hidden md:flex text-sm text-gray-600"
+                            >rows per page:</span
+                        >
+                        <span class="text-sm font-medium">{{
+                            rowsPerPage
+                        }}</span>
                         <i class="fa-solid fa-chevron-down text-lg"></i>
                     </div>
                     <template #content>
-                        <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                        <div
+                            v-for="option in rowsPerPageOptions"
+                            :key="option"
+                            @click="coursePerPage(option)"
                             class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
                             :class="{
                                 'bg-gray-300 text-white font-bold':
                                     rowsPerPage === option,
                                 'bg-white text-gray-700 hover:bg-gray-200':
                                     rowsPerPage !== option,
-                            }">
+                            }"
+                        >
                             {{ option }}
                         </div>
                     </template>
@@ -472,8 +587,11 @@ onMounted(() => {
 
                 <!-- Pagination Controls -->
                 <div class="flex items-center space-x-3">
-                    <button @click="onPreviousPage()" :disabled="currentPage === 1"
-                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <button
+                        @click="onPreviousPage()"
+                        :disabled="currentPage === 1"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
                         Prev
                     </button>
 
@@ -481,8 +599,11 @@ onMounted(() => {
                         Page {{ currentPage }} of {{ totalPages }}
                     </span>
 
-                    <button @click="onNextPage()" :disabled="currentPage === totalPages"
-                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <button
+                        @click="onNextPage()"
+                        :disabled="currentPage === totalPages"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
                         Next
                     </button>
                 </div>
@@ -497,13 +618,20 @@ onMounted(() => {
                 <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
 
                     <!-- Modal container -->
-                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    <span
+                        class="hidden sm:inline-block sm:align-middle sm:h-screen"
+                        aria-hidden="true"
+                        >&#8203;</span
+                    >
 
                     <div class="bg-white rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
                         <!-- Modal header -->
                         <div
-                            class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center sm:justify-between border-b border-gray-200">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center sm:justify-between border-b border-gray-200"
+                        >
+                            <h3
+                                class="text-lg leading-6 font-medium text-gray-900"
+                            >
                                 Edit Lesson Content
                             </h3>
                         </div>
@@ -511,17 +639,23 @@ onMounted(() => {
                         <!-- Modal content -->
                         <div class="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <!-- Success/Error messages -->
-                            <div v-if="successMessage"
-                                class="mb-4 p-3 bg-green-50 text-green-700 rounded-md flex items-start">
+                            <div
+                                v-if="successMessage"
+                                class="mb-4 p-3 bg-green-50 text-green-700 rounded-md flex items-start"
+                            >
                                 <i class="fas fa-check-circle mt-1 mr-3"></i>
                                 <div>
                                     <p class="font-medium">Success</p>
                                     <p>{{ successMessage }}</p>
                                 </div>
                             </div>
-                            <div v-if="errorMessage"
-                                class="mb-4 p-3 bg-red-50 text-red-700 rounded-md flex items-start">
-                                <i class="fas fa-exclamation-circle mt-1 mr-3"></i>
+                            <div
+                                v-if="errorMessage"
+                                class="mb-4 p-3 bg-red-50 text-red-700 rounded-md flex items-start"
+                            >
+                                <i
+                                    class="fas fa-exclamation-circle mt-1 mr-3"
+                                ></i>
                                 <div>
                                     <p class="font-medium">Error</p>
                                     <p>{{ errorMessage }}</p>
@@ -532,12 +666,20 @@ onMounted(() => {
                                 <div class="space-y-4">
                                     <!-- Title field -->
                                     <div>
-                                        <label for="lesson-title" class="block text-sm font-medium text-gray-700 mb-1">
-                                            Lesson Title <span class="text-red-500">*</span>
+                                        <label
+                                            for="lesson-title"
+                                            class="block text-sm font-medium text-gray-700 mb-1"
+                                        >
+                                            Lesson Title
+                                            <span class="text-red-500">*</span>
                                         </label>
-                                        <input id="lesson-title" v-model="form.title" type="text"
+                                        <input
+                                            id="lesson-title"
+                                            v-model="form.title"
+                                            type="text"
                                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-lime-500 focus:border-lime-500"
-                                            required>
+                                            required
+                                        />
                                     </div>
 
                                     <div>
@@ -617,11 +759,12 @@ onMounted(() => {
                                         :disabled="loadingTosave || uploadProgress < 100"
                                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-70 disabled:cursor-not-allowed">
                                         <span v-if="loadingTosave">
-                                            <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
+                                            <i
+                                                class="fas fa-spinner fa-spin mr-2"
+                                            ></i>
+                                            Saving...
                                         </span>
-                                        <span v-else>
-                                            Save Changes
-                                        </span>
+                                        <span v-else> Save Changes </span>
                                     </button>
                                 </div>
                             </form>
@@ -635,50 +778,87 @@ onMounted(() => {
     <!-- Delete Confirmation Modal -->
     <teleport to="body">
         <transition name="modal-fade">
-            <div v-if="selectedContentTodelete" class="fixed inset-0 z-50 overflow-y-auto">
-                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div
+                v-if="selectedContentTodelete"
+                class="fixed inset-0 z-50 overflow-y-auto"
+            >
+                <div
+                    class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+                >
                     <!-- Background overlay -->
-                    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                    <div
+                        class="fixed inset-0 transition-opacity"
+                        aria-hidden="true"
+                    >
+                        <div
+                            class="absolute inset-0 bg-gray-500 opacity-75"
+                        ></div>
                     </div>
 
                     <!-- Modal container -->
-                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    <span
+                        class="hidden sm:inline-block sm:align-middle sm:h-screen"
+                        aria-hidden="true"
+                        >&#8203;</span
+                    >
 
                     <div
-                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                    >
                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                             <div class="sm:flex sm:items-start">
                                 <div
-                                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                                    class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10"
+                                >
+                                    <i
+                                        class="fas fa-exclamation-triangle text-red-600"
+                                    ></i>
                                 </div>
-                                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                <div
+                                    class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left"
+                                >
+                                    <h3
+                                        class="text-lg leading-6 font-medium text-gray-900"
+                                    >
                                         Delete Lesson
                                     </h3>
                                     <div class="mt-2">
                                         <p class="text-sm text-gray-500">
-                                            Are you sure you want to delete <span class="font-medium">"{{
-                                                selectedContentTodelete?.title }}"</span>? This action cannot be undone.
+                                            Are you sure you want to delete
+                                            <span class="font-medium"
+                                                >"{{
+                                                    selectedContentTodelete?.title
+                                                }}"</span
+                                            >? This action cannot be undone.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                            <button type="button" @click="deleteSelectedContent(selectedContentTodelete?.id)"
+                        <div
+                            class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse"
+                        >
+                            <button
+                                type="button"
+                                @click="
+                                    deleteSelectedContent(
+                                        selectedContentTodelete?.id
+                                    )
+                                "
                                 class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-70"
-                                :disabled="isProcessing">
+                                :disabled="isProcessing"
+                            >
                                 <span v-if="isProcessing">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i> Deleting...
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                    Deleting...
                                 </span>
-                                <span v-else>
-                                    Delete
-                                </span>
+                                <span v-else> Delete </span>
                             </button>
-                            <button type="button" @click="selectedContentTodelete = null"
-                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            <button
+                                type="button"
+                                @click="selectedContentTodelete = null"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                            >
                                 Cancel
                             </button>
                         </div>

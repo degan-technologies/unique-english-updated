@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Course;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseContentResource;
 use App\Jobs\ProcessLessonVideo;
+use App\Jobs\ProcessLessonVideo;
 use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
@@ -63,6 +64,8 @@ class CourseContentController extends Controller
         $moduleId = $request->course_module_id ?? null;
         $contentType = (int) ($request->content_type ?? 0);
 
+        $contentType = (int) ($request->content_type ?? 0);
+
         $courseModule = CourseModule::query()
             ->where('user_id', $user->id)
             ->find($moduleId);
@@ -105,6 +108,7 @@ class CourseContentController extends Controller
             'content_url' => $request->content_url,
             'thumbnail_url' => Str::uuid(),
             'hour' => $request->duration,
+            'hour' => $request->duration,
             'sequence' => $sequence,
             'isDownloadable' => false,
             'video_optimized' => false,
@@ -140,6 +144,7 @@ class CourseContentController extends Controller
 
         if (!$user) return;
 
+        $contentType = (int) ($request->content_type ?? 0);
         $contentType = (int) ($request->content_type ?? 0);
 
         $courseContent = CourseContent::findOrFail($id);

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->integer('content_type')->nullable();
             $table->string('content_url')->unique()->nullable();
             $table->string('thumbnail_url')->unique()->nullable();
+            $table->boolean('video_optimized')->nullable();
 
             $table->time('hour')->nullable();
             $table->string('status')->default(PUBLISHED);

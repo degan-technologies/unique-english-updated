@@ -196,6 +196,10 @@ Route::middleware('auth:api')
         Route::post('/upload-pdf', [BookController::class, 'uploadPdf']);
         Route::post('/upload-thumbnail', [BookController::class, 'uploadCoverImage']);
         Route::post('/upload-intro-video', [BookController::class, 'uploadIntroVideo']);
+
+        Route::post('/upload-pdf', [BookController::class, 'uploadPdf']);
+        Route::post('/upload-thumbnail', [BookController::class, 'uploadCoverImage']);
+        Route::post('/upload-intro-video', [BookController::class, 'uploadIntroVideo']);
     });
 
 Route::middleware('auth:api')

@@ -1,8 +1,8 @@
 <script setup>
-import Axios from 'axios'
-import { storeToRefs } from 'pinia';
+import Axios from "axios";
+import { storeToRefs } from "pinia";
 import { useToast } from "vue-toastification";
-import { ref, defineProps, defineEmits, onMounted, watch } from 'vue'
+import { ref, defineProps, defineEmits, onMounted, watch } from "vue";
 import DescriptionEditor from "@/components/Book/DescriptionEditor.vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
@@ -18,10 +18,21 @@ const props = defineProps({
     },
     editingBookId: {
         type: Number,
-        default: null
-    }
-})
+        default: null,
+    },
+});
 
+const isUploadPdf = ref(0);
+const uploadProgress = ref(0);
+const isProcessingThumbnail = ref(0);
+
+const updateFilePdf = ref(null);
+const updatedThumbnail = ref(null);
+const updateIntroVideo = ref(null);
+const page_number = ref(null);
+
+const error = ref("");
+const errors = ref({});
 const isUploadPdf = ref(0);
 const uploadProgress = ref(0);
 const isProcessingThumbnail = ref(0);
@@ -38,8 +49,8 @@ const loading = ref(false);
 const emit = defineEmits(['cancel-edit']);
 
 const cancelEdit = () => {
-    emit('cancel-edit')
-}
+    emit("cancel-edit");
+};
 
 function isFileObject(obj) {
     return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
@@ -99,7 +110,9 @@ const handleUpdateCourse = async () => {
     formData.append("price", props.selectedbook.price);
     formData.append("eddition", props.selectedbook.eddition);
     formData.append("language", props.selectedbook.language);
+    formData.append("language", props.selectedbook.language);
     formData.append("discount", props.selectedbook.discount || 0);
+    formData.append("description", props.selectedbook.description);
     formData.append("description", props.selectedbook.description);
     formData.append("publish_date", props.selectedbook.publish_date);
     
@@ -116,8 +129,11 @@ const handleUpdateCourse = async () => {
     } else {
         formData.delete("file_url");
         formData.delete("page_number");
+        formData.delete("page_number");
     }
 
+    if (updateIntroVideo.value !== null) {
+        formData.append("intro_vedio", updateIntroVideo.value);
     if (updateIntroVideo.value !== null) {
         formData.append("intro_vedio", updateIntroVideo.value);
     } else {
@@ -136,6 +152,7 @@ const handleUpdateCourse = async () => {
             ...booksAdmin.value
         ];
 
+        toast.success("Book updated successfully!", { position: "top-right" });
         toast.success("Book updated successfully!", { position: "top-right" });
         cancelEdit();
     } catch (err) {
@@ -251,16 +268,23 @@ function uploadPdfFile(event) {
 </script>
 
 <template>
-    <div class="mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-200">
+    <div
+        class="mx-auto p-6 bg-white rounded-lg shadow-sm border border-gray-200"
+    >
         <!-- Error Message -->
-        <div v-if="error" class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+        <div
+            v-if="error"
+            class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded"
+        >
             <div class="flex items-center">
                 <i class="fas fa-exclamation-circle mr-2"></i>
                 <span>{{ error }}</span>
             </div>
         </div>
 
-        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Edit Book</h2>
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6">
+            Edit Book
+        </h2>
 
         <form @submit.prevent="handleUpdateCourse" class="space-y-8">
             <!-- 60/40 layout -->
@@ -269,13 +293,24 @@ function uploadPdfFile(event) {
                 <!-- LEFT: Uploads (2/3) -->
                 <div class="lg:col-span-2 space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Title
                         </label>
-                        <input v-model="props.selectedbook.title" type="text"
+                        <input
+                            v-model="props.selectedbook.title"
+                            type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.title }" placeholder="Book title" />
-                        <p v-if="errors.title" class="mt-1 text-red-500 text-sm">{{ errors.title }}</p>
+                            :class="{ 'border-red-500': errors.title }"
+                            placeholder="Book title"
+                        />
+                        <p
+                            v-if="errors.title"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.title }}
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-1  sm:grid-cols-2 gap-4">
@@ -408,15 +443,25 @@ function uploadPdfFile(event) {
 
                 <!-- RIGHT: Fields (1/3) -->
                 <div class="space-y-4">
-
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Author
                         </label>
-                        <input v-model="props.selectedbook.auther" type="text"
+                        <input
+                            v-model="props.selectedbook.auther"
+                            type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.auther }" placeholder="Author name" />
-                        <p v-if="errors.auther" class="mt-1 text-red-500 text-sm">{{ errors.auther }}</p>
+                            :class="{ 'border-red-500': errors.auther }"
+                            placeholder="Author name"
+                        />
+                        <p
+                            v-if="errors.auther"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.auther }}
+                        </p>
                     </div>
 
                     <div>
@@ -450,12 +495,16 @@ function uploadPdfFile(event) {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Language
                         </label>
-                        <select v-model="props.selectedbook.language"
+                        <select
+                            v-model="props.selectedbook.language"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.language }">
+                            :class="{ 'border-red-500': errors.language }"
+                        >
                             <option value="English">English</option>
                             <option value="Amharic">Amharic</option>
                             <option value="Other">Other</option>
@@ -470,18 +519,29 @@ function uploadPdfFile(event) {
                 <label class="block text-gray-700 font-medium text-sm mb-2">
                     Book Description
                 </label>
-                <DescriptionEditor :selected="props.selectedbook" @update-description="updateDescription" />
-                <p v-if="errors.description" class="mt-1 text-red-500 text-sm">{{ errors.description }}</p>
+                <DescriptionEditor
+                    :selected="props.selectedbook"
+                    @update-description="updateDescription"
+                />
+                <p v-if="errors.description" class="mt-1 text-red-500 text-sm">
+                    {{ errors.description }}
+                </p>
             </div>
 
             <!-- ACTION BUTTONS -->
             <div class="flex justify-end gap-4 pt-6">
-                <button type="button" @click="cancelEdit"
-                    class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium">
+                <button
+                    type="button"
+                    @click="cancelEdit"
+                    class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium"
+                >
                     Cancel
                 </button>
-                <button type="submit" :disabled="loading"
-                    class="px-6 py-2.5 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+                <button
+                    type="submit"
+                    :disabled="loading"
+                    class="px-6 py-2.5 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                >
                     <span v-if="loading">
                         <i class="fas fa-spinner fa-spin mr-2"></i> Updating...
                     </span>

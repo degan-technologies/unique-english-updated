@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from "vue";
 
 import ReviewList from "@/components/Course/ReviewList.vue";
-import AdminPdfReader from '@/components/Book/AdminPdfReader.vue'
+import AdminPdfReader from "@/components/Book/AdminPdfReader.vue";
 import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 
 const props = defineProps({
@@ -10,59 +10,61 @@ const props = defineProps({
         type: Object,
         required: true,
         validator: (book) => {
-            return book.id && book.description && book.intro_video_url
-        }
+            return book.id && book.description && book.intro_video_url;
+        },
     },
     goBack: {
         type: Function,
-        required: true
-    }
-})
+        required: true,
+    },
+});
 
 // State management
-const isReadingMode = ref(false) 
-const selectedBookRead = ref(props.selectedbook)
+const isReadingMode = ref(false);
+const selectedBookRead = ref(props.selectedbook);
 
 // Computed properties
 const bookDetails = computed(() => {
     const details = {
-        author: props.selectedbook.auther || 'Unknown Author',
-        language: props.selectedbook.language || 'Not specified',
-        file_format: props.selectedbook.file_format || 'Unknown format',
-        publish_date: props.selectedbook.publish_date || 'Unknown date',
+        author: props.selectedbook.auther || "Unknown Author",
+        language: props.selectedbook.language || "Not specified",
+        file_format: props.selectedbook.file_format || "Unknown format",
+        publish_date: props.selectedbook.publish_date || "Unknown date",
         price: `${props.selectedbook.price || 0} Birr`,
-        page_number: props.selectedbook.page_number || 'N/A',
-        edition: props.selectedbook.eddition || 'First Edition'
-    }
+        page_number: props.selectedbook.page_number || "N/A",
+        edition: props.selectedbook.eddition || "First Edition",
+    };
 
     if (props.selectedbook.discount) {
-        details.discount = `${props.selectedbook.discount} Birr`
-        details.original_price = `${props.selectedbook.price} Birr`
+        details.discount = `${props.selectedbook.discount} Birr`;
+        details.original_price = `${props.selectedbook.price} Birr`;
     }
 
-    return details
-})
+    return details;
+});
 
 const formatLabel = (key) => {
     const labels = {
-        author: 'Author',
-        original_price: 'Original Price',
-        publish_date: 'Publish Date',
-        file_format: 'File Format',
-        page_number: 'Pages',
-        edition: 'Edition'
-    }
-    return labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-}
+        author: "Author",
+        original_price: "Original Price",
+        publish_date: "Publish Date",
+        file_format: "File Format",
+        page_number: "Pages",
+        edition: "Edition",
+    };
+    return (
+        labels[key] ||
+        key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
+    );
+};
 
 const continueReading = () => {
-    isReadingMode.value = true
-}
+    isReadingMode.value = true;
+};
 
 const cancelBookRead = () => {
-    isReadingMode.value = false
-}
- 
+    isReadingMode.value = false;
+};
 </script>
 
 <template>
@@ -153,5 +155,7 @@ const cancelBookRead = () => {
 
             <AdminPdfReader :selectedBook="selectedBookRead" />
         </div>
+            <AdminPdfReader :selectedBook="selectedBookRead" />
+        </div>
     </div>
-</template> 
+</template>

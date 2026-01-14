@@ -24,7 +24,12 @@ const newBook = ref({
     cover_page_url: null,
     file_url: null,
     intro_video: null,
+    intro_video: null,
 });
+
+const uploadProgress = ref(0);
+const isProcessingThumbnail = ref(0);
+const isUploadPdf = ref(0);
 
 const uploadProgress = ref(0);
 const isProcessingThumbnail = ref(0);
@@ -104,6 +109,7 @@ function addBook () {
     formData.append("file_format", newBook.value.file_format);
     formData.append("cover_page_url", newBook.value.cover_page_url);
     formData.append("file_url", newBook.value.file_url);
+    formData.append("intro_video", newBook.value.intro_video);
     formData.append("intro_video", newBook.value.intro_video);
 
     try {
@@ -267,26 +273,44 @@ function goBack() {
 
 <template>
     <div class="w-full mx-auto p-4 md:p-6 bg-white rounded-lg shadow-sm">
-        <button @click="goBack()"
+        <button
+            @click="goBack()"
             class="flex items-center justify-center gap-4 text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
-            aria-label="Go back">
-            <i class="fas fa-arrow-left self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"></i>
-            <span class="text-2xl font-bold self-center text-lime-700 mb-6">Add New Book</span>
+            aria-label="Go back"
+        >
+            <i
+                class="fas fa-arrow-left self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"
+            ></i>
+            <span class="text-2xl font-bold self-center text-lime-700 mb-6"
+                >Add New Book</span
+            >
         </button>
 
+        <form class="space-y-8">
         <form class="space-y-8">
             <!-- 60/40 layout -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <!-- LEFT: Uploads (2/3) -->
                 <div class="lg:col-span-2 space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Title
                         </label>
-                        <input v-model="newBook.title" type="text"
+                        <input
+                            v-model="newBook.title"
+                            type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.title }" placeholder="Book title" />
-                        <p v-if="errors.title" class="mt-1 text-red-500 text-sm">{{ errors.title }}</p>
+                            :class="{ 'border-red-500': errors.title }"
+                            placeholder="Book title"
+                        />
+                        <p
+                            v-if="errors.title"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.title }}
+                        </p>
                     </div>
 
                     <div class="grid grid-cols-1  sm:grid-cols-2 gap-4">
@@ -376,7 +400,9 @@ function goBack() {
 
                     <!-- Book File Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium text-sm mb-2">
+                        <label
+                            class="block text-gray-700 font-medium text-sm mb-2"
+                        >
                             Upload Book File
                         </label>
                         <div class="relative">
@@ -421,50 +447,98 @@ function goBack() {
                 <!-- RIGHT: Fields (1/3) -->
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Author
                         </label>
-                        <input v-model="newBook.auther" type="text"
+                        <input
+                            v-model="newBook.auther"
+                            type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.auther }" placeholder="Author name" />
-                        <p v-if="errors.auther" class="mt-1 text-red-500 text-sm">{{ errors.auther }}</p>
+                            :class="{ 'border-red-500': errors.auther }"
+                            placeholder="Author name"
+                        />
+                        <p
+                            v-if="errors.auther"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.auther }}
+                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Price In ETB
                         </label>
-                        <input v-model.number="newBook.price" type="number" min="0" step="0.01"
+                        <input
+                            v-model.number="newBook.price"
+                            type="number"
+                            min="0"
+                            step="0.01"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.price }" placeholder="0.00" />
-                        <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
+                            :class="{ 'border-red-500': errors.price }"
+                            placeholder="0.00"
+                        />
+                        <p
+                            v-if="errors.price"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.price }}
+                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Edition
                         </label>
-                        <input v-model.number="newBook.eddition" type="number" min="1"
+                        <input
+                            v-model.number="newBook.eddition"
+                            type="number"
+                            min="1"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.eddition }" placeholder="1" />
-                        <p v-if="errors.eddition" class="mt-1 text-red-500 text-sm">{{ errors.eddition }}</p>
+                            :class="{ 'border-red-500': errors.eddition }"
+                            placeholder="1"
+                        />
+                        <p
+                            v-if="errors.eddition"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.eddition }}
+                        </p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             Publish Date
                         </label>
-                        <input v-model="newBook.publish_date" type="date"
+                        <input
+                            v-model="newBook.publish_date"
+                            type="date"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.publish_date }" />
-                        <p v-if="errors.publish_date" class="mt-1 text-red-500 text-sm">{{ errors.publish_date }}</p>
+                            :class="{ 'border-red-500': errors.publish_date }"
+                        />
+                        <p
+                            v-if="errors.publish_date"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.publish_date }}
+                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Language
                         </label>
-                        <select v-model="newBook.language"
-                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500">
+                        <select
+                            v-model="newBook.language"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
+                        >
                             <option value="English">English</option>
                             <option value="Amharic">Amharic</option>
                             <option value="Other">Other</option>
@@ -479,21 +553,27 @@ function goBack() {
                     Book Description
                 </label>
                 <AddBookDescription v-model="newBook.description" />
-                <p v-if="errors.description" class="mt-1 text-red-500 text-sm">{{ errors.description }}</p>
+                <p v-if="errors.description" class="mt-1 text-red-500 text-sm">
+                    {{ errors.description }}
+                </p>
             </div>
 
             {{loading}}
             <!-- ACTION BUTTONS -->
             <div class="flex justify-end gap-4 pt-6">
-                <button type="button" @click="cancelAdd"
-                    class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium">
+                <button
+                    type="button"
+                    @click="cancelAdd"
+                    class="px-6 py-2.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition font-medium"
+                >
                     Cancel
                 </button>
                 
                 <button type="button" @click="addBook()" :disabled="loading || uploadProgress !== 100 || isProcessingThumbnail !== 100 || isUploadPdf !== 100"
                     class="px-6 py-2.5 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
                     <span v-if="loading">
-                        <i class="fas fa-spinner fa-spin mr-2"></i> Processing...
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Processing...
                     </span>
                     <span v-else>
                         <i class="fas fa-plus-circle mr-2"></i> Add Book

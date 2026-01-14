@@ -21,16 +21,16 @@ const newRoom = ref({
     class_name: "",
 });
 const props = defineProps({
-    toggleAddButton: Boolean
+    toggleAddButton: Boolean,
 });
 
 const fetchUsers = async (page = 1) => {
     try {
-        const res = await Axios.get(`/api/my-participants?page=${page}`,  {
-                params:{ 
-                    rowsPerPageOptions: rowsPerPage.value,
-                }
-            });
+        const res = await Axios.get(`/api/my-participants?page=${page}`, {
+            params: {
+                rowsPerPageOptions: rowsPerPage.value,
+            },
+        });
         users.value = res.data.data;
         pagination.value = res.data.pagination;
         totalPages.value = res.data.pagination.last_page;
@@ -122,11 +122,14 @@ const openEditModal = (room) => {
     showEditModal.value = true;
 };
 
-watch(() => props.toggleAddButton, (newValue) => {
-    if (newValue) {
-        showAddModal.value = true;
+watch(
+    () => props.toggleAddButton,
+    (newValue) => {
+        if (newValue) {
+            showAddModal.value = true;
+        }
     }
-});
+);
 
 function onNextPage() {
     if (currentPage.value == totalPages.value) return;
@@ -143,7 +146,7 @@ function onPreviousPage() {
 function coursePerPage(amount) {
     rowsPerPage.value = amount;
     fetchUsers(currentPage.value);
-} 
+}
 
 onMounted(() => {
     fetchRooms();
@@ -153,31 +156,45 @@ onMounted(() => {
 </script>
 
 <template>
-    <div>  
+    <div>
         <!-- Rooms Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="room in rooms" :key="room.id"
-                class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4">
+            <div
+                v-for="room in rooms"
+                :key="room.id"
+                class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4"
+            >
                 <div class="flex justify-between items-start mb-3">
                     <h3 class="text-xl font-semibold text-gray-800">
                         {{ room.class_name }}
                     </h3>
                     <div class="flex gap-2">
                         <Popper>
-                            <button class="text-gray-500 hover:text-lime-600 transition-colors">
+                            <button
+                                class="text-gray-500 hover:text-lime-600 transition-colors"
+                            >
                                 <i class="fas fa-user-plus"></i>
                             </button>
                             <template #content>
-                                <div class="bg-gray-50 text-black w-48 shadow-lg rounded p-2">
-                                    <div class="py-2 border-b-2 border-gray-500">
+                                <div
+                                    class="bg-gray-50 text-black w-48 shadow-lg rounded p-2"
+                                >
+                                    <div
+                                        class="py-2 border-b-2 border-gray-500"
+                                    >
                                         Assign Instructor
                                     </div>
-                                    <div v-for="instructor in instructors" :key="instructor.id" @click="
-                                        assignInstructor(
-                                            room.id,
-                                            instructor.id
-                                        )
-                                        " class="block hover:bg-gray-200 text-sm text-left gap-2 cursor-pointer">
+                                    <div
+                                        v-for="instructor in instructors"
+                                        :key="instructor.id"
+                                        @click="
+                                            assignInstructor(
+                                                room.id,
+                                                instructor.id
+                                            )
+                                        "
+                                        class="block hover:bg-gray-200 text-sm text-left gap-2 cursor-pointer"
+                                    >
                                         <span class="block px-4 py-2">
                                             {{ instructor.first_name }}
                                             {{ instructor.middle_name }}
@@ -186,8 +203,10 @@ onMounted(() => {
                                 </div>
                             </template>
                         </Popper>
-                        <button @click="openEditModal(room)"
-                            class="text-gray-500 hover:text-lime-600 transition-colors">
+                        <button
+                            @click="openEditModal(room)"
+                            class="text-gray-500 hover:text-lime-600 transition-colors"
+                        >
                             <i class="fas fa-edit"></i>
                         </button>
                     </div>
@@ -195,85 +214,138 @@ onMounted(() => {
                 <p class="text-gray-600 mb-4">
                     {{ room.instructor_name }} {{ room.middle_name }}
                 </p>
-                <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
-                    <span><i class="fas fa-users mr-2"></i>{{ room.participants || 0 }}</span>
-                    <span><i class="fas fa-clock mr-2"></i>{{ room.duration }} Unlimited</span>
+                <div
+                    class="flex justify-between items-center text-sm text-gray-500 mb-4"
+                >
+                    <span
+                        ><i class="fas fa-users mr-2"></i
+                        >{{ room.participants || 0 }}</span
+                    >
+                    <span
+                        ><i class="fas fa-clock mr-2"></i
+                        >{{ room.duration }} Unlimited</span
+                    >
                 </div>
                 <div class="flex flex-col gap-2">
                     <div v-if="room.instructor" class="text-sm text-gray-600">
                         <i class="fas fa-chalkboard-teacher mr-2"></i>
                         Instructor: {{ room.instructor.first_name }}
                         {{ room.instructor.last_name }}
-                    </div> 
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- student register for live class -->
         <div class="w-full overflow-auto mt-12 bg-white scrollbar">
+        <div class="w-full overflow-auto mt-12 bg-white scrollbar">
             <table class="w-full" v-if="users.length">
                 <thead>
                     <tr class="py-">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
                             User
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
                             Email
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
                             Room
                         </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="user in users" :key="user.id" class="cursor-pointer">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-2">
-                            <img :src="user.profile" alt="avatar" class="w-8 h-8 rounded-full mr-3" />
+                    <tr
+                        v-for="user in users"
+                        :key="user.id"
+                        class="cursor-pointer"
+                    >
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex items-center gap-2"
+                        >
+                            <img
+                                :src="user.profile"
+                                alt="avatar"
+                                class="w-8 h-8 rounded-full mr-3"
+                            />
                             <div class="flex flex-col">
                                 <h1 class="font-medium capitalize">
                                     {{ user.first_name }} {{ user.middle_name }}
                                 </h1>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
                             <div class="text-sm text-gray-700">
                                 {{ user.email }}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div class="text-sm text-lime-700 flex flex-1 justify-between">
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                            <div
+                                class="text-sm text-lime-700 flex flex-1 justify-between"
+                            >
                                 <p>{{ user.class_name }}</p>
                                 <Popper>
                                     <i
-                                        class="fa-solid fa-chevron-down text-lg font-bold w-6 h-6 p-1 rounded-full hover:bg-slate-200"></i>
+                                        class="fa-solid fa-chevron-down text-lg font-bold w-6 h-6 p-1 rounded-full hover:bg-slate-200"
+                                    ></i>
                                     <template #content>
-                                        <div class="bg-gray-50 text-black w-48 shadow-lg rounded p-2">
+                                        <div
+                                            class="bg-gray-50 text-black w-48 shadow-lg rounded p-2"
+                                        >
                                             <div v-if="true">
-                                                <div class="py-2 border-b-2 border-gray-500">
+                                                <div
+                                                    class="py-2 border-b-2 border-gray-500"
+                                                >
                                                     Assign Room
                                                 </div>
-                                                <div v-for="room in rooms" :key="room.id" @click.stop="
-                                                    assignClass(
-                                                        user.id,
-                                                        room.id
-                                                    )
-                                                    " class="block hover:bg-gray-200 text-sm text-left gap-2">
-                                                    <span class="block px-4 py-2 hover:bg-gray-200">{{
-                                                        room.class_name
-                                                    }}</span>
+                                                <div
+                                                    v-for="room in rooms"
+                                                    :key="room.id"
+                                                    @click.stop="
+                                                        assignClass(
+                                                            user.id,
+                                                            room.id
+                                                        )
+                                                    "
+                                                    class="block hover:bg-gray-200 text-sm text-left gap-2"
+                                                >
+                                                    <span
+                                                        class="block px-4 py-2 hover:bg-gray-200"
+                                                        >{{
+                                                            room.class_name
+                                                        }}</span
+                                                    >
                                                 </div>
                                             </div>
                                             <div v-else>
-                                                <div class="py-2 border-b-2 border-gray-500">
+                                                <div
+                                                    class="py-2 border-b-2 border-gray-500"
+                                                >
                                                     Assign Instructor
                                                 </div>
-                                                <div @click.stop="
-                                                    openMessageModal(user)
-                                                    " v-for="room in rooms" :key="room.id"
-                                                    class="block hover:bg-gray-200 text-sm text-left gap-2">
-                                                    <span class="block px-4 py-2 hover:bg-gray-200">{{
-                                                        room.class_name
-                                                    }}</span>
+                                                <div
+                                                    @click.stop="
+                                                        openMessageModal(user)
+                                                    "
+                                                    v-for="room in rooms"
+                                                    :key="room.id"
+                                                    class="block hover:bg-gray-200 text-sm text-left gap-2"
+                                                >
+                                                    <span
+                                                        class="block px-4 py-2 hover:bg-gray-200"
+                                                        >{{
+                                                            room.class_name
+                                                        }}</span
+                                                    >
                                                 </div>
                                             </div>
                                         </div>
@@ -300,19 +372,25 @@ onMounted(() => {
             <!-- Rows Per Page Selector -->
             <Popper>
                 <div class="flex flex-row md:gap-2">
-                    <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
+                    <span class="hidden md:flex text-sm text-gray-600"
+                        >rows per page:</span
+                    >
                     <span class="text-sm font-medium">{{ rowsPerPage }}</span>
                     <i class="fa-solid fa-chevron-down text-lg"></i>
                 </div>
                 <template #content>
-                    <div v-for="option in rowsPerPageOptions" :key="option" @click="coursePerPage(option)"
+                    <div
+                        v-for="option in rowsPerPageOptions"
+                        :key="option"
+                        @click="coursePerPage(option)"
                         class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
                         :class="{
                             'bg-gray-300 text-white font-bold':
                                 rowsPerPage === option,
                             'bg-white text-gray-700 hover:bg-gray-200':
                                 rowsPerPage !== option,
-                        }">
+                        }"
+                    >
                         {{ option }}
                     </div>
                 </template>
@@ -320,8 +398,11 @@ onMounted(() => {
 
             <!-- Pagination Controls -->
             <div class="flex items-center space-x-3">
-                <button @click="onPreviousPage()" :disabled="currentPage === 1"
-                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                <button
+                    @click="onPreviousPage()"
+                    :disabled="currentPage === 1"
+                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
                     Prev
                 </button>
 
@@ -329,29 +410,48 @@ onMounted(() => {
                     Page {{ currentPage }} of {{ totalPages }}
                 </span>
 
-                <button @click="onNextPage()" :disabled="currentPage === totalPages"
-                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                <button
+                    @click="onNextPage()"
+                    :disabled="currentPage === totalPages"
+                    class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
                     Next
                 </button>
             </div>
         </div>
 
         <!-- Add Room Modal -->
-        <div v-if="showAddModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            v-if="showAddModal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
             <div class="bg-white rounded-lg p-6 w-full max-w-md">
                 <h2 class="text-2xl font-bold mb-4">Add New Room</h2>
                 <form @submit.prevent="addRoom">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Class Name</label>
-                        <input v-model="newRoom.class_name" type="text" required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                        <label
+                            class="block text-gray-700 text-sm font-bold mb-2"
+                            >Class Name</label
+                        >
+                        <input
+                            v-model="newRoom.class_name"
+                            type="text"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
+                        />
                     </div>
                     <div class="flex justify-end gap-2">
-                        <button type="button" @click="showAddModal = false"
-                            class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        <button
+                            type="button"
+                            @click="showAddModal = false"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700">
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+                        >
                             Create Room
                         </button>
                     </div>
@@ -360,21 +460,37 @@ onMounted(() => {
         </div>
 
         <!-- Edit Room Modal -->
-        <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+            v-if="showEditModal"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        >
             <div class="bg-white rounded-lg p-6 w-full max-w-md">
                 <h2 class="text-2xl font-bold mb-4">Edit Room</h2>
                 <form @submit.prevent="editRoom">
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Class Name</label>
-                        <input v-model="selectedRoom.class_name" type="text" required
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500" />
+                        <label
+                            class="block text-gray-700 text-sm font-bold mb-2"
+                            >Class Name</label
+                        >
+                        <input
+                            v-model="selectedRoom.class_name"
+                            type="text"
+                            required
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
+                        />
                     </div>
                     <div class="flex justify-end gap-2">
-                        <button type="button" @click="showEditModal = false"
-                            class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        <button
+                            type="button"
+                            @click="showEditModal = false"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700">
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+                        >
                             Update Room
                         </button>
                     </div>

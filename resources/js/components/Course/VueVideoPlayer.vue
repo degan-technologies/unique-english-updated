@@ -1,71 +1,81 @@
-<script setup> 
-import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
+<script setup>
+import videojs from "video.js";
+import "video.js/dist/video-js.css";
+import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 
 // Required for quality selection
-import 'videojs-contrib-quality-levels';
-import 'videojs-hls-quality-selector';
+import "videojs-contrib-quality-levels";
+import "videojs-hls-quality-selector";
 
 const props = defineProps({
     videoSource: { type: String, required: true },
-    posterImage:  { type: String, required: false },
-    options: { type: Object, default: () => ({}) }
+    posterImage: { type: String, required: false },
+    options: { type: Object, default: () => ({}) },
 });
 
 const videoPlayer = ref(null);
 const player = ref(null);
 const videoWatched = ref(false);
-const totalDuration = ref(0); 
+const totalDuration = ref(0);
 
 function formatTime(seconds) {
-    if (Number.isNaN(seconds)) return '0:00';
+    if (Number.isNaN(seconds)) return "0:00";
     const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60).toString().padStart(h ? 2 : 1, '0');
-    const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+    const m = Math.floor((seconds % 3600) / 60)
+        .toString()
+        .padStart(h ? 2 : 1, "0");
+    const s = Math.floor(seconds % 60)
+        .toString()
+        .padStart(2, "0");
     return h ? `${h}:${m}:${s}` : `${m}:${s}`;
 }
 
-const getSourceObj = url => ({
+const getSourceObj = (url) => ({
     src: url,
-    type: url?.includes('.m3u8') ? 'application/x-mpegURL' : 'video/mp4'
+    type: url?.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4",
 });
 
-onMounted(() => { 
+onMounted(() => {
     // Register custom time display component
-    if (!videojs.getComponent('CombinedTimeDisplay')) {
-        const Component = videojs.getComponent('Component');
+    if (!videojs.getComponent("CombinedTimeDisplay")) {
+        const Component = videojs.getComponent("Component");
 
-        videojs.registerComponent('CombinedTimeDisplay', class extends Component {
-            constructor(player, options) {
-                super(player, options); 
-                this.updateContent();
-                this.on(player, 'timeupdate', this.updateContent);
-                this.on(player, 'durationchange', this.updateContent);
-            }
+        videojs.registerComponent(
+            "CombinedTimeDisplay",
+            class extends Component {
+                constructor(player, options) {
+                    super(player, options);
+                    this.updateContent();
+                    this.on(player, "timeupdate", this.updateContent);
+                    this.on(player, "durationchange", this.updateContent);
+                }
 
-            createEl() {
-                return videojs.dom.createEl('div', {
-                    className: 'vjs-time-control vjs-time-display vjs-combined-time-display'
-                });
-            }
+                createEl() {
+                    return videojs.dom.createEl("div", {
+                        className:
+                            "vjs-time-control vjs-time-display vjs-combined-time-display",
+                    });
+                }
 
-            updateContent() {
-                const currentTime = this.player().currentTime();
-                const duration = this.player().duration();
-                this.el().innerHTML = `
-                    <span class="vjs-current-time">${formatTime(currentTime)}</span>
+                updateContent() {
+                    const currentTime = this.player().currentTime();
+                    const duration = this.player().duration();
+                    this.el().innerHTML = `
+                    <span class="vjs-current-time">${formatTime(
+                        currentTime
+                    )}</span>
                     <span class="vjs-time-divider"> / </span>
                     <span class="vjs-duration">${formatTime(duration)}</span>
                 `;
+                }
             }
-        });
+        );
     }
 
     const mergedOptions = {
         autoplay: false,
         controls: true,
-        preload: 'auto',
+        preload: "auto",
         html5: {
             vhs: {
                 overrideNative: true,
@@ -78,13 +88,13 @@ onMounted(() => {
         playbackRates: [0.5, 1, 1.25, 1.5, 2],
         controlBar: {
             children: [
-                'playToggle',
-                'volumePanel',
-                'progressControl',
-                'CombinedTimeDisplay',
-                'playbackRateMenuButton',
-                'qualitySelector',  
-                'fullscreenToggle'
+                "playToggle",
+                "volumePanel",
+                "progressControl",
+                "CombinedTimeDisplay",
+                "playbackRateMenuButton",
+                "qualitySelector",
+                "fullscreenToggle",
             ],
         },
         ...props.options,
@@ -93,41 +103,47 @@ onMounted(() => {
     player.value = videojs(videoPlayer.value, mergedOptions, function () {
         this.hlsQualitySelector({
             displayCurrentQuality: true,
-            vjsIconClass: 'vjs-icon-hd'
+            vjsIconClass: "vjs-icon-hd",
         });
-  
-        this.on('loadedmetadata', () => {
+
+        this.on("loadedmetadata", () => {
             totalDuration.value = this.duration();
         });
-        this.on('ended', () => {
-            videoWatched.value = true; 
+        this.on("ended", () => {
+            videoWatched.value = true;
         });
     });
 
     player.value.ready(() => {
-        if (!player.value.controlBar.getChild('CombinedTimeDisplay')) {
-            const timeDisplay = player.value.controlBar.addChild('CombinedTimeDisplay', {}, 1);
-            timeDisplay.updateContent();  
+        if (!player.value.controlBar.getChild("CombinedTimeDisplay")) {
+            const timeDisplay = player.value.controlBar.addChild(
+                "CombinedTimeDisplay",
+                {},
+                1
+            );
+            timeDisplay.updateContent();
         }
     });
 
     player.value.src(getSourceObj(props.videoSource));
-  
 });
 
-watch(() => props.videoSource, newUrl => {
-    if (player.value && newUrl) {
-        player.value.pause();
-        player.value.src(getSourceObj(newUrl));
-        player.value.load();
-        player.value.play().catch(() => { });
+watch(
+    () => props.videoSource,
+    (newUrl) => {
+        if (player.value && newUrl) {
+            player.value.pause();
+            player.value.src(getSourceObj(newUrl));
+            player.value.load();
+            player.value.play().catch(() => {});
+        }
     }
-});
+);
 
-onBeforeUnmount(() => { 
-    if (player.value) { 
-        player.value.off('ended');
-    } 
+onBeforeUnmount(() => {
+    if (player.value) {
+        player.value.off("ended");
+    }
     player.value?.dispose();
 });
 </script>
@@ -190,7 +206,7 @@ onBeforeUnmount(() => {
 
 /* Dramatic pulse animation */
 :deep(.vjs-big-play-button::before) {
-    content: '';
+    content: "";
     position: absolute;
     top: -15px;
     left: -15px;
@@ -203,7 +219,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.vjs-big-play-button::after) {
-    content: '';
+    content: "";
     position: absolute;
     top: -15px;
     left: -15px;
@@ -235,10 +251,10 @@ onBeforeUnmount(() => {
         box-shadow: 0 0 0 0 rgba(201, 21, 69, 0.9);
     }
     70% {
-        box-shadow: 0 0 0 10px rgba(0, 216, 7, 0);
+        box-shadow: 0 0 0 10px rgba(249, 115, 22, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(0, 216, 7, 0);
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
     }
 }
 
@@ -246,14 +262,14 @@ onBeforeUnmount(() => {
     background-color: #AD183F !important;
 }
 :deep(.vjs-poster) {
-  position: absolute;
-  inset: 0;
+    position: absolute;
+    inset: 0;
 }
 
 :deep(.vjs-poster img) {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 </style>

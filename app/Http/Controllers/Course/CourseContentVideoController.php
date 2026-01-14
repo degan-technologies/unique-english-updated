@@ -62,6 +62,7 @@ class CourseContentVideoController extends Controller
         }
 
         $path = "lesson/video/optimized/$filename";
+        $path = "lesson/video/optimized/$filename";
 
         $courseContent = CourseContent::query()
             ->where('content_url', $path)

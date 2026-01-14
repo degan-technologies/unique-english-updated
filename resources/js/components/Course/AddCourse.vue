@@ -1,17 +1,17 @@
 <script setup>
-import Axios from 'axios';
-import { storeToRefs } from 'pinia';
-import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue";
 import { useRoute } from "vue-router";
-import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
-import OverviewEditor from '@/components/Layout/overviewEditor.vue';
+import videojs from "video.js";
+import "video.js/dist/video-js.css";
+import OverviewEditor from "@/components/Layout/overviewEditor.vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
-// Constants 
+// Constants
 const SUCCESS_MESSAGE_TIMEOUT = 3000;
-const THUMBNAIL_HEIGHT = '200px';
+const THUMBNAIL_HEIGHT = "200px";
 
 // Store and Router
 const InstructorStore = useInstructorStore();
@@ -23,13 +23,14 @@ const uploadProgress = ref(0);
 const videoPlayer = ref(null);
 const playerInstance = ref(null);
 const isProcessingThumbnail = ref(0);
+const isProcessingThumbnail = ref(0);
 
 // Form state
 const course = ref({
-    course_name: '',
-    overview: '',
-    skill_level: '',
-    price: '',
+    course_name: "",
+    overview: "",
+    skill_level: "",
+    price: "",
     upload_thumbnail: null,
     upload_intro_video: null,
     language: '',
@@ -48,22 +49,30 @@ const props = defineProps({
 });
 
 // Computed properties
-const isEditing = computed(() => !!selectedCourse.value?.id && props.editCourse);
-const formTitle = computed(() => isEditing.value ? 'Edit Course' : 'Create New Course');
+const isEditing = computed(
+    () => !!selectedCourse.value?.id && props.editCourse
+);
+const formTitle = computed(() =>
+    isEditing.value ? "Edit Course" : "Create New Course"
+);
 const submitButtonText = computed(() => {
-    if (isStoringCourse.value) return 'Creating...';
-    if (isUpdatingCourse.value) return 'Updating...';
-    return isEditing.value ? 'Update Course' : 'Publish Course';
+    if (isStoringCourse.value) return "Creating...";
+    if (isUpdatingCourse.value) return "Updating...";
+    return isEditing.value ? "Update Course" : "Publish Course";
 });
 
 // Initialize form if editing
-watch([() => route.query.slug, () => props.editCourse], async ([slug, editMode]) => {
-    if (slug && editMode) {
-        await fetchCourseToEdit(slug);
-    } else if (!editMode) {
-        selectedCourse.value = null;
-    }
-}, { immediate: true });
+watch(
+    [() => route.query.slug, () => props.editCourse],
+    async ([slug, editMode]) => {
+        if (slug && editMode) {
+            await fetchCourseToEdit(slug);
+        } else if (!editMode) {
+            selectedCourse.value = null;
+        }
+    },
+    { immediate: true }
+);
 
 // Methods
 async function fetchCourseToEdit(slug) {
@@ -85,6 +94,7 @@ function initializeFormFromSelectedCourse() {
         upload_thumbnail: null,
         upload_intro_video: null,
     };
+    };
 }
   
 async function submitCourse(status) {
@@ -92,7 +102,7 @@ async function submitCourse(status) {
     errors.value = {};
 
     // Set appropriate loading state
-    if (status === 'draft') {
+    if (status === "draft") {
         isSavingDraft.value = true;
     } else if (isEditing.value) {
         isUpdatingCourse.value = true;
@@ -104,7 +114,7 @@ async function submitCourse(status) {
         const formData = createFormData(status);
         const endpoint = isEditing.value
             ? `/api/courses/update/${selectedCourse.value.id}`
-            : '/api/courses/course';
+            : "/api/courses/course";
 
         const response = await Axios.post(endpoint, formData);
         handleSuccessResponse(response, status);
@@ -133,61 +143,63 @@ function createFormData(status) {
     if (upload_thumbnail !== null) {
         formData.append('thumbnail_url', upload_thumbnail);
     } else {
-        formData.delete('thumbnail_url');
+        formData.delete("thumbnail_url");
     }
 
     if (upload_intro_video !== null) {
         formData.append('intro_video', upload_intro_video);
     } else {
-        formData.delete('intro_video');
+        formData.delete("intro_video");
     }
 
     return formData;
 }
 
 function handleSuccessResponse(response, status) {
-    successMessage.value = response.data.message ||
-        (status === 'draft'
-            ? 'Course saved as draft successfully'
+    successMessage.value =
+        response.data.message ||
+        (status === "draft"
+            ? "Course saved as draft successfully"
             : isEditing.value
-                ? 'Course updated successfully'
-                : 'Course published successfully');
+            ? "Course updated successfully"
+            : "Course published successfully");
 
-    if (!isEditing.value && status === 'published') {
+    if (!isEditing.value && status === "published") {
         selectedCourse.value = response.data.data;
 
-        instructorCourses.value = instructorCourses.value.filter(course => course?.id !== selectedCourse.value?.id);
+        instructorCourses.value = instructorCourses.value.filter(
+            (course) => course?.id !== selectedCourse.value?.id
+        );
 
         instructorCourses.value = [
             selectedCourse.value,
-            ...instructorCourses.value
+            ...instructorCourses.value,
         ];
 
         resetForm();
         return;
     }
 
-    instructorCourses.value = [
-        response.data.data,
-        ...instructorCourses.value
-    ];
+    instructorCourses.value = [response.data.data, ...instructorCourses.value];
 }
 
 function handleSubmissionError(error) {
     if (error.response?.data?.errors) {
         errors.value = error.response.data.errors;
     } else {
-        errors.value.general = error.response?.data?.message || 'An error occurred. Please try again.';
-        console.error('Submission error:', error);
+        errors.value.general =
+            error.response?.data?.message ||
+            "An error occurred. Please try again.";
+        console.error("Submission error:", error);
     }
 }
 
 function resetForm() {
     course.value = {
-        course_name: '',
-        overview: '',
-        skill_level: '',
-        price: '',
+        course_name: "",
+        overview: "",
+        skill_level: "",
+        price: "",
         upload_thumbnail: null,
         upload_intro_video: null,
         language: '',
@@ -288,7 +300,7 @@ onMounted(() => {
             autoplay: false,
             responsive: true,
             fluid: true,
-            aspectRatio: '16:9'
+            aspectRatio: "16:9",
         });
     }
 });
@@ -303,14 +315,15 @@ onBeforeUnmount(() => {
 // Watchers
 watch(successMessage, (newVal) => {
     if (newVal) {
-        setTimeout(() => successMessage.value = '', SUCCESS_MESSAGE_TIMEOUT);
+        setTimeout(() => (successMessage.value = ""), SUCCESS_MESSAGE_TIMEOUT);
     }
 });
 </script>
 
 <template>
     <div class="w-full bg-white rounded-lg shadow-md p-6">
-        <button @click="goBack()"
+        <button
+            @click="goBack()"
             class="flex items-center gap-4 justify-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
             aria-label="Go back">
             <i class="fas fa-arrow-left  self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"></i>
@@ -320,14 +333,20 @@ watch(successMessage, (newVal) => {
 
         <!-- Success Message -->
         <transition name="fade">
-            <div v-if="successMessage" class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+            <div
+                v-if="successMessage"
+                class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg"
+            >
                 <i class="fas fa-check-circle mr-2"></i>
                 {{ successMessage }}
             </div>
         </transition>
 
         <!-- Error Message -->
-        <div v-if="errors.general" class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+        <div
+            v-if="errors.general"
+            class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg"
+        >
             <i class="fas fa-exclamation-circle mr-2"></i>
             {{ errors.general }}
         </div>
@@ -337,11 +356,20 @@ watch(successMessage, (newVal) => {
                     <label class="block text-gray-700 font-semibold mb-2">
                         Course Name <span class="text-red-500">*</span>
                     </label>
-                    <input v-model.trim="course.course_name" type="text"
+                    <input
+                        v-model.trim="course.course_name"
+                        type="text"
                         class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                        :class="{ 'border-red-500': errors.course_name }" placeholder="Enter course name"
-                        maxlength="100" />
-                    <p v-if="errors.course_name" class="mt-1 text-red-500 text-sm">{{ errors.course_name }}</p>
+                        :class="{ 'border-red-500': errors.course_name }"
+                        placeholder="Enter course name"
+                        maxlength="100"
+                    />
+                    <p
+                        v-if="errors.course_name"
+                        class="mt-1 text-red-500 text-sm"
+                    >
+                        {{ errors.course_name }}
+                    </p>
                 </div>
 
                 <!-- Media Uploads -->
@@ -414,8 +442,12 @@ watch(successMessage, (newVal) => {
                                             }">{{ uploadProgress < 100  ? 'Uploading video...' : 'Completed' }}</span>
                                     </template>
                                     <template v-else>
-                                        <i class="fas fa-video text-2xl mb-2"></i>
-                                        <span class="text-sm">Click to upload video</span>
+                                        <i
+                                            class="fas fa-video text-2xl mb-2"
+                                        ></i>
+                                        <span class="text-sm"
+                                            >Click to upload video</span
+                                        >
                                     </template>
                                 </div>
                                 <input type="file" accept="video/mp4" @change="uploadIntroVideo($event)"
@@ -423,7 +455,11 @@ watch(successMessage, (newVal) => {
                                     :disabled="uploadProgress < 100 && uploadProgress > 1"
                                     />
                             </div>
-                            <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
+                            <p
+                                v-if="errors.intro_video"
+                                class="mt-1 text-red-500 text-sm"
+                            >
+                                {{ errors.intro_video }}
                             </p>
                         </div>
                     </div>
@@ -437,37 +473,59 @@ watch(successMessage, (newVal) => {
                     <label class="block text-gray-700 font-semibold mb-2">
                         Skill Level <span class="text-red-500">*</span>
                     </label>
-                    <select v-model="course.skill_level"
+                    <select
+                        v-model="course.skill_level"
                         class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                        :class="{ 'border-red-500': errors.skill_level }">
+                        :class="{ 'border-red-500': errors.skill_level }"
+                    >
                         <option value="" disabled>Select skill level</option>
                         <option value="1">Beginner</option>
                         <option value="2">Intermediate</option>
                         <option value="3">Advanced</option>
                         <option value="4">All Levels</option>
                     </select>
-                    <p v-if="errors.skill_level" class="mt-1 text-red-500 text-sm">{{ errors.skill_level }}
+                    <p
+                        v-if="errors.skill_level"
+                        class="mt-1 text-red-500 text-sm"
+                    >
+                        {{ errors.skill_level }}
                     </p>
                 </div>
 
                 <!-- Pricing -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">Price in ETB</label>
+                    <label class="block text-gray-700 font-semibold mb-2"
+                        >Price in ETB</label
+                    >
                     <div class="relative">
-                        <input v-model.number="course.price" type="number" min="0" step="0.01"
+                        <input
+                            v-model.number="course.price"
+                            type="number"
+                            min="0"
+                            step="0.01"
                             class="w-full border border-gray-300 rounded-md pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                            placeholder="0.00" />
+                            placeholder="0.00"
+                        />
                     </div>
-                    <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
+                    <p v-if="errors.price" class="mt-1 text-red-500 text-sm">
+                        {{ errors.price }}
+                    </p>
                 </div>
 
                 <!-- Language -->
                 <div>
-                    <label class="block text-gray-700 font-semibold mb-2">Language</label>
-                    <input v-model.trim="course.language" type="text"
+                    <label class="block text-gray-700 font-semibold mb-2"
+                        >Language</label
+                    >
+                    <input
+                        v-model.trim="course.language"
+                        type="text"
                         class="w-full border border-gray-300 rounded-md px-4 py-3 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition"
-                        placeholder="e.g. English, Amharic" />
-                    <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
+                        placeholder="e.g. English, Amharic"
+                    />
+                    <p v-if="errors.language" class="mt-1 text-red-500 text-sm">
+                        {{ errors.language }}
+                    </p>
                 </div>
             </div>
         </div>
@@ -476,8 +534,14 @@ watch(successMessage, (newVal) => {
             <label class="block text-gray-700 font-semibold mb-2">
                 Course Overview <span class="text-red-500">*</span>
             </label>
-            <OverviewEditor class="w-full" :selectedCourse="course" @update-overview="updateOverview" />
-            <p v-if="errors.overview" class="mt-1 text-red-500 text-sm">{{ errors.overview }}</p>
+            <OverviewEditor
+                class="w-full"
+                :selectedCourse="course"
+                @update-overview="updateOverview"
+            />
+            <p v-if="errors.overview" class="mt-1 text-red-500 text-sm">
+                {{ errors.overview }}
+            </p>
         </div>
 
         <!-- Form Actions -->

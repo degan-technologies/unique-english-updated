@@ -1,8 +1,8 @@
 <script setup>
-import Axios from 'axios';
-import 'video.js/dist/video-js.css';
+import Axios from "axios";
+import "video.js/dist/video-js.css";
 import { storeToRefs } from "pinia";
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch } from "vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
@@ -13,7 +13,7 @@ const props = defineProps({
     selectedModule: Object,
 });
 
-const emit = defineEmits(['closeModal']);
+const emit = defineEmits(["closeModal"]);
 
 const isLoading = ref(false);
 const errorMessage = ref('');
@@ -69,18 +69,18 @@ function uploadIntroVideo(event) {
 
 async function storeModuleContent() {
     if (!form.value.title) {
-        errorMessage.value = 'Title is required';
+        errorMessage.value = "Title is required";
         return;
     }
 
     if (!form.value.content_url) {
-        errorMessage.value = 'Please select a file';
+        errorMessage.value = "Please select a file";
         return;
     }
 
     isLoading.value = true;
-    errorMessage.value = '';
-    successMessage.value = '';
+    errorMessage.value = "";
+    successMessage.value = "";
 
     try {
         const formData = new FormData();
@@ -89,26 +89,29 @@ async function storeModuleContent() {
         formData.append("content_url", form.value.content_url);
         formData.append("content_type", form.value.content_type);
         formData.append("duration", form.value.duration);
+        formData.append("duration", form.value.duration);
 
         const response = await Axios.post("/api/courses/content", formData, {
             headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+                "Content-Type": "multipart/form-data",
+            },
         });
 
         addNewLesson.value = response.data.data;
 
-        successMessage.value = 'Content added successfully!';
+        successMessage.value = "Content added successfully!";
 
-        setTimeout(() => { 
-            successMessage.value = '';
+        setTimeout(() => {
+            successMessage.value = "";
         }, 1500);
 
         setTimeout(() => {
             closeModal();
         }, 1500);
     } catch (err) {
-        errorMessage.value = err.response?.data?.message || 'Failed to add content. Please try again.';
+        errorMessage.value =
+            err.response?.data?.message ||
+            "Failed to add content. Please try again.";
     } finally {
         isLoading.value = false;
         resetForm()
@@ -138,35 +141,56 @@ function closeModal() {
 </script>
 
 <template>
-    <div v-if="selectedModule" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <div class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
+    <div
+        v-if="selectedModule"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+    >
+        <div
+            class="bg-white p-6 rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl"
+        >
             <div class="flex justify-between items-center mb-4">
                 <h4 class="text-xl font-semibold text-gray-800">
                     Add Lesson to Module
                 </h4>
-                <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
+                <button
+                    @click="closeModal"
+                    class="text-gray-500 hover:text-gray-700"
+                >
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <!-- Success Message -->
-            <div v-if="successMessage" class="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+            <div
+                v-if="successMessage"
+                class="mb-4 p-3 bg-green-100 text-green-700 rounded-md"
+            >
                 {{ successMessage }}
             </div>
 
             <!-- Error Message -->
-            <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+            <div
+                v-if="errorMessage"
+                class="mb-4 p-3 bg-red-100 text-red-700 rounded-md"
+            >
                 {{ errorMessage }}
             </div>
 
-            <form @submit.prevent="storeModuleContent" class="grid grid-cols-1 gap-4">
+            <form
+                @submit.prevent="storeModuleContent"
+                class="grid grid-cols-1 gap-4"
+            >
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Title <span class="text-red-500">*</span>
                     </label>
-                    <input v-model="form.title" type="text"
+                    <input
+                        v-model="form.title"
+                        type="text"
                         class="w-full border border-gray-300 p-2.5 text-sm rounded-md focus:ring-2 focus:ring-lime-500 focus:border-lime-500 focus:outline-none transition"
-                        placeholder="Enter lesson title" required>
+                        placeholder="Enter lesson title"
+                        required
+                    />
                 </div>
 
                 <div> 
@@ -230,18 +254,20 @@ function closeModal() {
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
-                    <button type="button" @click="closeModal"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500">
+                    <button
+                        type="button"
+                        @click="closeModal"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500"
+                    >
                         Cancel
                     </button>
                     <button type="submit" :disabled="isLoading || uploadProgress < 100"
                         class="px-4 py-2 text-sm font-medium text-white bg-lime-600 border border-transparent rounded-md shadow-sm hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed">
                         <span v-if="isLoading">
-                            <i class="fas fa-spinner fa-spin mr-2"></i> Processing...
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Processing...
                         </span>
-                        <span v-else>
-                            Add Lesson
-                        </span>
+                        <span v-else> Add Lesson </span>
                     </button>
                 </div>
             </form>

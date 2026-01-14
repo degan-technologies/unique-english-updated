@@ -7,6 +7,7 @@ use App\Http\Resources\Course\CourseResource;
 use App\Http\Resources\Course\MyCourseResource;
 use App\Http\Resources\StudentResources\StdCourse\StdCourseResource;
 use App\Jobs\ProcessCourseVideo;
+use App\Jobs\ProcessCourseVideo;
 use App\Models\Course\Course;
 use App\Models\User;
 use App\Services\LangService;
@@ -104,6 +105,8 @@ class CourseController extends Controller
             'credit_hour' => 0,
             'thumbnail_url' => $request->thumbnail_url,
             'intro_video' => $request->intro_video,
+            'thumbnail_url' => $request->thumbnail_url,
+            'intro_video' => $request->intro_video,
             'language' => $request->language,
             'status' => DRAFT,
             'video_optimized' => false,
@@ -174,6 +177,8 @@ class CourseController extends Controller
             'price' => 'numeric',
             'thumbnail_url' => 'nullable',
             'intro_video' => 'nullable'
+            'thumbnail_url' => 'nullable',
+            'intro_video' => 'nullable'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -190,10 +195,12 @@ class CourseController extends Controller
         $data = $validator->validated();
 
         if ($request->thumbnail_url !== null) {
+        if ($request->thumbnail_url !== null) {
 
             if ($course->thumbnail_url) {
                 Storage::disk('public')->delete($course->thumbnail_url);
             }
+            $data['thumbnail_url'] = $request->thumbnail_url;
             $data['thumbnail_url'] = $request->thumbnail_url;
         }
 
