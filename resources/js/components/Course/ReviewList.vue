@@ -22,6 +22,7 @@ const newComment = ref("");
 const commentError = ref("");
 const feedbackType = ref(null);
 const isLoading = ref(true);
+const isDeleting = ref(false);
 const processng = ref(false);
 const currentPage = ref(0);
 const lastPage = ref(1);
@@ -167,10 +168,15 @@ function openModal(id) {
 }
 
 const removeFeedback = async (id) => {
+    isDeleting.value = true;
     try {
-        await Axios.delete(`/api/feedbacks/${id}`);
-        feedbacks.value = feedbacks.value.filter(item => item.id === id);
-        feedbackId.value = null;
+        await Axios.delete(`/api/feedbacks/${id}`)
+                .then(res=> {
+                    feedbacks.value = feedbacks.value.filter(item => item.id !== id);
+                    feedbackId.value = null;
+                    isDeleting.value = false;
+                });
+        
     } catch (error) {
         feedbackerror.value = "Failed to delete question. Please try again.";
     }
@@ -352,8 +358,15 @@ onMounted(() => {
                         Cancel
                     </button>
                     <button @click="removeFeedback(feedbackId)"
-                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">
-                        Delete
+                        class="px-4 py-3 bg-red-500 text-white rounded hover:bg-red-600">      
+                        <span v-if="isDeleting" class="flex items-center">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>
+                            Deleting...
+                        </span>
+                        <span v-else>
+                            <i class="fas fa-trash mr-2"></i>
+                            Delete
+                        </span>
                     </button>
                 </div>
             </div>

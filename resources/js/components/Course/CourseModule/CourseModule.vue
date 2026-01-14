@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
                 <i class="fas fa-arrow-left text-lg group-hover:-translate-x-1 transition-transform"></i>
                 <span class="ml-2 font-medium">Back to Courses</span>
             </button>
-
+            
             <!-- Error Message -->
             <div v-if="errorMessage"
                 class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg flex items-start">
@@ -183,11 +183,19 @@ onBeforeUnmount(() => {
                 <div class="grid grid-cols-1 md:grid-cols-2  gap-8 p-6">
                     <!-- Video Thumbnail/Player -->
                     <div class="relative rounded-lg max-w-full overflow-hidden bg-gray-100 aspect-video">
-                        <template v-if="selectedCourse?.intro_video_url">
+                        <template v-if="selectedCourse?.intro_video_url && selectedCourse?.video_optimized">
                             <VueVideoPlayer 
                                 :videoSource="selectedCourse?.intro_video_url" 
                                 :posterImage="selectedCourse?.thumbnail_url"/>
                         </template>  
+                        <template v-else>
+                            <div class="flex flex-col items-center p-4 text-center"> 
+                                <div class="space-y-1">
+                                    <p class="text-sm font-medium text-gray-700">Video is being optimized</p>
+                                    <p class="text-xs text-gray-500">This usually takes 5-10 minutes</p> 
+                                </div>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Course Details -->
@@ -262,9 +270,9 @@ onBeforeUnmount(() => {
                 <div class="p-6 border-b border-gray-200">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Course Overview</h2>
                     <div class="preview ql-editor max-w-full text-justify mt-5" v-html="selectedCourse?.overview" style="
-                                font-size: 1.1rem !important;
-                                line-height: 1.75rem !important;
-                                all: revert; "></div>
+                        font-size: 1.1rem !important;
+                        line-height: 1.75rem !important;
+                        all: revert; "></div>
                 </div>
 
                 <!-- Module Management -->
@@ -283,7 +291,7 @@ onBeforeUnmount(() => {
                         </div>
 
                         <div class="w-full overflow-x-auto scrollbar sm:overflow-hidden ">
-                            <div class="w-fit sm:w-full space-y-4">
+                            <div class="w-fit md:w-full space-y-4">
                             <div v-for="module in courseModules" :key="module.id"
                                 class="bg-white rounded-lg w-full border border-gray-200 transition-all duration-200 hover:shadow-md">
 

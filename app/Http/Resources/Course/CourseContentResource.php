@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class CourseContentResource extends JsonResource
-{ 
+{
     const DEFAULT_THUMBNAIL = 'no-thumbnail_url.png';
     const DEFAULT_CONTENT = 'no-content_url.png';
 
@@ -29,6 +29,7 @@ class CourseContentResource extends JsonResource
             'title' => $this->title,
             'sequence' => $this->sequence,
             'content_type' => $this->content_type,
+            'video_optimized' => $this->video_optimized ? true : false,
             'note' => $this->note,
             'created_at' => $this->created_at?->format('l, F j Y'),
             'hour' => $this->formatHour($this->hour),
@@ -65,7 +66,7 @@ class CourseContentResource extends JsonResource
 
             switch ($contentType) {
                 case VIDEO:
-                    return TokenGenerator::generateSecureUrl('stream.video', $filename, $userId);
+                    return TokenGenerator::generateSecureUrl('stream.video', $filename);
 
                 case PDF:
                     return TokenGenerator::generateSecurePdfUrl('stream.pdf', $filename, $userId);
@@ -78,5 +79,5 @@ class CourseContentResource extends JsonResource
             report($e);
             return self::DEFAULT_CONTENT;
         }
-    } 
+    }
 }

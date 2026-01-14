@@ -13,14 +13,16 @@ use App\Models\Transaction\Transaction;
 use Illuminate\Support\Facades\Auth;
 
 
-class CourseResource extends JsonResource {
+class CourseResource extends JsonResource
+{
     /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array { 
- 
+    public function toArray(Request $request): array
+    {
+
         return [
             'id' => $this->id,
             'slug' => $this->slug,
@@ -34,13 +36,14 @@ class CourseResource extends JsonResource {
             'discount' => $this->discount,
             'credit_hour' => $this->credit_hour,
             'created_at' => $this->created_at,
-            'status' => $this->status,  
+            'status' => $this->status,
             'total_enroll' => $this->totalEnroll($this->id),
             'revenue' => $this->totalRevenue($this->id),
+            'video_optimized' => $this->video_optimized ? true : false,
 
             'intro_video_url' => $this->intro_video
-                    ? url('/api/courses/stream/video/' . basename($this->intro_video))
-                    : 'no-intro_video.png',
+                ? url('/api/courses/stream/video/' . basename($this->intro_video))
+                : 'no-intro_video.png',
 
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
@@ -51,8 +54,9 @@ class CourseResource extends JsonResource {
         ];
     }
 
-    public function skillLevel($leve) {
-        switch($leve){
+    public function skillLevel($leve)
+    {
+        switch ($leve) {
             case BIGINNER;
                 return 'Beginner';
             case INTERMIDIATE;
@@ -66,7 +70,8 @@ class CourseResource extends JsonResource {
         }
     }
 
-    public function totalEnroll($id) {
+    public function totalEnroll($id)
+    {
 
         $countTotalEnroll = Transaction::query()
             ->where('course_id', $id)
@@ -76,10 +81,11 @@ class CourseResource extends JsonResource {
         return $countTotalEnroll === 0 ?  'not selled' : $countTotalEnroll;
     }
 
-    public function totalRevenue($id) {
+    public function totalRevenue($id)
+    {
         $countRevenue = Transaction::query()
             ->where('course_id', $id)
-            ->where('status','success')
+            ->where('status', 'success')
             ->sum('amount');
 
         return $countRevenue === 0 ?  'not selled' : $countRevenue;

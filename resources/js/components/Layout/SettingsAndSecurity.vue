@@ -142,7 +142,7 @@ onMounted(()=>{
         </div>
 
         <div class="flex flex-1 w-full overflow-hidden"> 
-            <main class="flex-1 p-6">
+            <main class="flex-1">
                 <!-- Platform Settings Panel -->
                 <transition name="fade" mode="out-in">
                     <div v-if="selectedTab === settingTab" key="theme">

@@ -18,13 +18,11 @@ const InstructorStore = useInstructorStore();
 const { selectedCourse, instructorCourses } = storeToRefs(InstructorStore);
 const route = useRoute();
 
-// Refs
-const thumbnail_url = ref('thumbnail_url');
-const intro_video = ref('intro_video');
+// Refs 
+const uploadProgress = ref(0);
 const videoPlayer = ref(null);
 const playerInstance = ref(null);
-const isProcessingThumbnail = ref(false);
-const isProcessingVideo = ref(false);
+const isProcessingThumbnail = ref(0);
 
 // Form state
 const course = ref({
@@ -35,8 +33,6 @@ const course = ref({
     upload_thumbnail: null,
     upload_intro_video: null,
     language: '',
-    create_thumbnail_url: null,
-    create_intro_video: null
 });
 
 // UI State
@@ -77,7 +73,6 @@ async function fetchCourseToEdit(slug) {
         selectedCourse.value = response.data.data;
         initializeFormFromSelectedCourse();
     } catch (error) {
-        console.error("Failed to fetch course:", error);
         errors.value.general = "Failed to load course data. Please try again.";
     } finally {
         loading.value = false;
@@ -89,72 +84,9 @@ function initializeFormFromSelectedCourse() {
         ...selectedCourse.value,
         upload_thumbnail: null,
         upload_intro_video: null,
-        create_thumbnail_url: null,
-        create_intro_video: null
     };
 }
-
-function validateFile(file, field) {
-    if (field === thumbnail_url.value && !file.type.startsWith('image/')) {
-        errors.value[field] = 'Please upload an image file';
-        return false;
-    }
-
-    if (field === intro_video.value && !file.type.startsWith('video/')) {
-        errors.value[field] = 'Please upload a video file';
-        return false;
-    }
-
-    return true;
-}
-
-async function handleFileUpload(field, event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Clear any previous errors
-    errors.value[field] = '';
-
-    if (!validateFile(file, field)) return;
-
-    // Set processing state
-    if (field === thumbnail_url.value) {
-        isProcessingThumbnail.value = true;
-    } else {
-        isProcessingVideo.value = true;
-    }
-
-    // Simulate processing delay (in real app, this might be actual processing)
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    try {
-        if (field === thumbnail_url.value) {
-            course.value.upload_thumbnail = file;
-            course.value.create_thumbnail_url = URL.createObjectURL(file);
-        } else {
-            course.value.upload_intro_video = file;
-            course.value.create_intro_video = URL.createObjectURL(file);
-            updateVideoPlayer();
-        }
-    } finally {
-        if (field === thumbnail_url.value) {
-            isProcessingThumbnail.value = false;
-        } else {
-            isProcessingVideo.value = false;
-        }
-    }
-}
-
-function updateVideoPlayer() {
-    if (playerInstance.value && course.value.create_intro_video) {
-        playerInstance.value.src({
-            src: course.value.create_intro_video,
-            type: 'video/mp4'
-        });
-        playerInstance.value.play();
-    }
-}
-
+  
 async function submitCourse(status) {
     loading.value = true;
     errors.value = {};
@@ -182,11 +114,7 @@ async function submitCourse(status) {
         resetLoadingStates();
     }
 }
-
-function isFileObject(obj) {
-    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
-}
-
+ 
 function createFormData(status) {
     const formData = new FormData();
     const { upload_thumbnail, upload_intro_video, ...rest } = course.value;
@@ -202,13 +130,13 @@ function createFormData(status) {
     formData.append("status", status);
 
     // Add files if they exist
-    if (isFileObject(upload_thumbnail)) {
+    if (upload_thumbnail !== null) {
         formData.append('thumbnail_url', upload_thumbnail);
     } else {
         formData.delete('thumbnail_url');
     }
 
-    if (isFileObject(upload_intro_video)) {
+    if (upload_intro_video !== null) {
         formData.append('intro_video', upload_intro_video);
     } else {
         formData.delete('intro_video');
@@ -263,10 +191,13 @@ function resetForm() {
         upload_thumbnail: null,
         upload_intro_video: null,
         language: '',
-        create_thumbnail_url: null,
-        create_intro_video: null
     };
 
+    uploadProgress.value = 0;
+    isProcessingThumbnail.value = 0;
+    course.value.upload_thumbnail = null; 
+    course.value.upload_intro_video = null; 
+    
     if (playerInstance.value) {
         playerInstance.value.src({});
     }
@@ -277,6 +208,68 @@ function resetLoadingStates() {
     isSavingDraft.value = false;
     isStoringCourse.value = false;
     isUpdatingCourse.value = false;
+}
+
+function uploadIntroVideo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('intro_video', file);
+
+    errors.value['intro_video'] = '';
+    uploadProgress.value = 0;
+
+    Axios.post('/api/courses/upload-intro-video', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                uploadProgress.value = percent > 99 ? 99 : percent;
+            }
+        }
+    }).then(res => {
+        course.value.upload_intro_video = res.data.path; 
+        uploadProgress.value = 100;
+    }).catch(error => {
+        console.error(error);
+        if (error.response?.data?.errors) {
+            errors.value['intro_video'] = error.response.data.errors.intro_video?.[0] || 'Upload failed';
+        }
+    })
+}
+
+function uploadThumbnail(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('thumbnail_url', file);
+
+    errors.value['thumbnail_url'] = '';
+    isProcessingThumbnail.value = 0;
+
+    Axios.post('/api/courses/upload-thumbnail', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                isProcessingThumbnail.value = percent > 99 ? 99 : percent; 
+            }
+        }
+    }).then(res => {
+        course.value.upload_thumbnail = res.data.path; 
+        isProcessingThumbnail.value = 100;
+    }).catch(error => {
+        console.error(error);
+        if (error.response?.data?.errors) {
+            errors.value['thumbnail_url'] = error.response.data.errors.thumbnail_url?.[0] || 'Upload failed';
+        }
+    })
 }
 
 const updateOverview = (newOverview) => {
@@ -305,14 +298,6 @@ onBeforeUnmount(() => {
         playerInstance.value.dispose();
         playerInstance.value = null;
     }
-
-    // Clean up object URLs
-    if (course.value.create_thumbnail_url) {
-        URL.revokeObjectURL(course.value.create_thumbnail_url);
-    }
-    if (course.value.create_intro_video) {
-        URL.revokeObjectURL(course.value.create_intro_video);
-    }
 });
 
 // Watchers
@@ -329,7 +314,8 @@ watch(successMessage, (newVal) => {
             class="flex items-center gap-4 justify-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
             aria-label="Go back">
             <i class="fas fa-arrow-left  self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"></i>
-            <span class="text-2xl font-bold self-center  text-lime-700 mb-6"> {{ editCourse ? 'Edit' : 'Add'}} New Course</span>
+            <span class="text-2xl font-bold self-center  text-lime-700 mb-6"> {{ editCourse ? 'Edit' : 'Add' }} New
+                Course</span>
         </button>
 
         <!-- Success Message -->
@@ -345,10 +331,8 @@ watch(successMessage, (newVal) => {
             <i class="fas fa-exclamation-circle mr-2"></i>
             {{ errors.general }}
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <!-- Main Content Column -->
-            <div class="lg:col-span-3 space-y-6">
-                <!-- Course Name -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8"> 
+            <div class="lg:col-span-3 space-y-6"> 
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">
                         Course Name <span class="text-red-500">*</span>
@@ -361,77 +345,83 @@ watch(successMessage, (newVal) => {
                 </div>
 
                 <!-- Media Uploads -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Thumbnail Upload -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> 
                     <div>
-                        <div v-if="course.create_thumbnail_url || course?.thumbnail_url" class="mb-2 relative">
-                            <img :src="course.create_thumbnail_url || course.thumbnail_url" alt="Course Thumbnail"
-                                class="w-full object-cover rounded-md shadow-md border border-gray-200"
-                                :style="{ height: THUMBNAIL_HEIGHT }" />
-                            <div v-if="isProcessingThumbnail"
-                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
-                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
-                                </div>
-                            </div>
-                        </div>
                         <label class="block text-gray-700 font-medium mb-2">Course Thumbnail</label>
                         <div class="relative">
-                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                :class="{ 'border-lime-500 bg-lime-50': isProcessingThumbnail }">
+                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden"
+                                :class="{ 'border-lime-500 text-gray-500 bg-lime-50': isProcessingThumbnail }">
                                 <div class="flex flex-col items-center text-gray-500">
                                     <template v-if="isProcessingThumbnail">
-                                        <div
-                                            class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                        <div class="relative mb-2 w-10 h-10 flex items-center justify-center"> 
+                                            <div class="absolute inset-0 rounded-full bg-lime-100 animate-ping opacity-75"></div>
+                                            <div class="relative z-10 flex items-center justify-center">
+                                                <svg class="w-8 h-8 text-lime-600" fill="none" viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" 
+                                                        d="M12 4v4m0 4v4m0 4v4m8-12h-4m-4 0H8m12 4h-4m-4 0H8"/>
+                                                </svg>
+                                            </div>
                                         </div>
-                                        <span class="text-sm">Processing thumbnail...</span>
+                                        <div class="space-y-1">
+                                            <span v-if="isProcessingThumbnail < 100" class="text-sm font-medium text-gray-600">Processing thumbnail...</span>
+                                            <span v-else class="text-sm font-medium text-green-600">Completed</span>
+                                        </div>
                                     </template>
-                                    <template v-else>
-                                        <i class="fas fa-image text-2xl mb-2"></i>
-                                        <span class="text-sm">Click to upload thumbnail</span>
-                                    </template>
+                                    <template v-else> 
+                                        <i class="fa-solid text-2xl mb-2 text-gray-500"
+                                            :class="{
+                                                'fa-image': isProcessingThumbnail <= 99,
+                                                'fa-check text-lime-600' : isProcessingThumbnail == 100, 
+                                            }"></i>
+                                        <span class="text-sm">Click to upload thumbnail  </span>
+                                    </template> 
                                 </div>
                                 <input type="file" accept="image/jpeg, image/png"
-                                    @change="handleFileUpload(thumbnail_url, $event)"
+                                    @change="uploadThumbnail($event)"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                    :disabled="isProcessingThumbnail" />
+                                    :disabled="isProcessingThumbnail < 100 && isProcessingThumbnail > 1" />
                             </div>
                             <p v-if="errors.thumbnail_url" class="mt-1 text-red-500 text-sm">{{ errors.thumbnail_url
-                            }}</p>
+                                }}</p>
                         </div>
                     </div>
 
                     <!-- Intro Video Upload -->
                     <div>
-                        <div v-if="course.create_intro_video || course?.intro_video_url" class="mb-2 relative">
-                            <video ref="videoPlayer" class="video-js w-full rounded-md border border-gray-200 bg-black"
-                                controls preload="auto" :style="{ height: THUMBNAIL_HEIGHT }">
-                                <source :src="course.create_intro_video || course.intro_video_url" type="video/mp4" />
-                            </video>
-                            <div v-if="isProcessingVideo"
-                                class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-md">
-                                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white">
-                                </div>
-                            </div>
-                        </div>
                         <label class="block text-gray-700 font-medium mb-2">Intro Video</label>
                         <div class="relative">
                             <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                :class="{ 'border-lime-500 bg-lime-50': isProcessingVideo }">
+                                :class="{ 'border-lime-500 bg-lime-50': uploadProgress }">
                                 <div class="flex flex-col items-center text-gray-500">
-                                    <template v-if="isProcessingVideo">
-                                        <div
-                                            class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-lime-600 mb-2">
+                                    <template v-if="uploadProgress">
+                                        <div class="relative mb-2 w-10 h-10">
+                                            <!-- Dynamic progress spinner -->
+                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-200"
+                                                    stroke-width="2"></circle>
+                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-lime-600"
+                                                    stroke-width="2"
+                                                    :stroke-dasharray="`${uploadProgress * 1.13}, 113`"></circle>
+                                            </svg>
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <span class="text-xs font-bold text-lime-600">{{ uploadProgress
+                                                    }}%</span>
+                                            </div>
                                         </div>
-                                        <span class="text-sm">Processing video...</span>
+                                        <span class="text-sm"
+                                            :class="{
+                                                'text-green-600': uploadProgress == 100 
+                                            }">{{ uploadProgress < 100  ? 'Uploading video...' : 'Completed' }}</span>
                                     </template>
                                     <template v-else>
                                         <i class="fas fa-video text-2xl mb-2"></i>
                                         <span class="text-sm">Click to upload video</span>
                                     </template>
                                 </div>
-                                <input type="file" accept="video/mp4" @change="handleFileUpload(intro_video, $event)"
+                                <input type="file" accept="video/mp4" @change="uploadIntroVideo($event)"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                    :disabled="isProcessingVideo" />
+                                    :disabled="uploadProgress < 100 && uploadProgress > 1"
+                                    />
                             </div>
                             <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
                             </p>
@@ -493,7 +483,7 @@ watch(successMessage, (newVal) => {
         <!-- Form Actions -->
         <div class="flex justify-end mt-8 space-x-4">
             <button type="button" @click="submitCourse('published')"
-                :disabled="isStoringCourse || isUpdatingCourse || loading"
+                :disabled="isStoringCourse || (!isEditing && (isUpdatingCourse || loading || uploadProgress < 100))"
                 class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
                 <span v-if="isStoringCourse || isUpdatingCourse">
                     <i class="fas fa-spinner fa-spin mr-2"></i>

@@ -25,6 +25,7 @@ return new class extends Migration
             $table->time('hour')->nullable();
             $table->string('status')->default(PUBLISHED);
             $table->boolean('isDownloadable')->default(false);
+            $table->boolean('video_optimized')->nullable();
 
             $table->unsignedTinyInteger('download_status')->storedAs("IF(`isDownloadable` IS NULL, 1, NULL)");
             $table->unsignedTinyInteger('not_deleted')->storedAs("IF(`deleted_at` IS NULL, 1, NULL)");

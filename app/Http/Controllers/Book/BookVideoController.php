@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 
-class BookVideoController extends Controller {
-    public function stream(Request $request, $filename) {
+class BookVideoController extends Controller
+{
+    public function stream(Request $request, $filename)
+    {
         $disk = Storage::disk('public');
-        $path = "books/videos/$filename";
+        $path = "books/video/optimized/$filename";
         $filePath = $disk->path($path);
 
         if (!$disk->exists($path)) {
@@ -86,7 +88,8 @@ class BookVideoController extends Controller {
         }, 200, $headers);
     }
 
-     public function contentPdfStream(Request $request, $filename) {
+    public function contentPdfStream(Request $request, $filename)
+    {
         $disk = Storage::disk('private');
         $path = "course/$filename";
 
@@ -143,9 +146,10 @@ class BookVideoController extends Controller {
         }, 200, $headers);
     }
 
-    public function bookPdfStream(Request $request, $filename) {
+    public function bookPdfStream(Request $request, $filename)
+    {
         $disk = Storage::disk('private');
-        $path = "books/images/$filename";
+        $path = "books/pdfFiles/$filename";
 
         if (!$disk->exists($path)) {
             Log::error("PDF not found: $filename");

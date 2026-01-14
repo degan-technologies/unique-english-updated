@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseResource;
 use App\Http\Resources\Course\MyCourseResource;
 use App\Http\Resources\StudentResources\StdCourse\StdCourseResource;
+use App\Jobs\ProcessCourseVideo;
 use App\Models\Course\Course;
 use App\Models\User;
 use App\Services\LangService;
@@ -17,11 +18,12 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use App\Models\Course\CourseContent;
-use App\Models\Quiz\QMetaData; 
+use App\Models\Quiz\QMetaData;
 use App\Models\Course\CourseContentProgress;
 
 
-class CourseController extends Controller {
+class CourseController extends Controller
+{
 
     /**
      * get error traslation and success beased on the language 
@@ -29,14 +31,16 @@ class CourseController extends Controller {
      */
     protected $langService;
 
-    public function __construct(LangService $langService) {
+    public function __construct(LangService $langService)
+    {
         $this->langService = $langService;
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function allCourses() {
+    public function allCourses()
+    {
         /**
          * @var mixed Course $course
          */
@@ -48,33 +52,34 @@ class CourseController extends Controller {
         $pagination = $courses->toArray();
         unset($pagination['data']);
 
-        return response() -> json([
+        return response()->json([
             'pagination' => $pagination,
             'data' => StdCourseResource::collection($courses)
         ]);
-    } 
+    }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         /**
          * @var App\Models\User $user
          */
-        
+
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
 
-        if(!$user) return;
-        
+        if (!$user) return;
+
         $validationRules = [
             'course_name' => ['required'],
-            'overview' => 'min:10', 
-            'skill_level' =>[Rule::in(SKILL_LEVEL)],
-            'price' => 'numeric', 
-            'thumbnail_url' => 'image',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+            'overview' => 'min:10',
+            'skill_level' => [Rule::in(SKILL_LEVEL)],
+            'price' => 'numeric',
+            'thumbnail_url' => 'required',
+            'intro_video' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -87,32 +92,30 @@ class CourseController extends Controller {
                 'errors' => $validator->errors()
             ], 422);
         }
-        $imagePath = null;
-        if($request->hasFile('thumbnail_url')) {
-            $imagePath = $request->file('thumbnail_url')->store('/course/images', 'public');
-        }
-        $videoPath = null;
-        if($request->hasFile('intro_video')) {
-            $videoPath = $request->file('intro_video')->store('course/video', 'public');
-        }
+
         $course = $user->courses()->create([
             'slug' => Str::uuid(),
             'course_name' => $request->course_name,
             'overview' => $request->overview,
-            'tag' =>json_encode(['courses']),
+            'tag' => json_encode(['courses']),
             'skill_level' => $request->skill_level,
             'price' => $request->price,
             'discount' => 0,
             'credit_hour' => 0,
-            'thumbnail_url' => $imagePath,
-            'intro_video' => $videoPath,
+            'thumbnail_url' => $request->thumbnail_url,
+            'intro_video' => $request->intro_video,
             'language' => $request->language,
             'status' => DRAFT,
+            'video_optimized' => false,
         ]);
 
+        if ($request->intro_video !== null) {
+            ProcessCourseVideo::dispatch($request->intro_video, $course->id);
+        }
+
         return response()->json([
-        'message' => $this->langService->getLang('course_successfully_added'),
-        'data' => new CourseResource($course),
+            'message' => $this->langService->getLang('course_successfully_added'),
+            'data' => new CourseResource($course),
         ]);
     }
 
@@ -125,11 +128,11 @@ class CourseController extends Controller {
         if (!$course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
-    
+
         return response()->json([
             'data' => new CourseResource($course)
         ]);
-    } 
+    }
 
     public function showCourse(string $slug)
     {
@@ -137,16 +140,17 @@ class CourseController extends Controller {
         if (!$course) {
             return response()->json(['error' => 'Course not found'], 404);
         }
-    
+
         return response()->json([
             'data' => new CourseResource($course)
         ]);
-    } 
+    }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id) {
+    public function update(Request $request, string $id)
+    {
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
@@ -154,22 +158,22 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            -> where('user_id', $user->id) 
+            ->where('user_id', $user->id)
             ->findOrFail($id);
 
-        if(!$course) {
+        if (!$course) {
             return response()->json([
                 'message' => $this->langService->getLang('course_not_found'),
             ], 404);
         }
-        
-       $validationRules = [
+
+        $validationRules = [
             'course_name' => ['required'],
-            'overview' => 'min:10', 
-            'skill_level' =>[Rule::in(SKILL_LEVEL)],
+            'overview' => 'min:10',
+            'skill_level' => [Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
-            'thumbnail_url' => 'nullable|file|mimes:jpeg,png,jpg,gif',
-            'intro_video' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+            'thumbnail_url' => 'nullable',
+            'intro_video' => 'nullable'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -183,21 +187,27 @@ class CourseController extends Controller {
             ], 422);
         }
 
-        $data = $validator->validated(); 
+        $data = $validator->validated();
 
-        if ($request->hasFile('thumbnail_url')) {
+        if ($request->thumbnail_url !== null) {
 
             if ($course->thumbnail_url) {
                 Storage::disk('public')->delete($course->thumbnail_url);
             }
-            $data['thumbnail_url'] = $request->file('thumbnail_url')->store('course/images', 'public');
+            $data['thumbnail_url'] = $request->thumbnail_url;
         }
 
-        if ($request->hasFile('intro_video')) {
+        if ($request->intro_video !== null) {
             if ($course->intro_video) {
                 Storage::disk('public')->delete($course->intro_video);
             }
-            $data['intro_video'] = $request->file('intro_video')->store('course/video', 'public');
+
+            $uploadedPath = $request->intro_video;
+
+            ProcessCourseVideo::dispatch($uploadedPath, $course->id);
+
+            $data['intro_video'] = $request->intro_video;
+            $data['video_optimized'] = false;
         }
 
         $course->update($data);
@@ -208,7 +218,8 @@ class CourseController extends Controller {
         ]);
     }
 
-    public function updateStatus(Request $request, string $id) {
+    public function updateStatus(Request $request, string $id)
+    {
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
@@ -216,28 +227,29 @@ class CourseController extends Controller {
         if (!$user) return;
 
         $course = Course::query()
-            ->where('user_id', $user->id) 
+            ->where('user_id', $user->id)
             ->findOrFail($id);
 
-        if(!$course) {
+        if (!$course) {
             return response()->json([
                 'message' => $this->langService->getLang('course_not_found'),
             ], 404);
         }
 
-         
+
         $course->update([
             'status' => $course->status === PUBLISHED ? DRAFT : PUBLISHED,
         ]);
 
         return response()->json([
-            'message' => $this->langService->getLang('course_successfully_updated'), 
+            'message' => $this->langService->getLang('course_successfully_updated'),
         ]);
     }
 
-    public function certificateStatus(Request $request, $course_id) {
+    public function certificateStatus(Request $request, $course_id)
+    {
         $user = Auth::user();
-        $allContentsCompleted= false;
+        $allContentsCompleted = false;
         $allQuizzesCompleted = false;
 
         $courseContents = CourseContent::where('course_id', $course_id)->get();
@@ -249,7 +261,7 @@ class CourseController extends Controller {
                 ->exists();
         })->count();
 
-        if($countLessons && $countCompletedLesson === $countLessons){
+        if ($countLessons && $countCompletedLesson === $countLessons) {
             $allContentsCompleted = true;
         }
 
@@ -278,7 +290,7 @@ class CourseController extends Controller {
         $user = $request->user();
 
         $validated = $request->validate([
-            'progress' => 'required|string', 
+            'progress' => 'required|string',
         ]);
 
         $progress = CourseContentProgress::updateOrCreate(
@@ -299,16 +311,17 @@ class CourseController extends Controller {
 
 
 
-    public function destroy(string $id) {
+    public function destroy(string $id)
+    {
 
         $user = User::query()
             ->whereSystemAdminOrInstructor()
             ->first();
-            
+
         if (!$user) return;
 
         $course = Course::query()
-          
+
             ->findOrFail($id);
 
         if (!$course) {
@@ -329,7 +342,7 @@ class CourseController extends Controller {
             ->when($request->searchQuery, fn($q) => $q->where('course_name', 'like', "%{$request->searchQuery}%"))
             ->when($request->skillLevel, fn($q) => $q->where('skill_level', $request->skillLevel))
             ->paginate($request->rowsPerPageOptions);
-     
+
         $stats = Course::query()
             ->where('user_id', Auth::id())
             ->selectRaw(
@@ -337,10 +350,10 @@ class CourseController extends Controller {
                 [Carbon::now()->format('Y-m-d')]
             )
             ->first();
-    
+
         $pagination = $courses->toArray();
         unset($pagination['data']);
-    
+
         return response()->json([
             'newToday'   => $stats->newToday,
             'total'      => $stats->total,
@@ -350,7 +363,8 @@ class CourseController extends Controller {
     }
 
 
-    public function myCourse() {
+    public function myCourse()
+    {
         $user = Auth::user();
 
         $courses = Course::query()
@@ -359,8 +373,8 @@ class CourseController extends Controller {
                     ->where('customer_id', $user->id);
             })
             ->get();
-        
-        if(!$courses) {
+
+        if (!$courses) {
             return response()->json([
                 'message' => $this->langService->getLang('course_not_found'),
             ], 404);
@@ -370,5 +384,48 @@ class CourseController extends Controller {
             'data' => MyCourseResource::collection($courses)
         ]);
     }
-    
+
+    public function uploadIntroVideo(Request $request)
+    {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return;
+        }
+
+        $request->validate([
+            'intro_video' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
+        ]);
+
+        $path = $request->file('intro_video')->store('course/video/original', 'public');
+
+        return response()->json([
+            'message' => 'Video uploaded successfully',
+            'path' => $path
+        ]);
+    }
+
+    public function uploadThumbnail(Request $request)
+    {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return;
+        }
+
+        $request->validate([
+            'thumbnail_url' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        $path = $request->file('thumbnail_url')->store('course/images', 'public');
+
+        return response()->json([
+            'message' => 'Thumbnail uploaded successfully',
+            'path' => $path
+        ]);
+    }
 }

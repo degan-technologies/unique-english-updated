@@ -168,8 +168,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="w-full h-full aspect-video rounded-lg mt-3 bg-black relative overflow-hidden">
-        <video ref="videoPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls playsinline
+    <div class="w-full h-full aspect-video rounded-lg bg-black relative overflow-hidden">
+        <video ref="videoPlayer" class="video-js max-w-full vjs-default-skin vjs-big-play-centered" controls playsinline
             crossorigin="anonymous" preload="auto" width="100%" height="auto" />
     </div>
 </template>
@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.vjs-big-play-button) {
-    background-color: rgba(0, 216, 7, 0.7) !important;
+    background-color:rgba(173, 24, 63, 1)!important;
     border: none !important;
     border-radius: 50% !important;
     width: 2em !important;
@@ -214,10 +214,10 @@ onBeforeUnmount(() => {
 }
 
 :deep(.vjs-big-play-button:hover) {
-    background-color: rgba(0, 216, 14, 0.9) !important;
+    background-color: rgba(201, 21, 69, 0.9) !important;
 }
  
 :deep(.vjs-play-progress) {
-    background-color: #00d824 !important;
+    background-color: #AD183F !important;
 }
 </style>

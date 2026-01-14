@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('discount')->nullable();
             $table->integer('credit_hour')->nullable();
             $table->string('status')->default('draft');
+            $table->boolean('video_optimized')->nullable();
 
             $table->string('thumbnail_url')->unique()->nullable();
             $table->string('intro_video')->nullable()->unique();

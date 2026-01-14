@@ -53,27 +53,28 @@ class CourseContentVideoController extends Controller
         // Set the authenticated user globally
         auth()->setUser($this->user);
     }
-    
-public function stream(Request $request, $filename) {
+
+    public function stream(Request $request, $filename)
+    {
         // Verify authentication
         if (!$this->user) {
             return response()->json(['error' => 'Unauthorized'], 401);
-        } 
+        }
 
-        $path = "course/$filename";
+        $path = "lesson/video/optimized/$filename";
 
         $courseContent = CourseContent::query()
-            ->where('content_url', $path) 
+            ->where('content_url', $path)
             ->first();
 
-        if (!$courseContent) { 
+        if (!$courseContent) {
             return response()->json([
                 'error' => 'Video not found'
             ], 404);
-        } 
-        
+        }
+
         // $checkEligibility = Course::checkEligibility($courseContent->course_id);
-        
+
 
         // if (!($checkEligibility || $courseContent->user_id === Auth::id())) {
         //     return response()->json(['error' => 'You are not eligible to view this video'], 403);
@@ -155,4 +156,3 @@ public function stream(Request $request, $filename) {
         }, 200, $headers);
     }
 }
-

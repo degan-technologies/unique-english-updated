@@ -25,6 +25,7 @@ const CONTENT_TYPES = {
 const rowsPerPageOptions = [5, 10, 15, 20];
 const gridView = ref(false);
 const addExam = ref(false)
+const uploadProgress = ref(0);
 
 const props = defineProps({ moduleId: Number });
 const emit = defineEmits(['cancelEdit', 'onAddModuleContent']);
@@ -62,6 +63,7 @@ const previewContent = computed(() => {
             type: form.value.content_type
         };
     }
+
     if (selectedContent.value?.course_content_url) {
         return {
             url: selectedContent.value.course_content_url,
@@ -110,30 +112,38 @@ function coursePerPage(amount) {
     fetchModuleContents(currentPage.value);
 }
 
-const handleFileUpload = (field, event) => {
-    errorMessage.value = '';
+function uploadIntroVideo(event) {
     const file = event.target.files[0];
+    if (!file) return;
 
-    if (field === 'content_url') {
-        form.value.content_url = file;
-        form.value.create_content_url = URL.createObjectURL(file);
-        form.value.content_type = getContentType(file);
-    } else {
-        form.value.content_url = null;
-    }
-};
+    const formData = new FormData();
+    formData.append('uploaded_file', file);
 
-const getContentType = (file) => {
-    if (!file) return 1;
-    const type = file.type || '';
-    if (type.startsWith('video/')) return 1;
-    if (type.startsWith('application/pdf')) return 2;
-    if (type.startsWith('image/')) return 3;
-    return 4;
-};
+    errorMessage.value = '';
+    uploadProgress.value = 0;
 
-function isFileObject(obj) {
-    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
+    Axios.post('/api/courses/upload-lesson-file', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                uploadProgress.value = percent > 99 ? 99 : percent;
+            }
+        }
+    }).then(res => {
+        form.value.content_url = res.data.data.content_url;
+        form.value.content_type = res.data.data.content_type;
+        form.value.duration = res.data.data.duration;
+        uploadProgress.value = 100;
+
+    }).catch(error => {
+        console.error(error);
+        if (error.response?.data?.errors) {
+            errorMessage.value = error.response.data.errors.intro_video?.[0] || 'Upload failed';
+        }
+    })
 }
 
 const updateSelectedContent = async () => {
@@ -141,7 +151,7 @@ const updateSelectedContent = async () => {
         errorMessage.value = 'Title is required';
         return;
     }
- 
+
     loadingTosave.value = true;
     errorMessage.value = '';
     successMessage.value = '';
@@ -149,8 +159,11 @@ const updateSelectedContent = async () => {
     try {
         const formData = new FormData();
         formData.append("title", form.value.title);
+        formData.append("content_url", form.value.content_url);
+        formData.append("content_type", form.value.content_type);
+        formData.append("duration", form.value.duration);
 
-        if (isFileObject(form.value.content_url)) {
+        if (form.value.content_url !== null) {
             formData.append("content_url", form.value.content_url);
         } else {
             formData.delete("content_url");
@@ -173,9 +186,14 @@ const updateSelectedContent = async () => {
             selectedContent.value = null;
             successMessage.value = '';
         }, 1500);
+
+        selectedContent.value = null;
+        form.value.content_url = null;
+        form.value.content_type = null;
+        uploadProgress.value = 0;
     } catch (err) {
         errorMessage.value = err.response?.data?.message || 'Failed to update content';
-    }  finally  {
+    } finally {
         loadingTosave.value = false
     }
 };
@@ -215,6 +233,13 @@ const editSelectedContent = (content) => {
     form.value = { ...selectedContent.value };
 };
 
+function cancelUploading() {
+    selectedContent.value = null;
+    form.value.content_url = null;
+    form.value.content_type = null;
+    uploadProgress.value = 0;
+}
+
 watch(() => addNewLesson.value, () => {
     return moduleContents.value = [
         addNewLesson.value,
@@ -242,11 +267,9 @@ onMounted(() => {
                         : 'fa-solid fa-th-large'
                         " class="text-xl"></i>
                 </button>
-                <button type="button" @click="addExam = !addExam"
-                    :class="{
-                        'bg-lime-500 text-white hover:bg-lime-600': addExam,
-                    }"
-                    class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                <button type="button" @click="addExam = !addExam" :class="{
+                    'bg-lime-500 text-white hover:bg-lime-600': addExam,
+                }" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                     {{ addExam ? 'Close' : 'Exams' }}
                 </button>
             </div>
@@ -264,13 +287,41 @@ onMounted(() => {
                         <!-- View Mode -->
                         <div v-if="!selectedContent" class="h-full flex flex-col">
                             <!-- Content Preview -->
-                            <div class="relative aspect-video bg-gray-100 h-48">
-                                <template v-if="content.content_type === 1">
-                                    <LessonVideoPlayer :videoSource="content" />
-                                </template>
+                            <div class="relative aspect-video bg-gray-100 h-48"> 
+                                    <template v-if="content.content_type === 1 && content.course_content_url">
+                                        <LessonVideoPlayer v-if="content?.video_optimized" :selectedLesson="content" />
+                                        <template v-else>
+                                            <div class="flex flex-col items-center p-4 text-center">
+                                                <div class="space-y-1">
+                                                    <p class="text-sm font-medium text-gray-700">Video is being optimized
+                                                    </p>
+                                                    <p class="text-xs text-gray-500">This usually takes 5-10 minutes</p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </template>
 
-                                <template v-else-if="content.content_type === 2">
-                                    <div class="h-full flex flex-col items-center justify-center p-4">
+                                    <template v-else-if="content.content_type === 2">
+                                        <div class="h-full flex flex-col items-center justify-center p-4">
+                                            <div
+                                                :class="['p-4 rounded-full mb-3', CONTENT_TYPES[content.content_type].color]">
+                                                <i
+                                                    :class="['fas text-2xl', CONTENT_TYPES[content.content_type].icon]"></i>
+                                            </div>
+                                            <p class="text-sm font-medium text-gray-700">
+                                                {{ CONTENT_TYPES[content.content_type].label }}
+                                            </p>
+                                            <button @click="openPdf(content)"
+                                                class="mt-2 text-xs text-lime-500 hover:underline inline-flex items-center">
+                                                <i class="fas fa-external-link-alt mr-1"></i> Open File
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <img v-else-if="content.content_type === 3" :src="content.course_content_url"
+                                        class="w-full h-full object-cover" :alt="content.title">
+
+                                    <div v-else class="h-full flex flex-col items-center justify-center p-4">
                                         <div
                                             :class="['p-4 rounded-full mb-3', CONTENT_TYPES[content.content_type].color]">
                                             <i :class="['fas text-2xl', CONTENT_TYPES[content.content_type].icon]"></i>
@@ -278,29 +329,12 @@ onMounted(() => {
                                         <p class="text-sm font-medium text-gray-700">
                                             {{ CONTENT_TYPES[content.content_type].label }}
                                         </p>
-                                        <button @click="openPdf(content)"
-                                            class="mt-2 text-xs text-lime-500 hover:underline inline-flex items-center">
-                                            <i class="fas fa-external-link-alt mr-1"></i> Open File
-                                        </button>
                                     </div>
-                                </template>
 
-                                <img v-else-if="content.content_type === 3" :src="content.course_content_url"
-                                    class="w-full h-full object-cover" :alt="content.title">
-
-                                <div v-else class="h-full flex flex-col items-center justify-center p-4">
-                                    <div :class="['p-4 rounded-full mb-3', CONTENT_TYPES[content.content_type].color]">
-                                        <i :class="['fas text-2xl', CONTENT_TYPES[content.content_type].icon]"></i>
-                                    </div>
-                                    <p class="text-sm font-medium text-gray-700">
+                                    <div
+                                        class="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
                                         {{ CONTENT_TYPES[content.content_type].label }}
-                                    </p>
-                                </div>
-
-                                <div
-                                    class="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-                                    {{ CONTENT_TYPES[content.content_type].label }}
-                                </div>
+                                    </div> 
                             </div>
 
                             <!-- Content Details -->
@@ -347,8 +381,9 @@ onMounted(() => {
                         <div class="grid grid-cols-12 gap-4 px-4 py-3 items-center">
                             <!-- Content Title and Preview -->
                             <div class="col-span-5 flex items-center">
-                                <div
-                                    class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md overflow-hidden mr-3 flex items-center justify-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md overflow-hidden mr-3 flex items-center
+                justify-center">
+
                                     <template v-if="content.content_type === 1">
                                         <i class="fas fa-video text-gray-400"></i>
                                     </template>
@@ -363,7 +398,8 @@ onMounted(() => {
                                         <i class="fas fa-link text-blue-400"></i>
                                     </template>
                                 </div>
-                                <h3 class="text-sm font-medium text-gray-800 truncate max-w-[30ch]">{{ content.title }}</h3>
+                                <h3 class="text-sm font-medium text-gray-800 truncate max-w-[30ch]">{{ content.title }}
+                                </h3>
                             </div>
 
                             <!-- Content Type -->
@@ -458,27 +494,18 @@ onMounted(() => {
     <teleport to="body">
         <transition name="modal-fade">
             <div v-if="selectedContent" class="fixed inset-0 z-50 overflow-y-auto">
-                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                    <!-- Background overlay -->
-                    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-                    </div>
+                <div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
 
                     <!-- Modal container -->
                     <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                    <div
-                        class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                    <div class="bg-white rounded-lg w-full mx-4 max-w-md sm:max-w-lg md:max-w-xl">
                         <!-- Modal header -->
                         <div
                             class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:items-center sm:justify-between border-b border-gray-200">
                             <h3 class="text-lg leading-6 font-medium text-gray-900">
                                 Edit Lesson Content
                             </h3>
-                            <button @click="selectedContent = null"
-                                class="text-gray-400 hover:text-gray-500 transition-colors">
-                                <i class="fas fa-times"></i>
-                            </button>
                         </div>
 
                         <!-- Modal content -->
@@ -513,83 +540,81 @@ onMounted(() => {
                                             required>
                                     </div>
 
-                                    <!-- Content preview and upload -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Content
-                                        </label>
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <!-- Content preview -->
-                                            <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-                                                <div v-if="previewContent"
-                                                    class="h-48 flex items-center justify-center relative">
-                                                    <video v-if="previewContent.type === 1" controls
-                                                        class="w-full h-full object-contain">
-                                                        <source :src="previewContent.url" type="video/mp4">
-                                                    </video>
-
-                                                    <div v-else-if="previewContent.type === 2"
-                                                        class="h-full w-full flex flex-col items-center justify-center p-4">
-                                                        <div
-                                                            :class="['p-4 rounded-full mb-3', CONTENT_TYPES[previewContent.type].color]">
-                                                            <i
-                                                                :class="['fas text-3xl', CONTENT_TYPES[previewContent.type].icon]"></i>
+                                        <!-- File Upload -->
+                                        <div class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                            :class="{
+                                                'border-lime-500 bg-lime-50': uploadProgress && uploadProgress < 100,
+                                                'border-green-500 bg-green-50': uploadProgress === 100
+                                            }">
+                                            <div class="flex flex-col items-center">
+                                                <template v-if="uploadProgress">
+                                                    <!-- Upload in progress -->
+                                                    <div class="relative mb-2 w-10 h-10">
+                                                        <svg class="w-full h-full transform -rotate-90"
+                                                            viewBox="0 0 36 36">
+                                                            <circle cx="18" cy="18" r="16" fill="none"
+                                                                class="stroke-gray-200" stroke-width="2"></circle>
+                                                            <circle cx="18" cy="18" r="16" fill="none"
+                                                                :class="uploadProgress === 100 ? 'stroke-green-600' : 'stroke-lime-600'"
+                                                                stroke-width="2"
+                                                                :stroke-dasharray="`${uploadProgress * 1.13}, 113`">
+                                                            </circle>
+                                                        </svg>
+                                                        <div class="absolute inset-0 flex items-center justify-center">
+                                                            <template v-if="uploadProgress === 100">
+                                                                <svg class="w-5 h-5 text-green-600" fill="none"
+                                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                                        stroke-width="2" d="M5 13l4 4L19 7" />
+                                                                </svg>
+                                                            </template>
+                                                            <template v-else>
+                                                                <span class="text-xs font-bold text-lime-600">{{
+                                                                    uploadProgress }}%</span>
+                                                            </template>
                                                         </div>
-                                                        <p class="text-sm font-medium text-gray-700">
-                                                            {{ CONTENT_TYPES[previewContent.type].label }}
-                                                        </p>
                                                     </div>
-
-                                                    <img v-else-if="previewContent.type === 3" :src="previewContent.url"
-                                                        class="w-full h-full object-contain">
-
-                                                    <div v-else
-                                                        class="h-full w-full flex flex-col items-center justify-center p-4">
-                                                        <div
-                                                            :class="['p-4 rounded-full mb-3', CONTENT_TYPES[previewContent.type].color]">
-                                                            <i
-                                                                :class="['fas text-3xl', CONTENT_TYPES[previewContent.type].icon]"></i>
-                                                        </div>
-                                                        <p class="text-sm font-medium text-gray-700">
-                                                            {{ CONTENT_TYPES[previewContent.type].label }}
-                                                        </p>
+                                                    <div class="space-y-1">
+                                                        <span class="text-sm font-medium"
+                                                            :class="uploadProgress === 100 ? 'text-green-600' : 'text-gray-600'">
+                                                            {{ uploadProgress === 100 ? 'Upload complete!' :
+                                                            'Uploading...' }}
+                                                        </span>
+                                                        <span v-if="uploadProgress < 100" class="text-xs text-gray-400">
+                                                            Please don't close this window
+                                                        </span>
                                                     </div>
-                                                </div>
-                                                <div v-else class="h-48 flex items-center justify-center text-gray-400">
-                                                    No content available
-                                                </div>
-                                            </div>
+                                                </template>
 
-                                            <!-- File upload -->
-                                            <div>
-                                                <div
-                                                    class="relative h-full border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-lime-500 transition-colors">
-                                                    <div
-                                                        class="h-full flex flex-col items-center justify-center pointer-events-none">
-                                                        <i
-                                                            class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                                                        <p class="text-sm text-gray-600 mb-1">
+                                                <template v-else>
+                                                    <!-- Default upload state -->
+                                                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                                    <div class="space-y-1">
+                                                        <p class="text-sm text-gray-600">
                                                             <span class="font-medium text-lime-600">Click to
-                                                                upload</span>
-                                                            or drag and drop
+                                                                upload</span> or drag and drop
                                                         </p>
                                                     </div>
-                                                    <input type="file" @change="handleFileUpload('content_url', $event)"
-                                                        accept="video/*,application/pdf,image/*"
-                                                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                                </div>
+                                                </template>
                                             </div>
+
+                                            <input type="file" @change="uploadIntroVideo($event)"
+                                                accept="video/mp4,application/pdf,image/*"
+                                                class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                                :disabled="uploadProgress < 100 && uploadProgress > 1" />
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Form actions -->
                                 <div class="mt-6 flex justify-end space-x-3">
-                                    <button type="button" @click="selectedContent = null"
+                                    <button type="button" @click="cancelUploading()" 
                                         class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500">
                                         Cancel
                                     </button>
-                                    <button @click="updateSelectedContent" type="button" :disabled="loadingTosave"
+                                    <button @click="updateSelectedContent" type="button"
+                                        :disabled="loadingTosave || uploadProgress < 100"
                                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:opacity-70 disabled:cursor-not-allowed">
                                         <span v-if="loadingTosave">
                                             <i class="fas fa-spinner fa-spin mr-2"></i> Saving...

@@ -6,6 +6,7 @@ use App\Http\Controllers\Book\Trait\PdfReaderTrait;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Book\BookResource;
 use App\Http\Resources\StudentResources\StdBook\StdBookResource;
+use App\Jobs\ProcessBookVideo;
 use App\Models\Book\Book;
 use App\Models\User;
 use App\Services\LangService;
@@ -15,9 +16,6 @@ use Illuminate\Support\Facades\Validator;
 use Smalot\PdfParser\Parser;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-
-
-
 class BookController extends Controller {
 
     use PdfReaderTrait;
@@ -120,9 +118,9 @@ class BookController extends Controller {
             'description' => 'required|string',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            'file_url' => 'required|mimes:pdf',
-            'intro_vedio' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv   ',
-            'cover_page_url' => 'required|image',
+            'file_url' => 'required',
+            'intro_video' => 'required',
+            'cover_page_url' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
@@ -133,43 +131,8 @@ class BookController extends Controller {
                 'errors' => $validator->errors()
             ], 422);
         }
-
-        $imagePath = null;
-        if($request->hasFile('file_url')) {
-            $imagePath = $request->file('file_url')->store('/books/images', 'private');
-        }
-        $imagesPath = null;
-        if($request->hasFile('cover_page_url')) {
-            $imagesPath = $request->file('cover_page_url')->store('/books/images', 'public');
-        }
-        $videoPath = null;
-        if($request->hasFile('intro_vedio')) {
-            $videoPath = $request->file('intro_vedio')->store('/books/videos', 'public');
-        }
-
-        // ...
-        $pageNumber = null;
-
-        if ($request->hasFile('file_url')) {
-            $pdfFile = $request->file('file_url');
-            $fileFormat = $pdfFile->getClientOriginalExtension();  
-        
-            if (strtolower($fileFormat) !== 'pdf') {
-                return response()->json([
-                    'message' => 'Only PDF files are allowed.',
-                ], 422);
-            }
-            $imagePath = $pdfFile->store('/books/images', 'public');
-        
-            $parser = new Parser();
-            $pdf = $parser->parseFile($pdfFile->getPathname());
-            $pages = $pdf->getPages();
-            $pageNumber = count($pages);
-            
-        }
-
-
-        $books = $user->books()->create([
+ 
+        $book = $user->books()->create([
             'slug' => Str::uuid(),
             'title' => $request->title,
             'price' => $request->price,
@@ -177,20 +140,25 @@ class BookController extends Controller {
             'eddition' => $request->eddition,
             'discount' => 0,
             'language' => $request->language,
-            'file_format' => $fileFormat,
+            'file_format' => 'pdf',
             'publish_date' => $request->publish_date,
-            'page_number' => $pageNumber,
+            'page_number' => $request->page_number ?? 0,
             'description' => $request->description,
             'tag' => json_encode(value: 'English'),
-            'file_url' => $imagePath,
-            'cover_page_url' => $imagesPath,
-            'intro_vedio'=>$videoPath ,
+            'file_url' => $request->file_url,
+            'cover_page_url' => $request->cover_page_url,
+            'intro_vedio'=>$request->intro_video, 
+            'video_optimized' => false,
             'isDownloadable' => false, 
         ]);
 
+        if ($request->intro_vedio !== null) {
+            ProcessBookVideo::dispatch($request->intro_video, $book->id);
+        }
+
         return response()->json([
             'message' => $this->langService->getLang('book_created_successfully'),
-            'data' => new BookResource($books),
+            'data' => new BookResource($book),
         ]);
     }
 
@@ -205,16 +173,27 @@ class BookController extends Controller {
         ]);
     }
 
-    public function update(Request $request, $id)
-    {
-        $user = Auth::user();
-        $book = Book::query()->findOrFail($id);
+    public function update(Request $request, $id) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action'),
+            ], 403);
+        }
+
+        $book = Book::query()
+            ->where('user_id', $user->id)
+            ->findOrFail($id);
     
         if (!$book) {
             return response()->json([
                 'message' => $this->langService->getLang('book_not_found'),
             ], 404);
         }
+        
     
         $validationRules = [ 
             'price' => 'required|integer',
@@ -224,9 +203,10 @@ class BookController extends Controller {
             'description' => 'required|string',
             'title' => 'required|string|max:255',
             'auther' => 'required|string|max:255',
-            'file_url' => 'nullable|mimes:pdf', 
-            'intro_vedio' => 'nullable|file|mimetypes:video/mp4,video/avi,video/mpeg',
-            'cover_page_url' => 'nullable|image',
+            'file_url' => 'nullable', 
+            'intro_vedio' => 'nullable',
+            'cover_page_url' => 'nullable',
+            'page_number' => 'nullable|integer',
         ];
     
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -241,37 +221,21 @@ class BookController extends Controller {
     
         $data = $validator->validated();
      
-        if ($request->hasFile('file_url')) {
-            $pdfFile = $request->file('file_url');
-            $fileFormat = $pdfFile->getClientOriginalExtension();
-    
-            if (strtolower($fileFormat) !== 'pdf') {
-                return response()->json([
-                    'message' => 'Only PDF files are allowed.',
-                ], 422);
-            }
-    
-            $filePath = $pdfFile->store('/books/images', 'private');
-            $data['file_url'] = $filePath;
+        if ($request->file_url !== null) { 
      
-            $parser = new Parser();
-            $pdf = $parser->parseFile($pdfFile->getPathname());
-            $pages = $pdf->getPages();
-            $data['page_number'] = count($pages);
+            $data['file_url'] = $request->file_url; 
+            $data['page_number'] = $request->page_number ?? 0;
         }
      
-        if ($request->hasFile('cover_page_url')) {
-            $data['cover_page_url'] = $request->file('cover_page_url')->store('/books/images', 'public');
+        if ($request->cover_page_url !== null) {
+            $data['cover_page_url'] = $request->cover_page_url;
         }
      
-        if ($request->hasFile('intro_vedio')) {
-            $data['intro_vedio'] = $request->file('intro_vedio')->store('/books/videos', 'public');
+        if ($request->intro_vedio !== null) {
+            $data['intro_vedio'] = $request->intro_vedio;
+            ProcessBookVideo::dispatch($request->intro_vedio, $book->id);
         }
-     
-        if ($request->has('tag')) {
-            $data['tag'] = json_encode($request->tag);
-        }
-    
+
         $book->update($data);
     
         return response()->json([
@@ -302,6 +266,118 @@ class BookController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('book_deleted_successfully'),
+        ]);
+    }
+
+    public function uploadPdf(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action'),
+            ], 403);
+        }
+
+        $validationRules = [ 
+            'file_url' => 'required|file|mimes:pdf', 
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+ 
+        $pageNumber = null;
+        $path = null;
+
+        if ($request->hasFile('file_url')) {
+            $pdfFile = $request->file('file_url');
+            $fileFormat = $pdfFile->getClientOriginalExtension();
+
+            if (strtolower($fileFormat) !== 'pdf')  return;
+
+            $path = $request->file('file_url')->store('books/pdfFiles', 'private');
+
+            $parser = new Parser();
+            $pdf = $parser->parseFile($pdfFile->getPathname());
+            $pages = $pdf->getPages();
+            $pageNumber = count($pages);
+        }
+
+        return response()->json([
+            'message' => $this->langService->getLang('pdf_uploaded_successfully'),
+            'file_path' => $path,
+            'page_number' => $pageNumber,
+        ]);
+    }
+
+    public function uploadCoverImage(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action'),
+            ], 403);
+        }
+
+        $validationRules = [ 
+            'cover_page_url' => 'required|image',
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $path = $request->file('cover_page_url')->store('books/pdfFiles', 'public');
+
+        return response()->json([
+            'message' => $this->langService->getLang('cover_image_uploaded_successfully'),
+            'file_path' => $path,
+        ]);
+    }
+
+    public function uploadIntroVideo(Request $request) {
+        $user = User::query()
+            ->whereSystemAdminOrInstructor()
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => $this->langService->getLang('unauthorized_action'),
+            ], 403);
+        }
+
+        $validationRules = [
+            'intro_video' => 'required',
+        ];
+
+        $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));
+        if (!$validator->passes()) {
+            $message = $validator->errors()->all()[0];
+            return response()->json([
+                'message' => $message,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $path = $request->file('intro_video')->store('books/video/original', 'public');
+
+        return response()->json([
+            'message' => $this->langService->getLang('intro_video_uploaded_successfully'),
+            'file_path' => $path,
         ]);
     }
 }

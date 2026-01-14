@@ -1,11 +1,10 @@
 <script setup>
 import Axios from "axios";
-import { ref, onMounted, onUnmounted, computed, watch } from "vue";
-import { storeToRefs } from "pinia";
-import Editor from "primevue/editor";
 import Popper from "vue3-popper";
+import { storeToRefs } from "pinia"; 
 import { useToast } from "vue-toastification";
 import { useRoute, useRouter } from "vue-router"
+import { ref, onMounted, onUnmounted, computed, watch } from "vue";
 
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
@@ -278,7 +277,7 @@ onUnmounted(() => {
                                 <div class="text-sm text-gray-700 space-y-1 mb-4">
                                     <div class="flex justify-between">
                                         <span class="font-medium">Price:</span>
-                                        <span>${{ book.price || 4.6 }}</span>
+                                        <span><span class="font-bold">ETB</span> {{ book.price || 'N/A' }}</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="font-medium">Published:</span>
@@ -294,15 +293,15 @@ onUnmounted(() => {
                                 <div
                                     class="mt-auto pt-4 border-t border-gray-200 grid grid-cols-3 gap-2 text-sm font-medium">
                                     <button @click="selectBookforEdit(book)"
-                                        class="flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
+                                        class="flex items-center justify-center gap-1 p-1 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
                                         ✏️ Edit
                                     </button>
                                     <button @click="changeTab(book.slug)"
-                                        class="flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
+                                        class="flex items-center justify-center gap-1 p-1 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
                                         📄 Details
                                     </button>
                                     <button @click="deleteCourse(book.id)"
-                                        class="flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
+                                        class="flex items-center justify-center gap-1 p-1 rounded-md bg-slate-50 text-gray-500 hover:bg-slate-100 transition">
                                         🗑️ Delete
                                     </button>
                                 </div>
@@ -439,9 +438,13 @@ onUnmounted(() => {
                 </div>
             </div>
         </div>
-        <EditBookForm v-if="editingBookId" :selectedbook="selectedbook" :booksAdmin="booksAdmin"
+        <div class="bg-white">
+            <EditBookForm v-if="editingBookId" :selectedbook="selectedbook" :booksAdmin="booksAdmin"
             :editingBookId="editingBookId" @cancel-edit="cancelEdit" />
-        <BookDetail v-if="showPopularBooks && selectedbook" :selectedbook="selectedbook" :goBack="goBack" />
+        </div>
+        <div>
+            <BookDetail class="bg-white" v-if="showPopularBooks && selectedbook" :selectedbook="selectedbook" :goBack="goBack" />
+        </div>
     </div>
 </template>
 

@@ -1,5 +1,6 @@
 <?php
-use App\Http\Controllers\Auth\SocialController; 
+
+use App\Http\Controllers\Auth\SocialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
@@ -9,11 +10,11 @@ use App\Http\Controllers\Book\orderdController;
 use App\Http\Controllers\Course\CourseContentController;
 use App\Http\Controllers\Course\CourseModuleController;
 use App\Http\Controllers\Course\CourseController;
-use App\Http\Controllers\FeedBackController; 
+use App\Http\Controllers\FeedBackController;
 use App\Http\Controllers\Quiz\QuizController;
 use App\Http\Controllers\Quiz\QMetaDataController;
 use App\Http\Controllers\Quiz\ResultController;
-use App\Http\Controllers\Quiz\QASectionController; 
+use App\Http\Controllers\Quiz\QASectionController;
 use App\Http\Controllers\Message\SMSController;
 use App\Http\Controllers\Transaction\TransactionController;
 use App\Http\Controllers\UserController;
@@ -41,23 +42,23 @@ Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
 Route::get('/hero-section', [HeroController::class, 'index']);
-Route::get('/get-plans',[ PlanController::class, 'index']);
-Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']); 
+Route::get('/get-plans', [PlanController::class, 'index']);
+Route::get('/courses/stream/video/{filename}', [CourseVideoController::class, 'stream']);
 Route::get('/books/stream/video/{filename}', [BookVideoController::class, 'stream']);
-  
+
 Route::get('/stream/video/{filename}', [CourseContentVideoController::class, 'stream'])
     ->name('stream.video')
     ->middleware(EnsureSignature::class);
- 
+
 Route::middleware('auth:api')
-->group(function () { 
+    ->group(function () {
         Route::post('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream'])
             ->name('stream.pdf')
             ->middleware(EnsureSignature::class);
- 
+
         Route::post('/book/pdf-stream/{filename}', [BookVideoController::class, 'bookPdfStream'])
-        ->name('book.pdf')
-        ->middleware(EnsureSignature::class);
+            ->name('book.pdf')
+            ->middleware(EnsureSignature::class);
 
         Route::post('/log-out', [AuthController::class, 'logout']);
         Route::post('/add-instructor', [UserController::class, 'addInstructor']);
@@ -69,7 +70,7 @@ Route::middleware('auth:api')
         Route::get('/users', [UserController::class, 'index']);
         Route::get('/get-user/statistics', [UserController::class, 'getUserStatistics']);
         Route::get('/users/{id}', [UserController::class, 'show']);
-        Route::resource('/delete-instructor', UserController::class );
+        Route::resource('/delete-instructor', UserController::class);
         Route::post('/users/bulk/delete', [UserController::class, 'bulkDelete']);
         Route::post('/profile-image/update', [UserController::class, 'profileImageUpdate']);
         Route::post('/remove-image', [UserController::class, 'profileImageRemove']);
@@ -78,7 +79,7 @@ Route::middleware('auth:api')
         Route::get('/get-course-modules/{slug}', [CourseModuleController::class, 'getCourseModules']);
         Route::get('/get-course-qa/{slug}', [CourseModuleController::class, 'getCourseQandA']);
         Route::get('/get-book/{slug}', [BookController::class, 'getBook']);
-        Route::get('/book-pdf/{filename}',[BookController::class, 'streamPdf']);
+        Route::get('/book-pdf/{filename}', [BookController::class, 'streamPdf']);
 
         Route::post('/coursecontent/progress', [CourseContentProgressController::class, 'store']);
         Route::get('/coursecontent/progress', [CourseContentProgressController::class, 'index']);
@@ -88,7 +89,7 @@ Route::middleware('auth:api')
 
         Route::post('/answer/quiz', [ResultController::class, 'answerQuiz']);
         Route::get('/check/answer/{qmId}', [QMetaDataController::class, 'checkAnswer']);
- 
+
         Route::get('/get-rooms', [LiveController::class, 'getAllRooms']);
         Route::get('/get-my-rooms', [LiveController::class, 'getMyRooms']);
         Route::post('/rooms', [LiveController::class, 'store']);
@@ -97,7 +98,7 @@ Route::middleware('auth:api')
         Route::post('/assign-private-instructor/{id}', [LiveController::class, 'assignPrivateInstructor']);
 
         Route::post('/assign-instructor/{id}', [LiveController::class, 'AssignInstructors']);
-        Route::get('/my-instructors', [LiveController::class, 'getMyInstructors']); 
+        Route::get('/my-instructors', [LiveController::class, 'getMyInstructors']);
         Route::post('/courses-status/{id}', [CourseController::class, 'updateStatus']);
 
         Route::post('/update-visiter-attendance/{scheduleId}', [AttendanceController::class, 'updateVisiterAttendance']);
@@ -109,34 +110,34 @@ Route::middleware('auth:api')
 
         Route::get('/get-instractor-attendance', [AttendanceController::class, 'instractorAttendance']);
         Route::get('/detail-instractor-attendance/{id}', [AttendanceController::class, 'detailInstractorAttendance']);
-});
+    });
 
 Route::middleware('auth:api')
     ->group(function () {
-        Route::get('/current', [AuthController::class, 'currentUser']);       
-        Route::resource('quize',QuizController::class);
+        Route::get('/current', [AuthController::class, 'currentUser']);
+        Route::resource('quize', QuizController::class);
         Route::resource('schedules', ScheduleController::class);
         Route::resource('QMetaData', QMetaDataController::class);
-        Route::get('/get-student-module-exam', [QMetaDataController::class,'fetchStudentExam']); 
-        Route::get('/get-module-quizes', [QMetaDataController::class,'fetchInstructorExam']); 
+        Route::get('/get-student-module-exam', [QMetaDataController::class, 'fetchStudentExam']);
+        Route::get('/get-module-quizes', [QMetaDataController::class, 'fetchInstructorExam']);
         Route::resource('tests', TestController::class);
         Route::resource('/results', ResultController::class);
         Route::resource('plans', PlanController::class);
         Route::resource('QASection', QASectionController::class);
         Route::resource('answers', AnswerController::class);
-        Route::get('/my-schedule', [ScheduleController::class, 'getMySchedules']);  
-        Route::get('/my-participants', [LiveController::class, 'getParticipants']);   
-        Route::get('/private-participants', [LiveController::class, 'getPrivateParticipants']);   
-        Route::get('/student-schedule', [ScheduleController::class, 'getStudentSchedules']); 
+        Route::get('/my-schedule', [ScheduleController::class, 'getMySchedules']);
+        Route::get('/my-participants', [LiveController::class, 'getParticipants']);
+        Route::get('/private-participants', [LiveController::class, 'getPrivateParticipants']);
+        Route::get('/student-schedule', [ScheduleController::class, 'getStudentSchedules']);
         Route::get('/my-get-students', [LiveController::class, 'getMyStudents']);
-        Route::get('/my-private-students-schedule', [LiveController::class, 'getMyPrivateStudentsAndSchedules']); 
-        
+        Route::get('/my-private-students-schedule', [LiveController::class, 'getMyPrivateStudentsAndSchedules']);
+
         Route::get('get-my-plans', [PlanController::class, 'getMyPlans']);
-         Route::get('/private-student-schedule', [ScheduleController::class, 'getStudentPrivateSchedules']); 
-        
+        Route::get('/private-student-schedule', [ScheduleController::class, 'getStudentPrivateSchedules']);
+
         Route::post('update-private-schedules/{id}', [ScheduleController::class, 'updatePrivateSchedule']);
         Route::post('add-private-schedules', [ScheduleController::class, 'addPrivateSchedule']);
-        Route::get('/today-schedules', [ScheduleController::class, 'todaySchedules']);   
+        Route::get('/today-schedules', [ScheduleController::class, 'todaySchedules']);
     });
 
 Route::middleware('auth:api')
@@ -151,8 +152,11 @@ Route::middleware('auth:api')
         Route::get('/my-courses', [CourseController::class, 'myCourse']);
         Route::get('/my-books', [BookController::class, 'myBooks']);
         Route::get('/module-contents/{moduleId}', [CourseContentController::class, 'getModuleContents']);
-        });
-        
+        Route::post('/upload-intro-video', [CourseController::class, 'uploadIntroVideo']);
+        Route::post('/upload-thumbnail', [CourseController::class, 'uploadThumbnail']);
+        Route::post('/upload-lesson-file', [CourseContentController::class, 'uploadLessonFile']);
+    });
+
 Route::middleware('auth:api')
     ->prefix('feedbacks')
     ->group(function () {
@@ -168,53 +172,57 @@ Route::middleware('auth:api')
         Route::post('favorite/{id}', [FeedBackController::class, 'addFavorite']);
         Route::post('{id}/report', [FeedBackController::class, 'report']);
     });
-    
+
 Route::get('/feedbacks/course/{slug}', [FeedBackController::class, 'getFeedbacksByCourse']);
 
 // SMS endpoints added here 
 Route::middleware('auth:api')->group(function () {
-        Route::post('/send-sms', [SMSController::class, 'sendSMS']);
-        Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
-        Route::post('/send-otp', [SMSController::class, 'sendOTP']);
-        Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
+    Route::post('/send-sms', [SMSController::class, 'sendSMS']);
+    Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
+    Route::post('/send-otp', [SMSController::class, 'sendOTP']);
+    Route::post('/verify-otp-sms', [SMSController::class, 'verifyOTP']);
 
-        Route::post('/email-notification', [EmailNotificationController::class, 'sendEmailNotification']);
-        Route::get('/created-announcements', [EmailNotificationController::class, 'getAnnouncements']);
-        });
+    Route::post('/email-notification', [EmailNotificationController::class, 'sendEmailNotification']);
+    Route::get('/created-announcements', [EmailNotificationController::class, 'getAnnouncements']);
+});
 
 Route::middleware('auth:api')
     ->prefix('books')
-    ->group(function(){
+    ->group(function () {
         Route::resource('/books', BookController::class);
         Route::resource('/order-books', orderdController::class);
         Route::post('/update-books/{id}', [BookController::class, 'update']);
+
+        Route::post('/upload-pdf', [BookController::class, 'uploadPdf']);
+        Route::post('/upload-thumbnail', [BookController::class, 'uploadCoverImage']);
+        Route::post('/upload-intro-video', [BookController::class, 'uploadIntroVideo']);
     });
 
 Route::middleware('auth:api')
-->group(function () {
-    Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
-    Route::get('/transaction', [TransactionController::class, 'transactions']);
-    Route::get('/top-sellers', [TransactionController::class, 'getTopSeller']);
-    Route::get('/top-sold-books', [TransactionController::class, 'topSoldBooks']);
-    Route::get('/top-sold-courses', [TransactionController::class, 'topSoldCourses']);
-    Route::get('/system-transaction', [TransactionController::class, 'systemTransaction']);
-    Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoice']);
-    Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);
-    Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
-    Route::resource('/bank-info', BankInfoController::class);
-    Route::get('/my-bank-info', [BankInfoController::class, 'myBankInfo']);
-    Route::post('/withdrawals', [TransactionController::class, 'transferToBank']); 
-    Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
-    Route::get('/get-balance', [TransactionController::class, 'getBalance']);
-    Route::post('/chapa/transfer/approval', [TransactionController::class, 'handleTransferApproval'])
-    ->name('chapa.transfer.callback');
-    
-    Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
-    Route::post('/change-comission', [PlatformComissionController::class, 'store']);
-}); 
+    ->group(function () {
+        Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
+        Route::get('/transaction', [TransactionController::class, 'transactions']);
+        Route::get('/top-sellers', [TransactionController::class, 'getTopSeller']);
+        Route::get('/top-sold-books', [TransactionController::class, 'topSoldBooks']);
+        Route::get('/top-sold-courses', [TransactionController::class, 'topSoldCourses']);
+        Route::get('/system-transaction', [TransactionController::class, 'systemTransaction']);
+        Route::get('/transaction-info/{txRef}', [TransactionController::class, 'transactionInvoice']);
+        Route::get('/refend-transaction/{txRef}', [TransactionController::class, 'refundTransaction']);
+        Route::get('/bank-lists', [TransactionController::class, 'getBankList']);
+        Route::resource('/bank-info', BankInfoController::class);
+        Route::get('/my-bank-info', [BankInfoController::class, 'myBankInfo']);
+        Route::post('/withdrawals', [TransactionController::class, 'transferToBank']);
+        Route::get('/get-transfer-history', [TransactionController::class, 'getTransferHistory']);
+        Route::get('/get-balance', [TransactionController::class, 'getBalance']);
+        Route::post('/chapa/transfer/approval', [TransactionController::class, 'handleTransferApproval'])
+            ->name('chapa.transfer.callback');
 
-Route::post('/chapa/withdrawal-approval', [TransactionController::class, 'handleWithdrawalApproval'])->name('transfer.approval'); 
-Route::post('/chapa/approve-transfer', [TransactionController::class, 'handleTransferApproval']); 
+        Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
+        Route::post('/change-comission', [PlatformComissionController::class, 'store']);
+    });
+
+Route::post('/chapa/withdrawal-approval', [TransactionController::class, 'handleWithdrawalApproval'])->name('transfer.approval');
+Route::post('/chapa/approve-transfer', [TransactionController::class, 'handleTransferApproval']);
 
 Route::middleware(['auth:api'])->group(function () {
 
@@ -224,14 +232,13 @@ Route::middleware(['auth:api'])->group(function () {
     // All authenticated users can view logos
     Route::get('/logos', [LogoController::class, 'index']);
     Route::get('/logos/{logo}', [LogoController::class, 'show']);
-    Route::get('/get-notifications', [NotificationController::class, 'index']); 
-    Route::post('/read-notification/{id}', [NotificationController::class, 'markAsRead']); 
+    Route::get('/get-notifications', [NotificationController::class, 'index']);
+    Route::post('/read-notification/{id}', [NotificationController::class, 'markAsRead']);
 
     //system information
     Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
     
+    Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
 });
 
-Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
- 

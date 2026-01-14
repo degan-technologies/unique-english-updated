@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="w-full h-full aspect-video rounded-lg mt-3 bg-black relative overflow-hidden">
+    <div class="w-full h-full aspect-video rounded-lg bg-black relative overflow-hidden">
         <video ref="videoPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls playsinline
             crossorigin="anonymous" preload="auto" width="100%" height="auto" 
             :poster="posterImage" />
@@ -166,8 +166,9 @@ onBeforeUnmount(() => {
 :deep(.vjs-combined-time-display .vjs-time-divider) {
     padding: 0 0.2em;
     display: inline-block;
-}:deep(.vjs-big-play-button) {
-    background-color: rgba(0, 216, 7, 0.7) !important;
+
+}:deep(.vjs-big-play-button) { 
+    background-color:rgba(173, 24, 63, 0.7)!important;
     border: none !important;
     border-radius: 50% !important;
     width: 2em !important;
@@ -177,12 +178,12 @@ onBeforeUnmount(() => {
     margin-left: -1em !important;
     position: relative;
     z-index: 10;
-    box-shadow: 0 0 0 0 rgba(0, 216, 7, 0.7);
+    background-color:rgba(173, 24, 63, 0.7)!important;
     animation: pulse-ring 2s infinite;
 }
 
 :deep(.vjs-big-play-button:hover) {
-    background-color: rgba(0, 216, 14, 0.9) !important;
+    background-color: rgba(201, 21, 69, 0.9) !important;
     transform: scale(1.05);
     transition: all 0.3s ease;
 }
@@ -195,7 +196,7 @@ onBeforeUnmount(() => {
     left: -15px;
     right: -15px;
     bottom: -15px;
-    background: rgba(0, 216, 7, 0.4);
+    background-color: rgba(201, 21, 69, 0.9) !important;
     border-radius: 50%;
     animation: pulse-dramatic 2s infinite;
     z-index: -1;
@@ -208,7 +209,7 @@ onBeforeUnmount(() => {
     left: -15px;
     right: -15px;
     bottom: -15px;
-    background: rgba(0, 216, 7, 0.4);
+    background-color: rgba(201, 21, 69, 0.9) !important;
     border-radius: 50%;
     animation: pulse-dramatic 2s infinite 0.5s;
     z-index: -1;
@@ -231,7 +232,7 @@ onBeforeUnmount(() => {
 
 @keyframes pulse-ring {
     0% {
-        box-shadow: 0 0 0 0 rgba(0, 216, 7, 0.7);
+        box-shadow: 0 0 0 0 rgba(201, 21, 69, 0.9);
     }
     70% {
         box-shadow: 0 0 0 10px rgba(0, 216, 7, 0);
@@ -242,7 +243,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.vjs-play-progress) {
-    background-color: #00d824 !important;
+    background-color: #AD183F !important;
 }
 :deep(.vjs-poster) {
   position: absolute;

@@ -18,55 +18,54 @@ const emit = defineEmits(['closeModal']);
 const isLoading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
+const uploadProgress = ref(0);
 
 const form = ref({
     title: "",
-    content_type: 1,
-    content_url: null,
-    thumbnail_url: null,
-    create_content_url: null,
-    create_thumbnail_url: null,
+    content_type: null,
+    content_url: null, 
+    duration: null,
 });
 
 // Reset form when module changes
 watch(() => props.selectedModule, () => {
     resetForm();
-});
+}); 
 
-const previewContent = computed(() => {
-    if (!form.value.create_content_url) return null;
-
-    return {
-        url: form.value.create_content_url,
-        type: form.value.content_type,
-        name: form.value.content_url?.name || ''
-    };
-});
-
-function getContentType(file) {
-    if (!file) return 1;
-
-    const type = file.type || '';
-    if (type.startsWith('video/')) return 1;
-    if (type.startsWith('application/pdf')) return 2;
-    if (type.startsWith('image/')) return 3;
-    return 4; // other
-}
-
-function handleFileUpload(field, event) {
-    errorMessage.value = '';
+function uploadIntroVideo(event) {
     const file = event.target.files[0];
+    if (!file) return;
 
-    if (!file) return; 
-    
-    if (field === 'content_url') {
-        form.value.content_url = file;
-        form.value.create_content_url = URL.createObjectURL(file);
-        form.value.content_type = getContentType(file);
-    } else {
-        form.value.content_url = null;
-    }
+    const formData = new FormData();
+    formData.append('uploaded_file', file);
+
+    errorMessage.value = '';
+    uploadProgress.value = 0;
+
+    Axios.post('/api/courses/upload-lesson-file', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+        onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                uploadProgress.value = percent > 99 ? 99 : percent;
+            }
+        }
+    }).then(res => {
+        form.value.content_url = res.data.data.content_url; 
+        form.value.content_type = res.data.data.content_type; 
+        form.value.duration = res.data.data.duration; 
+        uploadProgress.value = 100;
+ 
+    }).catch(error => {
+        console.error(error);
+        if (error.response?.data?.errors) {
+            errorMessage.value = error.response.data.errors.intro_video?.[0] || 'Upload failed';
+        }
+    })
 }
+
 
 async function storeModuleContent() {
     if (!form.value.title) {
@@ -89,6 +88,7 @@ async function storeModuleContent() {
         formData.append("title", form.value.title);
         formData.append("content_url", form.value.content_url);
         formData.append("content_type", form.value.content_type);
+        formData.append("duration", form.value.duration);
 
         const response = await Axios.post("/api/courses/content", formData, {
             headers: {
@@ -111,26 +111,29 @@ async function storeModuleContent() {
         errorMessage.value = err.response?.data?.message || 'Failed to add content. Please try again.';
     } finally {
         isLoading.value = false;
+        resetForm()
     }
-}
+} 
 
 function resetForm() {
     form.value = {
         title: "",
-        description: "",
-        content_type: 1,
-        content_url: null,
-        thumbnail_url: null,
-        create_content_url: null,
-        create_thumbnail_url: null,
+        description: "", 
+        content_url: null, 
+        content_type: null,
+        duration: null,
     };
     errorMessage.value = '';
     successMessage.value = '';
+    form.value.content_url = null; 
+    form.value.content_type = null; 
+    form.value.duration = null; 
+    uploadProgress.value = 0;
 }
 
 function closeModal() {
     resetForm();
-    emit('closeModal');
+    emit('closeModal');    
 }
 </script>
 
@@ -166,48 +169,63 @@ function closeModal() {
                         placeholder="Enter lesson title" required>
                 </div>
 
-                <div>
-                    <!-- Preview Section -->
-                    <div v-if="previewContent" class="mb-3">
-                        <div
-                            class="w-full h-48 rounded-md border border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
-                            <!-- Video Preview -->
-                            <video v-if="form.content_type === 1" controls class="w-full h-full object-contain"
-                                preload="metadata">
-                                <source :src="previewContent.url" type="video/mp4">
-                                Your browser does not support the video tag.
-                            </video>
-
-                            <!-- PDF Preview -->
-                            <div v-else-if="form.content_type === 2" class="p-4 text-center">
-                                <i class="fas fa-file-pdf text-5xl text-red-500 mb-2"></i>
-                                <p class="text-sm text-gray-600">PDF Document</p>
-                            </div>
-
-                            <!-- Image Preview -->
-                            <img v-else-if="form.content_type === 3" :src="previewContent.url"
-                                class="w-full h-full object-contain" alt="Content preview">
-
-                            <!-- Other File Preview -->
-                            <div v-else class="p-4 text-center">
-                                <i class="fas fa-file-alt text-5xl text-blue-500 mb-2"></i>
-                                <p class="text-sm text-gray-600">Document File</p>
-                            </div>
-                        </div>
-                    </div>
-
+                <div> 
                     <!-- File Upload -->
-                    <div
-                        class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition">
+                    <div class="relative border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                        :class="{
+                            'border-lime-500 bg-lime-50': uploadProgress && uploadProgress < 100,
+                            'border-green-500 bg-green-50': uploadProgress === 100
+                        }">
                         <div class="flex flex-col items-center">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600">
-                                <span class="font-medium text-lime-600">Click to upload</span> or drag and drop
-                            </p> 
+                            <template v-if="uploadProgress">
+                                <!-- Upload in progress -->
+                                <div class="relative mb-2 w-10 h-10">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                        <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-200" stroke-width="2"></circle>
+                                        <circle cx="18" cy="18" r="16" fill="none" 
+                                                :class="uploadProgress === 100 ? 'stroke-green-600' : 'stroke-lime-600'" 
+                                                stroke-width="2"
+                                                :stroke-dasharray="`${uploadProgress * 1.13}, 113`"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <template v-if="uploadProgress === 100">
+                                            <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </template>
+                                        <template v-else>
+                                            <span class="text-xs font-bold text-lime-600">{{ uploadProgress }}%</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-sm font-medium" 
+                                        :class="uploadProgress === 100 ? 'text-green-600' : 'text-gray-600'">
+                                        {{ uploadProgress === 100 ? 'Upload complete!' : 'Uploading...' }}
+                                    </span>
+                                    <span v-if="uploadProgress < 100" class="text-xs text-gray-400">
+                                        Please don't close this window
+                                    </span>
+                                </div>
+                            </template>
+                            
+                            <template v-else>
+                                <!-- Default upload state -->
+                                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                <div class="space-y-1">
+                                    <p class="text-sm text-gray-600">
+                                        <span class="font-medium text-lime-600">Click to upload</span> or drag and drop
+                                    </p> 
+                                </div>
+                            </template>
                         </div>
-                        <input type="file" @change="handleFileUpload('content_url', $event)"
-                            accept="video/*,application/pdf,image/*"
-                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" required />
+                        
+                        <input type="file" 
+                            @change="uploadIntroVideo($event)"
+                            accept="video/mp4,application/pdf,image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            :disabled="uploadProgress < 100 && uploadProgress > 1"
+                            />
                     </div>
                 </div>
 
@@ -216,7 +234,7 @@ function closeModal() {
                         class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-lime-500">
                         Cancel
                     </button>
-                    <button type="submit" :disabled="isLoading"
+                    <button type="submit" :disabled="isLoading || uploadProgress < 100"
                         class="px-4 py-2 text-sm font-medium text-white bg-lime-600 border border-transparent rounded-md shadow-sm hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed">
                         <span v-if="isLoading">
                             <i class="fas fa-spinner fa-spin mr-2"></i> Processing...

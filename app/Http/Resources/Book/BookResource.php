@@ -10,7 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-class BookResource extends JsonResource {
+
+class BookResource extends JsonResource
+{
     /**
      * Transform the resource into an array.
      *
@@ -33,9 +35,10 @@ class BookResource extends JsonResource {
             'revenue' => $this->totalRevenue($this->id),
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
+            'video_optimized' => $this->video_optimized,
 
             'file_url' => TokenGenerator::generateSecurePdfUrl('book.pdf', basename($this->file_url), Auth::id()),
-            
+
             'eddition' => $this->eddition,
             'discount' => $this->discount,
             'created_at' => $this->created_at,
@@ -45,15 +48,15 @@ class BookResource extends JsonResource {
             'page_number' => $this->page_number,
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
-            'intro_vedio' => $this->intro_vedio 
-            ? Storage::disk('public')->url($this->intro_vedio) 
-            : 'no-video.mp4',
+            'intro_vedio' => $this->intro_vedio
+                ? Storage::disk('public')->url($this->intro_vedio)
+                : 'no-video.mp4',
             'intro_video_url' => $this->intro_vedio
-            ? url('/api/books/stream/video/' . basename($this->intro_vedio))
-            : 'no-intro_video.png',
+                ? url('/api/books/stream/video/' . basename($this->intro_vedio))
+                : 'no-intro_video.png',
             'cover_page_url' => $this->cover_page_url
-            ? Storage::disk('public')->url($this->cover_page_url)
-            : 'no-cover_page_url.png',
+                ? Storage::disk('public')->url($this->cover_page_url)
+                : 'no-cover_page_url.png',
             'isDownloadable' => $this->isDownloadable,
             'download_status' => $this->download_status,
             'user' => new userResource($this->whenLoaded('user')),
