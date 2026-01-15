@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import Popper from "vue3-popper";
 import Axios from "axios";
+import { onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
+import Popper from "vue3-popper";
 
+import Spinner from "@/components/Layout/Spinner.vue";
 import AddPrivateSchedule from "@/components/Live/AddPrivateSchedule.vue";
 import JetsiLive from "@/components/Live/JetsiLive.vue";
-import Spinner from "@/components/Layout/Spinner.vue";
 
 const toast = useToast();
 const showAddModal = ref(false);
@@ -150,7 +150,6 @@ onMounted(() => {
             <Spinner />
         </div>
         <div v-else>
-            <div class="w-full overflow-auto mt-12 bg-white scrollbar">
             <div class="w-full overflow-auto mt-12 bg-white scrollbar">
                 <div class="w-full min-w-[800px]" v-if="users.length">
                     <!-- Table Header -->

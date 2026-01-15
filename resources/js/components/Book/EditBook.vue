@@ -1,9 +1,9 @@
-<script setup>
+<script setup="">
+import DescriptionEditor from "@/components/Book/DescriptionEditor.vue";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
+import { ref } from "vue";
 import { useToast } from "vue-toastification";
-import { ref, defineProps, defineEmits, onMounted, watch } from "vue";
-import DescriptionEditor from "@/components/Book/DescriptionEditor.vue";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
@@ -14,7 +14,7 @@ const props = defineProps({
     selectedbook: {
         type: Object,
         required: true,
-        validator: (book) => book && book.id
+        validator: (book) => book && book.id,
     },
     editingBookId: {
         type: Number,
@@ -22,38 +22,29 @@ const props = defineProps({
     },
 });
 
-const isUploadPdf = ref(0);
 const uploadProgress = ref(0);
 const isProcessingThumbnail = ref(0);
-
 const updateFilePdf = ref(null);
 const updatedThumbnail = ref(null);
 const updateIntroVideo = ref(null);
 const page_number = ref(null);
-
 const error = ref("");
 const errors = ref({});
 const isUploadPdf = ref(0);
-const uploadProgress = ref(0);
-const isProcessingThumbnail = ref(0);
-
-const updateFilePdf = ref(null);
-const updatedThumbnail = ref(null);
-const updateIntroVideo = ref(null);
-const page_number = ref(null);
-
-const error = ref("");
-const errors = ref({});
 const toast = useToast();
 const loading = ref(false);
-const emit = defineEmits(['cancel-edit']);
+const emit = defineEmits(["cancel-edit"]);
 
 const cancelEdit = () => {
     emit("cancel-edit");
 };
 
 function isFileObject(obj) {
-    return obj instanceof File && typeof obj.name === 'string' && typeof obj.size === 'number';
+    return (
+        obj instanceof File &&
+        typeof obj.name === "string" &&
+        typeof obj.size === "number"
+    );
 }
 
 const validateForm = () => {
@@ -110,12 +101,9 @@ const handleUpdateCourse = async () => {
     formData.append("price", props.selectedbook.price);
     formData.append("eddition", props.selectedbook.eddition);
     formData.append("language", props.selectedbook.language);
-    formData.append("language", props.selectedbook.language);
     formData.append("discount", props.selectedbook.discount || 0);
     formData.append("description", props.selectedbook.description);
-    formData.append("description", props.selectedbook.description);
     formData.append("publish_date", props.selectedbook.publish_date);
-    
 
     if (updatedThumbnail.value !== null) {
         formData.append("cover_page_url", updatedThumbnail.value);
@@ -124,16 +112,13 @@ const handleUpdateCourse = async () => {
     }
 
     if (updateFilePdf.value !== null) {
-        formData.append("page_number",  page_number.value);
+        formData.append("page_number", page_number.value);
         formData.append("file_url", updateFilePdf.value);
     } else {
         formData.delete("file_url");
         formData.delete("page_number");
-        formData.delete("page_number");
     }
 
-    if (updateIntroVideo.value !== null) {
-        formData.append("intro_vedio", updateIntroVideo.value);
     if (updateIntroVideo.value !== null) {
         formData.append("intro_vedio", updateIntroVideo.value);
     } else {
@@ -141,18 +126,17 @@ const handleUpdateCourse = async () => {
     }
 
     try {
-        const response = await Axios.post(`/api/books/update-books/${props.selectedbook.id}`,
+        const response = await Axios.post(
+            `/api/books/update-books/${props.selectedbook.id}`,
             formData,
             { headers: { "Content-Type": "multipart/form-data" } }
         );
 
-        booksAdmin.value = booksAdmin.value.filter(book => book.id !== props.selectedbook.id);
-        booksAdmin.value = [
-            response.data.data,
-            ...booksAdmin.value
-        ];
+        booksAdmin.value = booksAdmin.value.filter(
+            (book) => book.id !== props.selectedbook.id
+        );
+        booksAdmin.value = [response.data.data, ...booksAdmin.value];
 
-        toast.success("Book updated successfully!", { position: "top-right" });
         toast.success("Book updated successfully!", { position: "top-right" });
         cancelEdit();
     } catch (err) {
@@ -176,30 +160,36 @@ function uploadIntroVideo(event) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('intro_video', file);
+    formData.append("intro_video", file);
 
-    errors.value['intro_video'] = '';
+    errors.value["intro_video"] = "";
     uploadProgress.value = 0;
 
-    Axios.post('/api/books/upload-intro-video', formData, {
+    Axios.post("/api/books/upload-intro-video", formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
-                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                let percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
                 uploadProgress.value = percent > 99 ? 99 : percent;
             }
-        }
-    }).then(res => {
-        updateIntroVideo.value = res.data.file_path;
-        uploadProgress.value = 100;
-    }).catch(error => {
-        console.error(error);
-        if (error.response?.data?.errors) {
-            errors.value['intro_video'] = error.response.data.errors.intro_video?.[0] || 'Upload failed';
-        }
+        },
     })
+        .then((res) => {
+            updateIntroVideo.value = res.data.file_path;
+            uploadProgress.value = 100;
+        })
+        .catch((error) => {
+            console.error(error);
+            if (error.response?.data?.errors) {
+                errors.value["intro_video"] =
+                    error.response.data.errors.intro_video?.[0] ||
+                    "Upload failed";
+            }
+        });
 }
 
 function uploadThumbnail(event) {
@@ -207,30 +197,36 @@ function uploadThumbnail(event) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('cover_page_url', file);
+    formData.append("cover_page_url", file);
 
-    errors.value['cover_page_url'] = '';
+    errors.value["cover_page_url"] = "";
     isProcessingThumbnail.value = 0;
 
-    Axios.post('/api/books/upload-thumbnail', formData, {
+    Axios.post("/api/books/upload-thumbnail", formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
-                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                let percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
                 isProcessingThumbnail.value = percent > 99 ? 99 : percent;
             }
-        }
-    }).then(res => {
-        updatedThumbnail.value = res.data.file_path;
-        isProcessingThumbnail.value = 100;
-    }).catch(error => {
-        console.error(error);
-        if (error.response?.data?.errors) {
-            errors.value['cover_page_url'] = error.response.data.errors.cover_page_url?.[0] || 'Upload failed';
-        }
+        },
     })
+        .then((res) => {
+            updatedThumbnail.value = res.data.file_path;
+            isProcessingThumbnail.value = 100;
+        })
+        .catch((error) => {
+            console.error(error);
+            if (error.response?.data?.errors) {
+                errors.value["cover_page_url"] =
+                    error.response.data.errors.cover_page_url?.[0] ||
+                    "Upload failed";
+            }
+        });
 }
 
 function uploadPdfFile(event) {
@@ -238,33 +234,38 @@ function uploadPdfFile(event) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('file_url', file);
+    formData.append("file_url", file);
 
-    errors.value['file_url'] = '';
+    errors.value["file_url"] = "";
     isUploadPdf.value = 0;
 
-    Axios.post('/api/books/upload-pdf', formData, {
+    Axios.post("/api/books/upload-pdf", formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
-                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                let percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total
+                );
                 isUploadPdf.value = percent > 99 ? 99 : percent;
             }
-        }
-    }).then(res => {
-        updateFilePdf.value = res.data.file_path;
-        page_number.value = res.data.page_number;
-        isUploadPdf.value = 100;
-    }).catch(error => {
-        console.error(error);
-        if (error.response?.data?.errors) {
-            errors.value['file_url'] = error.response.data.errors.cover_page_url?.[0] || 'Upload failed';
-        }
+        },
     })
+        .then((res) => {
+            updateFilePdf.value = res.data.file_path;
+            page_number.value = res.data.page_number;
+            isUploadPdf.value = 100;
+        })
+        .catch((error) => {
+            console.error(error);
+            if (error.response?.data?.errors) {
+                errors.value["file_url"] =
+                    error.response.data.errors.file_url?.[0] ||
+                    "Upload failed";
+            }
+        });
 }
-
 </script>
 
 <template>
@@ -289,7 +290,6 @@ function uploadPdfFile(event) {
         <form @submit.prevent="handleUpdateCourse" class="space-y-8">
             <!-- 60/40 layout -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                 <!-- LEFT: Uploads (2/3) -->
                 <div class="lg:col-span-2 space-y-6">
                     <div>
@@ -313,128 +313,290 @@ function uploadPdfFile(event) {
                         </p>
                     </div>
 
-                    <div class="grid grid-cols-1  sm:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Upload Cover Page</label>
+                            <label class="block text-gray-700 font-medium mb-2"
+                                >Upload Cover Page</label
+                            >
                             <div class="relative">
-                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden"
-                                    :class="{ 'border-lime-500 text-gray-500 bg-lime-50': isProcessingThumbnail }">
-                                    <div class="flex flex-col items-center text-gray-500">
+                                <div
+                                    class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden"
+                                    :class="{
+                                        'border-lime-500 text-gray-500 bg-lime-50':
+                                            isProcessingThumbnail,
+                                    }"
+                                >
+                                    <div
+                                        class="flex flex-col items-center text-gray-500"
+                                    >
                                         <template v-if="isProcessingThumbnail">
-                                            <div class="relative mb-2 w-10 h-10 flex items-center justify-center">
+                                            <div
+                                                class="relative mb-2 w-10 h-10 flex items-center justify-center"
+                                            >
                                                 <div
-                                                    class="absolute inset-0 rounded-full bg-lime-100 animate-ping opacity-75">
-                                                </div>
-                                                <div class="relative z-10 flex items-center justify-center">
-                                                    <svg class="w-8 h-8 text-lime-600" fill="none" viewBox="0 0 24 24">
-                                                        <path stroke="currentColor" stroke-linecap="round"
+                                                    class="absolute inset-0 rounded-full bg-lime-100 animate-ping opacity-75"
+                                                ></div>
+                                                <div
+                                                    class="relative z-10 flex items-center justify-center"
+                                                >
+                                                    <svg
+                                                        class="w-8 h-8 text-lime-600"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            stroke="currentColor"
+                                                            stroke-linecap="round"
                                                             stroke-width="2"
-                                                            d="M12 4v4m0 4v4m0 4v4m8-12h-4m-4 0H8m12 4h-4m-4 0H8" />
+                                                            d="M12 4v4m0 4v4m0 4v4m8-12h-4m-4 0H8m12 4h-4m-4 0H8"
+                                                        />
                                                     </svg>
                                                 </div>
                                             </div>
                                             <div class="space-y-1">
-                                                <span v-if="isProcessingThumbnail < 100"
-                                                    class="text-sm font-medium text-gray-600">Processing
-                                                    thumbnail...</span>
-                                                <span v-else class="text-sm font-medium text-green-600">Completed</span>
+                                                <span
+                                                    v-if="
+                                                        isProcessingThumbnail <
+                                                        100
+                                                    "
+                                                    class="text-sm font-medium text-gray-600"
+                                                    >Processing
+                                                    thumbnail...</span
+                                                >
+                                                <span
+                                                    v-else
+                                                    class="text-sm font-medium text-green-600"
+                                                    >Completed</span
+                                                >
                                             </div>
                                         </template>
                                         <template v-else>
-                                            <i class="fa-solid text-2xl mb-2 text-gray-500" :class="{
-                                                'fa-image': isProcessingThumbnail <= 99,
-                                                'fa-check text-lime-600': isProcessingThumbnail == 100,
-                                            }"></i>
-                                            <span class="text-sm">Click to upload cover image </span>
+                                            <i
+                                                class="fa-solid text-2xl mb-2 text-gray-500"
+                                                :class="{
+                                                    'fa-image':
+                                                        isProcessingThumbnail <=
+                                                        99,
+                                                    'fa-check text-lime-600':
+                                                        isProcessingThumbnail ==
+                                                        100,
+                                                }"
+                                            ></i>
+                                            <span class="text-sm"
+                                                >Click to upload cover image
+                                            </span>
                                         </template>
                                     </div>
-                                    <input type="file" accept="image/jpeg, image/png" @change="uploadThumbnail($event)"
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg, image/png"
+                                        @change="uploadThumbnail($event)"
                                         class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                        :disabled="uploadProgress < 100 && uploadProgress > 1" />
+                                        :disabled="
+                                            uploadProgress < 100 &&
+                                            uploadProgress > 1
+                                        "
+                                    />
                                 </div>
-                                <p v-if="errors.cover_page_url" class="mt-1 text-red-500 text-sm"> {{
-                                    errors.cover_page_url }}</p>
+                                <p
+                                    v-if="errors.cover_page_url"
+                                    class="mt-1 text-red-500 text-sm"
+                                >
+                                    {{ errors.cover_page_url }}
+                                </p>
                             </div>
                         </div>
 
                         <!-- Intro Video Upload -->
                         <div>
-                            <label class="block text-gray-700 font-medium mb-2">Upload Intro Video</label>
+                            <label class="block text-gray-700 font-medium mb-2"
+                                >Upload Intro Video</label
+                            >
                             <div class="relative">
-                                <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                    :class="{ 'border-lime-500 bg-lime-50': uploadProgress }">
-                                    <div class="flex flex-col items-center text-gray-500">
+                                <div
+                                    class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                    :class="{
+                                        'border-lime-500 bg-lime-50':
+                                            uploadProgress,
+                                    }"
+                                >
+                                    <div
+                                        class="flex flex-col items-center text-gray-500"
+                                    >
                                         <template v-if="uploadProgress">
-                                            <div class="relative mb-2 w-10 h-10">
+                                            <div
+                                                class="relative mb-2 w-10 h-10"
+                                            >
                                                 <!-- Dynamic progress spinner -->
-                                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                    <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-200"
-                                                        stroke-width="2"></circle>
-                                                    <circle cx="18" cy="18" r="16" fill="none" class="stroke-lime-600"
+                                                <svg
+                                                    class="w-full h-full transform -rotate-90"
+                                                    viewBox="0 0 36 36"
+                                                >
+                                                    <circle
+                                                        cx="18"
+                                                        cy="18"
+                                                        r="16"
+                                                        fill="none"
+                                                        class="stroke-gray-200"
                                                         stroke-width="2"
-                                                        :stroke-dasharray="`${uploadProgress * 1.13}, 113`"></circle>
+                                                    ></circle>
+                                                    <circle
+                                                        cx="18"
+                                                        cy="18"
+                                                        r="16"
+                                                        fill="none"
+                                                        class="stroke-lime-600"
+                                                        stroke-width="2"
+                                                        :stroke-dasharray="`${
+                                                            uploadProgress *
+                                                            1.13
+                                                        }, 113`"
+                                                    ></circle>
                                                 </svg>
-                                                <div class="absolute inset-0 flex items-center justify-center">
-                                                    <span class="text-xs font-bold text-lime-600">{{ uploadProgress
-                                                        }}%</span>
+                                                <div
+                                                    class="absolute inset-0 flex items-center justify-center"
+                                                >
+                                                    <span
+                                                        class="text-xs font-bold text-lime-600"
+                                                        >{{
+                                                            uploadProgress
+                                                        }}%</span
+                                                    >
                                                 </div>
                                             </div>
-                                            <span class="text-sm" :class="{
-                                                'text-green-600': uploadProgress == 100
-                                            }">{{ uploadProgress < 100 ? 'Uploading video...' : 'Completed' }}</span>
+                                            <span
+                                                class="text-sm"
+                                                :class="{
+                                                    'text-green-600':
+                                                        uploadProgress == 100,
+                                                }"
+                                                >{{
+                                                    uploadProgress < 100
+                                                        ? "Uploading video..."
+                                                        : "Completed"
+                                                }}</span
+                                            >
                                         </template>
                                         <template v-else>
-                                            <i class="fas fa-video text-2xl mb-2"></i>
-                                            <span class="text-sm">Click to upload intro video</span>
+                                            <i
+                                                class="fas fa-video text-2xl mb-2"
+                                            ></i>
+                                            <span class="text-sm"
+                                                >Click to upload intro
+                                                video</span
+                                            >
                                         </template>
                                     </div>
-                                    <input type="file" accept="video/mp4" @change="uploadIntroVideo($event)"
+                                    <input
+                                        type="file"
+                                        accept="video/mp4"
+                                        @change="uploadIntroVideo($event)"
                                         class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                        :disabled="uploadProgress < 100 && uploadProgress > 1" />
+                                        :disabled="
+                                            uploadProgress < 100 &&
+                                            uploadProgress > 1
+                                        "
+                                    />
                                 </div>
-                                <p v-if="errors.intro_video" class="mt-1 text-red-500 text-sm">{{ errors.intro_video }}
+                                <p
+                                    v-if="errors.intro_video"
+                                    class="mt-1 text-red-500 text-sm"
+                                >
+                                    {{ errors.intro_video }}
                                 </p>
                             </div>
                         </div>
                     </div>
                     <!-- Book File Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium text-sm mb-2">
+                        <label
+                            class="block text-gray-700 font-medium text-sm mb-2"
+                        >
                             Upload Book File
                         </label>
                         <div class="relative">
-                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                :class="{ 'border-lime-500 bg-lime-50': isUploadPdf }">
-                                <div class="flex flex-col items-center text-gray-500">
+                            <div
+                                class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{
+                                    'border-lime-500 bg-lime-50': isUploadPdf,
+                                }"
+                            >
+                                <div
+                                    class="flex flex-col items-center text-gray-500"
+                                >
                                     <template v-if="isUploadPdf">
                                         <div class="relative mb-2 w-10 h-10">
                                             <!-- Dynamic progress spinner -->
-                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-200"
-                                                    stroke-width="2"></circle>
-                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-lime-600"
-                                                    stroke-width="2" :stroke-dasharray="`${isUploadPdf * 1.13}, 113`">
-                                                </circle>
+                                            <svg
+                                                class="w-full h-full transform -rotate-90"
+                                                viewBox="0 0 36 36"
+                                            >
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r="16"
+                                                    fill="none"
+                                                    class="stroke-gray-200"
+                                                    stroke-width="2"
+                                                ></circle>
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r="16"
+                                                    fill="none"
+                                                    class="stroke-lime-600"
+                                                    stroke-width="2"
+                                                    :stroke-dasharray="`${
+                                                        isUploadPdf * 1.13
+                                                    }, 113`"
+                                                ></circle>
                                             </svg>
-                                            <div class="absolute inset-0 flex items-center justify-center">
-                                                <span class="text-xs font-bold text-lime-600">{{ isUploadPdf }}%</span>
+                                            <div
+                                                class="absolute inset-0 flex items-center justify-center"
+                                            >
+                                                <span
+                                                    class="text-xs font-bold text-lime-600"
+                                                    >{{ isUploadPdf }}%</span
+                                                >
                                             </div>
                                         </div>
-                                        <span class="text-sm" :class="{
-                                            'text-green-600': isUploadPdf == 100
-                                        }">{{ isUploadPdf < 100 ? 'Uploading video...' : 'Completed' }}</span>
+                                        <span
+                                            class="text-sm"
+                                            :class="{
+                                                'text-green-600':
+                                                    isUploadPdf == 100,
+                                            }"
+                                            >{{
+                                                isUploadPdf < 100
+                                                    ? "Uploading PDF..."
+                                                    : "Completed"
+                                            }}</span
+                                        >
                                     </template>
                                     <template v-else>
-                                        <i class="fas fa-file-pdf text-3xl mb-2"></i>
-                                        <span class="text-sm">Click to upload book file</span>
+                                        <i
+                                            class="fas fa-file-pdf text-3xl mb-2"
+                                        ></i>
+                                        <span class="text-sm"
+                                            >Click to upload book file</span
+                                        >
                                     </template>
                                 </div>
-                                <input type="file" accept="pdf" @change="uploadPdfFile($event)"
+                                <input
+                                    type="file"
+                                    accept="application/pdf"
+                                    @change="uploadPdfFile($event)"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                    :disabled="isUploadPdf < 100 && isUploadPdf > 1" />
+                                    :disabled="
+                                        isUploadPdf < 100 && isUploadPdf > 1
+                                    "
+                                />
                             </div>
                             <!-- fdgjkdfgj -->
-                            <p v-if="errors.file_url" class="mt-1 text-red-500 text-sm">
+                            <p
+                                v-if="errors.file_url"
+                                class="mt-1 text-red-500 text-sm"
+                            >
                                 {{ errors.file_url }}
                             </p>
                         </div>
@@ -465,32 +627,66 @@ function uploadPdfFile(event) {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Price (Birr)
                         </label>
-                        <input v-model.number="props.selectedbook.price" type="number" min="0" step="0.01"
+                        <input
+                            v-model.number="props.selectedbook.price"
+                            type="number"
+                            min="0"
+                            step="0.01"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.price }" placeholder="0.00" />
-                        <p v-if="errors.price" class="mt-1 text-red-500 text-sm">{{ errors.price }}</p>
+                            :class="{ 'border-red-500': errors.price }"
+                            placeholder="0.00"
+                        />
+                        <p
+                            v-if="errors.price"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.price }}
+                        </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Edition
                         </label>
-                        <input v-model.number="props.selectedbook.eddition" type="number" min="1"
+                        <input
+                            v-model.number="props.selectedbook.eddition"
+                            type="number"
+                            min="1"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.eddition }" placeholder="1" />
-                        <p v-if="errors.eddition" class="mt-1 text-red-500 text-sm">{{ errors.eddition }}</p>
+                            :class="{ 'border-red-500': errors.eddition }"
+                            placeholder="1"
+                        />
+                        <p
+                            v-if="errors.eddition"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.eddition }}
+                        </p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
+                        >
                             Publish Date
                         </label>
-                        <input v-model="props.selectedbook.publish_date" type="date"
+                        <input
+                            v-model="props.selectedbook.publish_date"
+                            type="date"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-lime-500 focus:border-lime-500"
-                            :class="{ 'border-red-500': errors.publish_date }" />
-                        <p v-if="errors.publish_date" class="mt-1 text-red-500 text-sm">{{ errors.publish_date }}
+                            :class="{ 'border-red-500': errors.publish_date }"
+                        />
+                        <p
+                            v-if="errors.publish_date"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.publish_date }}
                         </p>
                     </div>
 
@@ -509,7 +705,12 @@ function uploadPdfFile(event) {
                             <option value="Amharic">Amharic</option>
                             <option value="Other">Other</option>
                         </select>
-                        <p v-if="errors.language" class="mt-1 text-red-500 text-sm">{{ errors.language }}</p>
+                        <p
+                            v-if="errors.language"
+                            class="mt-1 text-red-500 text-sm"
+                        >
+                            {{ errors.language }}
+                        </p>
                     </div>
                 </div>
             </div>

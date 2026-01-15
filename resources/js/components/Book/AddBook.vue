@@ -31,10 +31,6 @@ const uploadProgress = ref(0);
 const isProcessingThumbnail = ref(0);
 const isUploadPdf = ref(0);
 
-const uploadProgress = ref(0);
-const isProcessingThumbnail = ref(0);
-const isUploadPdf = ref(0);
-
 const coverPreview = ref(null);
 const videoPreview = ref(null);
 const loading = ref(false);
@@ -286,7 +282,6 @@ function goBack() {
             >
         </button>
 
-        <form class="space-y-8">
         <form class="space-y-8">
             <!-- 60/40 layout -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

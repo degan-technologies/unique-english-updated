@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import Popper from "vue3-popper";
 import Axios from "axios";
+import { onMounted, ref, watch } from "vue";
 import { useToast } from "vue-toastification";
+import Popper from "vue3-popper";
 
 const toast = useToast();
 const rooms = ref([]);
@@ -237,7 +237,6 @@ onMounted(() => {
         </div>
 
         <!-- student register for live class -->
-        <div class="w-full overflow-auto mt-12 bg-white scrollbar">
         <div class="w-full overflow-auto mt-12 bg-white scrollbar">
             <table class="w-full" v-if="users.length">
                 <thead>

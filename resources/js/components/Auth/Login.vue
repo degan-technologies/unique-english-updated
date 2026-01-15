@@ -1,9 +1,9 @@
 <script setup>
-import Axios from "axios";
-import { onMounted, ref } from "vue";
-import { storeToRefs } from "pinia";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { onMounted, ref } from "vue";
 
 const appStore = useAppStore();
 const AuthStore = useAuthStore();
@@ -152,7 +152,7 @@ const socialLogin = (provider) => {
             <div class="p-8">
                 <!-- Forgot Password Form -->
                 <div v-if="showForgotPassword">
-                    <p class="text-orange-500 text-left font-bold mb-6 text-lg">
+                    <p class="text-lime-600 text-left font-bold mb-6 text-lg">
                         {{
                             showOTPForm
                                 ? "Reset Your Password"
@@ -190,7 +190,7 @@ const socialLogin = (provider) => {
                                 required
                                 maxlength="6"
                                 autocomplete="off"
-                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-600"
+                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                             />
                         </div>
 
@@ -206,7 +206,7 @@ const socialLogin = (provider) => {
                                 required
                                 minlength="8"
                                 autocomplete="off"
-                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-600"
+                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                             />
                         </div>
 
@@ -222,14 +222,14 @@ const socialLogin = (provider) => {
                                 required
                                 minlength="8"
                                 autocomplete="off"
-                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-600"
+                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                             />
                         </div>
 
                         <button
                             @click="resetPassword"
                             :disabled="resetLoading"
-                            class="w-full py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 active:scale-95 transition-transform"
+                            class="w-full py-3 bg-lime-700 text-white rounded-lg font-semibold hover:bg-lime-800 active:scale-95 transition-transform"
                         >
                             {{
                                 resetLoading ? "Resetting..." : "Reset Password"
@@ -239,7 +239,7 @@ const socialLogin = (provider) => {
                         <div class="text-center">
                             <span
                                 @click="showOTPForm = false"
-                                class="text-orange-500 font-semibold hover:underline cursor-pointer"
+                                class="text-lime-700 font-semibold hover:underline cursor-pointer"
                                 >Back to Email</span
                             >
                         </div>
@@ -257,14 +257,14 @@ const socialLogin = (provider) => {
                                 v-model="forgotPasswordEmail"
                                 placeholder="Enter your email"
                                 required
-                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-600"
+                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                             />
                         </div>
 
                         <button
                             @click="sendOTP"
                             :disabled="resetLoading"
-                            class="w-full py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 active:scale-95 transition-transform"
+                            class="w-full py-3 bg-lime-700 text-white rounded-lg font-semibold hover:bg-lime-800 active:scale-95 transition-transform"
                         >
                             <span
                                 class="flex flex-1 gap-2 items-center justify-center"
@@ -298,7 +298,7 @@ const socialLogin = (provider) => {
                         <div class="text-center">
                             <span
                                 @click="toggleForgotPassword"
-                                class="text-orange-500 font-semibold hover:underline cursor-pointer"
+                                class="text-lime-700 font-semibold hover:underline cursor-pointer"
                                 >Back to Login</span
                             >
                         </div>
@@ -307,7 +307,7 @@ const socialLogin = (provider) => {
 
                 <!-- login form -->
                 <div v-else>
-                    <p class="text-orange-500 text-left font-bold mb-6 text-lg">
+                    <p class="text-lime-600 text-left font-bold mb-6 text-lg">
                         {{ frontLang.lang?.login_to_your_account }}
                     </p>
                     <div
@@ -330,7 +330,7 @@ const socialLogin = (provider) => {
                                 v-model="emailInput"
                                 placeholder="Enter your email"
                                 required
-                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-600"
+                                class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                             />
                         </div>
 
@@ -349,7 +349,7 @@ const socialLogin = (provider) => {
                                     v-model="passwordInput"
                                     placeholder="Enter your password"
                                     required
-                                    class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-600"
+                                    class="mt-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-700 focus:border-lime-700"
                                 />
                                 <button
                                     type="button"
@@ -369,7 +369,7 @@ const socialLogin = (provider) => {
                         <div class="flex justify-end">
                             <span
                                 @click="toggleForgotPassword"
-                                class="text-orange-500 text-sm font-semibold hover:underline cursor-pointer"
+                                class="text-lime-700 text-sm font-semibold hover:underline cursor-pointer"
                                 >{{ frontLang.lang?.forgot_password }}</span
                             >
                         </div>
@@ -377,7 +377,7 @@ const socialLogin = (provider) => {
                         <button
                             @click="tryLogin"
                             :disabled="loggingIn"
-                            class="w-full py-3 bg-orange-500 text-white rounded-lg font-semibold hover:bg-orange-600 active:scale-95 transition-transform"
+                            class="w-full py-3 bg-lime-700 text-white rounded-lg font-semibold hover:bg-lime-800 active:scale-95 transition-transform"
                         >
                             <span
                                 class="flex flex-1 gap-2 items-center justify-center"
@@ -411,11 +411,44 @@ const socialLogin = (provider) => {
                         </button>
                     </div>
 
+                    <!-- Social Login Section -->
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-600 mb-2">
+                            {{ frontLang.lang?.Or_log_in_with }}
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <button
+                                @click="socialLogin('google')"
+                                class="social-btn"
+                            >
+                                <i class="fab fa-google"></i>
+                            </button>
+                            <button
+                                @click="socialLogin('facebook')"
+                                class="social-btn"
+                            >
+                                <i class="fab fa-facebook-f"></i>
+                            </button>
+                            <button
+                                @click="socialLogin('linkedin')"
+                                class="social-btn"
+                            >
+                                <i class="fab fa-linkedin-in"></i>
+                            </button>
+                            <button
+                                @click="socialLogin('twitter')"
+                                class="social-btn"
+                            >
+                                <i class="fab fa-twitter"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Register Link -->
                     <div class="mt-5 text-center">
                         <span
                             @click="roteToLogin()"
-                            class="text-orange-500 font-semibold hover:underline cursor-pointer"
+                            class="text-lime-700 font-semibold hover:underline cursor-pointer"
                             >{{ frontLang.lang?.d_have_account }}
                             {{ frontLang.lang?.register }}</span
                         >

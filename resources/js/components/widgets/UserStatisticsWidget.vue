@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
 import Axios from "axios";
-import { Chart, ArcElement, Tooltip, Legend } from "chart.js";
+import { ArcElement, Chart, Legend, Tooltip } from "chart.js";
+import { nextTick, onMounted, ref } from "vue";
 
 Chart.register(ArcElement, Tooltip, Legend);
 
@@ -50,10 +50,10 @@ function renderDonutChart() {
                 datasets: [
                     {
                         data: [activeUsers, inactiveUsers],
-                        backgroundColor: ["#f97316", "#e5e7eb"], // Orange for active, Gray for inactive
-                        hoverBackgroundColor: ["#f97316", "#d1d5db"],
+                        backgroundColor: ["#84cc16", "#e5e7eb"], // Lime for active, Gray for inactive
+                        hoverBackgroundColor: ["#84cc16", "#d1d5db"],
                         borderWidth: 1,
-                        borderColor: ["#f97316", "#d1d5db"],
+                        borderColor: ["#84cc16", "#d1d5db"],
                     },
                 ],
             },

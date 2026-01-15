@@ -242,7 +242,15 @@ Route::middleware(['auth:api'])->group(function () {
     //system information
     Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
-    
+
     Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
 });
 
+Route::middleware('auth:api')
+    ->group(function () {
+        // Separated user management endpoints
+        Route::get('/instructors', [UserController::class, 'getInstructors']);
+        Route::get('/students', [UserController::class, 'getStudents']);
+        Route::post('/students/bulk-import', [UserController::class, 'bulkImportStudents']);
+        Route::get('/students/download-template', [UserController::class, 'downloadStudentTemplate']);
+    });

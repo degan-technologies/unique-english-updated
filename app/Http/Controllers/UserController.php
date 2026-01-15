@@ -22,7 +22,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cookie;
 
-class UserController extends Controller {
+class UserController extends Controller
+{
 
     use AdminActivityLog;
 
@@ -38,10 +39,11 @@ class UserController extends Controller {
         $this->langService = $langService;
     }
 
-    public function index(Request $request) { 
+    public function index(Request $request)
+    {
         $query = User::query()
             ->doesntHave('systemAdmin');
- 
+
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
@@ -50,7 +52,7 @@ class UserController extends Controller {
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('role', 'like', "%{$search}%");
             });
-        } 
+        }
         // Join date range filter using the created_at field as the join date
         if ($request->filled('joinDateFrom')) {
             $query->whereDate('created_at', '>=', $request->input('joinDateFrom'));
@@ -58,8 +60,8 @@ class UserController extends Controller {
         if ($request->filled('joinDateTo')) {
             $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
         }
-  
-        $users = $query->orderBy('created_at','DESC')
+
+        $users = $query->orderBy('created_at', 'DESC')
             ->paginate($request->rowsPerPageOptions);
 
         $pagination = $users->toArray();
@@ -68,14 +70,15 @@ class UserController extends Controller {
 
         return response()->json([
             'data' => CustomerInfoResource::collection($users),
-            'pagination' =>$pagination,
+            'pagination' => $pagination,
         ]);
     }
 
     /**
      * get user sattistics
      */
-    public function getUserStatistics() {
+    public function getUserStatistics()
+    {
         $user = User::query()
             ->has('systemAdmin')
             ->findOrFail(Auth::id());
@@ -90,7 +93,7 @@ class UserController extends Controller {
 
         return response()->json([
             'totalUsers' => $userCount,
-            'activeUsers' => $activeUsers, 
+            'activeUsers' => $activeUsers,
             'newRegistrations' => $newRegistrations,
         ]);
     }
@@ -101,7 +104,8 @@ class UserController extends Controller {
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function studentRegistration(Request $request) {
+    public function studentRegistration(Request $request)
+    {
         $fullname = [];
         $otp = random_int(100000, 999999);
 
@@ -112,7 +116,7 @@ class UserController extends Controller {
 
         $validationRules = [
             'email'      => 'required|email|unique:users,email',
-            'full_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],            
+            'full_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'password'   => 'required|min:4',
         ];
 
@@ -133,7 +137,7 @@ class UserController extends Controller {
             $user->email      = $request->email;
             $user->first_name = $firstName;
             $user->middle_name = $middleName;
-            $user->last_name  = $lastName; 
+            $user->last_name  = $lastName;
             $user->password   = Hash::make($request->password);
             $user->role       = STUDENT;
 
@@ -142,10 +146,10 @@ class UserController extends Controller {
             $user->otp_attempts = 0;
 
             $user->save();
-  
+
             $user->student()->create();
 
-            
+
             $url = url();
 
             Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
@@ -153,9 +157,8 @@ class UserController extends Controller {
             DB::commit();
 
             return response()->json([
-                'message' => 'User registered. OTP sent to your email.', 
+                'message' => 'User registered. OTP sent to your email.',
             ], 201);
-
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(
@@ -168,7 +171,8 @@ class UserController extends Controller {
         }
     }
 
-    public function verifyEmailOTP(Request $request) {
+    public function verifyEmailOTP(Request $request)
+    {
         $validationRules = [
             'email' => 'required|email|exists:users,email',
             'otp'   => 'required|digits:6',
@@ -193,7 +197,7 @@ class UserController extends Controller {
                 'message' => 'OTP has expired. Please request a new one.'
             ], 422);
         }
- 
+
 
         if ($user->otp !== $request->otp) {
             return response()->json([
@@ -205,7 +209,7 @@ class UserController extends Controller {
         $user->otp = null;
         $user->otp_expires_at = null;
         $user->save();
- 
+
         $token = $user->createToken('AuthToken')->accessToken;
 
         $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
@@ -297,12 +301,12 @@ class UserController extends Controller {
             $user->email      = $request->email;
             $user->first_name = $request->first_name;
             $user->middle_name = $request->middle_name;
- 
-            $randomPassword = Str::random(8); 
+
+            $randomPassword = Str::random(8);
             $user->password = Hash::make($randomPassword);
- 
+
             $user->temp_password = $randomPassword;
- 
+
             $user->role = INSTRUCTOR;
             $user->save();
             $user->created_at = Carbon::now();
@@ -402,7 +406,7 @@ class UserController extends Controller {
                 WHEN user_banned_at IS NULL THEN NOW() 
                 ELSE NULL 
             END'),
-        ]); 
+        ]);
 
         $this->adminActivities('Delete user name: ' . $user->first_name . 'and email ' . $user->email);
 
@@ -420,20 +424,20 @@ class UserController extends Controller {
          * @var \App\Models\User $user
          */
 
-         $fullname = [];
+        $fullname = [];
 
-            $fullname = explode(' ', $request->full_name);
+        $fullname = explode(' ', $request->full_name);
 
-            $firstName = $fullname[0];
-            $middleName = isset($fullname[1]) ? $fullname[1] : null;
-            $lastName = isset($fullname[2]) ? $fullname[2] : null;
+        $firstName = $fullname[0];
+        $middleName = isset($fullname[1]) ? $fullname[1] : null;
+        $lastName = isset($fullname[2]) ? $fullname[2] : null;
 
 
         $user = Auth::user();
 
         $validationRules = [
-            'email' => 'required|email|unique:users,email,' . $user->id, 
-            'phone' => ['unique:users,phone,' . $user->id], 
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => ['unique:users,phone,' . $user->id],
             'gender' => [Rule::in(GENDER)],
         ];
 
@@ -446,7 +450,7 @@ class UserController extends Controller {
                 'message' => $message,
                 'errors' => $validator->errors()
             ], 422);
-        } 
+        }
 
         $user->update([
             'email' => $request->email ?? $user->email,
@@ -454,7 +458,7 @@ class UserController extends Controller {
             'gender' => $request->gender ?? $user->gender,
             'first_name' => $firstName,
             'middle_name' => $middleName,
-            'last_name' => $lastName, 
+            'last_name' => $lastName,
             'updated_at' => Carbon::now(),
         ]);
 
@@ -465,16 +469,17 @@ class UserController extends Controller {
     }
 
 
-    public function profileImageUpdate(Request $request) {
-        
+    public function profileImageUpdate(Request $request)
+    {
+
         /**
          * @var \App\Models\User $user
-         */ 
+         */
         $user = Auth::user();
 
-        $validationRules = [   
+        $validationRules = [
             'profile' => 'image',
-            'bg_image' => 'image', 
+            'bg_image' => 'image',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
@@ -486,9 +491,9 @@ class UserController extends Controller {
                 'errors' => $validator->errors()
             ], 422);
         }
- 
 
-        if ($request->hasFile('profile')) { 
+
+        if ($request->hasFile('profile')) {
             $file = $request->file('profile');
             $profilePath = $file->store('/user', 'public');
             $user->profile = $profilePath;
@@ -498,7 +503,7 @@ class UserController extends Controller {
             $file = $request->file('bg_image');
             $bgPath = $file->store('/user', 'public');
             $user->bg_image = $bgPath;
-        } 
+        }
 
         $user->save();
 
@@ -508,11 +513,12 @@ class UserController extends Controller {
         ]);
     }
 
-    public function profileImageRemove(Request $request) {
-        
+    public function profileImageRemove(Request $request)
+    {
+
         /**
          * @var \App\Models\User $user
-         */ 
+         */
         $user = Auth::user();
 
         $field = $request->input('field') ?? null;
@@ -594,7 +600,8 @@ class UserController extends Controller {
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function bulkDelete(Request $request) {
+    public function bulkDelete(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'ids'   => 'required|array',
             'ids.*' => 'exists:users,id',
@@ -607,7 +614,7 @@ class UserController extends Controller {
             ], 422);
         }
 
-        $userIds = $request->ids; 
+        $userIds = $request->ids;
         User::whereIn('id', $userIds)->update([
             'user_banned_at' => DB::raw('CASE 
                 WHEN user_banned_at IS NULL THEN NOW() 
@@ -619,6 +626,98 @@ class UserController extends Controller {
 
         return response()->json([
             'message' => $this->langService->getLang('user_successfully_deleted')
+        ]);
+    }
+
+    /**
+     * Get instructors only
+     */
+    public function getInstructors(Request $request)
+    {
+        $query = User::query()
+            ->where('role', INSTRUCTOR)
+            ->doesntHave('systemAdmin');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if ($status === 'banned') {
+                $query->whereNotNull('user_banned_at');
+            } else if ($status === 'active') {
+                $query->whereNull('user_banned_at');
+            }
+        }
+
+        if ($request->filled('joinDateFrom')) {
+            $query->whereDate('created_at', '>=', $request->input('joinDateFrom'));
+        }
+        if ($request->filled('joinDateTo')) {
+            $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
+        }
+
+        $instructors = $query->orderBy('created_at', 'DESC')
+            ->paginate($request->rowsPerPageOptions ?? 10);
+
+        $pagination = $instructors->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'data' => CustomerInfoResource::collection($instructors),
+            'pagination' => $pagination,
+        ]);
+    }
+
+    /**
+     * Get students only
+     */
+    public function getStudents(Request $request)
+    {
+        $query = User::query()
+            ->where('role', STUDENT)
+            ->doesntHave('systemAdmin');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if ($status === 'banned') {
+                $query->whereNotNull('user_banned_at');
+            } else if ($status === 'active') {
+                $query->whereNull('user_banned_at');
+            }
+        }
+
+        if ($request->filled('joinDateFrom')) {
+            $query->whereDate('created_at', '>=', $request->input('joinDateFrom'));
+        }
+        if ($request->filled('joinDateTo')) {
+            $query->whereDate('created_at', '<=', $request->input('joinDateTo'));
+        }
+
+        $students = $query->orderBy('created_at', 'DESC')
+            ->paginate($request->rowsPerPageOptions ?? 10);
+
+        $pagination = $students->toArray();
+        unset($pagination['data']);
+
+        return response()->json([
+            'data' => CustomerInfoResource::collection($students),
+            'pagination' => $pagination,
         ]);
     }
 }

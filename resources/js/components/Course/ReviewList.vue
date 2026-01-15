@@ -23,7 +23,6 @@ const commentError = ref("");
 const feedbackType = ref(null);
 const isLoading = ref(true);
 const isDeleting = ref(false);
-const isDeleting = ref(false);
 const processng = ref(false);
 const currentPage = ref(0);
 const lastPage = ref(1);

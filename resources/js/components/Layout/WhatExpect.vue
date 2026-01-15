@@ -4,7 +4,7 @@
             <!-- Welcome -->
             <div class="text-center mb-10">
                 <h1 class="text-3xl sm:text-4xl font-bold text-lime-700">
-                    What to expect from Maraki English courses
+                    What to expect from Unique English courses
                 </h1>
                 <p class="my-4 text-lg text-gray-600">
                     Learn English through our interactive courses, practical
