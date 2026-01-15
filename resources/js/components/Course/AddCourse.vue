@@ -1,11 +1,11 @@
 <script setup>
+import OverviewEditor from "@/components/Layout/overviewEditor.vue";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
-import { ref, watch, onMounted, onBeforeUnmount, computed } from "vue";
-import { useRoute } from "vue-router";
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
-import OverviewEditor from "@/components/Layout/overviewEditor.vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 
 import { useInstructorStore } from "@/store/useInstructorStore";
 
@@ -23,8 +23,6 @@ const uploadProgress = ref(0);
 const videoPlayer = ref(null);
 const playerInstance = ref(null);
 const isProcessingThumbnail = ref(0);
-const isProcessingThumbnail = ref(0);
-
 // Form state
 const course = ref({
     course_name: "",
@@ -93,7 +91,6 @@ function initializeFormFromSelectedCourse() {
         ...selectedCourse.value,
         upload_thumbnail: null,
         upload_intro_video: null,
-    };
     };
 }
   
@@ -619,3 +616,4 @@ input[type="number"]::-webkit-outer-spin-button {
     animation: spin 1s linear infinite;
 }
 </style>
+
