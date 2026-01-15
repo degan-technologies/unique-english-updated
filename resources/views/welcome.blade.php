@@ -13,8 +13,8 @@
 
     <script src="src/theme-solarized_dark.js" type="text/javascript" charset="utf-8"></script>
 
-    <title>{{ "Maraki English" }}</title>
-    <link rel="icon" href="{{ asset('images/mlogo.jpg') }}" sizes="256x256" type="image/jpg" />
+    <title>{{ "Unique English" }}</title>
+    <link rel="icon" href="{{ asset('images/logo.jpg') }}" sizes="256x256" type="image/jpg" />
 
     <style>
         #loading-screen {
