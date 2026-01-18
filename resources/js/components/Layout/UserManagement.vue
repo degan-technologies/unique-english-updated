@@ -150,7 +150,7 @@ function toggleMark(id) {
         selectedArray.value.push(id);
     } else {
         selectedArray.value = selectedArray.value.filter(
-            (userId) => userId !== id
+            (userId) => userId !== id,
         );
     }
 }
@@ -290,11 +290,11 @@ async function sendMessage() {
 
 // Ban/Unban functions
 function openBanModal(user) {
-    const isBanned = user.status === "banned";
+    const isBanned = user.status === "Blocked";
     confirmationTitle.value = isBanned ? "Confirm Unban" : "Confirm Ban";
     confirmationMessage.value = isBanned
-        ? `Are you sure you want to unban ${user.first_name} ${user.middle_name}?`
-        : `Are you sure you want to ban ${user.first_name} ${user.middle_name}? This will restrict their access.`;
+        ? `Are you sure you want to unban ${user.first_name} ${user.middle_name}? This will restore their access to the platform.`
+        : `Are you sure you want to ban ${user.first_name} ${user.middle_name}? This will block their access to the platform.`;
     confirmationAction.value = () => toggleBanStatus(user.id);
     showConfirmationDialog.value = true;
 }
@@ -340,7 +340,7 @@ async function bulkDelete() {
         });
         showToast(
             `${selectedUsers.value.length} users deleted successfully`,
-            "success"
+            "success",
         );
 
         if (activeTab.value === "instructors") {
@@ -439,6 +439,114 @@ watch(studentSearchQuery, () => {
         }
     }, 500);
 });
+
+// Add new refs for bulk import
+const showBulkImportModal = ref(false);
+const bulkImportFile = ref(null);
+const bulkImportFileInput = ref(null);
+const bulkImportProgress = ref(false);
+const bulkImportResults = ref(null);
+
+// Add bulk import methods
+function openBulkImportModal() {
+    if (activeTab.value !== "students") {
+        showToast("Bulk import is only available for students", "warning");
+        return;
+    }
+    showBulkImportModal.value = true;
+}
+
+function closeBulkImportModal() {
+    showBulkImportModal.value = false;
+    bulkImportFile.value = null;
+    bulkImportResults.value = null;
+    if (bulkImportFileInput.value) {
+        bulkImportFileInput.value.value = "";
+    }
+}
+
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const allowedTypes = [
+            "text/csv",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ];
+        if (!allowedTypes.includes(file.type) && !file.name.endsWith(".csv")) {
+            showToast("Please select a valid CSV file", "error");
+            event.target.value = "";
+            return;
+        }
+        bulkImportFile.value = file;
+    }
+}
+
+async function submitBulkImport() {
+    if (!bulkImportFile.value) {
+        showToast("Please select a CSV file", "warning");
+        return;
+    }
+
+    bulkImportProgress.value = true;
+
+    try {
+        const formData = new FormData();
+        formData.append("excel_file", bulkImportFile.value);
+
+        const response = await axios.post(
+            "/api/students/bulk-import",
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            },
+        );
+
+        bulkImportResults.value = response.data;
+        showToast(response.data.message, "success");
+
+        // Refresh students list
+        fetchStudents(1);
+    } catch (error) {
+        const errorMsg =
+            error.response?.data?.message || "Failed to import students";
+        showToast(errorMsg, "error");
+
+        if (error.response?.data?.errors) {
+            bulkImportResults.value = {
+                success_count: 0,
+                error_count: error.response.data.errors.length,
+                errors: error.response.data.errors,
+            };
+        }
+    } finally {
+        bulkImportProgress.value = false;
+    }
+}
+
+async function downloadTemplate() {
+    try {
+        const response = await axios.get("/api/students/download-template", {
+            responseType: "blob",
+        });
+
+        const blob = new Blob([response.data], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "student_import_template.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        showToast("Template downloaded successfully", "success");
+    } catch (error) {
+        showToast("Failed to download template", "error");
+    }
+}
 </script>
 
 <template>
@@ -541,6 +649,16 @@ watch(studentSearchQuery, () => {
                                     : "Student"
                             }}
                         </button>
+
+                        <!-- Bulk Import Button (only for students) -->
+                        <button
+                            v-if="activeTab === 'students'"
+                            @click="openBulkImportModal"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                        >
+                            <i class="fa-solid fa-upload mr-2"></i>
+                            Bulk Import
+                        </button>
                     </div>
                 </div>
 
@@ -614,7 +732,7 @@ watch(studentSearchQuery, () => {
                                 :key="user.id"
                                 :class="{
                                     'bg-blue-50': selectedUsers.includes(
-                                        user.id
+                                        user.id,
                                     ),
                                 }"
                                 class="hover:bg-gray-50"
@@ -663,9 +781,10 @@ watch(studentSearchQuery, () => {
                                     <span
                                         :class="{
                                             'bg-green-100 text-green-800':
-                                                user.status === 'active',
+                                                user.status === 'Active',
                                             'bg-red-100 text-red-800':
-                                                user.status === 'banned',
+                                                user.status === 'Blocked' ||
+                                                user.status === 'Banned',
                                         }"
                                         class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                     >
@@ -711,7 +830,7 @@ watch(studentSearchQuery, () => {
                                                 <button
                                                     @click="
                                                         openActivityLogModal(
-                                                            user
+                                                            user,
                                                         )
                                                     "
                                                     class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -723,7 +842,8 @@ watch(studentSearchQuery, () => {
                                                     class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                                 >
                                                     {{
-                                                        user.status === "banned"
+                                                        user.status ===
+                                                        "Blocked"
                                                             ? "Unban User"
                                                             : "Ban User"
                                                     }}
@@ -735,7 +855,7 @@ watch(studentSearchQuery, () => {
                                                 >
                                                     {{
                                                         selectedUsers.includes(
-                                                            user.id
+                                                            user.id,
                                                         )
                                                             ? "Unmark"
                                                             : "Mark"
@@ -1012,22 +1132,202 @@ watch(studentSearchQuery, () => {
                     <h3 class="text-xl font-bold mb-4">
                         {{ confirmationTitle }}
                     </h3>
-                    <p class="mb-6">{{ confirmationMessage }}</p>
+                    <p class="mb-6 text-gray-600">{{ confirmationMessage }}</p>
                     <div class="flex justify-end space-x-2">
                         <button
                             @click="showConfirmationDialog = false"
                             :disabled="isProcessing"
-                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Cancel
                         </button>
                         <button
                             @click="confirmationAction"
                             :disabled="isProcessing"
-                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                            :class="[
+                                'px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed',
+                                confirmationTitle.includes('Ban')
+                                    ? 'bg-red-600 hover:bg-red-700'
+                                    : 'bg-green-600 hover:bg-green-700',
+                            ]"
                         >
-                            <span v-if="isProcessing">Processing...</span>
-                            <span v-else>Confirm</span>
+                            <span v-if="isProcessing" class="flex items-center">
+                                <svg
+                                    class="animate-spin h-4 w-4 mr-2"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        class="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        stroke-width="4"
+                                    ></circle>
+                                    <path
+                                        class="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                </svg>
+                                Processing...
+                            </span>
+                            <span v-else>
+                                {{
+                                    confirmationTitle.includes("Unban")
+                                        ? "Unban User"
+                                        : "Ban User"
+                                }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Bulk Import Modal -->
+        <transition name="fade">
+            <div
+                v-if="showBulkImportModal"
+                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+            >
+                <div
+                    class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6"
+                >
+                    <h3 class="text-xl font-bold mb-4">Bulk Import Students</h3>
+
+                    <!-- Import Instructions -->
+                    <div
+                        class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"
+                    >
+                        <h4 class="font-medium text-blue-800 mb-2">
+                            Instructions:
+                        </h4>
+                        <ul class="text-sm text-blue-700 space-y-1">
+                            <li>• Download the template CSV file first</li>
+                            <li>
+                                • Fill in the required columns: First Name,
+                                Email
+                            </li>
+                            <li>
+                                • Optional columns: Middle Name, Last Name,
+                                Phone, Gender
+                            </li>
+                            <li>
+                                • Default password "password123" will be
+                                assigned
+                            </li>
+                            <li>• Maximum file size: 5MB</li>
+                        </ul>
+                    </div>
+
+                    <!-- Template Download -->
+                    <div class="mb-6">
+                        <button
+                            @click="downloadTemplate"
+                            class="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
+                        >
+                            <i class="fa-solid fa-download"></i>
+                            <span>Download Template</span>
+                        </button>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-medium mb-2">
+                            Select CSV File
+                        </label>
+                        <input
+                            ref="bulkImportFileInput"
+                            type="file"
+                            accept=".csv,.xlsx,.xls"
+                            @change="handleFileSelect"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+                        />
+                        <p
+                            v-if="bulkImportFile"
+                            class="text-sm text-green-600 mt-2"
+                        >
+                            Selected: {{ bulkImportFile.name }}
+                        </p>
+                    </div>
+
+                    <!-- Import Results -->
+                    <div v-if="bulkImportResults" class="mb-6">
+                        <div
+                            class="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                        >
+                            <h4 class="font-medium text-gray-800 mb-2">
+                                Import Results:
+                            </h4>
+                            <div class="text-sm space-y-1">
+                                <p class="text-green-600">
+                                    ✓ Successfully imported:
+                                    {{ bulkImportResults.success_count }}
+                                    students
+                                </p>
+                                <p
+                                    v-if="bulkImportResults.error_count > 0"
+                                    class="text-red-600"
+                                >
+                                    ✗ Failed imports:
+                                    {{ bulkImportResults.error_count }}
+                                </p>
+                            </div>
+
+                            <!-- Error Details -->
+                            <div
+                                v-if="
+                                    bulkImportResults.errors &&
+                                    bulkImportResults.errors.length > 0
+                                "
+                                class="mt-4"
+                            >
+                                <h5 class="font-medium text-red-800 mb-2">
+                                    Errors:
+                                </h5>
+                                <div
+                                    class="max-h-32 overflow-y-auto bg-red-50 border border-red-200 rounded p-2"
+                                >
+                                    <ul class="text-sm text-red-700 space-y-1">
+                                        <li
+                                            v-for="(
+                                                error, index
+                                            ) in bulkImportResults.errors"
+                                            :key="index"
+                                        >
+                                            {{ error }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end space-x-2">
+                        <button
+                            @click="closeBulkImportModal"
+                            :disabled="bulkImportProgress"
+                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            @click="submitBulkImport"
+                            :disabled="!bulkImportFile || bulkImportProgress"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            <span v-if="bulkImportProgress">
+                                <i class="fa-solid fa-spinner fa-spin mr-2"></i>
+                                Importing...
+                            </span>
+                            <span v-else>
+                                <i class="fa-solid fa-upload mr-2"></i>
+                                Import Students
+                            </span>
                         </button>
                     </div>
                 </div>

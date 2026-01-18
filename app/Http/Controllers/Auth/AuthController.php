@@ -15,11 +15,13 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
-class AuthController extends Controller {
+class AuthController extends Controller
+{
 
     protected $langService;
     use AdminActivityLog;
-    public function __construct(LangService $langService) {
+    public function __construct(LangService $langService)
+    {
         $this->langService = $langService;
     }
 
@@ -27,36 +29,34 @@ class AuthController extends Controller {
      * Log in a user using the web guard and issue a Passport token.
      * The token is then stored in an HTTP-only cookie.
      */
-    public function login(Request $request) {
-        /**
-         * @var user $user
-         */
+    public function login(Request $request)
+    {
         $validation = [
-            'email'    => ['required', 'email'],
+            'phone'    => ['nullable', 'string'],
+            'email'    => ['nullable', 'email'],
             'password' => ['required']
         ];
-
         $validationMessage = [
-            'email.required' => $this->langService->getLang('email_required'),
+            'phone.required_without' => $this->langService->getLang('phone_or_email_required'),
+            'email.required_without' => $this->langService->getLang('phone_or_email_required'),
             'email.email'    => $this->langService->getLang('invalid_email'),
             'password.required' => $this->langService->getLang('enter_your_password'),
         ];
 
         $validator = Validator::make($request->all(), $validation, $validationMessage);
-        if (!$validator->passes()) {
-            $message = $validator->errors()->all()[0];
-
+        if (!$validator->passes() || (!$request->phone && !$request->email)) {
+            $message = $validator->errors()->all()[0] ?? $this->langService->getLang('phone_or_email_required');
             return response()->json([
                 'message' => $message
             ], 422);
         }
 
-        $credentials = [
-            'email'    => $request->email,
-            'password' => $request->password
-        ];
-
-        $user = User::where('email', $request->email)->first();
+        $user = null;
+        if ($request->filled('phone')) {
+            $user = User::where('phone', $request->phone)->first();
+        } elseif ($request->filled('email')) {
+            $user = User::where('email', $request->email)->first();
+        }
 
         if (!$user) {
             return response()->json([
@@ -70,6 +70,10 @@ class AuthController extends Controller {
             ], 403);
         }
 
+        $credentials = [
+            $request->filled('phone') ? 'phone' : 'email' => $request->filled('phone') ? $request->phone : $request->email,
+            'password' => $request->password
+        ];
 
         if (!Auth::guard('web')->attempt($credentials)) {
             return response()->json([
@@ -77,13 +81,38 @@ class AuthController extends Controller {
             ], 422);
         }
 
+        /**
+         * @var User $user
+         */
+
         $user = Auth::user();
+
+        // If login with email and it's first time login, send OTP and don't complete login yet
+        // if ($request->filled('email') && is_null($user->last_login_at)) {
+        //     $otp = random_int(100000, 999999);
+        //     $user->otp = $otp;
+        //     $user->otp_expires_at = Carbon::now()->addMinutes(10);
+        //     $user->otp_attempts = 0;
+        //     $user->save();
+
+        //     $url = url();
+        //     Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
+
+        //     // Logout the user since OTP verification is required
+        //     Auth::logout();
+
+        //     return response()->json([
+        //         'message' => 'OTP sent to your email. Please verify to complete login.',
+        //         'requires_otp' => true
+        //     ]);
+        // }
+
+        // For phone login, complete login immediately
+        $user->save();
+
         $token = $user->createToken('AuthToken')->accessToken;
-
         $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
-
         $this->adminActivities('login');
-
         return response()->json([
             'message' => 'Login successful',
             'token' => $token
@@ -95,7 +124,8 @@ class AuthController extends Controller {
      * This method uses the API guard. If the Authorization header
      * is not present, it sets the header from the HTTP-only cookie.
      */
-    public function currentUser(Request $request) {
+    public function currentUser(Request $request)
+    {
         // If no Authorization header, set it from the authToken cookie
         if (!$request->hasHeader('Authorization')) {
             $token = Cookie::get('authToken');
@@ -118,7 +148,8 @@ class AuthController extends Controller {
     /**
      * Log out the user by revoking the Passport token and deleting the auth cookie.
      */
-    public function logout(Request $request) {
+    public function logout(Request $request)
+    {
         $request->user()->token()->revoke();
         $cookie = Cookie::forget('authToken');
 
@@ -129,7 +160,8 @@ class AuthController extends Controller {
         ])->withCookie($cookie);
     }
 
-    public function sendResetOtp(Request $request) {
+    public function sendResetOtp(Request $request)
+    {
         $otp = random_int(100000, 999999);
 
         $validationRules = [
@@ -157,58 +189,59 @@ class AuthController extends Controller {
 
         $user->save();
 
-        if(!$user) {
+        if (!$user) {
             return response()->json([
-               'message' => $this->langService->getLang('user_not_found')
+                'message' => $this->langService->getLang('user_not_found')
             ], 404);
-        } 
+        }
 
         $url = url();
 
         Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
 
         return response()->json([
-           'message' => $this->langService->getLang('otp_sent')
+            'message' => $this->langService->getLang('otp_sent')
         ]);
     }
 
-    public function resetPasswordViaOtp(Request $request){ 
+    public function resetPasswordViaOtp(Request $request)
+    {
         $validationRules = [
-            'email' =>'required|email|exists:users,email',
-            'otp' =>'required|integer',
-            'password' =>'required|min:8',
-            'password_confirmation' =>'required|same:password'
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|integer',
+            'password' => 'required|min:8',
+            'password_confirmation' => 'required|same:password'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
 
-        if($validator->fails()) {
+        if ($validator->fails()) {
             $message = $validator->errors()->all()[0];
             return response()->json([
-               'message' => $message,
+                'message' => $message,
                 'errors' => $validator->errors()
             ], 422);
         }
 
         $user = User::query()
-            ->where('email', $request->email) 
+            ->where('email', $request->email)
             ->first();
 
-        if(!$user) {
+        if (!$user) {
             return response()->json([
-              'message' => $this->langService->getLang('user_not_found')
+                'message' => $this->langService->getLang('user_not_found')
             ], 404);
         }
 
-        if($user->otp != $request->otp) {
+        if ($user->otp != $request->otp) {
             return response()->json([
-            'message' => $this->langService->getLang('invalid_otp')
+                'message' => $this->langService->getLang('invalid_otp')
             ]);
         }
 
-        if($user->otp_expires_at < Carbon::now()) {
+        if ($user->otp_expires_at < Carbon::now()) {
             return response()->json([
-             'message' => $this->langService->getLang('otp_expired')
+                'message' => $this->langService->getLang('otp_expired')
             ], 404);
         }
 
@@ -219,8 +252,7 @@ class AuthController extends Controller {
         $user->save();
 
         return response()->json([
-          'message' => $this->langService->getLang('password_changed')
+            'message' => $this->langService->getLang('password_changed')
         ]);
     }
-
 }

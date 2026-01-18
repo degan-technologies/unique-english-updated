@@ -250,7 +250,7 @@ onMounted(() => {
     appStore.fetchUnreadNotifications();
     if (window.Echo && authUser.value?.id) {
         window.Echo.private(
-            `App.Models.User.${authUser.value.id}`
+            `App.Models.User.${authUser.value.id}`,
         ).notification(() => {
             appStore.fetchUnreadNotifications();
             if (showAllNotifications.value) {
@@ -269,7 +269,7 @@ watch(
     (newItems) => {
         localStorage.setItem("cartItems", JSON.stringify(newItems));
     },
-    { deep: true }
+    { deep: true },
 );
 </script>
 
@@ -296,8 +296,8 @@ watch(
             </router-link>
 
             <div class="flex items-center gap-4 pr-4">
-                <!-- Notification Button -->
-                <div class="relative flex justify-center">
+                <!-- Notification Button - Only show if logged in -->
+                <div v-if="isLoggedIn" class="relative flex justify-center">
                     <Popper
                         v-model:visible="notificationOpen"
                         :offset-distance="'0'"
@@ -383,7 +383,7 @@ watch(
                                             class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
                                             @click="
                                                 showNotificationDetails(
-                                                    notification
+                                                    notification,
                                                 )
                                             "
                                         >
@@ -402,7 +402,7 @@ watch(
                                                     >
                                                         {{
                                                             formatTime(
-                                                                notification.created_at
+                                                                notification.created_at,
                                                             )
                                                         }}
                                                     </p>
@@ -434,7 +434,7 @@ watch(
                                             class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
                                             @click="
                                                 showNotificationDetails(
-                                                    notification
+                                                    notification,
                                                 )
                                             "
                                         >
@@ -456,7 +456,7 @@ watch(
                                                     >
                                                         {{
                                                             formatTime(
-                                                                notification.created_at
+                                                                notification.created_at,
                                                             )
                                                         }}
                                                     </p>
@@ -464,7 +464,7 @@ watch(
                                                 <button
                                                     @click.stop="
                                                         markAsUnread(
-                                                            notification.id
+                                                            notification.id,
                                                         )
                                                     "
                                                     class="text-xs text-gray-400 hover:text-gray-600 ml-2"
@@ -571,7 +571,7 @@ watch(
                                                     >
                                                         ${{
                                                             item.price.toFixed(
-                                                                2
+                                                                2,
                                                             )
                                                         }}
                                                     </p>
@@ -732,13 +732,6 @@ watch(
                     </button>
                 </div>
 
-                <!-- Language Toggle -->
-                <button
-                    class="px-2 text-sm font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600"
-                >
-                    አማ
-                </button>
-
                 <!-- Mobile Menu Toggle -->
                 <button
                     @click="toggleMenu"
@@ -870,7 +863,7 @@ watch(
                         JSON.stringify(
                             currentNotification.data.additional_data,
                             null,
-                            2
+                            2,
                         )
                     }}</pre>
                 </div>

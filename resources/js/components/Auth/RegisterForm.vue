@@ -1,286 +1,388 @@
 <script setup>
+import { useAppStore } from "@/store/useAppStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
-
-import { useAppStore } from "@/store/useAppStore";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "vue-router";
 
-const router = useRouter();
 const appStore = useAppStore();
 const AuthStore = useAuthStore();
+const router = useRouter();
 
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
-const { frontLang, facebook, google } = storeToRefs(appStore);
+const { frontLang, otpEmail } = storeToRefs(appStore);
 
-const verifyOtpNav = ref(false);
-const otpVerified = ref(false);
 const name = ref("");
+const phone = ref("");
 const email = ref("");
+const phoneValid = ref(false);
 const password = ref("");
 const showPassword = ref(false);
 const loading = ref(false);
 const agreeTerms = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
-
-const otp = ref(["", "", "", "", "", ""]);
-const otpLoading = ref(false);
-const otpError = ref("");
-const otpSuccess = ref("");
-const registeredEmail = ref("");
-const otpMethod = ref("EMAIL");
+const registrationType = ref("phone"); // 'phone' or 'email'
 
 const togglePassword = () => {
     showPassword.value = !showPassword.value;
 };
 
 // Handle registration
-function handleRegister() {
+async function handleRegister() {
     if (!agreeTerms.value) {
-        errorMessage.value = frontLang.value.lang.termsAndConditions;
-        setTimeout(() => (errorMessage.value = ""), 2000);
+        errorMessage.value = "Please agree to the terms and conditions";
+        setTimeout(() => (errorMessage.value = ""), 3000);
         return;
     }
+
+    if (
+        registrationType.value === "phone" &&
+        (!phone.value || !phoneValid.value)
+    ) {
+        errorMessage.value = "Please enter a valid phone number";
+        setTimeout(() => (errorMessage.value = ""), 3000);
+        return;
+    }
+
+    if (registrationType.value === "email" && !email.value) {
+        errorMessage.value = "Please enter a valid email address";
+        setTimeout(() => (errorMessage.value = ""), 3000);
+        return;
+    }
+
+    if (!name.value || !password.value) {
+        errorMessage.value = "Please fill in all required fields";
+        setTimeout(() => (errorMessage.value = ""), 3000);
+        return;
+    }
+
     loading.value = true;
-    const data = {
-        full_name: name.value,
-        email: email.value,
-        password: password.value,
-    };
-    Axios.post("/register", data)
-        .then((res) => {
-            successMessage.value = res.data.message;
-            registeredEmail.value = email.value;
-            otpMethod.value = res.data.otp_method;
-            verifyOtpNav.value = true;
-            otpVerified.value = true;
-        })
-        .catch((err) => {
-            errorMessage.value = err.response?.data?.message;
-            setTimeout(() => (errorMessage.value = ""), 2000);
-        })
-        .finally(() => (loading.value = false));
+    errorMessage.value = "";
+    successMessage.value = "";
+
+    try {
+        const data = {
+            full_name: name.value,
+            password: password.value,
+            registration_method: registrationType.value,
+        };
+
+        if (registrationType.value === "phone") {
+            data.phone = phone.value;
+        } else {
+            data.email = email.value;
+        }
+
+        const response = await Axios.post("/api/register", data);
+
+        if (registrationType.value === "email") {
+            // Set otp email globally for VerifyOtp component
+            otpEmail.value = email.value;
+            // Close registration form to show VerifyOtp component
+            showRegistrationForm.value = false;
+            successMessage.value =
+                "Please check your email for the OTP verification code.";
+        } else {
+            // For phone registration, registration is complete and user is logged in
+            successMessage.value = response.data.message;
+            if (response.data.token) {
+                appStore.setAuthToken(response.data.token);
+                appStore.changeLoginStatus(true);
+                try {
+                    await appStore.fetchUserInfo();
+                } catch (e) {
+                    console.error("Failed to fetch user info:", e);
+                }
+            }
+            setTimeout(() => {
+                showRegistrationForm.value = false;
+                router.push("/");
+            }, 1500);
+        }
+    } catch (err) {
+        errorMessage.value =
+            err.response?.data?.message ||
+            "Registration failed. Please try again.";
+        setTimeout(() => (errorMessage.value = ""), 3000);
+    } finally {
+        loading.value = false;
+    }
 }
 
-const focusNext = (index, event) => {
-    if (event.target.value.length === 1 && index < 5) {
-        document.getElementById(`otp-${index + 1}`).focus();
-    }
-};
-
-const handleOtpSubmit = () => {
-    const otpCode = otp.value.join("");
-    if (otpCode.length !== 6) {
-        otpError.value = "Please enter a 6-digit OTP";
-        setTimeout(() => (otpError.value = ""), 2000);
-        return;
-    }
-    otpLoading.value = true;
-    Axios.post("/api/verify-otp", {
-        email: registeredEmail.value,
-        otp: otpCode,
-    })
-        .then((res) => {
-            otpSuccess.value = res.data.message;
-            appStore.setAuthToken(response.data.token);
-            appStore.changeLoginStatus(true);
-            showRegistrationForm.value = false;
-            setTimeout(() => {
-                otpSuccess.value = "";
-                otpVerified.value = false;
-            }, 1500);
-        })
-        .catch((err) => {
-            otpError.value = err.response?.data?.message;
-            setTimeout(() => (otpError.value = ""), 2000);
-        })
-        .finally(() => (otpLoading.value = false));
-};
-
-const resendOtp = () => {
-    otpLoading.value = true;
-    Axios.post("/api/resend-otp", {
-        email: registeredEmail.value,
-    })
-        .then((res) => {
-            otpSuccess.value = "OTP resent successfully!";
-            setTimeout(() => {
-                otpSuccess.value = "";
-                otpVerified.value = false;
-            }, 2000);
-        })
-        .catch((err) => {
-            otpError.value =
-                err.response?.data?.message || "Failed to resend OTP";
-            setTimeout(() => (otpError.value = ""), 3000);
-        })
-        .finally(() => (otpLoading.value = false));
-};
-
-const socialLogin = (provider) => {
-    window.location.href = `http://127.0.0.1:8000/auth/${provider}/redirect`;
-};
-
-function closeRegistrationinForm() {
+function closeRegistrationForm() {
     showRegistrationForm.value = false;
 }
 
-function roteToLogin() {
+function routeToLogin() {
     showRegistrationForm.value = false;
     showLoginForm.value = true;
+}
+
+function switchRegistrationType(type) {
+    registrationType.value = type;
+    // Clear the other field when switching types
+    if (type === "phone") {
+        email.value = "";
+    } else {
+        phone.value = "";
+        phoneValid.value = false;
+    }
+    errorMessage.value = "";
 }
 </script>
 
 <template>
-    <!-- Registration Screen -->
     <div
-        v-if="!verifyOtpNav"
-        @click="closeRegistrationinForm()"
-        class="flex h-screen w-screen overflow-hidden relative scrollbar-thin scrollbar-thumb-lime-700 scrollbar-track-lime-300 items-center justify-center"
+        @click="closeRegistrationForm"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 z-50 backdrop-blur-sm"
     >
         <div
-            v-if="frontLang?.lang"
             @click.stop
-            class="flex items-center h-fit justify-center w-full lg:w-1/2 p-8 relative z-1"
+            class="bg-white rounded-2xl sm:rounded-3xl shadow-xl w-full max-w-[90vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-md transform transition-all duration-300 animate-fade-in overflow-hidden mx-3 sm:mx-4 md:mx-6 lg:mx-8 max-h-[95vh] overflow-y-auto relative"
         >
-            <!-- Registration Form with Glassmorphism -->
-            <div
-                class="bg-white backdrop-blur-lg h-fit p-10 rounded-2xl shadow-2xl w-full max-w-md"
+            <!-- Close Icon -->
+            <button
+                @click="closeRegistrationForm"
+                class="absolute top-4 right-4 sm:top-5 sm:right-5 text-gray-400 hover:text-gray-600 transition-colors z-10 p-1"
             >
-                <!-- Social Login Section -->
-                <div class="text-center">
-                    <p class="text-lime-600 text-lg font-bold mb-2">
-                        {{ frontLang.lang.startjourneywithus }}
-                    </p>
-                    <button
-                        @click="closeRegistrationinForm"
-                        class="absolute top-4 right-4 mt-4 text-gray-500 hover:text-gray-700"
-                    >
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                    <div class="flex justify-center space-x-6">
-                        <button
-                            @click="socialLogin('google')"
-                            class="social-btn"
-                        >
-                            <i class="fab fa-google"></i>
-                        </button>
-                        <button
-                            @click="socialLogin('facebook')"
-                            class="social-btn"
-                        >
-                            <i class="fab fa-facebook-f"></i>
-                        </button>
-                        <button
-                            @click="socialLogin('linkedin')"
-                            class="social-btn"
-                        >
-                            <i class="fab fa-linkedin-in"></i>
-                        </button>
-                        <button
-                            @click="socialLogin('twitter')"
-                            class="social-btn"
-                        >
-                            <i class="fab fa-twitter"></i>
-                        </button>
+                <i class="fas fa-times text-lg sm:text-xl md:text-2xl"></i>
+            </button>
+
+            <!-- Header with gradient background -->
+            <div class="p-4 sm:p-6 text-lime-500 pt-12 sm:pt-14">
+                <h2 class="text-xl sm:text-2xl font-bold">
+                    {{
+                        frontLang?.lang?.startjourneywithus ||
+                        "Start your journey with us"
+                    }}
+                </h2>
+            </div>
+
+            <!-- Form content -->
+            <div class="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                <form
+                    @submit.prevent="handleRegister"
+                    class="space-y-3 sm:space-y-4"
+                >
+                    <!-- Registration Type Toggle -->
+                    <div class="flex justify-center mb-3 sm:mb-4">
+                        <div class="bg-gray-100 p-1 rounded-lg">
+                            <button
+                                type="button"
+                                @click="switchRegistrationType('phone')"
+                                :class="[
+                                    'px-3 py-2 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors',
+                                    registrationType === 'phone'
+                                        ? 'bg-lime-500 text-white'
+                                        : 'text-gray-600 hover:text-gray-800',
+                                ]"
+                            >
+                                Phone
+                            </button>
+                            <button
+                                type="button"
+                                @click="switchRegistrationType('email')"
+                                :class="[
+                                    'px-3 py-2 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors',
+                                    registrationType === 'email'
+                                        ? 'bg-lime-500 text-white'
+                                        : 'text-gray-600 hover:text-gray-800',
+                                ]"
+                            >
+                                Email
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="relative my-6">
-                    <hr class="border-gray-300" />
-                    <span
-                        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-4 text-gray-500"
-                    >
-                        {{ frontLang.lang.or }}
-                    </span>
-                </div>
-
-                <form @submit.prevent="handleRegister" class="space-y-4">
+                    <!-- Name Field -->
                     <div>
                         <label
                             for="name"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
                         >
-                            {{ frontLang.lang.name }}
+                            {{ frontLang?.lang?.name || "Full Name" }}
                         </label>
-                        <input
-                            type="text"
-                            id="name"
-                            v-model="name"
-                            placeholder="Enter your name"
-                            required
-                            class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
-                        />
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="name"
+                                v-model="name"
+                                placeholder="John Doe"
+                                required
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                            />
+                            <div
+                                class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 008 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
-                    <div>
+
+                    <!-- Phone Field -->
+                    <div v-if="registrationType === 'phone'">
+                        <label
+                            for="phone"
+                            class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
+                        >
+                            {{ frontLang?.lang?.phone || "Phone Number" }}
+                        </label>
+                        <div class="relative">
+                            <input
+                                type="tel"
+                                id="phone"
+                                v-model="phone"
+                                @input="phoneValid = phone.length >= 10"
+                                placeholder="+251911234567"
+                                required
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                            />
+                            <div
+                                class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Field -->
+                    <div v-if="registrationType === 'email'">
                         <label
                             for="email"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
                         >
-                            {{ frontLang.lang.email }}
+                            {{ frontLang?.lang?.email || "Email Address" }}
                         </label>
-                        <input
-                            type="email"
-                            id="email"
-                            v-model="email"
-                            placeholder="Enter your email"
-                            required
-                            class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
-                        />
+                        <div class="relative">
+                            <input
+                                type="email"
+                                id="email"
+                                v-model="email"
+                                placeholder="john@example.com"
+                                required
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                            />
+                            <div
+                                class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Password Field -->
                     <div>
                         <label
                             for="password"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
                         >
-                            {{ frontLang.lang.password }}
+                            {{ frontLang?.lang?.password || "Password" }}
                         </label>
                         <div class="relative">
                             <input
                                 :type="showPassword ? 'text' : 'password'"
                                 id="password"
                                 v-model="password"
-                                placeholder="Enter your password"
+                                placeholder="••••••••"
                                 required
-                                class="mt-1 w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700"
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
                             />
                             <button
                                 type="button"
                                 @click="togglePassword"
-                                class="absolute right-3 top-3 text-gray-500 focus:outline-none"
+                                class="absolute p-2 right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                             >
-                                <span v-if="showPassword">🙈</span>
-                                <span v-else>👁️</span>
+                                <span v-if="showPassword"
+                                    ><i class="fas fa-eye-slash text-sm"></i
+                                ></span>
+                                <span v-else
+                                    ><i class="fas fa-eye text-sm"></i
+                                ></span>
                             </button>
                         </div>
                     </div>
-                    <div class="flex items-start space-x-2">
-                        <input
-                            type="checkbox"
-                            id="terms"
-                            v-model="agreeTerms"
-                            class="mt-1"
-                        />
-                        <label for="terms" class="text-sm text-gray-700">
-                            {{ frontLang.lang.agreeto }}
-                            <a href="#" class="text-lime-700 hover:underline">
-                                {{ frontLang.lang.termsAndConditions }}
-                            </a>
-                        </label>
+
+                    <!-- Terms Checkbox -->
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5 mt-0.5">
+                            <input
+                                id="terms"
+                                type="checkbox"
+                                v-model="agreeTerms"
+                                class="focus:ring-lime-400 h-3 w-3 sm:h-4 sm:w-4 text-lime-500 border-gray-300 rounded"
+                            />
+                        </div>
+                        <div class="ml-2 sm:ml-3 text-xs sm:text-sm">
+                            <label
+                                for="terms"
+                                class="font-medium text-gray-700"
+                            >
+                                {{
+                                    frontLang?.lang?.agreeto || "I agree to the"
+                                }}
+                                <a
+                                    href="#"
+                                    class="text-lime-500 hover:text-lime-600 hover:underline"
+                                >
+                                    {{
+                                        frontLang?.lang?.termsAndConditions ||
+                                        "Terms and Conditions"
+                                    }}
+                                </a>
+                            </label>
+                        </div>
                     </div>
+
+                    <!-- Submit Button -->
                     <button
                         type="submit"
                         :disabled="loading"
-                        class="w-full flex justify-center items-center gap-2 bg-lime-600 hover:bg-lime-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        class="w-full flex justify-center items-center gap-2 bg-lime-500 hover:bg-lime-600 text-white font-medium py-2.5 sm:py-3 px-4 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-sm sm:text-base"
                     >
-                        <span
-                            class="flex flex-1 gap-2 items-center justify-center"
-                            v-if="loading"
-                        >
+                        <span v-if="loading" class="flex items-center">
                             <svg
-                                class="animate-spin h-5 w-5 text-white"
+                                class="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
                                 xmlns="http://www.w3.org/2000/svg"
                                 fill="none"
                                 viewBox="0 0 24 24"
@@ -299,157 +401,91 @@ function roteToLogin() {
                                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                 ></path>
                             </svg>
-                            {{ frontLang.lang.CreatingAccount }}
+                            <span class="ml-2">
+                                {{
+                                    frontLang?.lang?.CreatingAccount ||
+                                    "Creating Account..."
+                                }}
+                            </span>
                         </span>
                         <span v-else>
-                            {{ frontLang.lang.signup }}
+                            {{ frontLang?.lang?.signup || "Sign Up" }}
                         </span>
                     </button>
                 </form>
 
-                <div
-                    v-if="successMessage"
-                    class="mt-2 text-green-500 text-center font-semibold animate-pulse"
-                >
-                    {{ successMessage }}
-                </div>
-                <div
-                    v-if="errorMessage"
-                    class="mt-2 text-red-500 text-center font-semibold"
-                >
-                    {{ errorMessage }}
-                </div>
-                <div class="mt-4 text-center text-sm">
-                    <p>
-                        {{ frontLang.lang.haveAccount }}
-                        <span
-                            @click="roteToLogin()"
-                            class="text-lime-700 hover:underline"
-                            >{{ frontLang.lang.login }}</span
+                <!-- Feedback Messages -->
+                <transition name="fade">
+                    <div
+                        v-if="successMessage"
+                        class="p-2.5 sm:p-3 bg-green-50 text-green-700 text-xs sm:text-sm rounded-lg flex items-center"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4 sm:h-5 sm:w-5 mr-2"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
                         >
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        {{ successMessage }}
+                    </div>
+                </transition>
+
+                <transition name="fade">
+                    <div
+                        v-if="errorMessage"
+                        class="p-2.5 sm:p-3 bg-red-50 text-red-700 text-xs sm:text-sm rounded-lg flex items-center"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4 sm:h-5 sm:w-5 mr-2"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd"
+                            />
+                        </svg>
+                        {{ errorMessage }}
+                    </div>
+                </transition>
+
+                <!-- Login Link -->
+                <div class="text-center text-xs sm:text-sm pt-2">
+                    <p class="text-gray-600">
+                        {{
+                            frontLang?.lang?.haveAccount ||
+                            "Already have an account?"
+                        }}
+                        <button
+                            @click="routeToLogin"
+                            class="text-lime-500 hover:text-lime-600 hover:underline font-medium focus:outline-none"
+                        >
+                            {{ frontLang?.lang?.login || "Log in" }}
+                        </button>
                     </p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- OTP Verification Screen -->
-    <div
-        v-else-if="otpVerified"
-        @click="closeRegistrationinForm()"
-        class="flex items-center justify-center min-h-screen"
-    >
-        <div
-            @click.stop
-            class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md transform transition-all duration-300"
-        >
-            <h1 class="text-3xl font-bold text-center mb-4 text-lime-700">
-                Verify Your OTP
-            </h1>
-            <p class="text-gray-600 text-center mb-6">
-                Enter the 6-digit code sent to your email
-                <span class="font-semibold">{{ registeredEmail }}</span
-                >.
-            </p>
-
-            <!-- OTP Input Fields -->
-            <div class="flex justify-center space-x-2 mb-6">
-                <input
-                    v-for="(digit, index) in otp"
-                    :key="index"
-                    :id="`otp-${index}`"
-                    v-model="otp[index]"
-                    type="text"
-                    maxlength="1"
-                    class="w-12 h-12 text-center text-xl border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-700 focus:border-lime-700 transition-all duration-200 bg-lime-100"
-                    @input="focusNext(index, $event)"
-                    @keydown.backspace="
-                        index > 0 && !otp[index]
-                            ? document
-                                  .getElementById(`otp-${index - 1}`)
-                                  .focus()
-                            : null
-                    "
-                />
-            </div>
-
-            <!-- Submit Button -->
-            <button
-                @click="handleOtpSubmit"
-                :disabled="otpLoading"
-                class="w-full bg-lime-700 text-white py-3 rounded-lg hover:bg-lime-800 transition duration-300 flex items-center justify-center"
-            >
-                <span v-if="otpLoading" class="flex items-center">
-                    <svg
-                        class="animate-spin h-5 w-5 mr-2 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <circle
-                            class="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            stroke-width="4"
-                        ></circle>
-                        <path
-                            class="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        ></path>
-                    </svg>
-                    Verifying...
-                </span>
-                <span v-else>Verify OTP</span>
-            </button>
-
-            <!-- Resend OTP Link -->
-            <div class="text-center mt-4">
-                <p class="text-sm text-gray-600">
-                    Didn't receive the code?
-                    <button
-                        @click="resendOtp"
-                        :disabled="otpLoading"
-                        class="text-lime-700 hover:underline focus:outline-none"
-                    >
-                        Resend OTP
-                    </button>
-                </p>
-            </div>
-
-            <!-- Feedback Messages -->
-            <div
-                v-if="otpSuccess"
-                class="mt-4 text-green-500 text-center font-semibold animate-pulse"
-            >
-                {{ otpSuccess }}
-            </div>
-            <div
-                v-if="otpError"
-                class="mt-4 text-red-500 text-center font-semibold"
-            >
-                {{ otpError }}
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Glassmorphism effect */
-.glass {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
 }
 
-/* Fade-in Animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
-        transform: translateY(-20px);
+        transform: translateY(-10px);
     }
 
     to {
@@ -458,7 +494,88 @@ function roteToLogin() {
     }
 }
 
-.animate-fade-in {
-    animation: fadeIn 0.5s ease-out;
+.animate-shake {
+    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20%,
+    60% {
+        transform: translateX(-5px);
+    }
+
+    40%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Thin scrollbar styles */
+.max-h-\[95vh\]::-webkit-scrollbar {
+    width: 4px;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Hide scrollbar while maintaining scroll functionality */
+.max-h-\[95vh\]::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-thumb {
+    background: transparent;
+}
+
+.max-h-\[95vh\]::-webkit-scrollbar-thumb:hover {
+    background: transparent;
+}
+
+/* For Firefox - hide scrollbar */
+.max-h-\[95vh\] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 </style>

@@ -18,7 +18,7 @@ const InstructorStore = useInstructorStore();
 const { selectedCourse, instructorCourses } = storeToRefs(InstructorStore);
 const route = useRoute();
 
-// Refs 
+// Refs
 const uploadProgress = ref(0);
 const videoPlayer = ref(null);
 const playerInstance = ref(null);
@@ -31,7 +31,7 @@ const course = ref({
     price: "",
     upload_thumbnail: null,
     upload_intro_video: null,
-    language: '',
+    language: "",
 });
 
 // UI State
@@ -48,10 +48,10 @@ const props = defineProps({
 
 // Computed properties
 const isEditing = computed(
-    () => !!selectedCourse.value?.id && props.editCourse
+    () => !!selectedCourse.value?.id && props.editCourse,
 );
 const formTitle = computed(() =>
-    isEditing.value ? "Edit Course" : "Create New Course"
+    isEditing.value ? "Edit Course" : "Create New Course",
 );
 const submitButtonText = computed(() => {
     if (isStoringCourse.value) return "Creating...";
@@ -69,7 +69,7 @@ watch(
             selectedCourse.value = null;
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // Methods
@@ -89,11 +89,14 @@ async function fetchCourseToEdit(slug) {
 function initializeFormFromSelectedCourse() {
     course.value = {
         ...selectedCourse.value,
+        skill_level:
+            selectedCourse.value.skill_level_id ||
+            selectedCourse.value.skill_level,
         upload_thumbnail: null,
         upload_intro_video: null,
     };
 }
-  
+
 async function submitCourse(status) {
     loading.value = true;
     errors.value = {};
@@ -121,7 +124,7 @@ async function submitCourse(status) {
         resetLoadingStates();
     }
 }
- 
+
 function createFormData(status) {
     const formData = new FormData();
     const { upload_thumbnail, upload_intro_video, ...rest } = course.value;
@@ -138,13 +141,13 @@ function createFormData(status) {
 
     // Add files if they exist
     if (upload_thumbnail !== null) {
-        formData.append('thumbnail_url', upload_thumbnail);
+        formData.append("thumbnail_url", upload_thumbnail);
     } else {
         formData.delete("thumbnail_url");
     }
 
     if (upload_intro_video !== null) {
-        formData.append('intro_video', upload_intro_video);
+        formData.append("intro_video", upload_intro_video);
     } else {
         formData.delete("intro_video");
     }
@@ -158,14 +161,14 @@ function handleSuccessResponse(response, status) {
         (status === "draft"
             ? "Course saved as draft successfully"
             : isEditing.value
-            ? "Course updated successfully"
-            : "Course published successfully");
+              ? "Course updated successfully"
+              : "Course published successfully");
 
     if (!isEditing.value && status === "published") {
         selectedCourse.value = response.data.data;
 
         instructorCourses.value = instructorCourses.value.filter(
-            (course) => course?.id !== selectedCourse.value?.id
+            (course) => course?.id !== selectedCourse.value?.id,
         );
 
         instructorCourses.value = [
@@ -199,14 +202,14 @@ function resetForm() {
         price: "",
         upload_thumbnail: null,
         upload_intro_video: null,
-        language: '',
+        language: "",
     };
 
     uploadProgress.value = 0;
     isProcessingThumbnail.value = 0;
-    course.value.upload_thumbnail = null; 
-    course.value.upload_intro_video = null; 
-    
+    course.value.upload_thumbnail = null;
+    course.value.upload_intro_video = null;
+
     if (playerInstance.value) {
         playerInstance.value.src({});
     }
@@ -224,30 +227,46 @@ function uploadIntroVideo(event) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('intro_video', file);
+    formData.append("intro_video", file);
 
-    errors.value['intro_video'] = '';
+    errors.value["intro_video"] = "";
     uploadProgress.value = 0;
 
-    Axios.post('/api/courses/upload-intro-video', formData, {
+    Axios.post("/api/courses/upload-intro-video", formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
-                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                let percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total,
+                );
                 uploadProgress.value = percent > 99 ? 99 : percent;
             }
-        }
-    }).then(res => {
-        course.value.upload_intro_video = res.data.path; 
-        uploadProgress.value = 100;
-    }).catch(error => {
-        console.error(error);
-        if (error.response?.data?.errors) {
-            errors.value['intro_video'] = error.response.data.errors.intro_video?.[0] || 'Upload failed';
-        }
+        },
     })
+        .then((res) => {
+            course.value.upload_intro_video = res.data.path;
+            uploadProgress.value = 100;
+        })
+        .catch((error) => {
+            console.error(error);
+            // Reset progress indicator
+            uploadProgress.value = 0;
+            course.value.upload_intro_video = null;
+
+            // Handle different types of errors
+            if (error.response?.data?.errors) {
+                errors.value["intro_video"] =
+                    error.response.data.errors.intro_video?.[0] ||
+                    "Upload failed";
+            } else if (error.response?.data?.message) {
+                errors.value["intro_video"] = error.response.data.message;
+            } else {
+                errors.value["intro_video"] =
+                    "Failed to upload video. Please try again.";
+            }
+        });
 }
 
 function uploadThumbnail(event) {
@@ -255,30 +274,46 @@ function uploadThumbnail(event) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('thumbnail_url', file);
+    formData.append("thumbnail_url", file);
 
-    errors.value['thumbnail_url'] = '';
+    errors.value["thumbnail_url"] = "";
     isProcessingThumbnail.value = 0;
 
-    Axios.post('/api/courses/upload-thumbnail', formData, {
+    Axios.post("/api/courses/upload-thumbnail", formData, {
         headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
             if (progressEvent.lengthComputable) {
-                let percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                isProcessingThumbnail.value = percent > 99 ? 99 : percent; 
+                let percent = Math.round(
+                    (progressEvent.loaded * 100) / progressEvent.total,
+                );
+                isProcessingThumbnail.value = percent > 99 ? 99 : percent;
             }
-        }
-    }).then(res => {
-        course.value.upload_thumbnail = res.data.path; 
-        isProcessingThumbnail.value = 100;
-    }).catch(error => {
-        console.error(error);
-        if (error.response?.data?.errors) {
-            errors.value['thumbnail_url'] = error.response.data.errors.thumbnail_url?.[0] || 'Upload failed';
-        }
+        },
     })
+        .then((res) => {
+            course.value.upload_thumbnail = res.data.path;
+            isProcessingThumbnail.value = 100;
+        })
+        .catch((error) => {
+            console.error(error);
+            // Reset progress indicator
+            isProcessingThumbnail.value = 0;
+            course.value.upload_thumbnail = null;
+
+            // Handle different types of errors
+            if (error.response?.data?.errors) {
+                errors.value["thumbnail_url"] =
+                    error.response.data.errors.thumbnail_url?.[0] ||
+                    "Upload failed";
+            } else if (error.response?.data?.message) {
+                errors.value["thumbnail_url"] = error.response.data.message;
+            } else {
+                errors.value["thumbnail_url"] =
+                    "Failed to upload thumbnail. Please try again.";
+            }
+        });
 }
 
 const updateOverview = (newOverview) => {
@@ -322,10 +357,14 @@ watch(successMessage, (newVal) => {
         <button
             @click="goBack()"
             class="flex items-center gap-4 justify-center text-gray-600 hover:text-lime-700 transition-colors mb-6 group"
-            aria-label="Go back">
-            <i class="fas fa-arrow-left  self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"></i>
-            <span class="text-2xl font-bold self-center  text-lime-700 mb-6"> {{ editCourse ? 'Edit' : 'Add' }} New
-                Course</span>
+            aria-label="Go back"
+        >
+            <i
+                class="fas fa-arrow-left self-center pb-6 text-lg group-hover:-translate-x-1 transition-transform"
+            ></i>
+            <span class="text-2xl font-bold self-center text-lime-700 mb-6">
+                {{ editCourse ? "Edit" : "Add" }} New Course</span
+            >
         </button>
 
         <!-- Success Message -->
@@ -347,8 +386,8 @@ watch(successMessage, (newVal) => {
             <i class="fas fa-exclamation-circle mr-2"></i>
             {{ errors.general }}
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8"> 
-            <div class="lg:col-span-3 space-y-6"> 
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-3 space-y-6">
                 <div>
                     <label class="block text-gray-700 font-semibold mb-2">
                         Course Name <span class="text-red-500">*</span>
@@ -370,87 +409,228 @@ watch(successMessage, (newVal) => {
                 </div>
 
                 <!-- Media Uploads -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-gray-700 font-medium mb-2">Course Thumbnail</label>
+                        <label class="block text-gray-700 font-medium mb-2"
+                            >Course Thumbnail</label
+                        >
                         <div class="relative">
-                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden"
-                                :class="{ 'border-lime-500 text-gray-500 bg-lime-50': isProcessingThumbnail }">
-                                <div class="flex flex-col items-center text-gray-500">
-                                    <template v-if="isProcessingThumbnail">
-                                        <div class="relative mb-2 w-10 h-10 flex items-center justify-center"> 
-                                            <div class="absolute inset-0 rounded-full bg-lime-100 animate-ping opacity-75"></div>
-                                            <div class="relative z-10 flex items-center justify-center">
-                                                <svg class="w-8 h-8 text-lime-600" fill="none" viewBox="0 0 24 24">
-                                                    <path stroke="currentColor" stroke-linecap="round" stroke-width="2" 
-                                                        d="M12 4v4m0 4v4m0 4v4m8-12h-4m-4 0H8m12 4h-4m-4 0H8"/>
+                            <div
+                                class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition relative overflow-hidden"
+                                :class="{
+                                    'border-lime-500 text-gray-500 bg-lime-50':
+                                        isProcessingThumbnail > 0 &&
+                                        isProcessingThumbnail < 100,
+                                    'border-red-500 bg-red-50':
+                                        errors.thumbnail_url,
+                                }"
+                            >
+                                <div
+                                    class="flex flex-col items-center text-gray-500"
+                                >
+                                    <template
+                                        v-if="
+                                            isProcessingThumbnail > 0 &&
+                                            isProcessingThumbnail < 100
+                                        "
+                                    >
+                                        <div
+                                            class="relative mb-2 w-10 h-10 flex items-center justify-center"
+                                        >
+                                            <div
+                                                class="absolute inset-0 rounded-full bg-lime-100 animate-ping opacity-75"
+                                            ></div>
+                                            <div
+                                                class="relative z-10 flex items-center justify-center"
+                                            >
+                                                <svg
+                                                    class="w-8 h-8 text-lime-600"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        stroke="currentColor"
+                                                        stroke-linecap="round"
+                                                        stroke-width="2"
+                                                        d="M12 4v4m0 4v4m0 4v4m8-12h-4m-4 0H8m12 4h-4m-4 0H8"
+                                                    />
                                                 </svg>
                                             </div>
                                         </div>
                                         <div class="space-y-1">
-                                            <span v-if="isProcessingThumbnail < 100" class="text-sm font-medium text-gray-600">Processing thumbnail...</span>
-                                            <span v-else class="text-sm font-medium text-green-600">Completed</span>
+                                            <span
+                                                class="text-sm font-medium text-gray-600"
+                                                >Processing thumbnail...</span
+                                            >
                                         </div>
                                     </template>
-                                    <template v-else> 
-                                        <i class="fa-solid text-2xl mb-2 text-gray-500"
+                                    <template
+                                        v-else-if="
+                                            isProcessingThumbnail === 100
+                                        "
+                                    >
+                                        <i
+                                            class="fa-solid fa-check text-2xl mb-2 text-lime-600"
+                                        ></i>
+                                        <span
+                                            class="text-sm font-medium text-green-600"
+                                            >Completed</span
+                                        >
+                                    </template>
+                                    <template v-else>
+                                        <i
+                                            class="fa-solid fa-image text-2xl mb-2"
                                             :class="{
-                                                'fa-image': isProcessingThumbnail <= 99,
-                                                'fa-check text-lime-600' : isProcessingThumbnail == 100, 
-                                            }"></i>
-                                        <span class="text-sm">Click to upload thumbnail  </span>
-                                    </template> 
+                                                'text-red-500':
+                                                    errors.thumbnail_url,
+                                                'text-gray-500':
+                                                    !errors.thumbnail_url,
+                                            }"
+                                        ></i>
+                                        <span
+                                            class="text-sm"
+                                            :class="{
+                                                'text-red-500':
+                                                    errors.thumbnail_url,
+                                                'text-gray-500':
+                                                    !errors.thumbnail_url,
+                                            }"
+                                            >{{
+                                                errors.thumbnail_url
+                                                    ? "Upload failed - try again"
+                                                    : "Click to upload thumbnail"
+                                            }}
+                                        </span>
+                                    </template>
                                 </div>
-                                <input type="file" accept="image/jpeg, image/png"
+                                <input
+                                    type="file"
+                                    accept="image/jpeg, image/png"
                                     @change="uploadThumbnail($event)"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                    :disabled="isProcessingThumbnail < 100 && isProcessingThumbnail > 1" />
+                                    :disabled="
+                                        isProcessingThumbnail < 100 &&
+                                        isProcessingThumbnail > 0
+                                    "
+                                />
                             </div>
-                            <p v-if="errors.thumbnail_url" class="mt-1 text-red-500 text-sm">{{ errors.thumbnail_url
-                                }}</p>
+                            <p
+                                v-if="errors.thumbnail_url"
+                                class="mt-1 text-red-500 text-sm"
+                            >
+                                {{ errors.thumbnail_url }}
+                            </p>
                         </div>
                     </div>
 
                     <!-- Intro Video Upload -->
                     <div>
-                        <label class="block text-gray-700 font-medium mb-2">Intro Video</label>
+                        <label class="block text-gray-700 font-medium mb-2"
+                            >Intro Video</label
+                        >
                         <div class="relative">
-                            <div class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
-                                :class="{ 'border-lime-500 bg-lime-50': uploadProgress }">
-                                <div class="flex flex-col items-center text-gray-500">
-                                    <template v-if="uploadProgress">
+                            <div
+                                class="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:bg-gray-50 transition"
+                                :class="{
+                                    'border-lime-500 bg-lime-50':
+                                        uploadProgress > 0 &&
+                                        uploadProgress < 100,
+                                    'border-red-500 bg-red-50':
+                                        errors.intro_video,
+                                }"
+                            >
+                                <div
+                                    class="flex flex-col items-center text-gray-500"
+                                >
+                                    <template
+                                        v-if="
+                                            uploadProgress > 0 &&
+                                            uploadProgress < 100
+                                        "
+                                    >
                                         <div class="relative mb-2 w-10 h-10">
                                             <!-- Dynamic progress spinner -->
-                                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-gray-200"
-                                                    stroke-width="2"></circle>
-                                                <circle cx="18" cy="18" r="16" fill="none" class="stroke-lime-600"
+                                            <svg
+                                                class="w-full h-full transform -rotate-90"
+                                                viewBox="0 0 36 36"
+                                            >
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r="16"
+                                                    fill="none"
+                                                    class="stroke-gray-200"
                                                     stroke-width="2"
-                                                    :stroke-dasharray="`${uploadProgress * 1.13}, 113`"></circle>
+                                                ></circle>
+                                                <circle
+                                                    cx="18"
+                                                    cy="18"
+                                                    r="16"
+                                                    fill="none"
+                                                    class="stroke-lime-600"
+                                                    stroke-width="2"
+                                                    :stroke-dasharray="`${uploadProgress * 1.13}, 113`"
+                                                ></circle>
                                             </svg>
-                                            <div class="absolute inset-0 flex items-center justify-center">
-                                                <span class="text-xs font-bold text-lime-600">{{ uploadProgress
-                                                    }}%</span>
+                                            <div
+                                                class="absolute inset-0 flex items-center justify-center"
+                                            >
+                                                <span
+                                                    class="text-xs font-bold text-lime-600"
+                                                    >{{ uploadProgress }}%</span
+                                                >
                                             </div>
                                         </div>
-                                        <span class="text-sm"
-                                            :class="{
-                                                'text-green-600': uploadProgress == 100 
-                                            }">{{ uploadProgress < 100  ? 'Uploading video...' : 'Completed' }}</span>
+                                        <span class="text-sm text-gray-600"
+                                            >Uploading video...</span
+                                        >
+                                    </template>
+                                    <template
+                                        v-else-if="uploadProgress === 100"
+                                    >
+                                        <i
+                                            class="fas fa-check text-2xl mb-2 text-green-600"
+                                        ></i>
+                                        <span class="text-sm text-green-600"
+                                            >Completed</span
+                                        >
                                     </template>
                                     <template v-else>
                                         <i
                                             class="fas fa-video text-2xl mb-2"
+                                            :class="{
+                                                'text-red-500':
+                                                    errors.intro_video,
+                                                'text-gray-500':
+                                                    !errors.intro_video,
+                                            }"
                                         ></i>
-                                        <span class="text-sm"
-                                            >Click to upload video</span
+                                        <span
+                                            class="text-sm"
+                                            :class="{
+                                                'text-red-500':
+                                                    errors.intro_video,
+                                                'text-gray-500':
+                                                    !errors.intro_video,
+                                            }"
+                                            >{{
+                                                errors.intro_video
+                                                    ? "Upload failed - try again"
+                                                    : "Click to upload video"
+                                            }}</span
                                         >
                                     </template>
                                 </div>
-                                <input type="file" accept="video/mp4" @change="uploadIntroVideo($event)"
+                                <input
+                                    type="file"
+                                    accept="video/mp4"
+                                    @change="uploadIntroVideo($event)"
                                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                    :disabled="uploadProgress < 100 && uploadProgress > 1"
-                                    />
+                                    :disabled="
+                                        uploadProgress < 100 &&
+                                        uploadProgress > 0
+                                    "
+                                />
                             </div>
                             <p
                                 v-if="errors.intro_video"
@@ -543,9 +723,16 @@ watch(successMessage, (newVal) => {
 
         <!-- Form Actions -->
         <div class="flex justify-end mt-8 space-x-4">
-            <button type="button" @click="submitCourse('published')"
-                :disabled="isStoringCourse || (!isEditing && (isUpdatingCourse || loading || uploadProgress < 100))"
-                class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed">
+            <button
+                type="button"
+                @click="submitCourse('published')"
+                :disabled="
+                    isStoringCourse ||
+                    (!isEditing &&
+                        (isUpdatingCourse || loading || uploadProgress < 100))
+                "
+                class="px-6 py-3 bg-lime-600 text-white rounded-lg hover:bg-lime-700 transition font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+            >
                 <span v-if="isStoringCourse || isUpdatingCourse">
                     <i class="fas fa-spinner fa-spin mr-2"></i>
                     {{ submitButtonText }}
@@ -616,4 +803,3 @@ input[type="number"]::-webkit-outer-spin-button {
     animation: spin 1s linear infinite;
 }
 </style>
-

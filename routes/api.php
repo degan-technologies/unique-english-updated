@@ -38,6 +38,10 @@ use App\Http\Middleware\EnsureSignature;
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
 Route::resource('test', TestController::class);
+
+// Add registration route
+Route::post('/register', [UserController::class, 'studentRegistration']);
+
 Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
@@ -241,9 +245,10 @@ Route::middleware(['auth:api'])->group(function () {
 
     //system information
     Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
+    Route::delete('/hero-section/{imageType}', [HeroController::class, 'deleteImage']);
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
 
-    Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
+    // ...existing code...
 });
 
 Route::middleware('auth:api')

@@ -1,3 +1,17 @@
+  <script setup>
+  import { ref } from "vue";
+  
+  const email = ref("");
+  const loading = ref(false);
+  
+  const handleReset = () => {
+    loading.value = true;
+    setTimeout(() => {
+      alert(`A reset link has been sent to ${email.value}`);
+      loading.value = false;
+    }, 1500);
+  };
+  </script>
 <template>
     <div class="flex justify-center items-center h-screen bg-gray-100 px-4">
       <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-sm mx-auto">
@@ -38,21 +52,6 @@
       </div>
     </div>
   </template>
-  
-  <script setup>
-  import { ref } from "vue";
-  
-  const email = ref("");
-  const loading = ref(false);
-  
-  const handleReset = () => {
-    loading.value = true;
-    setTimeout(() => {
-      alert(`A reset link has been sent to ${email.value}`);
-      loading.value = false;
-    }, 1500);
-  };
-  </script>
   
   <style scoped>
   /* Make the input fields and button more compact for better responsiveness */
