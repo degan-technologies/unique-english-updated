@@ -652,7 +652,7 @@ function exportToCSV() {
                     class="p-4 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
                 >
                     <!-- Search -->
-                    <div class="relative flex-1 max-w-md">
+                    <div class="relative flex-1 max-w-md w-full">
                         <input
                             v-model="searchQuery"
                             type="text"
@@ -672,14 +672,12 @@ function exportToCSV() {
                         </svg>
                     </div>
 
-                    <!-- Action Buttons -->
-                    <div
-                        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <!-- Left: Selection Info -->
+                    <!-- Actions -->
+                    <div class="flex flex-col gap-3 w-full md:w-auto">
+                        <!-- Selection Info -->
                         <div
                             v-if="selectedUsers.length"
-                            class="flex flex-wrap items-center gap-2 text-sm text-gray-600"
+                            class="flex items-center gap-2 text-sm text-gray-600"
                         >
                             <span>{{ selectedUsers.length }} selected</span>
                             <button
@@ -690,85 +688,90 @@ function exportToCSV() {
                             </button>
                         </div>
 
-                        <!-- Right: Action Buttons -->
+                        <!-- Action Groups -->
                         <div
-                            class="flex flex-wrap items-center gap-2 justify-end w-full sm:w-auto"
+                            class="flex flex-wrap items-center gap-4 justify-start md:justify-end"
                         >
-                            <!-- Export Dropdown -->
-                            <div class="relative">
-                                <Popper>
-                                    <button
-                                        :disabled="
-                                            isExporting ||
-                                            currentUsers.length === 0
-                                        "
-                                        class="flex items-center gap-2 bg-green-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <i
-                                            v-if="isExporting"
-                                            class="fa-solid fa-spinner fa-spin"
-                                        ></i>
-                                        <i
-                                            v-else
-                                            class="fa-solid fa-download"
-                                        ></i>
-
-                                        <span class="hidden sm:inline">
-                                            {{
-                                                isExporting
-                                                    ? "Exporting..."
-                                                    : "Export"
-                                            }}
-                                        </span>
-
-                                        <i
-                                            class="fa-solid fa-chevron-down text-xs"
-                                        ></i>
-                                    </button>
-
-                                    <template #content>
-                                        <div
-                                            class="bg-white shadow-lg rounded-lg py-2 w-44"
-                                        >
+                            <!-- DATA ACTIONS GROUP -->
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <!-- Export -->
+                                    <div class="relative">
+                                        <Popper>
                                             <button
-                                                @click="exportToCSV"
-                                                :disabled="isExporting"
-                                                class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                                                :disabled="
+                                                    isExporting ||
+                                                    currentUsers.length === 0
+                                                "
+                                                class="flex items-center gap-2 bg-green-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <i
-                                                    class="fa-solid fa-file-csv mr-2"
+                                                    v-if="isExporting"
+                                                    class="fa-solid fa-spinner fa-spin"
                                                 ></i>
-                                                Export CSV
+                                                <i
+                                                    v-else
+                                                    class="fa-solid fa-download"
+                                                ></i>
+
+                                                <span>
+                                                    {{
+                                                        isExporting
+                                                            ? "Exporting"
+                                                            : "Export"
+                                                    }}
+                                                </span>
+
+                                                <i
+                                                    class="fa-solid fa-chevron-down text-xs"
+                                                ></i>
                                             </button>
-                                        </div>
-                                    </template>
-                                </Popper>
+
+                                            <template #content>
+                                                <div
+                                                    class="bg-white shadow-lg rounded-lg py-2 w-44"
+                                                >
+                                                    <button
+                                                        @click="exportToCSV"
+                                                        :disabled="isExporting"
+                                                        class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                                                    >
+                                                        <i
+                                                            class="fa-solid fa-file-csv mr-2"
+                                                        ></i>
+                                                        Export CSV
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </Popper>
+                                    </div>
+
+                                    <!-- Bulk Import -->
+                                    <button
+                                        v-if="activeTab === 'students'"
+                                        @click="openBulkImportModal"
+                                        class="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-blue-700 transition"
+                                    >
+                                        <i class="fa-solid fa-upload"></i>
+                                        <span>Import</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <!-- Add Button -->
-                            <button
-                                @click="openAddUserModal"
-                                class="bg-lime-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-lime-700 transition"
-                            >
-                                <span class="hidden sm:inline">Add</span>
-                                {{
-                                    activeTab === "instructors"
-                                        ? "Instructor"
-                                        : "Student"
-                                }}
-                            </button>
-
-                            <!-- Bulk Import (Students only) -->
-                            <button
-                                v-if="activeTab === 'students'"
-                                @click="openBulkImportModal"
-                                class="bg-blue-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                            >
-                                <i class="fa-solid fa-upload"></i>
-                                <span class="hidden sm:inline"
-                                    >Bulk Import</span
+                            <!-- ADD USER -->
+                            <div class="flex flex-col gap-1">
+                                <button
+                                    @click="openAddUserModal"
+                                    class="bg-lime-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-lime-700 transition"
                                 >
-                            </button>
+                                    Add
+                                    {{
+                                        activeTab === "instructors"
+                                            ? "Instructor"
+                                            : "Student"
+                                    }}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -813,6 +816,11 @@ function exportToCSV() {
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
                                 >
                                     Contact Info
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                >
+                                    Engagement
                                 </th>
                                 <th
                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
@@ -887,6 +895,14 @@ function exportToCSV() {
                                     >
                                         {{ user.phone }}
                                     </div>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    <span
+                                        v-if="user.engagement"
+                                        class="font-medium"
+                                    >
+                                        {{ user.engagement || no }}
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4">
                                     <span
