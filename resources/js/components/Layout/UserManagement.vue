@@ -1092,10 +1092,14 @@ function exportToCSV() {
         <transition name="fade">
             <div
                 v-if="showAddUserModal"
-                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-0"
             >
-                <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                    <h3 class="text-xl font-bold mb-4">
+                <!-- Modal Card -->
+                <div
+                    class="bg-white rounded-lg shadow-xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+                >
+                    <!-- Header -->
+                    <h3 class="text-lg sm:text-xl font-bold mb-4">
                         Add New
                         {{
                             activeTab === "instructors"
@@ -1103,87 +1107,108 @@ function exportToCSV() {
                                 : "Student"
                         }}
                     </h3>
+
                     <form @submit.prevent="submitAddUser">
+                        <!-- Email -->
                         <div class="mb-4">
-                            <label class="block text-gray-700 font-medium mb-2"
-                                >Email</label
+                            <label
+                                class="block text-gray-700 text-sm font-medium mb-1"
                             >
+                                Email
+                            </label>
                             <input
                                 v-model="newUser.email"
                                 type="email"
                                 required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                                class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
                             />
                         </div>
-                        <div class="grid grid-cols-2 gap-4 mb-4">
+
+                        <!-- Names -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label
-                                    class="block text-gray-700 font-medium mb-2"
-                                    >First Name</label
+                                    class="block text-gray-700 text-sm font-medium mb-1"
                                 >
+                                    First Name
+                                </label>
                                 <input
                                     v-model="newUser.first_name"
                                     type="text"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                                    class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
                                 />
                             </div>
+
                             <div>
                                 <label
-                                    class="block text-gray-700 font-medium mb-2"
-                                    >Middle Name</label
+                                    class="block text-gray-700 text-sm font-medium mb-1"
                                 >
+                                    Middle Name
+                                </label>
                                 <input
                                     v-model="newUser.middle_name"
                                     type="text"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                                    class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
                                 />
                             </div>
                         </div>
+
+                        <!-- Student Fields -->
                         <div v-if="activeTab === 'students'">
                             <div class="mb-4">
                                 <label
-                                    class="block text-gray-700 font-medium mb-2"
-                                    >Phone</label
+                                    class="block text-gray-700 text-sm font-medium mb-1"
                                 >
+                                    Phone
+                                </label>
                                 <input
                                     v-model="newUser.phone"
                                     type="tel"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                                    class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
                                 />
                             </div>
-                            <div class="mb-6">
+
+                            <div class="mb-4">
                                 <label
-                                    class="block text-gray-700 font-medium mb-2"
-                                    >Password</label
+                                    class="block text-gray-700 text-sm font-medium mb-1"
                                 >
+                                    Password
+                                </label>
                                 <input
                                     v-model="newUser.password"
                                     type="password"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
+                                    class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
                                 />
                             </div>
                         </div>
-                        <div v-else class="mb-6">
+
+                        <!-- Instructor Notice -->
+                        <div v-else class="mb-4">
                             <p class="text-gray-600 text-sm">
                                 A random password will be generated for this
                                 instructor account.
                             </p>
                         </div>
-                        <div class="flex justify-end space-x-2">
+
+                        <!-- Actions -->
+                        <div
+                            class="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-6"
+                        >
                             <button
                                 type="button"
                                 @click="closeAddUserModal"
-                                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                                class="w-full sm:w-auto px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg hover:bg-gray-100 transition"
                             >
                                 Cancel
                             </button>
+
                             <button
                                 type="submit"
                                 :disabled="isProcessing"
-                                class="px-4 py-2 bg-lime-600 text-white rounded-lg hover:bg-lime-700"
+                                class="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-lime-600 text-white rounded-lg hover:bg-lime-700 disabled:opacity-50 transition"
                             >
                                 Add
                                 {{
