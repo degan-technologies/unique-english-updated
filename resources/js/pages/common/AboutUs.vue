@@ -31,7 +31,7 @@ const toggleExpanded = () => {
                 >
                     Welcome to our platform! We specialize in offering engaging
                     and effective English learning experiences tailored to all
-                    levels—from beginners to advanced learners.
+                    levels from beginners to advanced learners.
                 </p>
                 <p
                     class="text-gray-600 text-base leading-relaxed mb-4 text-justify"

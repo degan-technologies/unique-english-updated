@@ -84,35 +84,15 @@ class AuthController extends Controller
         /**
          * @var User $user
          */
-
         $user = Auth::user();
 
-        // If login with email and it's first time login, send OTP and don't complete login yet
-        // if ($request->filled('email') && is_null($user->last_login_at)) {
-        //     $otp = random_int(100000, 999999);
-        //     $user->otp = $otp;
-        //     $user->otp_expires_at = Carbon::now()->addMinutes(10);
-        //     $user->otp_attempts = 0;
-        //     $user->save();
-
-        //     $url = url();
-        //     Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
-
-        //     // Logout the user since OTP verification is required
-        //     Auth::logout();
-
-        //     return response()->json([
-        //         'message' => 'OTP sent to your email. Please verify to complete login.',
-        //         'requires_otp' => true
-        //     ]);
-        // }
-
-        // For phone login, complete login immediately
+        // Complete login immediately for both phone and email login
         $user->save();
 
         $token = $user->createToken('AuthToken')->accessToken;
         $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
         $this->adminActivities('login');
+
         return response()->json([
             'message' => 'Login successful',
             'token' => $token

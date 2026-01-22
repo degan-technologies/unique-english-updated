@@ -88,7 +88,7 @@ export const useAppStore = defineStore("useAppStore", () => {
         Axios.get("/api/current")
             .then((response) => {
                 authUser.value = response.data;
-                otpEmail.value = response.data.email;
+                // otpEmail.value = response.data.email;
             })
             .catch((error) => changeLoginStatus(false));
     }

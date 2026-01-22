@@ -125,19 +125,13 @@ class UserController extends Controller
         // Check if this is email registration (user provided email in original request) or phone registration
         $isEmailRegistration = $request->has('email') && !empty($request->input('email'));
 
-        // Generate email for phone-only registration
-        if (!$isEmailRegistration) {
-            $email = strtolower(Str::slug($firstName . ($middleName ? ' ' . $middleName : Str::random(10)))) . '@degan.com';
-            $request->merge(['email' => $email]);
-        }
-
         try {
             DB::beginTransaction();
 
             $user = new User();
             $user->slug        = Str::uuid();
             $user->phone       = $request->phone;
-            $user->email       = $request->email;
+            $user->email       = $request->email; // Keep original email or null if not provided
             $user->first_name  = $firstName;
             $user->middle_name = $middleName;
             $user->last_name   = $lastName;
@@ -783,6 +777,12 @@ class UserController extends Controller
             $errorCount = 0;
             $errors = [];
             $rowNumber = 2; // Starting from row 2 (after header)
+            $errorTypes = [
+                'validation' => 0,
+                'duplicate' => 0,
+                'format' => 0,
+                'missing_data' => 0
+            ];
 
             while (($row = fgetcsv($handle)) !== false) {
                 // Skip empty rows
@@ -800,51 +800,81 @@ class UserController extends Controller
                     $phone = trim($row[4] ?? '');
                     $genderString = strtolower(trim($row[5] ?? ''));
 
-                    // Validate required fields
-                    if (empty($firstName) || empty($email)) {
-                        $errors[] = "Row {$rowNumber}: First name and email are required";
+                    // Validate required fields - only first name is required now
+                    if (empty($firstName)) {
+                        $errors[] = "Row {$rowNumber}: First name is required";
+                        $errorTypes['missing_data']++;
                         $errorCount++;
                         $rowNumber++;
                         continue;
                     }
 
-                    // Validate email format
-                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        $errors[] = "Row {$rowNumber}: Invalid email format for {$email}";
-                        $errorCount++;
-                        $rowNumber++;
-                        continue;
+                    // Validate email format if provided, but don't auto-generate
+                    $validatedEmail = null;
+                    if (!empty($email)) {
+                        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                            // Check if email already exists
+                            if (User::where('email', $email)->exists()) {
+                                $errors[] = "Row {$rowNumber}: Email {$email} already exists";
+                                $errorTypes['duplicate']++;
+                                $errorCount++;
+                                $rowNumber++;
+                                continue;
+                            }
+                            $validatedEmail = $email;
+                        } else {
+                            $errors[] = "Row {$rowNumber}: Invalid email format: {$email}";
+                            $errorTypes['format']++;
+                            $errorCount++;
+                            $rowNumber++;
+                            continue;
+                        }
                     }
 
-                    // Check if email already exists
-                    if (User::where('email', $email)->exists()) {
-                        $errors[] = "Row {$rowNumber}: Email {$email} already exists";
-                        $errorCount++;
-                        $rowNumber++;
-                        continue;
+                    // Validate and format phone number if provided
+                    $formattedPhone = null;
+                    if (!empty($phone)) {
+                        // Remove any non-digit characters except + at the beginning
+                        $cleanPhone = preg_replace('/[^\d+]/', '', $phone);
+
+                        // Store phone as string to preserve format
+                        if (strlen($cleanPhone) >= 9) {
+                            $formattedPhone = $cleanPhone;
+                        } else {
+                            $errors[] = "Row {$rowNumber}: Invalid phone number format: {$phone}";
+                            $errorTypes['format']++;
+                            $errorCount++;
+                            $rowNumber++;
+                            continue;
+                        }
                     }
 
-                    // Map gender string to integer values as defined in AppConfig.php
+                    // Map gender string to integer values
                     $gender = null;
                     if ($genderString === 'male') {
                         $gender = MALE; // 1
                     } elseif ($genderString === 'female') {
                         $gender = FEMALE; // 2
                     }
-                    // If neither male nor female, leave as null
 
                     // Create user
                     $user = new User();
                     $user->slug = Str::uuid();
-                    $user->email = $email;
+                    $user->email = $validatedEmail; // Keep null if no valid email provided
                     $user->first_name = $firstName;
                     $user->middle_name = $middleName ?: null;
                     $user->last_name = $lastName ?: null;
-                    $user->phone = $phone ?: null;
+                    $user->phone = $formattedPhone; // Store as string to preserve format
                     $user->gender = $gender;
                     $user->password = Hash::make('password123'); // Default password
                     $user->role = STUDENT;
                     $user->user_id = Auth::id();
+
+                    // Only set email_verified_at if email exists
+                    if ($validatedEmail) {
+                        $user->email_verified_at = now();
+                    }
+
                     $user->save();
 
                     // Create student relationship
@@ -853,6 +883,7 @@ class UserController extends Controller
                     $successCount++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                    $errorTypes['validation']++;
                     $errorCount++;
                 }
 
@@ -861,44 +892,138 @@ class UserController extends Controller
 
             fclose($handle);
 
-            $this->adminActivities("Bulk imported {$successCount} students");
+            $this->adminActivities("Bulk imported {$successCount} students with {$errorCount} errors");
 
             DB::commit();
 
+            // Prepare response message
+            $message = '';
+            if ($successCount > 0 && $errorCount === 0) {
+                $message = "Import completed successfully. {$successCount} students imported.";
+            } elseif ($successCount > 0 && $errorCount > 0) {
+                $message = "Import completed with some issues. {$successCount} students imported, {$errorCount} rows had errors.";
+            } else {
+                $message = "Import failed. No students were imported due to data validation issues.";
+            }
+
             return response()->json([
-                'message' => "Import completed. {$successCount} students imported successfully.",
+                'message' => $message,
                 'success_count' => $successCount,
                 'error_count' => $errorCount,
-                'errors' => array_slice($errors, 0, 20) // Limit to first 20 errors
+                'total_processed' => $successCount + $errorCount,
+                'errors' => array_slice($errors, 0, 50), // Show first 50 errors for debugging
+                'error_summary' => [
+                    'validation_errors' => $errorTypes['validation'],
+                    'duplicate_emails' => $errorTypes['duplicate'],
+                    'format_errors' => $errorTypes['format'],
+                    'missing_required_data' => $errorTypes['missing_data']
+                ]
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Import failed: ' . $e->getMessage(),
+                'success_count' => 0,
+                'error_count' => 0,
+                'has_errors' => true
             ], 500);
         }
     }
 
     /**
-     * Download sample CSV template for bulk import
+     * Export instructors to CSV
      */
-    public function downloadStudentTemplate()
+    public function exportInstructors(Request $request)
     {
-        $filename = 'student_import_template.csv';
+        $query = User::query()
+            ->doesntHave('systemAdmin')
+            ->where('role', INSTRUCTOR);
 
-        // CSV content with clear instructions about gender values
-        $csvContent = "First Name,Middle Name,Last Name,Email,Phone,Gender\n";
-        $csvContent .= "John,Michael,Doe,john.doe@example.com,+1234567890,male\n";
-        $csvContent .= "Jane,Smith,Johnson,jane.johnson@example.com,+0987654321,female\n";
-        $csvContent .= "Ahmed,Ali,Hassan,ahmed.hassan@example.com,+251911223344,male\n";
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
 
-        // Create temporary file
-        $tempFile = tempnam(sys_get_temp_dir(), 'student_template');
-        file_put_contents($tempFile, $csvContent);
+        $instructors = $query->orderBy('created_at', 'DESC')->get();
+        return $this->exportToCSV($instructors, 'instructors');
+    }
 
-        return response()->download($tempFile, $filename, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"'
-        ])->deleteFileAfterSend(true);
+    /**
+     * Export students to CSV
+     */
+    public function exportStudents(Request $request)
+    {
+        $query = User::query()
+            ->doesntHave('systemAdmin')
+            ->where('role', STUDENT);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('middle_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $students = $query->orderBy('created_at', 'DESC')->get();
+        return $this->exportToCSV($students, 'students');
+    }
+
+    /**
+     * Export data to CSV format
+     */
+    private function exportToCSV($users, $type)
+    {
+        $filename = $type . '_export_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ];
+
+        $callback = function () use ($users, $type) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Headers
+            $headers = ['ID', 'First Name', 'Middle Name', 'Email', 'Phone', 'Status', 'Join Date'];
+            if ($type === 'instructors') {
+                $headers[] = 'Temp Password';
+            }
+            fputcsv($file, $headers);
+
+            // Data
+            foreach ($users as $user) {
+                $row = [
+                    $user->id,
+                    $user->first_name,
+                    $user->middle_name,
+                    $user->email,
+                    $user->phone,
+                    $user->user_banned_at ? 'Blocked' : 'Active',
+                    $user->created_at->format('Y-m-d H:i:s')
+                ];
+
+                if ($type === 'instructors') {
+                    $row[] = $user->temp_password ?? 'Changed';
+                }
+
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

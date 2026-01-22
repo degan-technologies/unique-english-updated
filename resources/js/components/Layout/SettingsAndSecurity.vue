@@ -24,6 +24,16 @@ const logs = ref([]);
 const showDeleteDialog = ref(false);
 const deleteImageType = ref("");
 
+// Add missing error handling variables
+const showErrorDialog = ref(false);
+const errorDialogMessage = ref("");
+
+// Add missing cancel delete function
+const cancelDelete = () => {
+    showDeleteDialog.value = false;
+    deleteImageType.value = "";
+};
+
 const handleLogoUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -1018,10 +1028,10 @@ onMounted(() => {
                         </div>
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">
-                                Permission Error
+                                Error
                             </h3>
                             <p class="text-sm text-gray-600">
-                                Access restriction
+                                Something went wrong
                             </p>
                         </div>
                     </div>
@@ -1040,7 +1050,7 @@ onMounted(() => {
                         @click="closeErrorDialog"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                     >
-                        Understand
+                        OK
                     </button>
                 </div>
             </div>

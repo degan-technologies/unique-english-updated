@@ -51,10 +51,17 @@ watch(
 
 <template>
     <section
-        class="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-lime-50"
+        class="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-lime-50 overflow-hidden"
         id="hero"
+        :style="
+            hero?.background_image
+                ? `background-image: url('${hero.background_image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`
+                : ''
+        "
     >
-        <div class="relative container mx-auto px-6 py-16 lg:py-24">
+        <div
+            class="relative container mx-auto px-6 py-20 sm:py-24 md:py-28 lg:py-24 z-10"
+        >
             <div
                 class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
             >
@@ -63,14 +70,24 @@ watch(
                     <!-- Main Heading -->
                     <div class="space-y-6">
                         <h1
-                            class="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight text-gray-900"
+                            :class="[
+                                'text-3xl md:text-4xl lg:text-5xl font-bold leading-tight',
+                                hero?.background_image
+                                    ? 'text-black'
+                                    : 'text-gray-900',
+                            ]"
                         >
                             <span class="block">Learn without limits,</span>
                             <span class="block">Anytime, Anywhere</span>
                         </h1>
 
                         <p
-                            class="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl"
+                            :class="[
+                                'text-lg md:text-xl leading-relaxed max-w-2xl',
+                                hero?.background_image
+                                    ? 'text-gray-800'
+                                    : 'text-gray-600',
+                            ]"
                         >
                             {{
                                 hero?.description ||
@@ -83,7 +100,7 @@ watch(
                     <div class="flex flex-col sm:flex-row gap-4 pt-4">
                         <button
                             @click="changeTab()"
-                            class="inline-flex items-center justify-center px-8 py-4 bg-lime-500 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200 shadow-lg"
+                            class="inline-flex items-center justify-center px-8 py-4 bg-lime-700 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
                         >
                             <span class="mr-2">Test Your Level</span>
                             <svg
@@ -103,7 +120,12 @@ watch(
 
                         <button
                             @click="scrollToSection('courses')"
-                            class="inline-flex items-center justify-center px-8 py-4 bg-slate text-gray-800 font-semibold rounded-lg border-2 border-gray-200 hover:border-lime-300 hover:bg-lime-50 transition-colors duration-200"
+                            :class="[
+                                'inline-flex items-center justify-center px-8 py-4 font-semibold rounded-lg border-2 transition-colors duration-200 shadow-lg hover:shadow-xl',
+                                hero?.background_image
+                                    ? 'bg-gray-900 text-white border-gray-300 hover:bg-gray-800'
+                                    : 'bg-gray-900 text-white border-gray-200 hover:bg-gray-800',
+                            ]"
                         >
                             <span class="mr-2">Explore Courses</span>
                         </button>
@@ -138,7 +160,7 @@ watch(
                             :src="hero?.banner || '/images/default-hero.jpg'"
                             alt="Learning Platform"
                             :class="[
-                                'w-full h-auto object-cover rounded-2xl transition-opacity duration-300',
+                                'w-full h-auto object-cover rounded-2xl transition-opacity duration-300 shadow-2xl',
                                 imageLoaded
                                     ? 'opacity-100'
                                     : 'opacity-0 absolute inset-0',

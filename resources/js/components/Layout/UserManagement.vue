@@ -479,6 +479,8 @@ function handleFileSelect(event) {
             return;
         }
         bulkImportFile.value = file;
+        // Clear previous results when new file is selected
+        bulkImportResults.value = null;
     }
 }
 
@@ -514,11 +516,17 @@ async function submitBulkImport() {
             error.response?.data?.message || "Failed to import students";
         showToast(errorMsg, "error");
 
-        if (error.response?.data?.errors) {
+        // Enhanced error handling with detailed errors
+        if (error.response?.data) {
+            const errorData = error.response.data;
             bulkImportResults.value = {
-                success_count: 0,
-                error_count: error.response.data.errors.length,
-                errors: error.response.data.errors,
+                success_count: errorData.success_count || 0,
+                error_count: errorData.error_count || 0,
+                total_processed: errorData.total_processed || 0,
+                message: errorMsg,
+                has_errors: true,
+                error_summary: errorData.error_summary || {},
+                detailed_errors: errorData.errors || [], // Add detailed errors
             };
         }
     } finally {
@@ -526,26 +534,69 @@ async function submitBulkImport() {
     }
 }
 
-async function downloadTemplate() {
+// Add new refs for export functionality
+const isExporting = ref(false);
+
+// Add export methods
+async function exportUsers() {
+    if (currentUsers.value.length === 0) {
+        showToast(`No ${activeTab.value} to export`, "warning");
+        return;
+    }
+
+    isExporting.value = true;
+
     try {
-        const response = await axios.get("/api/students/download-template", {
+        const endpoint =
+            activeTab.value === "instructors"
+                ? "/api/instructors/export"
+                : "/api/students/export";
+
+        const response = await axios({
+            method: "GET",
+            url: endpoint,
+            params: {
+                search: searchQuery.value,
+            },
             responseType: "blob",
         });
 
-        const blob = new Blob([response.data], { type: "text/csv" });
+        // Validate response
+        if (!response.data || response.data.size === 0) {
+            throw new Error("Empty response received");
+        }
+
+        const blob = new Blob([response.data], {
+            type: "text/csv;charset=utf-8",
+        });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = "student_import_template.csv";
+
+        const timestamp = new Date().toISOString().split("T")[0];
+        link.download = `${activeTab.value}_export_${timestamp}.csv`;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
 
-        showToast("Template downloaded successfully", "success");
+        showToast(`${activeTab.value} exported successfully`, "success");
     } catch (error) {
-        showToast("Failed to download template", "error");
+        console.error("Export error:", error);
+
+        if (error.response && error.response.status === 404) {
+            showToast("Export feature not available", "error");
+        } else {
+            showToast("Export failed. Please try again.", "error");
+        }
+    } finally {
+        isExporting.value = false;
     }
+}
+
+function exportToCSV() {
+    exportUsers();
 }
 </script>
 
@@ -570,7 +621,7 @@ async function downloadTemplate() {
                     <button
                         @click="switchTab('students')"
                         :class="[
-                            'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
+                            'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none',
                             activeTab === 'students'
                                 ? 'border-lime-500 text-lime-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
@@ -581,7 +632,7 @@ async function downloadTemplate() {
                     <button
                         @click="switchTab('instructors')"
                         :class="[
-                            'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200',
+                            'py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 focus:outline-none',
                             activeTab === 'instructors'
                                 ? 'border-lime-500 text-lime-600'
                                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
@@ -622,43 +673,103 @@ async function downloadTemplate() {
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex items-center space-x-2">
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                        <!-- Left: Selection Info -->
                         <div
                             v-if="selectedUsers.length"
-                            class="flex items-center space-x-2 mr-4"
+                            class="flex flex-wrap items-center gap-2 text-sm text-gray-600"
                         >
-                            <span class="text-sm text-gray-600"
-                                >{{ selectedUsers.length }} selected</span
-                            >
+                            <span>{{ selectedUsers.length }} selected</span>
                             <button
                                 @click="clearSelection"
-                                class="text-blue-600 hover:text-blue-800 text-sm"
+                                class="text-blue-600 hover:text-blue-800 font-medium"
                             >
                                 Clear
                             </button>
                         </div>
 
-                        <button
-                            @click="openAddUserModal"
-                            class="bg-lime-600 text-white px-4 py-2 rounded-lg hover:bg-lime-700 transition-colors duration-200"
+                        <!-- Right: Action Buttons -->
+                        <div
+                            class="flex flex-wrap items-center gap-2 justify-end w-full sm:w-auto"
                         >
-                            Add
-                            {{
-                                activeTab === "instructors"
-                                    ? "Instructor"
-                                    : "Student"
-                            }}
-                        </button>
+                            <!-- Export Dropdown -->
+                            <div class="relative">
+                                <Popper>
+                                    <button
+                                        :disabled="
+                                            isExporting ||
+                                            currentUsers.length === 0
+                                        "
+                                        class="flex items-center gap-2 bg-green-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <i
+                                            v-if="isExporting"
+                                            class="fa-solid fa-spinner fa-spin"
+                                        ></i>
+                                        <i
+                                            v-else
+                                            class="fa-solid fa-download"
+                                        ></i>
 
-                        <!-- Bulk Import Button (only for students) -->
-                        <button
-                            v-if="activeTab === 'students'"
-                            @click="openBulkImportModal"
-                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                        >
-                            <i class="fa-solid fa-upload mr-2"></i>
-                            Bulk Import
-                        </button>
+                                        <span class="hidden sm:inline">
+                                            {{
+                                                isExporting
+                                                    ? "Exporting..."
+                                                    : "Export"
+                                            }}
+                                        </span>
+
+                                        <i
+                                            class="fa-solid fa-chevron-down text-xs"
+                                        ></i>
+                                    </button>
+
+                                    <template #content>
+                                        <div
+                                            class="bg-white shadow-lg rounded-lg py-2 w-44"
+                                        >
+                                            <button
+                                                @click="exportToCSV"
+                                                :disabled="isExporting"
+                                                class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                                            >
+                                                <i
+                                                    class="fa-solid fa-file-csv mr-2"
+                                                ></i>
+                                                Export CSV
+                                            </button>
+                                        </div>
+                                    </template>
+                                </Popper>
+                            </div>
+
+                            <!-- Add Button -->
+                            <button
+                                @click="openAddUserModal"
+                                class="bg-lime-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-lime-700 transition"
+                            >
+                                <span class="hidden sm:inline">Add</span>
+                                {{
+                                    activeTab === "instructors"
+                                        ? "Instructor"
+                                        : "Student"
+                                }}
+                            </button>
+
+                            <!-- Bulk Import (Students only) -->
+                            <button
+                                v-if="activeTab === 'students'"
+                                @click="openBulkImportModal"
+                                class="bg-blue-600 text-white px-3 py-2 sm:px-4 text-sm sm:text-base rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                            >
+                                <i class="fa-solid fa-upload"></i>
+                                <span class="hidden sm:inline"
+                                    >Bulk Import</span
+                                >
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -887,33 +998,51 @@ async function downloadTemplate() {
 
                 <!-- Pagination -->
                 <div
-                    class="px-6 py-4 border-t border-gray-200 flex items-center justify-between"
+                    class="px-4 sm:px-6 py-4 border-t border-gray-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                    <div class="text-sm text-gray-700">
+                    <!-- Info -->
+                    <div
+                        class="text-xs sm:text-sm text-gray-700 text-center sm:text-left"
+                    >
                         Showing {{ currentPagination?.from || 0 }} to
                         {{ currentPagination?.to || 0 }} of
                         {{ currentPagination?.total || 0 }} results
                     </div>
-                    <div class="flex items-center space-x-2">
+
+                    <!-- Controls -->
+                    <div
+                        class="flex items-center justify-center sm:justify-end gap-2 text-sm"
+                    >
+                        <!-- Previous -->
                         <button
                             @click="onPreviousPage()"
                             :disabled="currentPage === 1"
-                            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                            class="px-2 py-1 sm:px-3 sm:py-1.5 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                         >
-                            Previous
+                            <span class="hidden sm:inline">Previous</span>
+                            <i class="fa-solid fa-chevron-left sm:hidden"></i>
                         </button>
-                        <span class="px-3 py-1">
-                            Page {{ currentPage }} of
-                            {{ currentPagination?.last_page || 1 }}
+
+                        <!-- Page Info -->
+                        <span
+                            class="px-2 sm:px-3 py-1 text-xs sm:text-sm whitespace-nowrap"
+                        >
+                            Page {{ currentPage }}
+                            <span class="hidden sm:inline">
+                                of {{ currentPagination?.last_page || 1 }}
+                            </span>
                         </span>
+
+                        <!-- Next -->
                         <button
                             @click="onNextPage()"
                             :disabled="
                                 currentPage === currentPagination?.last_page
                             "
-                            class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+                            class="px-2 py-1 sm:px-3 sm:py-1.5 border rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                         >
-                            Next
+                            <span class="hidden sm:inline">Next</span>
+                            <i class="fa-solid fa-chevron-right sm:hidden"></i>
                         </button>
                     </div>
                 </div>
@@ -1191,134 +1320,301 @@ async function downloadTemplate() {
         <transition name="fade">
             <div
                 v-if="showBulkImportModal"
-                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4"
             >
                 <div
-                    class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6"
+                    class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-auto max-h-[90vh] flex flex-col"
                 >
-                    <h3 class="text-xl font-bold mb-4">Bulk Import Students</h3>
-
-                    <!-- Import Instructions -->
+                    <!-- Modal Header -->
                     <div
-                        class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6"
+                        class="flex-shrink-0 px-6 py-4 border-b border-gray-200"
                     >
-                        <h4 class="font-medium text-blue-800 mb-2">
-                            Instructions:
-                        </h4>
-                        <ul class="text-sm text-blue-700 space-y-1">
-                            <li>• Download the template CSV file first</li>
-                            <li>
-                                • Fill in the required columns: First Name,
-                                Email
-                            </li>
-                            <li>
-                                • Optional columns: Middle Name, Last Name,
-                                Phone, Gender
-                            </li>
-                            <li>
-                                • Default password "password123" will be
-                                assigned
-                            </li>
-                            <li>• Maximum file size: 5MB</li>
-                        </ul>
+                        <div class="flex items-center justify-between">
+                            <h3
+                                class="text-lg sm:text-xl font-bold text-gray-900"
+                            >
+                                Bulk Import Students
+                            </h3>
+                            <button
+                                @click="closeBulkImportModal"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <i class="fa-solid fa-times text-xl"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Template Download -->
-                    <div class="mb-6">
-                        <button
-                            @click="downloadTemplate"
-                            class="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
-                        >
-                            <i class="fa-solid fa-download"></i>
-                            <span>Download Template</span>
-                        </button>
-                    </div>
-
-                    <!-- File Upload -->
-                    <div class="mb-6">
-                        <label class="block text-gray-700 font-medium mb-2">
-                            Select CSV File
-                        </label>
-                        <input
-                            ref="bulkImportFileInput"
-                            type="file"
-                            accept=".csv,.xlsx,.xls"
-                            @change="handleFileSelect"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                        />
-                        <p
-                            v-if="bulkImportFile"
-                            class="text-sm text-green-600 mt-2"
-                        >
-                            Selected: {{ bulkImportFile.name }}
-                        </p>
-                    </div>
-
-                    <!-- Import Results -->
-                    <div v-if="bulkImportResults" class="mb-6">
+                    <!-- Modal Content - Scrollable -->
+                    <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                        <!-- Import Instructions -->
                         <div
-                            class="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                            class="bg-blue-50 border border-blue-200 rounded-lg p-4"
                         >
-                            <h4 class="font-medium text-gray-800 mb-2">
-                                Import Results:
+                            <h4 class="font-medium text-blue-800 mb-2 text-sm">
+                                Instructions:
                             </h4>
-                            <div class="text-sm space-y-1">
-                                <p class="text-green-600">
-                                    ✓ Successfully imported:
-                                    {{ bulkImportResults.success_count }}
-                                    students
-                                </p>
+                            <ul
+                                class="text-xs sm:text-sm text-blue-700 space-y-1"
+                            >
+                                <li>
+                                    • <strong>Required:</strong> First Name
+                                    (column 1)
+                                </li>
+                                <li>
+                                    • <strong>Optional:</strong> Middle Name,
+                                    Last Name, Email, Phone, Gender
+                                </li>
+                                <li>
+                                    • Email will be auto-generated if not
+                                    provided or invalid
+                                </li>
+                                <li>
+                                    • Default password "password123" will be
+                                    assigned
+                                </li>
+                                <li>
+                                    • Gender: "male" or "female"
+                                    (case-insensitive)
+                                </li>
+                                <li>• Maximum file size: 5MB</li>
+                                <li>
+                                    • Supported formats: CSV, Excel (.xlsx,
+                                    .xls)
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        <div>
+                            <label
+                                class="block text-gray-700 font-medium mb-2 text-sm"
+                            >
+                                Select File
+                            </label>
+                            <div class="space-y-3">
+                                <input
+                                    ref="bulkImportFileInput"
+                                    type="file"
+                                    accept=".csv,.xlsx,.xls"
+                                    @change="handleFileSelect"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
+                                />
                                 <p
-                                    v-if="bulkImportResults.error_count > 0"
-                                    class="text-red-600"
+                                    v-if="bulkImportFile"
+                                    class="text-xs sm:text-sm text-green-600 bg-green-50 p-2 rounded flex items-center"
                                 >
-                                    ✗ Failed imports:
-                                    {{ bulkImportResults.error_count }}
+                                    <i class="fa-solid fa-file-check mr-2"></i>
+                                    {{ bulkImportFile.name }}
                                 </p>
                             </div>
+                        </div>
 
-                            <!-- Error Details -->
+                        <!-- Import Results -->
+                        <div v-if="bulkImportResults" class="space-y-4">
                             <div
-                                v-if="
-                                    bulkImportResults.errors &&
-                                    bulkImportResults.errors.length > 0
-                                "
-                                class="mt-4"
+                                class="bg-gray-50 border border-gray-200 rounded-lg p-4"
                             >
-                                <h5 class="font-medium text-red-800 mb-2">
-                                    Errors:
-                                </h5>
-                                <div
-                                    class="max-h-32 overflow-y-auto bg-red-50 border border-red-200 rounded p-2"
+                                <h4
+                                    class="font-medium text-gray-800 mb-3 text-sm"
                                 >
-                                    <ul class="text-sm text-red-700 space-y-1">
-                                        <li
-                                            v-for="(
-                                                error, index
-                                            ) in bulkImportResults.errors"
-                                            :key="index"
+                                    Import Results:
+                                </h4>
+
+                                <!-- Success/Error Summary -->
+                                <div
+                                    class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3"
+                                >
+                                    <div
+                                        class="text-center p-3 bg-green-50 border border-green-200 rounded-lg"
+                                    >
+                                        <div
+                                            class="text-lg font-bold text-green-700"
                                         >
-                                            {{ error }}
-                                        </li>
-                                    </ul>
+                                            {{
+                                                bulkImportResults.success_count ||
+                                                0
+                                            }}
+                                        </div>
+                                        <div class="text-xs text-green-600">
+                                            Successful
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="text-center p-3 bg-red-50 border border-red-200 rounded-lg"
+                                    >
+                                        <div
+                                            class="text-lg font-bold text-red-700"
+                                        >
+                                            {{
+                                                bulkImportResults.error_count ||
+                                                0
+                                            }}
+                                        </div>
+                                        <div class="text-xs text-red-600">
+                                            Failed
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Enhanced Error Display -->
+                                <div
+                                    v-if="
+                                        bulkImportResults.has_errors &&
+                                        bulkImportResults.error_count > 0
+                                    "
+                                    class="bg-yellow-50 border border-yellow-200 rounded-lg p-3"
+                                >
+                                    <div class="flex items-start space-x-2">
+                                        <i
+                                            class="fa-solid fa-exclamation-triangle text-yellow-600 mt-0.5 flex-shrink-0"
+                                        ></i>
+                                        <div
+                                            class="text-xs sm:text-sm text-yellow-800"
+                                        >
+                                            <p class="font-medium mb-2">
+                                                Import Issues Summary
+                                            </p>
+                                            <div class="space-y-1">
+                                                <p
+                                                    v-if="
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            ?.missing_required_data >
+                                                        0
+                                                    "
+                                                >
+                                                    •
+                                                    {{
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            .missing_required_data
+                                                    }}
+                                                    rows missing required data
+                                                    (First Name)
+                                                </p>
+                                                <p
+                                                    v-if="
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            ?.duplicate_emails >
+                                                        0
+                                                    "
+                                                >
+                                                    •
+                                                    {{
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            .duplicate_emails
+                                                    }}
+                                                    rows with duplicate emails
+                                                </p>
+                                                <p
+                                                    v-if="
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            ?.validation_errors >
+                                                        0
+                                                    "
+                                                >
+                                                    •
+                                                    {{
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            .validation_errors
+                                                    }}
+                                                    rows with validation errors
+                                                </p>
+                                                <p
+                                                    v-if="
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            ?.format_errors > 0
+                                                    "
+                                                >
+                                                    •
+                                                    {{
+                                                        bulkImportResults
+                                                            .error_summary
+                                                            .format_errors
+                                                    }}
+                                                    rows with format issues
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Detailed Error List -->
+                                <div
+                                    v-if="
+                                        bulkImportResults.detailed_errors &&
+                                        bulkImportResults.detailed_errors
+                                            .length > 0
+                                    "
+                                    class="bg-red-50 border border-red-200 rounded-lg p-3 mt-3"
+                                >
+                                    <p
+                                        class="font-medium text-red-800 mb-2 text-xs sm:text-sm"
+                                    >
+                                        Detailed Errors:
+                                    </p>
+                                    <div class="max-h-48 overflow-y-auto">
+                                        <ul class="space-y-1">
+                                            <li
+                                                v-for="(
+                                                    error, index
+                                                ) in bulkImportResults.detailed_errors"
+                                                :key="index"
+                                                class="text-xs text-red-700 bg-red-100 p-2 rounded"
+                                            >
+                                                {{ error }}
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <p class="text-xs text-red-600 mt-2 italic">
+                                        Fix these issues in your CSV file and
+                                        try importing again.
+                                    </p>
+                                </div>
+
+                                <!-- Success Message -->
+                                <div
+                                    v-if="bulkImportResults.success_count > 0"
+                                    class="bg-green-50 border border-green-200 rounded-lg p-3"
+                                >
+                                    <div class="flex items-center space-x-2">
+                                        <i
+                                            class="fa-solid fa-check-circle text-green-600"
+                                        ></i>
+                                        <span
+                                            class="text-xs sm:text-sm text-green-700 font-medium"
+                                        >
+                                            {{
+                                                bulkImportResults.success_count
+                                            }}
+                                            students imported successfully
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="flex justify-end space-x-2">
+                    <!-- Modal Footer -->
+                    <div
+                        class="flex-shrink-0 px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3"
+                    >
                         <button
                             @click="closeBulkImportModal"
                             :disabled="bulkImportProgress"
-                            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                            class="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition-colors"
                         >
-                            Cancel
+                            {{ bulkImportResults ? "Close" : "Cancel" }}
                         </button>
                         <button
                             @click="submitBulkImport"
                             :disabled="!bulkImportFile || bulkImportProgress"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                            class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center space-x-2"
                         >
                             <span v-if="bulkImportProgress">
                                 <i class="fa-solid fa-spinner fa-spin mr-2"></i>

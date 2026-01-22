@@ -210,6 +210,7 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
         Route::get('/transaction', [TransactionController::class, 'transactions']);
+        Route::get('/transaction/export', [TransactionController::class, 'exportTransactions']);
         Route::get('/top-sellers', [TransactionController::class, 'getTopSeller']);
         Route::get('/top-sold-books', [TransactionController::class, 'topSoldBooks']);
         Route::get('/top-sold-courses', [TransactionController::class, 'topSoldCourses']);
@@ -258,4 +259,8 @@ Route::middleware('auth:api')
         Route::get('/students', [UserController::class, 'getStudents']);
         Route::post('/students/bulk-import', [UserController::class, 'bulkImportStudents']);
         Route::get('/students/download-template', [UserController::class, 'downloadStudentTemplate']);
+
+        // Export routes
+        Route::get('/instructors/export', [UserController::class, 'exportInstructors']);
+        Route::get('/students/export', [UserController::class, 'exportStudents']);
     });
