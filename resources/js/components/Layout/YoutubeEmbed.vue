@@ -1,8 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
 import Spinner from "@/components/Layout/Spinner.vue";
+import { computed, onMounted, ref } from "vue";
 
-const CHANNEL_ID = "UCs_i-mmFdxBL-DBh3qFHNjg";
+const CHANNEL_ID = "UCIKi8o9soQ30AH2xTmAZzjg";
 const videos = ref([]);
 const loading = ref(true);
 const currentPage = ref(1);
@@ -46,7 +46,7 @@ async function fetchVideosFromRSS() {
 
 async function fetchAllVideos() {
     try {
-        const API_KEY = "AIzaSyCavOY4VNZLizystZWIt4pIcTtjdI3Hmm8";
+        const API_KEY = "AIzaSyCL9LRlBXV1FIBlyeutdLxmm0_GdYI_NkY";
         const url = `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=50`;
         const res = await fetch(url);
         const data = await res.json();
@@ -108,7 +108,7 @@ onMounted(fetchAllVideos);
 </script>
 
 <template>
-    <div v-if="paginated.length > 0" class="p-4 md:p-8 max-w-7xl mx-auto">
+    <div class="p-4 md:p-8 max-w-7xl mx-auto">
         <div class="flex items-center justify-between my-8">
             <h1 class="text-2xl md:text-3xl font-bold text-lime-600">
                 Free Tutorials

@@ -22,6 +22,8 @@
         "@videojs/http-streaming": "^3.17.0",
         "@vueuse/components": "^12.3.0",
         "@vueuse/core": "^12.3.0",
+        "baseline-browser-mapping": "^2.9.14",
+        "caniuse-lite": "^1.0.30001764",
         "canvas-confetti": "^1.9.3",
         "chart.js": "^4.4.7",
         "crypto-browserify": "^3.12.1",

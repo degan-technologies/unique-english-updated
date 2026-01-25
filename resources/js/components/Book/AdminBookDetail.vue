@@ -155,7 +155,5 @@ const cancelBookRead = () => {
 
             <AdminPdfReader :selectedBook="selectedBookRead" />
         </div>
-            <AdminPdfReader :selectedBook="selectedBookRead" />
-        </div>
     </div>
 </template>

@@ -172,7 +172,7 @@ watch(profileUpdated, (updated) => {
                 >
                     <span
                         class="ml-2 font-semibold text-xl xl:text-3xl text-lime-500"
-                        >Maraki English</span
+                        >Unique English</span
                     >
                 </div>
                 <div
@@ -213,7 +213,7 @@ watch(profileUpdated, (updated) => {
                                         : authUser?.role === item.role
                                 "
                                 :class="{
-                                    'bg-orange-100':
+                                    'bg-lime-100':
                                         selectedContent === item.route,
                                 }"
                                 class="flex items-center space-x-2 p-2 hover:bg-lime-100 rounded-lg cursor-pointer transition-all duration-200"

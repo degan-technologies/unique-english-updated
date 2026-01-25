@@ -13,8 +13,8 @@
 
     <script src="src/theme-solarized_dark.js" type="text/javascript" charset="utf-8"></script>
 
-    <title>{{ "Maraki English" }}</title>
-    <link rel="icon" href="{{ asset('images/mlogo.jpg') }}" sizes="256x256" type="image/jpg" />
+    <title>{{ "Unique English" }}</title>
+    <link rel="icon" href="{{ asset('images/logo.jpg') }}" sizes="256x256" type="image/jpg" />
 
     <style>
         #loading-screen {
@@ -45,7 +45,7 @@
         .spinner-inner-fast {
             position: absolute;
             inset: 0;
-            border: 4px solid #f97316;
+            border: 4px solid #84cc16;
             /* lime-500 */
             border-top-color: transparent;
             border-radius: 50%;
@@ -55,7 +55,7 @@
         .spinner-inner-slow {
             position: absolute;
             inset: 0.25rem;
-            border: 4px solid #e87725;
+            border: 4px solid #bef264;
             /* lime-300 */
             border-top-color: transparent;
             border-radius: 50%;
@@ -65,7 +65,7 @@
         .loading-text {
             font-size: 1.125rem;
             font-weight: 500;
-            color: #e5833d;
+            color: #374151;
             /* gray-700 */
             margin-top: 1rem;
             animation: pulse 1.5s infinite;

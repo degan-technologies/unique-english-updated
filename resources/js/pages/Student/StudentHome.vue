@@ -165,7 +165,6 @@ watch(
                     <YoutubeEmbed />
                     <WhatExpect />
                     <AboutUs />
-                    <InstructorProfile />
                 </div>
 
                 <div v-else-if="currentTab.tab == TestTab">

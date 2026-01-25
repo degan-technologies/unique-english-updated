@@ -15,73 +15,87 @@ const toggleExpanded = () => {
             class="container mx-auto flex flex-col lg:flex-row items-center gap-8"
         >
             <!-- Image Section -->
-            <div class="lg:w-1/3 lg:block text-center">
-                <h2 class="text-3xl lg:hidden font-bold text-orange-500 mb-4">
-                    About Us
-                </h2>
+            <div class="lg:w-1/3 lg:block">
                 <img
-                    src="/images/maraki-eng.webp"
+                    src="/images/mehari.JPG"
                     alt="About Us"
-                    class="rounded-lg w-full h-80 object-cover"
+                    class="rounded-lg shadow-md w-full"
                 />
             </div>
 
             <!-- Text Content -->
             <div class="lg:w-2/3 text-center lg:text-left">
-                <h2
-                    class="text-3xl hidden lg:flex font-bold text-orange-500 mb-4"
+                <h2 class="text-3xl font-bold text-lime-700 mb-4">About Us</h2>
+                <p
+                    class="text-gray-600 text-base leading-relaxed mb-4 text-justify"
                 >
-                    About Us
-                </h2>
-                <p class="text-gray-600 text-base leading-relaxed mb-4">
-                    Unlock Your Potential with Our English Learning Platform!
-                    Whether you're just starting out or aiming to refine your
-                    fluency, we’re here to guide you every step of the way.
+                    Welcome to our platform! We specialize in offering engaging
+                    and effective English learning experiences tailored to all
+                    levels from beginners to advanced learners.
                 </p>
-                <p class="text-gray-600 text-base leading-relaxed mb-4">
-                    Our platform is designed to support learners at every
-                    level—offering structured lessons, engaging practice
-                    activities, and live sessions led by professional English
-                    tutors. From grammar and vocabulary to conversation skills
-                    and exam prep, we cover it all.
+                <p
+                    class="text-gray-600 text-base leading-relaxed mb-4 text-justify"
+                >
+                    Whether you're preparing for exams, improving your
+                    communication skills, or expanding your vocabulary, our
+                    mission is to help you achieve your goals with confidence
+                    and ease.
                 </p>
 
                 <!-- Expandable Text -->
                 <p
                     v-if="isExpanded"
-                    class="text-gray-600 text-base leading-relaxed mb-4"
+                    class="text-gray-600 text-base leading-relaxed mb-4 text-justify"
                 >
-                    You’ll enjoy interactive content that mirrors real-world
-                    situations, helping you speak and understand English with
-                    confidence. Track your improvement, set personal milestones,
-                    and join a global community of motivated learners just like
-                    you. Let’s make learning English an exciting and rewarding
-                    journey—together!
+                    Our platform offers interactive lessons, personalized
+                    quizzes, and live sessions with certified instructors. We
+                    emphasize practical learning by incorporating real-life
+                    scenarios, idioms, and phrases commonly used in everyday
+                    conversations. Additionally, you can track your progress,
+                    set learning goals, and connect with a vibrant community of
+                    language enthusiasts.
                 </p>
 
                 <!-- See More Button -->
                 <button
                     v-if="!isExpanded"
                     @click="toggleExpanded"
-                    class="text-orange-500 text-sm font-semibold hover:underline block mb-6"
+                    class="text-lime-700 text-sm font-semibold hover:underline hover:text-lime-800 transition-colors duration-200 block mb-6"
                 >
                     See More...
                 </button>
                 <button
                     v-if="isExpanded"
                     @click="toggleExpanded"
-                    class="text-orange-500 text-sm font-semibold hover:underline block mb-6"
+                    class="text-lime-700 text-sm font-semibold hover:underline hover:text-lime-800 transition-colors duration-200 block mb-6"
                 >
                     See Less
                 </button>
-
-                <!-- Call to Action Button -->
-                <!-- <button
-                    class="bg-lime-700 text-white px-5 py-2 rounded-md text-sm shadow hover:bg-lime-800 transition duration-300"
-                >
-                    Learn More
-                </button> -->
             </div>
         </div>
     </section>
 </template>
+
+<style scoped>
+/* Ensure proper text justification */
+p {
+    text-align: justify;
+    hyphens: auto;
+    word-spacing: normal;
+    letter-spacing: normal;
+}
+
+/* Better line height for readability */
+.leading-relaxed {
+    line-height: 1.75;
+}
+
+/* Smooth transitions for interactive elements */
+button {
+    transition: all 0.2s ease-in-out;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+</style>

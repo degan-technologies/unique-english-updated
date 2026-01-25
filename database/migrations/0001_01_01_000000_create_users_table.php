@@ -9,13 +9,14 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void {
+    public function up(): void
+    {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('slug')->unique();
             $table->integer('gender')->nullable();
 
-            $table->string('email')->unique();
+            $table->string('email')->nullable()->unique(); // Made nullable since users can register with phone
             $table->string('password');
 
             $table->string('temp_password')->nullable();
@@ -24,7 +25,7 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('user_name')->nullable()->unique();
-            $table->string('full_name')->storedAs("CONCAT(`first_name`, ' ', `middle_name`, ' ', `last_name`)");
+            $table->string('full_name')->storedAs("CONCAT(`first_name`, ' ', COALESCE(`middle_name`, ''), ' ', COALESCE(`last_name`, ''))");
 
             $table->string('phone')->nullable()->unique();
             $table->string('profile')->nullable()->unique();
@@ -39,16 +40,16 @@ return new class extends Migration
             $table->string('provider_id')->nullable()->unique();
 
             $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('phone_verified_at')->nullable(); // Add phone verification timestamp
             $table->rememberToken();
             $table->timestamps();
 
             $table->softDeletes();
             $table->integer('otp')->nullable();
-            
+
             $table->timestamp('otp_expires_at')->nullable();
 
             $table->integer('otp_attempts')->default(0);
-
         });
 
         Schema::table('users', function (Blueprint $table) {

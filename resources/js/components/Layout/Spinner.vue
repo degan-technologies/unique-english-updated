@@ -5,10 +5,10 @@
         <div class="flex flex-col items-center">
             <div class="relative w-16 h-16">
                 <div
-                    class="absolute inset-0 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"
+                    class="absolute inset-0 border-4 border-lime-500 border-t-transparent rounded-full animate-spin"
                 ></div>
                 <div
-                    class="absolute inset-1 border-4 border-orange-300 border-t-transparent rounded-full animate-spin-slow"
+                    class="absolute inset-1 border-4 border-lime-300 border-t-transparent rounded-full animate-spin-slow"
                 ></div>
             </div>
             <p class="text-lg font-medium text-gray-700 mt-4 animate-pulse">

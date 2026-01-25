@@ -6,7 +6,7 @@ import { UseStudentStore } from "@/store/UseStudentStore";
 
 const router = useRouter();
 const studentStore = UseStudentStore();
-const image = ref("/images/livem.png");
+const image = ref("/images/meeting.png");
 
 const { liveSchedulTab } = storeToRefs(studentStore);
 
