@@ -184,12 +184,12 @@
                 <div class="access-detail">
                     <span class="detail-label">Dashboard:</span>
                     <span class="detail-value">
-                        <a href="https://unique.degantechnologies.com/" class="dashboard-link">Launch Learning Portal</a>
+                        <a href="https://unique-english.com/" class="dashboard-link">Launch Learning Portal</a>
                     </span>
                 </div>
             </div>
 
-            <p class="support-text">Need help or have questions? Visit our <a href="https://unique.degantechnologies.com/" class="support-link">support center</a> or simply reply to this email.</p>
+            <p class="support-text">Need help or have questions? Visit our <a href="https://unique-english.com/" class="support-link">support center</a> or simply reply to this email.</p>
         </div>
 
         <!-- Footer Section -->
