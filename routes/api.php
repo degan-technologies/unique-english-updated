@@ -38,6 +38,10 @@ use App\Http\Middleware\EnsureSignature;
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
 Route::resource('test', TestController::class);
+
+// Add registration route
+Route::post('/register', [UserController::class, 'studentRegistration']);
+
 Route::post('/verify-otp', [UserController::class, 'verifyEmailOTP']);
 Route::post('/resend-otp', [UserController::class, 'resendOTP']);
 
@@ -206,6 +210,7 @@ Route::middleware('auth:api')
     ->group(function () {
         Route::post('/initiate-payment', [TransactionController::class, 'initiatePayment']);
         Route::get('/transaction', [TransactionController::class, 'transactions']);
+        Route::get('/transaction/export', [TransactionController::class, 'exportTransactions']);
         Route::get('/top-sellers', [TransactionController::class, 'getTopSeller']);
         Route::get('/top-sold-books', [TransactionController::class, 'topSoldBooks']);
         Route::get('/top-sold-courses', [TransactionController::class, 'topSoldCourses']);
@@ -241,8 +246,21 @@ Route::middleware(['auth:api'])->group(function () {
 
     //system information
     Route::post('/hero-section', [HeroController::class, 'stroreOrUpdate']);
+    Route::delete('/hero-section/{imageType}', [HeroController::class, 'deleteImage']);
     Route::get('/activity-logs', [AuthController::class, 'getActivityLogs']);
-    
-    Route::post('/jitsi/token', [JitsiController::class, 'generateToken']);
+
+    // ...existing code...
 });
 
+Route::middleware('auth:api')
+    ->group(function () {
+        // Separated user management endpoints
+        Route::get('/instructors', [UserController::class, 'getInstructors']);
+        Route::get('/students', [UserController::class, 'getStudents']);
+        Route::post('/students/bulk-import', [UserController::class, 'bulkImportStudents']);
+        Route::get('/students/download-template', [UserController::class, 'downloadStudentTemplate']);
+
+        // Export routes
+        Route::get('/instructors/export', [UserController::class, 'exportInstructors']);
+        Route::get('/students/export', [UserController::class, 'exportStudents']);
+    });

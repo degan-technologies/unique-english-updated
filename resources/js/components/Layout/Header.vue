@@ -1,14 +1,14 @@
 <script setup>
 import Axios from "axios";
-import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
-import { onMounted, ref, watch, onBeforeUnmount, computed } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import Popper from "vue3-popper";
 
-import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
+import { useSidebarStore } from "@/store/useSidebarStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
 const router = useRouter();
@@ -38,8 +38,6 @@ const {
     readNotifications,
     authUser,
     exploreCourses,
-    selectedComponentId,
-    otpEmail,
 } = storeToRefs(appStore);
 
 // Student refs
@@ -48,7 +46,6 @@ const { landingPageTab, selectedCourseSlug, myCourseTab } =
 
 // Notification refs
 const notificationOpen = ref(false);
-const notificationsLoading = ref(false);
 const showAllNotifications = ref(false);
 const currentNotification = ref(null);
 const showNotificationModal = ref(false);
@@ -134,7 +131,7 @@ function closeNotificationModal() {
 }
 
 function toggleShowAllNotifications() {
-    if (notifications.value?.length === 0) return;
+    if (notifications.length === 0) return;
     showAllNotifications.value = !showAllNotifications.value;
 }
 
@@ -166,19 +163,16 @@ function handleClickOutside(event) {
 // Get initials for fallback avatar
 const getInitials = (name) => (name ? name.charAt(0).toUpperCase() : "");
 
-async function navigationToggle(id) {
-    await router.push("/");
-    selectedComponentId.value = id;
-    isMenuOpen.value = false;
+// Navigation actions
+function onExploreCourses() {
+    isCartOpen.value = false;
+    router.push("/").then(() => {
+        exploreCourses.value = !exploreCourses.value;
+    });
 }
 
 // Checkout flow
 async function enrollCourse() {
-    if (!isLoggedIn.value) {
-        showLoginForm.value = true;
-        return;
-    }
-
     if (isLoading.value) return;
     isLoading.value = true;
     try {
@@ -222,21 +216,13 @@ function openProfile() {
     closeDropdown();
 }
 
-async function signOut() {
-    otpEmail.value = "";
-    try {
-        await Axios.post("/api/log-out");
-        authUser.value = null;
-        appStore.setAuthToken("");
-        isLoggedIn.value = false;
-        closeDropdown();
-    } catch (error) {
-        console.error("Logout failed:", error);
-    }
+function signOut() {
+    appStore.setAuthToken("");
+    loggingIn.value = false;
+    closeDropdown();
 }
 
 function toggleAuthActions(actionType) {
-    isMenuOpen.value = false;
     if (actionType === actionTypeLogin.value) {
         showLoginForm.value = true;
         showRegistrationForm.value = false;
@@ -264,7 +250,7 @@ onMounted(() => {
     appStore.fetchUnreadNotifications();
     if (window.Echo && authUser.value?.id) {
         window.Echo.private(
-            `App.Models.User.${authUser.value.id}`
+            `App.Models.User.${authUser.value.id}`,
         ).notification(() => {
             appStore.fetchUnreadNotifications();
             if (showAllNotifications.value) {
@@ -273,14 +259,6 @@ onMounted(() => {
         });
     }
 });
-
-const refreshNOtification = () => {
-    notificationsLoading.value = true;
-    appStore.fetchUnreadNotifications();
-
-    notificationsLoading.value = false;
-    return;
-};
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
@@ -291,13 +269,13 @@ watch(
     (newItems) => {
         localStorage.setItem("cartItems", JSON.stringify(newItems));
     },
-    { deep: true }
+    { deep: true },
 );
 </script>
 
 <template>
     <header
-        class="fixed top-0 left-0 w-full z-10 p-2 bg-orange-500 shadow-lg transition-transform duration-300 ease-in-out"
+        class="fixed top-0 left-0 w-full z-10 p-2 bg-lime-700 shadow-lg transition-transform duration-300 ease-in-out"
         :class="{
             'translate-y-0': isMenuVisible,
             '-translate-y-full': !isMenuVisible,
@@ -306,19 +284,19 @@ watch(
         <div class="mx-auto flex items-center justify-between h-fit">
             <router-link to="/" class="flex items-center gap-2">
                 <img
-                    src="/images/mlogo.jpg"
+                    src="/images/logo.jpg"
                     alt="Logo"
                     class="h-12 w-12 rounded-full object-cover border-2 border-white"
                 />
                 <span
                     class="text-xl font-bold text-white drop-shadow-md hidden sm:inline-block"
                 >
-                    Maraki English
+                    Unique English
                 </span>
             </router-link>
 
             <div class="flex items-center gap-4 pr-4">
-                <!-- Notification Button -->
+                <!-- Notification Button - Only show if logged in -->
                 <div v-if="isLoggedIn" class="relative flex justify-center">
                     <Popper
                         v-model:visible="notificationOpen"
@@ -336,7 +314,7 @@ watch(
                                 ></i>
                                 <span
                                     v-if="unreadNotifications > 0"
-                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-black rounded-full border border-white shadow"
+                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow"
                                 >
                                     {{ unreadNotifications }}
                                 </span>
@@ -360,34 +338,18 @@ watch(
                                         >
                                             Notifications
                                         </h3>
-                                        <div class="flex flex-row gap-4">
-                                            <button
-                                                @click="refreshNotification"
-                                                class="text-gray-500 hover:text-gray-800"
-                                                :disabled="notificationsLoading"
-                                            >
-                                                <i
-                                                    class="fas fa-sync-alt transition-transform"
-                                                    :class="{
-                                                        'animate-spin':
-                                                            notificationsLoading,
-                                                    }"
-                                                />
-                                            </button>
-
-                                            <button
-                                                @click="
-                                                    toggleShowAllNotifications
-                                                "
-                                                class="text-xs text-orange-500 hover:text-orange-600"
-                                            >
-                                                {{
-                                                    showAllNotifications
-                                                        ? "Show Unread Only"
-                                                        : "Show All"
-                                                }}
-                                            </button>
-                                        </div>
+                                        <button
+                                            @click.stop="
+                                                toggleShowAllNotifications
+                                            "
+                                            class="text-xs text-lime-600 hover:text-lime-800"
+                                        >
+                                            {{
+                                                showAllNotifications
+                                                    ? "Show Unread Only"
+                                                    : "Show All"
+                                            }}
+                                        </button>
                                     </div>
 
                                     <!-- No notifications -->
@@ -395,7 +357,7 @@ watch(
                                         v-if="
                                             notifications.length === 0 &&
                                             (!showAllNotifications ||
-                                                readNotifications?.length === 0)
+                                                readNotifications.length === 0)
                                         "
                                         class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40"
                                     >
@@ -421,7 +383,7 @@ watch(
                                             class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
                                             @click="
                                                 showNotificationDetails(
-                                                    notification
+                                                    notification,
                                                 )
                                             "
                                         >
@@ -440,7 +402,7 @@ watch(
                                                     >
                                                         {{
                                                             formatTime(
-                                                                notification.created_at
+                                                                notification.created_at,
                                                             )
                                                         }}
                                                     </p>
@@ -452,7 +414,7 @@ watch(
                                                             ? false
                                                             : !notification.read_at
                                                     "
-                                                    class="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"
+                                                    class="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0"
                                                 ></span>
                                             </div>
                                         </li>
@@ -462,7 +424,7 @@ watch(
                                     <ul
                                         v-if="
                                             showAllNotifications &&
-                                            readNotifications?.length > 0
+                                            readNotifications.length > 0
                                         "
                                         class="space-y-2"
                                     >
@@ -472,7 +434,7 @@ watch(
                                             class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
                                             @click="
                                                 showNotificationDetails(
-                                                    notification
+                                                    notification,
                                                 )
                                             "
                                         >
@@ -494,7 +456,7 @@ watch(
                                                     >
                                                         {{
                                                             formatTime(
-                                                                notification.created_at
+                                                                notification.created_at,
                                                             )
                                                         }}
                                                     </p>
@@ -502,7 +464,7 @@ watch(
                                                 <button
                                                     @click.stop="
                                                         markAsUnread(
-                                                            notification.id
+                                                            notification.id,
                                                         )
                                                     "
                                                     class="text-xs text-gray-400 hover:text-gray-600 ml-2"
@@ -539,7 +501,7 @@ watch(
                                 ></i>
                                 <span
                                     v-if="itemCount > 0"
-                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-black rounded-full border border-white shadow"
+                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow"
                                 >
                                     {{ itemCount }}
                                 </span>
@@ -575,8 +537,8 @@ watch(
                                             No items in cart
                                         </h1>
                                         <button
-                                            @click="navigationToggle('courses')"
-                                            class="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-medium text-sm transition"
+                                            @click="onExploreCourses"
+                                            class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition"
                                         >
                                             <i
                                                 class="fa-solid fa-book-open-reader mr-2"
@@ -600,7 +562,7 @@ watch(
                                                 />
                                                 <div class="flex-1">
                                                     <p
-                                                        class="font-medium text-sm truncate max-w-[20ch]"
+                                                        class="font-medium text-sm truncate"
                                                     >
                                                         {{ item.name }}
                                                     </p>
@@ -609,7 +571,7 @@ watch(
                                                     >
                                                         ${{
                                                             item.price.toFixed(
-                                                                2
+                                                                2,
                                                             )
                                                         }}
                                                     </p>
@@ -637,7 +599,7 @@ watch(
                                             <button
                                                 @click="enrollCourse"
                                                 :disabled="isLoading"
-                                                class="mt-4 w-full bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
+                                                class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
                                             >
                                                 <template v-if="!isLoading">
                                                     Proceed to Checkout
@@ -764,18 +726,11 @@ watch(
                     </button>
                     <button
                         @click="toggleAuthActions(actionTypeRegister)"
-                        class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-orange-400 to-orange-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
+                        class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
                     >
                         Register
                     </button>
                 </div>
-
-                <!-- Language Toggle -->
-                <button
-                    class="px-2 text-sm hidden font-bold text-white border-2 border-yellow-400 rounded hover:border-yellow-600"
-                >
-                    አማ
-                </button>
 
                 <!-- Mobile Menu Toggle -->
                 <button
@@ -801,44 +756,40 @@ watch(
             >
                 <ul class="flex flex-col items-center gap-4">
                     <li>
-                        <button
-                            @click="navigationToggle('hero')"
-                            class="text-white hover:text-orange-200"
+                        <a
+                            href="/"
+                            @click="toggleMenu"
+                            class="text-white hover:text-lime-200"
                         >
                             Home
-                        </button>
+                        </a>
                     </li>
                     <li>
-                        <button
-                            @click="navigationToggle('courses')"
-                            class="text-white hover:text-orange-200"
-                        >
-                            Courses
-                        </button>
-                    </li>
-                    <li>
-                        <button
-                            @click="navigationToggle('books')"
-                            class="text-white hover:text-orange-200"
-                        >
-                            Books
-                        </button>
-                    </li>
-                    <li>
-                        <button
-                            @click="navigationToggle('live')"
-                            class="text-white hover:text-orange-200"
-                        >
-                            Live
-                        </button>
-                    </li>
-                    <li>
-                        <button
-                            @click="navigationToggle('about')"
-                            class="text-white hover:text-orange-200"
+                        <a
+                            href="#about"
+                            @click="toggleMenu"
+                            class="text-white hover:text-lime-200"
                         >
                             About
-                        </button>
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="#courses"
+                            @click="toggleMenu"
+                            class="text-white hover:text-lime-200"
+                        >
+                            Courses
+                        </a>
+                    </li>
+                    <li>
+                        <a
+                            href="/"
+                            @click="toggleMenu"
+                            class="text-white hover:text-lime-200 mt-5"
+                        >
+                            Books
+                        </a>
                     </li>
 
                     <!-- Simplified auth section -->
@@ -852,7 +803,7 @@ watch(
                             </button>
                             <button
                                 @click="toggleAuthActions(actionTypeRegister)"
-                                class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-orange-400 to-orange-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
+                                class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
                             >
                                 Register
                             </button>
@@ -912,7 +863,7 @@ watch(
                         JSON.stringify(
                             currentNotification.data.additional_data,
                             null,
-                            2
+                            2,
                         )
                     }}</pre>
                 </div>
@@ -941,7 +892,7 @@ watch(
 .notification-dot {
     width: 8px;
     height: 8px;
-    background-color: #e58b3b;
+    background-color: #28a745;
     border-radius: 50%;
     display: inline-block;
     margin-left: 5px;
