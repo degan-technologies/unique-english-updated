@@ -56,7 +56,7 @@ class UserController extends Controller
         }
 
         $users = $query->orderBy('created_at', 'DESC')
-            ->paginate($request->rowsPerPageOptions);
+            ->paginate($request->input('rowsPerPageOptions', 10));
 
         $pagination = $users->toArray();
         unset($pagination['data']);
@@ -107,8 +107,7 @@ class UserController extends Controller
         $lastName = isset($fullname[2]) ? $fullname[2] : null;
 
         $validationRules = [
-            'phone'      => 'nullable|unique:users,phone|regex:/^\+?[1-9]\d{1,14}$/|required_without:email',
-            'email'      => 'nullable|email|unique:users,email|required_without:phone',
+            'email'      => 'required|email|unique:users,email',
             'full_name'  => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
             'password'   => 'required|min:4',
         ];
@@ -122,59 +121,36 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Check if this is email registration (user provided email in original request) or phone registration
-        $isEmailRegistration = $request->has('email') && !empty($request->input('email'));
-
         try {
             DB::beginTransaction();
 
             $user = new User();
             $user->slug        = Str::uuid();
-            $user->phone       = $request->phone;
-            $user->email       = $request->email; // Keep original email or null if not provided
+            $user->email       = $request->email;
             $user->first_name  = $firstName;
             $user->middle_name = $middleName;
             $user->last_name   = $lastName;
             $user->password    = Hash::make($request->password);
             $user->role        = STUDENT;
 
-            if ($isEmailRegistration) {
-                // Email registration - send OTP
-                $otp = random_int(100000, 999999);
-                $user->otp = $otp;
-                $user->otp_expires_at = Carbon::now()->addMinutes(10);
-                $user->otp_attempts = 0;
-            } else {
-                // Phone registration - verify directly
-                $user->email_verified_at = Carbon::now();
-            }
+            // Generate OTP for email verification
+            $otp = random_int(100000, 999999);
+            $user->otp = $otp;
+            $user->otp_expires_at = Carbon::now()->addMinutes(10);
+            $user->otp_attempts = 0;
 
             $user->save();
             $user->student()->create();
 
-            // Send OTP email only for email registration
-            if ($isEmailRegistration) {
-                $verificationUrl = (string) url('/verify-email?email=' . urlencode($user->email));
-                Mail::to($user->email)->send(new OTPVerificationMail($user->otp, $user->first_name, $verificationUrl));
+            // Send OTP email
+            $verificationUrl = (string) url('/verify-email?email=' . urlencode($user->email));
+            Mail::to($user->email)->send(new OTPVerificationMail($user->otp, $user->first_name, $verificationUrl));
 
-                DB::commit();
-                return response()->json([
-                    'message' => 'Registration successful. Please check your email for OTP verification.',
-                    'requires_otp' => true,
-                ], 201);
-            }
-
-            // For phone registration, login user directly
             DB::commit();
-            Auth::loginUsingId($user->id);
-            $token = $user->createToken('AuthToken')->accessToken;
-            $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
-
             return response()->json([
-                'message' => 'User registered successfully.',
-                'token' => $token,
-                'user' => new CurrentUserResource($user)
-            ])->withCookie($cookie);
+                'message' => 'Registration successful. Please check your email for OTP verification.',
+                'requires_otp' => true,
+            ], 201);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json(
@@ -190,9 +166,8 @@ class UserController extends Controller
     public function verifyEmailOTP(Request $request)
     {
         $validationRules = [
-            'contact_info' => 'required',
+            'contact_info' => 'required|email',
             'otp'   => 'required|digits:6',
-            'registration_method' => 'required|in:email,phone',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otp_verification'));
@@ -201,12 +176,7 @@ class UserController extends Controller
             return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
-        // Find user by email or phone based on registration method
-        if ($request->registration_method === 'email') {
-            $user = User::where('email', $request->contact_info)->first();
-        } else {
-            $user = User::where('phone', $request->contact_info)->first();
-        }
+        $user = User::where('email', $request->contact_info)->first();
 
         if (!$user) {
             return response()->json([
@@ -227,13 +197,7 @@ class UserController extends Controller
             ], 422);
         }
 
-        // Mark as verified based on registration method
-        if ($request->registration_method === 'email') {
-            $user->email_verified_at = Carbon::now();
-        } else {
-            $user->phone_verified_at = Carbon::now(); // You might need to add this column to users table
-        }
-
+        $user->email_verified_at = Carbon::now();
         $user->otp = null;
         $user->otp_expires_at = null;
         $user->save();
@@ -251,8 +215,7 @@ class UserController extends Controller
     public function resendOTP(Request $request)
     {
         $validationRules = [
-            'contact_info' => 'required',
-            'registration_method' => 'required|in:email,phone',
+            'contact_info' => 'required|email',
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('email_otpResend_verification'));
@@ -261,12 +224,7 @@ class UserController extends Controller
             return response()->json(['message' => $validator->errors()->first(), 'errors' => $validator->errors()], 422);
         }
 
-        // Find user by email or phone based on registration method
-        if ($request->registration_method === 'email') {
-            $user = User::where('email', $request->contact_info)->first();
-        } else {
-            $user = User::where('phone', $request->contact_info)->first();
-        }
+        $user = User::where('email', $request->contact_info)->first();
 
         if (!$user) {
             return response()->json(['message' => 'User not found.'], 404);
@@ -283,15 +241,11 @@ class UserController extends Controller
         $user->otp_attempts += 1;
         $user->save();
 
-        // Send OTP based on registration method
-        if ($request->registration_method === 'email') {
-            $verificationUrl = (string) url('/verify-email?email=' . urlencode($user->email));
-            Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $verificationUrl));
-        } else {
-            // SMS OTP sending would go here
-        }
+        // Send OTP email
+        $verificationUrl = (string) url('/verify-email?email=' . urlencode($user->email));
+        Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $verificationUrl));
 
-        return response()->json(['message' => 'A new OTP has been sent to your ' . $request->registration_method . '.'], 200);
+        return response()->json(['message' => 'A new OTP has been sent to your email.'], 200);
     }
 
 
@@ -696,7 +650,7 @@ class UserController extends Controller
         }
 
         $instructors = $query->orderBy('created_at', 'DESC')
-            ->paginate($request->rowsPerPageOptions ?? 10);
+            ->paginate($request->input('rowsPerPageOptions', 10));
 
         $pagination = $instructors->toArray();
         unset($pagination['data']);
@@ -733,7 +687,7 @@ class UserController extends Controller
         }
 
         $students = $query->orderBy('created_at', 'DESC')
-            ->paginate($request->rowsPerPageOptions ?? 10);
+            ->paginate($request->input('rowsPerPageOptions', 10));
 
         $pagination = $students->toArray();
         unset($pagination['data']);

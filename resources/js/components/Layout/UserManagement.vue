@@ -48,6 +48,9 @@ const newUser = ref({
     role: "INSTRUCTOR_ROLE",
 });
 
+// Add password visibility state
+const showNewUserPassword = ref(false);
+
 // Computed properties
 const currentUsers = computed(() => {
     return activeTab.value === "instructors"
@@ -224,6 +227,7 @@ async function submitAddUser() {
 
 function closeAddUserModal() {
     showAddUserModal.value = false;
+    showNewUserPassword.value = false; // Reset password visibility
     newUser.value = {
         email: "",
         first_name: "",
@@ -233,6 +237,11 @@ function closeAddUserModal() {
                 ? "INSTRUCTOR_ROLE"
                 : "STUDENT_ROLE",
     };
+}
+
+// Add password toggle function
+function toggleNewUserPassword() {
+    showNewUserPassword.value = !showNewUserPassword.value;
 }
 
 // Message modal functions
@@ -651,25 +660,51 @@ function exportToCSV() {
                 <div
                     class="p-4 border-b border-gray-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
                 >
-                    <!-- Search -->
-                    <div class="relative flex-1 max-w-md w-full">
-                        <input
-                            v-model="searchQuery"
-                            type="text"
-                            :placeholder="`Search ${activeTab}...`"
-                            class="w-full border border-gray-300 rounded-lg py-2 px-4 pl-10 focus:outline-none focus:border-lime-500"
-                        />
-                        <svg
-                            class="w-5 h-5 absolute left-3 top-3 text-gray-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M12.9 14.32a8 8 0 111.414-1.414l4.387 4.387a1 1 0 01-1.414 1.414l-4.387-4.387zM10 16a6 6 0 100-12 6 6 0 000 12z"
-                                clip-rule="evenodd"
+                    <!-- Search and Rows Per Page -->
+                    <div
+                        class="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 max-w-2xl w-full"
+                    >
+                        <!-- Search -->
+                        <div class="relative flex-1 max-w-md w-full">
+                            <input
+                                v-model="searchQuery"
+                                type="text"
+                                :placeholder="`Search ${activeTab}...`"
+                                class="w-full border border-gray-300 rounded-lg py-2 px-4 pl-10 focus:outline-none focus:border-lime-500"
                             />
-                        </svg>
+                            <svg
+                                class="w-5 h-5 absolute left-3 top-3 text-gray-400"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M12.9 14.32a8 8 0 111.414-1.414l4.387 4.387a1 1 0 01-1.414 1.414l-4.387-4.387zM10 16a6 6 0 100-12 6 6 0 000 12z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                        </div>
+
+                        <!-- Rows Per Page -->
+                        <div class="flex items-center gap-2 whitespace-nowrap">
+                            <label class="text-sm text-gray-600">Show:</label>
+                            <select
+                                v-model="rowsPerPage"
+                                @change="userPerPage(rowsPerPage)"
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-lime-500"
+                            >
+                                <option
+                                    v-for="option in rowsPerPageOptions"
+                                    :key="option"
+                                    :value="option"
+                                >
+                                    {{ option }}
+                                </option>
+                            </select>
+                            <label class="text-sm text-gray-600"
+                                >per page</label
+                            >
+                        </div>
                     </div>
 
                     <!-- Actions -->
@@ -1192,12 +1227,33 @@ function exportToCSV() {
                                 >
                                     Password
                                 </label>
-                                <input
-                                    v-model="newUser.password"
-                                    type="password"
-                                    required
-                                    class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500"
-                                />
+                                <div class="relative">
+                                    <input
+                                        v-model="newUser.password"
+                                        :type="
+                                            showNewUserPassword
+                                                ? 'text'
+                                                : 'password'
+                                        "
+                                        required
+                                        placeholder="Enter password"
+                                        class="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:border-lime-500 pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        @click="toggleNewUserPassword"
+                                        class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700"
+                                    >
+                                        <i
+                                            :class="[
+                                                'text-sm transition-colors',
+                                                showNewUserPassword
+                                                    ? 'fas fa-eye-slash'
+                                                    : 'fas fa-eye',
+                                            ]"
+                                        ></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 

@@ -77,8 +77,10 @@ watch(
                                     : 'text-gray-900',
                             ]"
                         >
-                            <span class="block">Learn without limits,</span>
-                            <span class="block">Anytime, Anywhere</span>
+                            {{
+                                hero?.title ||
+                                "Learn without limits, Anytime, Anywhere"
+                            }}
                         </h1>
 
                         <p

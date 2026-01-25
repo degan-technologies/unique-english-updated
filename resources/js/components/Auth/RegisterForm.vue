@@ -14,16 +14,13 @@ const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
 const { frontLang, otpEmail } = storeToRefs(appStore);
 
 const name = ref("");
-const phone = ref("");
 const email = ref("");
-const phoneValid = ref(false);
 const password = ref("");
 const showPassword = ref(false);
 const loading = ref(false);
 const agreeTerms = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
-const registrationType = ref("phone"); // 'phone' or 'email'
 
 const togglePassword = () => {
     showPassword.value = !showPassword.value;
@@ -37,16 +34,7 @@ async function handleRegister() {
         return;
     }
 
-    if (
-        registrationType.value === "phone" &&
-        (!phone.value || !phoneValid.value)
-    ) {
-        errorMessage.value = "Please enter a valid phone number";
-        setTimeout(() => (errorMessage.value = ""), 3000);
-        return;
-    }
-
-    if (registrationType.value === "email" && !email.value) {
+    if (!email.value) {
         errorMessage.value = "Please enter a valid email address";
         setTimeout(() => (errorMessage.value = ""), 3000);
         return;
@@ -66,41 +54,17 @@ async function handleRegister() {
         const data = {
             full_name: name.value,
             password: password.value,
-            registration_method: registrationType.value,
+            email: email.value,
         };
-
-        if (registrationType.value === "phone") {
-            data.phone = phone.value;
-        } else {
-            data.email = email.value;
-        }
 
         const response = await Axios.post("/api/register", data);
 
-        if (registrationType.value === "email") {
-            // Set otp email globally for VerifyOtp component
-            otpEmail.value = email.value;
-            // Close registration form to show VerifyOtp component
-            showRegistrationForm.value = false;
-            successMessage.value =
-                "Please check your email for the OTP verification code.";
-        } else {
-            // For phone registration, registration is complete and user is logged in
-            successMessage.value = response.data.message;
-            if (response.data.token) {
-                appStore.setAuthToken(response.data.token);
-                appStore.changeLoginStatus(true);
-                try {
-                    await appStore.fetchUserInfo();
-                } catch (e) {
-                    console.error("Failed to fetch user info:", e);
-                }
-            }
-            setTimeout(() => {
-                showRegistrationForm.value = false;
-                router.push("/");
-            }, 1500);
-        }
+        // Set otp email globally for VerifyOtp component
+        otpEmail.value = email.value;
+        // Close registration form to show VerifyOtp component
+        showRegistrationForm.value = false;
+        successMessage.value =
+            "Please check your email for the OTP verification code.";
     } catch (err) {
         errorMessage.value =
             err.response?.data?.message ||
@@ -118,18 +82,6 @@ function closeRegistrationForm() {
 function routeToLogin() {
     showRegistrationForm.value = false;
     showLoginForm.value = true;
-}
-
-function switchRegistrationType(type) {
-    registrationType.value = type;
-    // Clear the other field when switching types
-    if (type === "phone") {
-        email.value = "";
-    } else {
-        phone.value = "";
-        phoneValid.value = false;
-    }
-    errorMessage.value = "";
 }
 </script>
 
@@ -166,36 +118,6 @@ function switchRegistrationType(type) {
                     @submit.prevent="handleRegister"
                     class="space-y-3 sm:space-y-4"
                 >
-                    <!-- Registration Type Toggle -->
-                    <div class="flex justify-center mb-3 sm:mb-4">
-                        <div class="bg-gray-100 p-1 rounded-lg">
-                            <button
-                                type="button"
-                                @click="switchRegistrationType('phone')"
-                                :class="[
-                                    'px-3 py-2 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors',
-                                    registrationType === 'phone'
-                                        ? 'bg-lime-500 text-white'
-                                        : 'text-gray-600 hover:text-gray-800',
-                                ]"
-                            >
-                                Phone
-                            </button>
-                            <button
-                                type="button"
-                                @click="switchRegistrationType('email')"
-                                :class="[
-                                    'px-3 py-2 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors',
-                                    registrationType === 'email'
-                                        ? 'bg-lime-500 text-white'
-                                        : 'text-gray-600 hover:text-gray-800',
-                                ]"
-                            >
-                                Email
-                            </button>
-                        </div>
-                    </div>
-
                     <!-- Name Field -->
                     <div>
                         <label
@@ -234,47 +156,8 @@ function switchRegistrationType(type) {
                         </div>
                     </div>
 
-                    <!-- Phone Field -->
-                    <div v-if="registrationType === 'phone'">
-                        <label
-                            for="phone"
-                            class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
-                        >
-                            {{ frontLang?.lang?.phone || "Phone Number" }}
-                        </label>
-                        <div class="relative">
-                            <input
-                                type="tel"
-                                id="phone"
-                                v-model="phone"
-                                @input="phoneValid = phone.length >= 10"
-                                placeholder="+251911234567"
-                                required
-                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
-                            />
-                            <div
-                                class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                                    />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Email Field -->
-                    <div v-if="registrationType === 'email'">
+                    <div>
                         <label
                             for="email"
                             class="block text-sm font-medium text-gray-700 mb-1 sm:mb-2"
@@ -491,27 +374,6 @@ function switchRegistrationType(type) {
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-.animate-shake {
-    animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-
-@keyframes shake {
-    0%,
-    100% {
-        transform: translateX(0);
-    }
-
-    20%,
-    60% {
-        transform: translateX(-5px);
-    }
-
-    40%,
-    80% {
-        transform: translateX(5px);
     }
 }
 

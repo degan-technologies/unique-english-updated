@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP Verification - Marki English</title>
+    <title>OTP Verification - Unique English</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -93,14 +93,14 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Marki English</h1>
+            <h1>Unique English</h1>
             <p>Email Verification</p>
         </div>
 
         <div class="content">
             <h2>Hello {{ $userName }},</h2>
 
-            <p>Thank you for registering with <strong>Marki English</strong>! To complete your registration, please verify your email address using the OTP code below.</p>
+            <p>Thank you for registering with <strong>Unique English</strong>! To complete your registration, please verify your email address using the OTP code below.</p>
 
             <div class="otp-box">
                 <p style="margin: 0; font-size: 16px; color: #666;">Your verification code is:</p>
@@ -122,12 +122,12 @@
             <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
 
             <p>Best regards,<br>
-                <strong>Marki English Team</strong>
+                <strong>Unique English Team</strong>
             </p>
         </div>
 
         <div class="footer">
-            <p>&copy; {{ date('Y') }} Marki English. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} Unique English. All rights reserved.</p>
             <p>This is an automated email, please do not reply to this message.</p>
             @if(isset($verificationUrl) && is_string($verificationUrl) && !empty($verificationUrl))
             <p><a href="{{ $verificationUrl }}" style="color: #65a30d;">Complete verification online</a></p>
