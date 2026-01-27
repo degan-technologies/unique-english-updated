@@ -32,7 +32,8 @@
                         >.
                     </p>
                     <p class="mt-1 text-sm">
-                        &copy; 2025 Unique English. All rights reserved.
+                        &copy; {{ new Date().getFullYear() }} Unique English.
+                        All rights reserved.
                     </p>
                 </div>
 
