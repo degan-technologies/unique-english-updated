@@ -51,12 +51,13 @@ function tryLogin() {
     loggingIn.value = true;
     Axios.post("/login", formData, { withCredentials: true })
         .then((response) => {
-            if (response.data.requires_otp) {
-                // For first-time email login, show OTP verification
-                showOTPVerification.value = true;
+            if (response.data.requires_verification) {
+                // Email is not verified, show OTP verification for email verification
+                appStore.otpEmail = response.data.email;
                 loginMessage.value = response.data.message;
+                showLoginForm.value = false;
             } else {
-                // For phone login or returning email users, login directly
+                // For phone login or verified email users, login directly
                 appStore.setAuthToken(response.data.token);
                 appStore.changeLoginStatus(true);
                 showLoginForm.value = false;

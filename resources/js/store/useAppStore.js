@@ -17,6 +17,7 @@ export const useAppStore = defineStore("useAppStore", () => {
     const exploreCourses = ref(false);
     const selectedComponentId = ref(null);
     const otpEmail = ref("");
+    const isEmailVerification = ref(false);
 
     //hero section
     const hero = ref({
@@ -167,6 +168,28 @@ export const useAppStore = defineStore("useAppStore", () => {
             });
     }
 
+    function setOtpEmail(email, isForVerification = false) {
+        otpEmail.value = email;
+        isEmailVerification.value = isForVerification;
+    }
+
+    function clearOtpEmail() {
+        otpEmail.value = "";
+        isEmailVerification.value = false;
+    }
+
+    function scrollToSection(sectionId) {
+        setTimeout(() => {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        }, 100);
+    }
+
     return {
         logoImage,
         isLoggedIn,
@@ -200,5 +223,9 @@ export const useAppStore = defineStore("useAppStore", () => {
         selectedComponentId,
 
         otpEmail,
+        isEmailVerification,
+        setOtpEmail,
+        clearOtpEmail,
+        scrollToSection,
     };
 });
