@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Mail\OTPVerificationMail;
 use App\Mail\PasswordResetOTPMail;
+use App\Mail\LoginEmailVerificationMail;
 use App\Models\User;
 use App\Services\LangService;
 use App\Traits\AdminActivityLog;
@@ -96,9 +97,9 @@ class AuthController extends Controller
             $user->otp_attempts = 0;
             $user->save();
 
-            // Send OTP verification email
-            $verificationUrl = url('/verify');
-            Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $verificationUrl));
+            // Send login email verification OTP
+            $supportUrl = url('/support');
+            Mail::to($user->email)->send(new LoginEmailVerificationMail($otp, $user->first_name, $user->email, $supportUrl));
 
             // Logout the user since email is not verified
             Auth::logout();
