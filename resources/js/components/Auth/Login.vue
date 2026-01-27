@@ -282,7 +282,7 @@ onMounted(() => {
                                 required
                                 maxlength="6"
                                 autocomplete="off"
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -298,7 +298,7 @@ onMounted(() => {
                                 required
                                 minlength="8"
                                 autocomplete="off"
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -314,7 +314,7 @@ onMounted(() => {
                                 required
                                 minlength="8"
                                 autocomplete="off"
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -350,7 +350,7 @@ onMounted(() => {
                                 v-model="forgotPasswordEmail"
                                 placeholder="Enter your email"
                                 required
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -470,7 +470,7 @@ onMounted(() => {
                                 v-model="phoneInput"
                                 placeholder="+251911234567"
                                 required
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -488,7 +488,7 @@ onMounted(() => {
                                 v-model="emailInput"
                                 placeholder="Enter your email"
                                 required
-                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
                         </div>
 
@@ -508,7 +508,7 @@ onMounted(() => {
                                     v-model="passwordInput"
                                     placeholder="Enter your password"
                                     required
-                                    class="w-full px-3 py-3 pr-10 sm:px-4 sm:py-3.5 sm:pr-12 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-lime-500 focus:border-lime-500 transition-all text-sm sm:text-base"
+                                    class="w-full px-3 py-3 pr-10 sm:px-4 sm:py-3.5 sm:pr-12 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                                 />
                                 <button
                                     type="button"
@@ -627,9 +627,9 @@ onMounted(() => {
                                     maxlength="1"
                                     :class="[
                                         'w-full h-12 sm:h-14 text-center text-lg sm:text-2xl font-bold border-2 rounded-lg sm:rounded-xl focus:outline-none transition-all duration-200',
-                                        'border-gray-200 focus:border-lime-500 focus:ring-2 focus:ring-lime-200',
+                                        'border-gray-200 focus:border-lime-500',
                                         activeInput === index
-                                            ? 'ring-2 ring-lime-300 border-lime-500 bg-lime-50'
+                                            ? 'border-lime-500 bg-lime-50'
                                             : 'bg-white',
                                     ]"
                                     @input="focusNext(index, $event)"
