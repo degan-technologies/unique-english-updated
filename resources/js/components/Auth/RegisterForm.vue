@@ -133,7 +133,7 @@ function routeToLogin() {
                                 v-model="name"
                                 placeholder="John Doe"
                                 required
-                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-400 transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
                             />
                             <div
                                 class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
@@ -171,7 +171,7 @@ function routeToLogin() {
                                 v-model="email"
                                 placeholder="john@example.com"
                                 required
-                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-400 transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
                             />
                             <div
                                 class="absolute inset-y-0 right-2 sm:right-3 flex items-center pointer-events-none"
@@ -209,7 +209,7 @@ function routeToLogin() {
                                 v-model="password"
                                 placeholder="••••••••"
                                 required
-                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-400 focus:border-transparent transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
+                                class="w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-lime-400 transition-all duration-200 text-sm sm:text-base pr-8 sm:pr-10"
                             />
                             <button
                                 type="button"

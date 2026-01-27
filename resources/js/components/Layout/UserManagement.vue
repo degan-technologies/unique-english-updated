@@ -930,6 +930,27 @@ function exportToCSV() {
                                     >
                                         {{ user.phone }}
                                     </div>
+                                    <!-- Add temp password for instructors -->
+                                    <div
+                                        v-if="
+                                            activeTab === 'instructors' &&
+                                            user.temp_password
+                                        "
+                                        class="text-sm text-orange-600 bg-orange-50 px-2 py-1 rounded mt-1 inline-block font-mono"
+                                        title="Temporary Password"
+                                    >
+                                        <i class="fas fa-key text-xs mr-1"></i>
+                                        {{ user.temp_password }}
+                                    </div>
+                                    <div
+                                        v-else-if="
+                                            activeTab === 'instructors' &&
+                                            !user.temp_password
+                                        "
+                                        class="text-xs text-gray-400 mt-1"
+                                    >
+                                        Password changed
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500">
                                     <span
