@@ -11,7 +11,7 @@ const AuthStore = useAuthStore();
 const emailInput = ref("");
 const passwordInput = ref("");
 const forgotPasswordEmail = ref("");
-const otp = ref(["", "", "", "", "", ""]);
+const otp = ref("");
 const newPassword = ref("");
 const confirmPassword = ref("");
 const phoneInput = ref("");
@@ -53,7 +53,7 @@ function tryLogin() {
         .then((response) => {
             if (response.data.requires_verification) {
                 // Email is not verified, show OTP verification for email verification
-                appStore.otpEmail = response.data.email;
+                appStore.setOtpEmail(response.data.email, true); // Set isEmailVerification to true
                 loginMessage.value = response.data.message;
                 showLoginForm.value = false;
             } else {

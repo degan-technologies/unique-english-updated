@@ -122,7 +122,7 @@
             <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
 
             <p>Best regards,<br>
-                <strong>Unique English Team</strong>
+                <strong>Unique English</strong>
             </p>
         </div>
 

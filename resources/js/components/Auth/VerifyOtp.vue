@@ -48,12 +48,8 @@ const handleOtpSubmit = async () => {
     otpError.value = "";
 
     try {
-        // Use different endpoint based on verification type
-        const endpoint = isEmailVerification.value
-            ? "/api/verify-email-otp"
-            : "/api/verify-otp";
-
-        const response = await Axios.post(endpoint, {
+        // Use the same endpoint for both registration and login email verification
+        const response = await Axios.post("/api/verify-otp", {
             contact_info: otpEmail.value,
             registration_method: "email",
             otp: otpCode,
@@ -126,12 +122,8 @@ const resendOtp = async () => {
     otpError.value = "";
 
     try {
-        // Use different endpoint based on verification type
-        const endpoint = isEmailVerification.value
-            ? "/api/resend-email-verification-otp"
-            : "/api/resend-otp";
-
-        await Axios.post(endpoint, {
+        // Use the same endpoint for both registration and login email verification resend
+        await Axios.post("/api/resend-otp", {
             contact_info: otpEmail.value,
             registration_method: "email",
         });
