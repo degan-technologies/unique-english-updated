@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Auth\CurrentUserResource;
 use App\Mail\OTPVerificationMail;
+use App\Mail\PasswordResetOTPMail;
 use App\Models\User;
 use App\Services\LangService;
 use App\Traits\AdminActivityLog;
@@ -86,7 +87,30 @@ class AuthController extends Controller
          */
         $user = Auth::user();
 
-        // Complete login immediately for both phone and email login
+        // Check if email login and email is not verified
+        if ($request->filled('email') && !$user->email_verified_at) {
+            // Generate new OTP for email verification
+            $otp = random_int(100000, 999999);
+            $user->otp = $otp;
+            $user->otp_expires_at = Carbon::now()->addMinutes(10);
+            $user->otp_attempts = 0;
+            $user->save();
+
+            // Send OTP verification email
+            $verificationUrl = url('/verify');
+            Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $verificationUrl));
+
+            // Logout the user since email is not verified
+            Auth::logout();
+
+            return response()->json([
+                'message' => 'Please verify your email address first. We have sent you a verification code.',
+                'requires_verification' => true,
+                'email' => $user->email
+            ], 200);
+        }
+
+        // Complete login for phone users or verified email users
         $user->save();
 
         $token = $user->createToken('AuthToken')->accessToken;
@@ -175,9 +199,9 @@ class AuthController extends Controller
             ], 404);
         }
 
-        $url = url();
+        $supportUrl = url('/support');
 
-        Mail::to($user->email)->send(new OTPVerificationMail($otp, $user->first_name, $url));
+        Mail::to($user->email)->send(new PasswordResetOTPMail($otp, $user->first_name, $supportUrl));
 
         return response()->json([
             'message' => $this->langService->getLang('otp_sent')

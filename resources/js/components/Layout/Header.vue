@@ -168,6 +168,16 @@ function onExploreCourses() {
     isCartOpen.value = false;
     router.push("/").then(() => {
         exploreCourses.value = !exploreCourses.value;
+        // Scroll to courses section after navigation
+        setTimeout(() => {
+            const coursesSection = document.getElementById("courses");
+            if (coursesSection) {
+                coursesSection.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                });
+            }
+        }, 300); // Small delay to ensure the page has loaded
     });
 }
 

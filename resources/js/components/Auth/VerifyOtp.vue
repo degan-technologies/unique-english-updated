@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const appStore = useAppStore();
-const { otpEmail } = storeToRefs(appStore);
+const { otpEmail, isEmailVerification } = storeToRefs(appStore);
 
 const otp = ref(["", "", "", "", "", ""]);
 const otpLoading = ref(false);
@@ -19,7 +19,7 @@ let interval = null;
 // Add function to close OTP modal
 const closeOTPModal = () => {
     // Clear the OTP email to hide this component
-    otpEmail.value = "";
+    appStore.clearOtpEmail();
     // Clear any timers
     if (interval) {
         clearInterval(interval);
@@ -48,7 +48,12 @@ const handleOtpSubmit = async () => {
     otpError.value = "";
 
     try {
-        const response = await Axios.post("/api/verify-otp", {
+        // Use different endpoint based on verification type
+        const endpoint = isEmailVerification.value
+            ? "/api/verify-email-otp"
+            : "/api/verify-otp";
+
+        const response = await Axios.post(endpoint, {
             contact_info: otpEmail.value,
             registration_method: "email",
             otp: otpCode,
@@ -57,6 +62,7 @@ const handleOtpSubmit = async () => {
         otpSuccess.value = response.data.message;
         appStore.setAuthToken(response.data.token);
         appStore.changeLoginStatus(true);
+        appStore.clearOtpEmail();
 
         setTimeout(() => {
             otpSuccess.value = "";
@@ -120,7 +126,12 @@ const resendOtp = async () => {
     otpError.value = "";
 
     try {
-        await Axios.post("/api/resend-otp", {
+        // Use different endpoint based on verification type
+        const endpoint = isEmailVerification.value
+            ? "/api/resend-email-verification-otp"
+            : "/api/resend-otp";
+
+        await Axios.post(endpoint, {
             contact_info: otpEmail.value,
             registration_method: "email",
         });
@@ -201,10 +212,18 @@ onUnmounted(() => {
                     </svg>
                 </div>
                 <h1 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                    Verify Your Email
+                    {{
+                        isEmailVerification
+                            ? "Verify Email to Login"
+                            : "Verify Your Email"
+                    }}
                 </h1>
                 <p class="text-sm sm:text-base text-gray-600">
-                    We sent a 6-digit code to
+                    {{
+                        isEmailVerification
+                            ? "Please verify your email address to continue with login."
+                            : "We sent a 6-digit code to"
+                    }}
                     <span class="font-medium text-gray-800">{{
                         otpEmail
                     }}</span>
