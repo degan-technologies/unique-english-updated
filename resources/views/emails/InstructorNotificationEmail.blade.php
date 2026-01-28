@@ -210,7 +210,7 @@
     <div class="email-container">
         <!-- Header Section -->
         <div class="email-header">
-            <img src="https://unique-english.com/images/logo.jpg" alt="Company Logo">
+            <img src="https://unique.degantechnologies.com/images/logo.jpg" alt="Company Logo">
             <h1>New Student Enrolled!</h1>
         </div>
 
