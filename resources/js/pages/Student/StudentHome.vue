@@ -1,31 +1,32 @@
 <script setup>
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
-import Pdf from "@/components/Book/Pdf.vue";
-import Book from "@/components/Book/Book.vue";
-import Hero from "@/components/Layout/Hero.vue";
-import AboutUs from "@/pages/common/AboutUs.vue";
-import Header from "@/components/Layout/Header.vue";
-import Footer from "@/components/Layout/Footer.vue";
-import BookDetails from "@/components/Book/BookDetails.vue";
-import CourseCard from "@/components/Course/CourseCard.vue";
-import VideoPlayer from "@/components/Course/VideoPlayer.vue";
-import CourseDetail from "@/components/Course/CourseDetail.vue";
-import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
-import MyCourse from "@/components/Course/EnrolledManagement.vue";
-import MeetingAction from "@/components/Live/MeetingAction.vue";
-import WhatExpect from "@/components/Layout/WhatExpect.vue";
-import Test from "@/components/Course/Test.vue";
-import ProfileForm from "@/components/Profile/ProfileForm.vue";
-import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 import VerifyOtp from "@/components/Auth/VerifyOtp.vue";
-import InstructorProfile from "@/components/Layout/InstructorProfile.vue";
+import BlogDetail from "@/components/Blog/BlogDetail.vue";
+import BlogList from "@/components/Blog/BlogList.vue";
+import Book from "@/components/Book/Book.vue";
+import BookDetails from "@/components/Book/BookDetails.vue";
+import Pdf from "@/components/Book/Pdf.vue";
+import CourseCard from "@/components/Course/CourseCard.vue";
+import CourseDetail from "@/components/Course/CourseDetail.vue";
+import MyCourse from "@/components/Course/EnrolledManagement.vue";
+import Test from "@/components/Course/Test.vue";
+import VideoPlayer from "@/components/Course/VideoPlayer.vue";
+import Footer from "@/components/Layout/Footer.vue";
+import Header from "@/components/Layout/Header.vue";
+import Hero from "@/components/Layout/Hero.vue";
+import WhatExpect from "@/components/Layout/WhatExpect.vue";
+import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
+import LiveStreamingVue from "@/components/Live/LiveStreaming.vue";
+import MeetingAction from "@/components/Live/MeetingAction.vue";
+import ProfileForm from "@/components/Profile/ProfileForm.vue";
+import AboutUs from "@/pages/common/AboutUs.vue";
 
 const appStore = useAppStore();
 const AuthStore = useAuthStore();
@@ -63,7 +64,7 @@ const selectedCourse = computed(() => {
     if (Array.isArray(courses.value)) {
         return (
             courses.value.find(
-                (item) => item.slug === selectedCourseSlug.value
+                (item) => item.slug === selectedCourseSlug.value,
             ) || null
         );
     }
@@ -78,8 +79,8 @@ function redirectToLogin() {
 }
 
 watch(
-    () => route.query.tab,
-    async (newTab) => {
+    () => [route.query.tab, route.name],
+    async ([newTab]) => {
         if (newTab === bookReadingTab.value) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
@@ -91,7 +92,7 @@ watch(
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -157,9 +158,14 @@ watch(
                     <VerifyOtp />
                 </div>
 
+                <div v-else-if="route.name === 'blogDetail'">
+                    <BlogDetail />
+                </div>
+
                 <div v-else-if="currentTab.tab == landingPageTab">
                     <Hero class="w-full mb-10" />
                     <CourseCard />
+                    <BlogList />
                     <MeetingAction />
                     <Book />
                     <YoutubeEmbed />

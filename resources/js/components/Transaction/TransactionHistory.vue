@@ -1,10 +1,10 @@
 <script setup>
-import Axios from 'axios';
-import { ref, onMounted } from 'vue';
-import { storeToRefs } from 'pinia';
-import { useAppStore } from '@/store/useAppStore';
-import ChangeComission from '@/components/Transaction/ChangeComission.vue';
-import Popper from 'vue3-popper';
+import ChangeComission from "@/components/Transaction/ChangeComission.vue";
+import { useAppStore } from "@/store/useAppStore";
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { onMounted, ref } from "vue";
+import Popper from "vue3-popper";
 
 const appStore = useAppStore();
 const { commission, authUser } = storeToRefs(appStore);
@@ -19,6 +19,14 @@ const withdrawAmount = ref(null);
 const withdrawError = ref(null);
 const myBakInfo = ref(null);
 
+// OTP modal and state
+const showOtpModal = ref(false);
+const otpValue = ref("");
+const otpError = ref(null);
+const isOtpSending = ref(false);
+const isOtpVerifying = ref(false);
+const otpSent = ref(false);
+
 const currentPage = ref(1);
 const rowsPerPage = ref(10);
 const rowsPerPageOptions = [5, 10, 15, 20];
@@ -27,25 +35,25 @@ const totalPages = ref(0);
 
 const toast = ref({
     show: false,
-    message: '',
-    type: 'success'
+    message: "",
+    type: "success",
 });
 
-const fetchTransferTransactions = async (page=1) => {
+const fetchTransferTransactions = async (page = 1) => {
     isLoading.value = true;
     try {
         const res = await Axios.get(`/api/get-transfer-history?page=${page}`, {
-                params:{ 
-                    rowsPerPageOptions: rowsPerPage.value,
-                }
-            });
+            params: {
+                rowsPerPageOptions: rowsPerPage.value,
+            },
+        });
         payouts.value = res.data.data;
         pagination.value = res.data.pagination;
         totalPages.value = res.data.pagination.last_page;
         currentPage.value = res.data.pagination.current_page;
     } catch (error) {
-        showToast('Failed to fetch transactions', 'error');
-        console.error('Fetch error:', error);
+        showToast("Failed to fetch transactions", "error");
+        console.error("Fetch error:", error);
     } finally {
         isLoading.value = false;
     }
@@ -54,80 +62,137 @@ const fetchTransferTransactions = async (page=1) => {
 // Get current balance
 const getCurrentBalance = async () => {
     try {
-        const res = await Axios.get('/api/get-balance');
+        const res = await Axios.get("/api/get-balance");
         CurrentBalance.value = res.data.data;
     } catch (error) {
-        showToast('Failed to fetch balance', 'error');
-        console.error('Balance error:', error);
+        showToast("Failed to fetch balance", "error");
+        console.error("Balance error:", error);
     }
 };
 
 const validateWithdrawal = () => {
     withdrawError.value = null;
 
-    if(myBakInfo.value === null){
-        withdrawError.value = 'Please complete you Bank Acount ';
+    if (myBakInfo.value === null) {
+        withdrawError.value = "Please complete you Bank Acount ";
         return false;
     }
 
     if (!withdrawAmount.value) {
-        withdrawError.value = 'Amount is required';
+        withdrawError.value = "Amount is required";
         return false;
     }
 
     const amount = Number(withdrawAmount.value);
 
     if (isNaN(amount)) {
-        withdrawError.value = 'Please enter a valid number';
+        withdrawError.value = "Please enter a valid number";
         return false;
     }
 
     if (amount <= 0) {
-        withdrawError.value = 'Amount must be greater than 0';
+        withdrawError.value = "Amount must be greater than 0";
         return false;
     }
 
     if (CurrentBalance.value !== null && amount > CurrentBalance.value) {
-        withdrawError.value = 'Insufficient balance';
+        withdrawError.value = "Insufficient balance";
         return false;
     }
 
     return true;
 };
 
-// Handle withdrawal
-const onWithdraw = async () => {
+// Step 1: Send OTP
+const sendWithdrawalOtp = async () => {
     if (!validateWithdrawal()) return;
+    isOtpSending.value = true;
+    otpError.value = null;
+    try {
+        const res = await Axios.post("/api/withdrawal/send-otp");
+        showToast(res.data.message, "success");
+        otpSent.value = true;
+        showOtpModal.value = true;
+        showWithdrawModal.value = false;
+    } catch (error) {
+        const message = error.response?.data?.message || "Failed to send OTP";
+        showToast(message, "error");
+        otpError.value = message;
+    } finally {
+        isOtpSending.value = false;
+    }
+};
 
+// Step 2: Verify OTP
+const verifyWithdrawalOtp = async () => {
+    if (!otpValue.value) {
+        otpError.value = "OTP is required";
+        return;
+    }
+    isOtpVerifying.value = true;
+    otpError.value = null;
+    try {
+        const res = await Axios.post("/api/withdrawal/verify-otp", {
+            otp: otpValue.value,
+        });
+        showToast(res.data.message, "success");
+        showOtpModal.value = false;
+        otpValue.value = "";
+        otpSent.value = false;
+        // Step 3: Proceed with withdrawal
+        await processWithdrawal();
+    } catch (error) {
+        const message =
+            error.response?.data?.message || "OTP verification failed";
+        showToast(message, "error");
+        otpError.value = message;
+        if (error.response?.status === 403 || error.response?.status === 400) {
+            // OTP expired or max attempts, reset flow
+            showOtpModal.value = false;
+            otpValue.value = "";
+            otpSent.value = false;
+        }
+    } finally {
+        isOtpVerifying.value = false;
+    }
+};
+
+// Step 4: Actual withdrawal after OTP
+const processWithdrawal = async () => {
     isWithdrawing.value = true;
     try {
-        const res = await Axios.post('/api/withdrawals', {
-            amount: withdrawAmount.value
+        const res = await Axios.post("/api/withdrawals", {
+            amount: withdrawAmount.value,
         });
-        showToast(res.data.message, 'success');
+        showToast(res.data.message, "success");
         closeWithdrawModal();
         // Refresh data
         await getCurrentBalance();
         await fetchTransferTransactions();
     } catch (error) {
-        const message = error.response?.data?.message || 'Withdrawal failed';
-        showToast(message, 'error');
-        console.error('Withdrawal error:', error);
+        const message = error.response?.data?.message || "Withdrawal failed";
+        showToast(message, "error");
+        console.error("Withdrawal error:", error);
     } finally {
         isWithdrawing.value = false;
     }
 };
 
 // Show toast notification
-const showToast = (message, type = 'success') => {
+const showToast = (message, type = "success") => {
     toast.value = { show: true, message, type };
     setTimeout(() => {
         toast.value.show = false;
     }, 3000);
 };
- 
+
 const openWithdrawModal = () => {
     showWithdrawModal.value = true;
+    withdrawAmount.value = null;
+    withdrawError.value = null;
+    otpSent.value = false;
+    otpValue.value = "";
+    otpError.value = null;
 };
 
 const closeWithdrawModal = () => {
@@ -135,9 +200,9 @@ const closeWithdrawModal = () => {
     withdrawAmount.value = null;
     withdrawError.value = null;
 };
- 
+
 function onNextPage() {
-        if (currentPage.value == totalPages.value) return;
+    if (currentPage.value == totalPages.value) return;
 
     fetchTransferTransactions(currentPage.value + 1);
 }
@@ -151,13 +216,12 @@ function onPreviousPage() {
 function transferPerPage(amount) {
     rowsPerPage.value = amount;
     fetchTransferTransactions(currentPage.value);
-} 
+}
 
 function getMyBankInfo() {
-    Axios.get("/api/my-bank-info")
-        .then(res => {
-            myBakInfo.value = res.data.data; 
-        });
+    Axios.get("/api/my-bank-info").then((res) => {
+        myBakInfo.value = res.data.data;
+    });
 }
 
 onMounted(() => {
@@ -170,35 +234,133 @@ onMounted(() => {
 <template>
     <!-- Withdrawal Modal -->
     <transition name="fade">
-        <div v-if="showWithdrawModal"
-            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
+        <div
+            v-if="showWithdrawModal"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50"
+        >
             <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
-                <div class="flex justify-between items-center pb-4 mb-4 border-b">
-                    <h3 class="text-xl font-semibold text-gray-800">Transfer to Bank</h3>
-                    <button @click="closeWithdrawModal" class="text-gray-500 hover:text-gray-700">
+                <div
+                    class="flex justify-between items-center pb-4 mb-4 border-b"
+                >
+                    <h3 class="text-xl font-semibold text-gray-800">
+                        Transfer to Bank
+                    </h3>
+                    <button
+                        @click="closeWithdrawModal"
+                        class="text-gray-500 hover:text-gray-700"
+                    >
                         ✕
                     </button>
                 </div>
 
-                <form @submit.prevent="onWithdraw">
+                <form @submit.prevent="sendWithdrawalOtp">
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-medium mb-2">Amount (ETB)</label>
-                        <input v-model="withdrawAmount" type="number" placeholder="Enter amount"
+                        <label class="block text-gray-700 font-medium mb-2"
+                            >Amount (ETB)</label
+                        >
+                        <input
+                            v-model="withdrawAmount"
+                            type="number"
+                            placeholder="Enter amount"
                             class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-lime-500 focus:border-transparent"
-                            :class="{ 'border-red-500': withdrawError }" />
-                        <p v-if="withdrawError" class="mt-1 text-sm text-red-500">
+                            :class="{ 'border-red-500': withdrawError }"
+                        />
+                        <p
+                            v-if="withdrawError"
+                            class="mt-1 text-sm text-red-500"
+                        >
                             {{ withdrawError }}
                         </p>
                     </div>
 
                     <div class="flex justify-end space-x-3 pt-4">
-                        <button type="button" @click="closeWithdrawModal"
-                            class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition">
+                        <button
+                            type="button"
+                            @click="closeWithdrawModal"
+                            class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition"
+                        >
                             Cancel
                         </button>
-                        <button type="submit" :disabled="isWithdrawing"
-                            class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-70 transition">
-                            {{ isWithdrawing ? 'Processing...' : 'Withdraw' }}
+                        <button
+                            type="submit"
+                            :disabled="isOtpSending"
+                            class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-70 transition"
+                        >
+                            {{ isOtpSending ? "Sending OTP..." : "Continue" }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </transition>
+
+    <!-- OTP Modal -->
+    <transition name="fade">
+        <div
+            v-if="showOtpModal"
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50"
+        >
+            <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
+                <div
+                    class="flex justify-between items-center pb-4 mb-4 border-b"
+                >
+                    <h3 class="text-xl font-semibold text-gray-800">
+                        Enter OTP
+                    </h3>
+                    <button
+                        @click="
+                            () => {
+                                showOtpModal = false;
+                                otpValue = '';
+                                otpError = null;
+                            }
+                        "
+                        class="text-gray-500 hover:text-gray-700"
+                    >
+                        ✕
+                    </button>
+                </div>
+                <form @submit.prevent="verifyWithdrawalOtp">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-medium mb-2"
+                            >OTP Code</label
+                        >
+                        <input
+                            v-model="otpValue"
+                            type="text"
+                            maxlength="6"
+                            placeholder="Enter OTP"
+                            class="w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-lime-500 focus:border-transparent"
+                            :class="{ 'border-red-500': otpError }"
+                        />
+                        <p v-if="otpError" class="mt-1 text-sm text-red-500">
+                            {{ otpError }}
+                        </p>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button
+                            type="button"
+                            @click="
+                                () => {
+                                    showOtpModal = false;
+                                    otpValue = '';
+                                    otpError = null;
+                                }
+                            "
+                            class="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="isOtpVerifying"
+                            class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 disabled:opacity-70 transition"
+                        >
+                            {{
+                                isOtpVerifying
+                                    ? "Verifying..."
+                                    : "Verify & Withdraw"
+                            }}
                         </button>
                     </div>
                 </form>
@@ -208,14 +370,22 @@ onMounted(() => {
 
     <!-- Balance & Commission Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white p-6 col-span-1 rounded-lg shadow flex justify-between items-center">
+        <div
+            class="bg-white p-6 col-span-1 rounded-lg shadow flex justify-between items-center"
+        >
             <div>
                 <h3 class="text-sm text-gray-500">Current Balance</h3>
-                <p class="text-2xl font-bold mt-1">ETB {{ CurrentBalance ?? '--' }}</p>
-                <p class="text-sm text-gray-400 mt-2">Earnings update on product purchases</p>
+                <p class="text-2xl font-bold mt-1">
+                    ETB {{ CurrentBalance ?? "--" }}
+                </p>
+                <p class="text-sm text-gray-400 mt-2">
+                    Earnings update on product purchases
+                </p>
             </div>
-            <button @click="openWithdrawModal"
-                class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition">
+            <button
+                @click="openWithdrawModal"
+                class="px-4 py-2 bg-lime-600 text-white rounded-md hover:bg-lime-700 transition"
+            >
                 Withdraw
             </button>
         </div>
@@ -226,9 +396,14 @@ onMounted(() => {
     <!-- Transaction History -->
     <div class="bg-white p-6 rounded-lg shadow">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-gray-800">Transaction History</h2>
-            <button @click="fetchTransferTransactions"
-                class="flex items-center text-sm text-lime-600 hover:text-lime-700" :disabled="isLoading">
+            <h2 class="text-xl font-semibold text-gray-800">
+                Transaction History
+            </h2>
+            <button
+                @click="fetchTransferTransactions"
+                class="flex items-center text-sm text-lime-600 hover:text-lime-700"
+                :disabled="isLoading"
+            >
                 <span v-if="isLoading">Refreshing...</span>
                 <span v-else>Refresh ↻</span>
             </button>
@@ -238,53 +413,105 @@ onMounted(() => {
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction ID</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Deposit (ETB)</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Withdrawal (ETB)
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
+                            Transaction ID
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
+                            Deposit (ETB)
+                        </th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
+                            Withdrawal (ETB)
+                        </th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
+                            Status
+                        </th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                        >
+                            Date
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="payout in payouts" :key="payout.id" class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.reference }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.deposits || '--' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.withdrawals || '--' }}
+                    <tr
+                        v-for="payout in payouts"
+                        :key="payout.id"
+                        class="hover:bg-gray-50"
+                    >
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                            {{ payout.reference }}
+                        </td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                            {{ payout.deposits || "--" }}
+                        </td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                            {{ payout.withdrawals || "--" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span
-                                :class="`px-2 py-1 rounded-full text-xs font-medium ${payout.color || 'bg-gray-100 text-gray-800'}`">
+                                :class="`px-2 py-1 rounded-full text-xs font-medium ${payout.color || 'bg-gray-100 text-gray-800'}`"
+                            >
                                 {{ payout.status }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ payout.date }}</td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                            {{ payout.date }}
+                        </td>
                     </tr>
                     <tr v-if="payouts.length === 0">
-                        <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+                        <td
+                            colspan="5"
+                            class="px-6 py-4 text-center text-sm text-gray-500"
+                        >
                             No transactions found
                         </td>
                     </tr>
                 </tbody>
             </table>
 
-             <!-- Pagination Footer -->
-            <div class="p-4 bg-white flex flex-row items-center justify-between">
-               <Popper>
+            <!-- Pagination Footer -->
+            <div
+                class="p-4 bg-white flex flex-row items-center justify-between"
+            >
+                <Popper>
                     <div class="flex flex-row md:gap-2">
-                        <span class="hidden md:flex text-sm text-gray-600">rows per page:</span>
-                        <span class="text-sm font-medium">{{ rowsPerPage }}</span>
+                        <span class="hidden md:flex text-sm text-gray-600"
+                            >rows per page:</span
+                        >
+                        <span class="text-sm font-medium">{{
+                            rowsPerPage
+                        }}</span>
                         <i class="fa-solid fa-chevron-down text-lg"></i>
                     </div>
                     <template #content>
-                        <div v-for="option in rowsPerPageOptions" :key="option" @click="transferPerPage(option)"
+                        <div
+                            v-for="option in rowsPerPageOptions"
+                            :key="option"
+                            @click="transferPerPage(option)"
                             class="border w-32 block border-gray-200 rounded-md px-2 py-2 text-sm cursor-pointer transition-all duration-200"
                             :class="{
                                 'bg-gray-300 text-white font-bold':
                                     rowsPerPage === option,
                                 'bg-white text-gray-700 hover:bg-gray-200':
                                     rowsPerPage !== option,
-                            }">
+                            }"
+                        >
                             {{ option }}
                         </div>
                     </template>
@@ -292,8 +519,11 @@ onMounted(() => {
 
                 <!-- Pagination Controls -->
                 <div class="flex items-center space-x-3">
-                    <button @click="onPreviousPage()" :disabled="currentPage === 1"
-                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <button
+                        @click="onPreviousPage()"
+                        :disabled="currentPage === 1"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
                         Prev
                     </button>
 
@@ -301,8 +531,11 @@ onMounted(() => {
                         Page {{ currentPage }} of {{ totalPages }}
                     </span>
 
-                    <button @click="onNextPage()" :disabled="currentPage === totalPages"
-                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    <button
+                        @click="onNextPage()"
+                        :disabled="currentPage === totalPages"
+                        class="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
                         Next
                     </button>
                 </div>
@@ -312,8 +545,12 @@ onMounted(() => {
 
     <!-- Toast Notification -->
     <transition name="fade">
-        <div v-if="toast.show" :class="`fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-            }`">
+        <div
+            v-if="toast.show"
+            :class="`fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${
+                toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+            }`"
+        >
             {{ toast.message }}
         </div>
     </transition>

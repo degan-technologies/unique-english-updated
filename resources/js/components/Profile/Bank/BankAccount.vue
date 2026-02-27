@@ -3,10 +3,10 @@ import Axios from "axios";
 import { onMounted, ref } from "vue";
 
 const banklists = ref([]);
-const searchBanks = ref([]);
 const myBankInfo = ref(null);
 const isLoading = ref(false);
 const showPassword = ref(false);
+const showBankDropdown = ref(false);
 const errors = ref({
     full_name: "",
     account_number: "",
@@ -44,38 +44,25 @@ function getMyBankInfo() {
         });
 }
 
-function filterBanks(keyword) {
-    if (!keyword) {
-        searchBanks.value = [];
-        return;
-    }
-    searchBanks.value = banklists.value.filter((item) =>
-        item.name.toLowerCase().includes(keyword.toLowerCase())
+function selectBankFromDropdown() {
+    const selected = banklists.value.find(
+        (item) => item.name === bank.value.bank_name,
     );
-}
-
-function selectBank(selectedBank) {
-    const selected = banklists.value.find((item) => item.name === selectedBank);
     if (selected) {
-        bank.value.bank_name = selectedBank;
         bank.value.bank_code = selected.id;
-        searchBanks.value = [];
         errors.value.bank_name = "";
     }
 }
 
-function validateBank() {
-    if (!bank.value.bank_name) return;
+function toggleBankDropdown() {
+    showBankDropdown.value = !showBankDropdown.value;
+}
 
-    const match = banklists.value.find(
-        (item) => item.name === bank.value.bank_name
-    );
-    if (!match) {
-        errors.value.bank_name = "Please select a valid bank from the list";
-        bank.value.bank_name = "";
-        bank.value.bank_code = "";
-        searchBanks.value = [];
-    }
+function selectBankFromList(selectedBank) {
+    bank.value.bank_name = selectedBank.name;
+    bank.value.bank_code = selectedBank.id;
+    showBankDropdown.value = false;
+    errors.value.bank_name = "";
 }
 
 function validateForm() {
@@ -135,7 +122,7 @@ async function submitBankInfo() {
     } catch (error) {
         if (error.response?.data?.errors) {
             for (const [field, message] of Object.entries(
-                error.response.data.errors
+                error.response.data.errors,
             )) {
                 errors.value[field] = message[0];
             }
@@ -224,27 +211,79 @@ onMounted(() => {
                     Bank Name <span class="text-red-500">*</span>
                 </label>
                 <div class="relative">
-                    <input
-                        v-model="bank.bank_name"
-                        type="text"
-                        placeholder="Search your bank"
-                        @input="filterBanks(bank.bank_name)"
-                        @blur="validateBank"
-                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
-                        :class="{ 'border-red-500': errors.bank_name }"
-                        autocomplete="off"
-                    />
                     <div
-                        v-if="searchBanks.length"
-                        class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-y-auto"
+                        @click="toggleBankDropdown"
+                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 bg-white cursor-pointer flex items-center justify-between"
+                        :class="{
+                            'border-red-500': errors.bank_name,
+                            'ring-2 ring-lime-500': showBankDropdown,
+                        }"
+                    >
+                        <span
+                            :class="
+                                bank.bank_name
+                                    ? 'text-gray-900'
+                                    : 'text-gray-400'
+                            "
+                        >
+                            {{ bank.bank_name || "Select your bank" }}
+                        </span>
+                        <svg
+                            class="w-5 h-5 text-gray-400 transition-transform"
+                            :class="{ 'rotate-180': showBankDropdown }"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 9l-7 7-7-7"
+                            />
+                        </svg>
+                    </div>
+
+                    <!-- Custom Dropdown List -->
+                    <div
+                        v-if="showBankDropdown"
+                        class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-hidden"
                     >
                         <div
-                            v-for="bankItem in searchBanks"
-                            :key="bankItem.id"
-                            class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            @mousedown="selectBank(bankItem.name)"
+                            class="overflow-y-auto max-h-60 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
                         >
-                            {{ bankItem.name }}
+                            <div
+                                v-for="bankItem in banklists"
+                                :key="bankItem.id"
+                                @click="selectBankFromList(bankItem)"
+                                class="px-4 py-3 hover:bg-lime-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                                :class="{
+                                    'bg-lime-100':
+                                        bank.bank_name === bankItem.name,
+                                }"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-900">{{
+                                        bankItem.name
+                                    }}</span>
+                                    <span
+                                        v-if="bank.bank_name === bankItem.name"
+                                        class="text-lime-600"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path
+                                                fill-rule="evenodd"
+                                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                clip-rule="evenodd"
+                                            />
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -331,22 +370,28 @@ input:focus {
     animation: spin 1s linear infinite;
 }
 
-/* Scrollbar styling for bank dropdown */
-.scrollbar::-webkit-scrollbar {
-    width: 6px;
+/* Custom Scrollbar for bank dropdown */
+.scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
 }
 
-.scrollbar::-webkit-scrollbar-track {
+.scrollbar-thin::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 10px;
 }
 
-.scrollbar::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #d1d5db;
     border-radius: 10px;
 }
 
-.scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Firefox scrollbar */
+.scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f1f1f1;
 }
 </style>

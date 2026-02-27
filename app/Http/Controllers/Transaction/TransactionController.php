@@ -24,6 +24,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
+use App\Mail\WithdrawalOtpMail;
+use Illuminate\Support\Facades\Mail;
 
 class TransactionController extends Controller
 {
@@ -36,6 +38,82 @@ class TransactionController extends Controller
     {
         $this->langService = $langService;
         $this->chapaService = $chapaService;
+    }
+
+
+    // Withdrawal OTP logic
+    public function sendWithdrawalOTP(Request $request)
+    {
+        $user = Auth::user();
+        $key = 'withdrawal_otp_' . $user->id;
+        $attemptKey = 'withdrawal_otp_attempts_' . $user->id;
+        $rateKey = 'withdrawal_otp_rate_' . $user->id;
+
+        // Rate limit: 1 per minute
+        if (cache()->has($rateKey)) {
+            return response()->json(['message' => 'OTP already sent. Please wait before requesting again.'], 429);
+        }
+
+        $otp = rand(100000, 999999);
+        $expiresAt = now()->addMinutes(5);
+        cache()->put($key, [
+            'otp' => $otp,
+            'expires_at' => $expiresAt,
+        ], 300);
+        cache()->put($attemptKey, 0, 300);
+        cache()->put($rateKey, true, 60);
+
+        // Send OTP via email
+        try {
+            Mail::to($user->email)->send(new WithdrawalOtpMail($otp));
+        } catch (\Exception $e) {
+            Log::error('Failed to send withdrawal OTP email', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+        }
+        Log::info('Withdrawal OTP sent', ['user_id' => $user->id, 'otp' => $otp]);
+
+        return response()->json(['message' => 'OTP sent successfully.'], 200);
+    }
+
+    public function verifyWithdrawalOTP(Request $request)
+    {
+        $user = Auth::user();
+        $key = 'withdrawal_otp_' . $user->id;
+        $attemptKey = 'withdrawal_otp_attempts_' . $user->id;
+
+        $otpData = cache()->get($key);
+        $attempts = cache()->get($attemptKey, 0);
+
+        if (!$otpData) {
+            return response()->json(['message' => 'OTP expired or not found.'], 400);
+        }
+
+        if ($attempts >= 3) {
+            cache()->forget($key);
+            cache()->forget($attemptKey);
+            Log::warning('Withdrawal OTP max attempts reached', ['user_id' => $user->id]);
+            return response()->json(['message' => 'Maximum attempts reached. Please request a new OTP.'], 403);
+        }
+
+        if (now()->gt($otpData['expires_at'])) {
+            cache()->forget($key);
+            cache()->forget($attemptKey);
+            Log::warning('Withdrawal OTP expired', ['user_id' => $user->id]);
+            return response()->json(['message' => 'OTP expired. Please request a new OTP.'], 400);
+        }
+
+        if ($request->otp != $otpData['otp']) {
+            cache()->increment($attemptKey);
+            Log::warning('Withdrawal OTP incorrect', ['user_id' => $user->id, 'attempt' => $attempts + 1]);
+            return response()->json(['message' => 'Incorrect OTP.'], 401);
+        }
+
+        // OTP valid, clear cache
+        cache()->forget($key);
+        cache()->forget($attemptKey);
+        Log::info('Withdrawal OTP verified', ['user_id' => $user->id]);
+
+        // Proceed with withdrawal (frontend should call /withdrawals after OTP success)
+        return response()->json(['message' => 'OTP verified. Proceed with withdrawal.'], 200);
     }
 
     public function handleTransferApproval(Request $request)

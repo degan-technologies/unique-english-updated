@@ -28,6 +28,7 @@ const {
     schedule,
     attendance,
     messaging,
+    blogs,
 } = storeToRefs(sidebarStore);
 
 const mainItems = [
@@ -95,6 +96,14 @@ const mainItems = [
         description: "Send & manage messages.",
         icon: "envelope",
         role: "systemAdmin",
+    },
+    {
+        label: "Blogs",
+        route: blogs.value,
+        description: "Post & manage Posts",
+        icon: "newspaper",
+        role: "systemAdmin",
+
     },
     {
         label: "Settings ",

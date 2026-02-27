@@ -5,8 +5,8 @@ import { useAppStore } from '@/store/useAppStore'
 
 export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
-    const sidebarCollapsed = ref(false); 
-    
+    const sidebarCollapsed = ref(false);
+
     const appStore = useAppStore();
     const { authUser } = storeToRefs(appStore);
 
@@ -20,6 +20,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const messaging = ref("messaging");
     const schedule=ref("schedule");
     const attendance = ref("attendance");
+    const blogs = ref("blogs");
     const selectedContent = ref( authUser?.value?.role === 'systemAdmin' ?  dashboard.value : courses.value);
 
     function loadSidebarState() {
@@ -82,5 +83,6 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         schedule,
         attendance,
         messaging,
+        blogs,
     };
 });

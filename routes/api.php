@@ -34,6 +34,10 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Notifications\EmailNotificationController;
 use App\Http\Controllers\System\HeroController;
 use App\Http\Middleware\EnsureSignature;
+// Blog Routes
+use App\Http\Controllers\Blog\BlogPostController;
+use App\Http\Controllers\Blog\BlogCategoryController;
+use App\Http\Controllers\Blog\BlogTagController;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
@@ -56,11 +60,11 @@ Route::get('/stream/video/{filename}', [CourseContentVideoController::class, 'st
 
 Route::middleware('auth:api')
     ->group(function () {
-        Route::post('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream'])
+        Route::get('/coursecontent/stream/pdf-stream/{filename}', [BookVideoController::class, 'contentPdfStream'])
             ->name('stream.pdf')
             ->middleware(EnsureSignature::class);
 
-        Route::post('/book/pdf-stream/{filename}', [BookVideoController::class, 'bookPdfStream'])
+        Route::get('/book/pdf-stream/{filename}', [BookVideoController::class, 'bookPdfStream'])
             ->name('book.pdf')
             ->middleware(EnsureSignature::class);
 
@@ -179,7 +183,7 @@ Route::middleware('auth:api')
 
 Route::get('/feedbacks/course/{slug}', [FeedBackController::class, 'getFeedbacksByCourse']);
 
-// SMS endpoints added here 
+// SMS endpoints added here
 Route::middleware('auth:api')->group(function () {
     Route::post('/send-sms', [SMSController::class, 'sendSMS']);
     Route::post('/send-bulk-sms', [SMSController::class, 'sendBulkSMS']);
@@ -226,6 +230,10 @@ Route::middleware('auth:api')
         Route::post('/chapa/transfer/approval', [TransactionController::class, 'handleTransferApproval'])
             ->name('chapa.transfer.callback');
 
+        // OTP endpoints for withdrawal confirmation
+        Route::post('/withdrawal/send-otp', [TransactionController::class, 'sendWithdrawalOTP'])->middleware('throttle:1,1');
+        Route::post('/withdrawal/verify-otp', [TransactionController::class, 'verifyWithdrawalOTP']);
+
         Route::get('/get-comission', [PlatformComissionController::class, 'getComission']);
         Route::post('/change-comission', [PlatformComissionController::class, 'store']);
     });
@@ -264,3 +272,27 @@ Route::middleware('auth:api')
         Route::get('/instructors/export', [UserController::class, 'exportInstructors']);
         Route::get('/students/export', [UserController::class, 'exportStudents']);
     });
+
+
+Route::prefix('blog')->group(function () {
+    // Public routes
+    Route::get('/posts', [BlogPostController::class, 'index']);
+    Route::get('/posts/{slug}', [BlogPostController::class, 'show']);
+    Route::get('/categories', [BlogCategoryController::class, 'index']);
+    Route::get('/tags', [BlogTagController::class, 'index']);
+
+    // Protected routes (require authentication)
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/posts', [BlogPostController::class, 'store']);
+        Route::put('/posts/{post}', [BlogPostController::class, 'update']);
+        Route::delete('/posts/{post}', [BlogPostController::class, 'destroy']);
+
+        Route::post('/categories', [BlogCategoryController::class, 'store']);
+        Route::put('/categories/{category}', [BlogCategoryController::class, 'update']);
+        Route::delete('/categories/{category}', [BlogCategoryController::class, 'destroy']);
+
+        Route::post('/tags', [BlogTagController::class, 'store']);
+        Route::put('/tags/{tag}', [BlogTagController::class, 'update']);
+        Route::delete('/tags/{tag}', [BlogTagController::class, 'destroy']);
+    });
+});
