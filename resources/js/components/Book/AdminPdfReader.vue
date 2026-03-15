@@ -1,24 +1,23 @@
 <script setup>
-import { storeToRefs } from "pinia";
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
+import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import Spinner from "@/components/Layout/Spinner.vue";
 
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore } from "@/store/useAppStore";
 const appStore = useAppStore();
-const { authToken } = storeToRefs(appStore);
+// authToken removed — authentication is handled via HttpOnly cookie (credentials: 'include')
 
 GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
+    "pdfjs-dist/build/pdf.worker.min.mjs",
+    import.meta.url,
 ).toString();
 
 const props = defineProps({
     selectedBook: {
         type: Object,
-        required: true
-    }
+        required: true,
+    },
 });
 
 const canvasRef = ref(null);
@@ -30,22 +29,21 @@ const scale = ref(1);
 const openPdf = ref(false);
 const isFullScreen = ref(false);
 const searchPage = ref("");
- 
+
 async function loadPdf() {
     if (!props.selectedBook || !props.selectedBook?.file_url) return;
 
     try {
         const response = await fetch(`/api${props.selectedBook?.file_url}`, {
-            method: 'POST',
+            method: "POST",
+            credentials: "include", // Send HttpOnly authToken cookie automatically
             headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken.value}`,
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                filename: props.selectedBook?.file_url,  
+                filename: props.selectedBook?.file_url,
             }),
         });
-
 
         if (!response.ok) throw new Error("Failed to load PDF");
 
@@ -97,13 +95,20 @@ const prevPage = async () => {
 
 const goToPage = async () => {
     const pageNumber = parseInt(searchPage.value);
-    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages.value) {
+    if (
+        !isNaN(pageNumber) &&
+        pageNumber >= 1 &&
+        pageNumber <= totalPages.value
+    ) {
         currentPage.value = pageNumber;
         await renderPage(pageNumber);
     } else {
-        alert("Invalid page number. Please enter a number between 1 and " + totalPages.value);
+        alert(
+            "Invalid page number. Please enter a number between 1 and " +
+                totalPages.value,
+        );
     }
-}; 
+};
 
 const preventCopy = (event) => {
     event.preventDefault();
@@ -124,7 +129,12 @@ const preventCtrlP = (event) => {
 };
 
 const preventWinShiftS = (event) => {
-    if (event.key.toLowerCase() === "s" && event.shiftKey && event.metaKey === false && event.ctrlKey === false) {
+    if (
+        event.key.toLowerCase() === "s" &&
+        event.shiftKey &&
+        event.metaKey === false &&
+        event.ctrlKey === false
+    ) {
         event.preventDefault();
         alert("Screen snipping is disabled.");
     }
@@ -151,7 +161,6 @@ onMounted(() => {
     document.addEventListener("keydown", preventPrintScreen);
     document.addEventListener("keydown", preventCtrlP);
     document.addEventListener("keydown", preventWinShiftS);
-
 });
 
 onBeforeUnmount(() => {
@@ -161,21 +170,25 @@ onBeforeUnmount(() => {
     document.removeEventListener("keydown", preventWinShiftS);
     window.onbeforeprint = null;
     window.onafterprint = null;
-
 });
 
-watch(() => props.selectedBook, (newVal) => {
-    if (newVal && newVal.file_url) {
-        loadPdf();
-    }
-}, { immediate: true });
+watch(
+    () => props.selectedBook,
+    (newVal) => {
+        if (newVal && newVal.file_url) {
+            loadPdf();
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
-    <div v-if="openPdf"
-        class="relative flex-col bg-white w-full rounded-lg  h-fit flex items-center justify-center">
-        <div ref="containerRef" 
-            class="w-full rounded-lg">
+    <div
+        v-if="openPdf"
+        class="relative flex-col bg-white w-full rounded-lg h-fit flex items-center justify-center"
+    >
+        <div ref="containerRef" class="w-full rounded-lg">
             <div class="relative w-full pt-[141.42%]">
                 <canvas
                     ref="canvasRef"
@@ -183,17 +196,22 @@ watch(() => props.selectedBook, (newVal) => {
                     @contextmenu.prevent
                     @dragstart.prevent
                 ></canvas>
-                </div>
+            </div>
 
             <!-- Pagination & Controls -->
-            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+            <div
+                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
+            >
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button @click="prevPage"
+                    <button
+                        @click="prevPage"
                         :disabled="currentPage === 1"
-                        class="px-2 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
+                        class="px-2 py-2 bg-white rounded text-black disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-left"></i>
                         <span
-                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition"
+                        >
                             Previous
                         </span>
                     </button>
@@ -202,36 +220,42 @@ watch(() => props.selectedBook, (newVal) => {
                         Page {{ currentPage }} / {{ totalPages }}
                     </span>
 
-                    <button @click="nextPage"
+                    <button
+                        @click="nextPage"
                         :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-white rounded text-black disabled:opacity-50 relative group">
+                        class="px-4 py-2 bg-white rounded text-black disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-right"></i>
                         <span
-                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition"
+                        >
                             Next
                         </span>
                     </button>
                 </div>
                 <div class="flex items-center gap-2">
-                    <input type="number"
+                    <input
+                        type="number"
                         v-model="searchPage"
                         placeholder="Page #"
-                        class="px-2 py-1 border border-gray-500 rounded w-24" />
-                    <button @click="goToPage"
-                        class="px-2 py-1 bg-white rounded text-black relative group">
+                        class="px-2 py-1 border border-gray-500 rounded w-24"
+                    />
+                    <button
+                        @click="goToPage"
+                        class="px-2 py-1 bg-white rounded text-black relative group"
+                    >
                         <i class="fas fa-search"></i>
                         <span
-                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition">
+                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-gray-700 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition"
+                        >
                             Go to Page
                         </span>
                     </button>
-                </div> 
+                </div>
             </div>
-
         </div>
     </div>
-    <div v-else
-        class="p-4">
+    <div v-else class="p-4">
         <Spinner />
     </div>
 </template>

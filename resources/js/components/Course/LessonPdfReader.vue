@@ -1,18 +1,17 @@
 <script setup>
-import { storeToRefs } from "pinia";
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import Spinner from "@/components/Layout/Spinner.vue";
 
 GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
+    import.meta.url,
 ).toString();
 
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore } from "@/store/useAppStore";
 const appStore = useAppStore();
-const { authToken } = storeToRefs(appStore);
+// authToken removed — authentication is handled via HttpOnly cookie (credentials: 'include')
 
 const props = defineProps({
     selectedLesson: {
@@ -34,16 +33,19 @@ async function loadPdf() {
     if (!props.selectedLesson?.course_content_url) return;
 
     try {
-        const response = await fetch(`/api${props.selectedLesson?.course_content_url}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken.value}`,
+        const response = await fetch(
+            `/api${props.selectedLesson?.course_content_url}`,
+            {
+                method: "POST",
+                credentials: "include", // Send HttpOnly authToken cookie automatically
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    filename: props.selectedLesson.content_url,
+                }),
             },
-            body: JSON.stringify({
-                filename: props.selectedLesson.content_url,  
-            }),
-        });
+        );
 
         if (!response.ok) throw new Error("Failed to load PDF");
 
@@ -58,7 +60,6 @@ async function loadPdf() {
         console.error("PDF Load Error:", err);
     }
 }
-
 
 async function renderPage(pageNumber) {
     if (!pdfDoc) return;
@@ -159,7 +160,7 @@ watch(
     (newLesson) => {
         if (newLesson?.content_type === 2) loadPdf();
     },
-    { immediate: true }
+    { immediate: true },
 );
 </script>
 
@@ -168,18 +169,29 @@ watch(
         <Spinner />
     </div>
     <div v-else class="relative flex flex-col items-center p-4 h-fit">
-        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
+        <div
+            ref="containerRef"
+            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
+            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg"
+        >
             <div class="overflow-auto">
-                <canvas ref="canvasRef"
+                <canvas
+                    ref="canvasRef"
                     class="w-full max-w-full h-auto object-contain shadow-lg border rounded-lg select-none"
-                    @contextmenu.prevent @dragstart.prevent></canvas>
-            </div> 
-            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                    @contextmenu.prevent
+                    @dragstart.prevent
+                ></canvas>
+            </div>
+            <div
+                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
+            >
                 <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button @click="prevPage" :disabled="currentPage === 1"
-                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group">
+                    <button
+                        @click="prevPage"
+                        :disabled="currentPage === 1"
+                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-left text-balck"></i>
                     </button>
 
@@ -187,19 +199,30 @@ watch(
                         {{ currentPage }} / {{ totalPages }}
                     </span>
 
-                    <button @click="nextPage" :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group">
+                    <button
+                        @click="nextPage"
+                        :disabled="currentPage === totalPages"
+                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-right text-black"></i>
                     </button>
                 </div>
 
                 <!-- Search Input -->
                 <div class="flex items-center gap-2">
-                    <input type="number" v-model="searchPage" placeholder="Go to page"
-                        class="px-2 py-1 border border-gray-500 rounded w-24" @keyup.enter="goToPage" />
-                    <button @click="goToPage" class="px-3 py-1 bg-slate-50 text-black rounded relative group">
+                    <input
+                        type="number"
+                        v-model="searchPage"
+                        placeholder="Go to page"
+                        class="px-2 py-1 border border-gray-500 rounded w-24"
+                        @keyup.enter="goToPage"
+                    />
+                    <button
+                        @click="goToPage"
+                        class="px-3 py-1 bg-slate-50 text-black rounded relative group"
+                    >
                         <i class="fas fa-search"></i>
-                    </button> 
+                    </button>
                 </div>
             </div>
         </div>

@@ -22,7 +22,7 @@ const fetchPosts = async (page = 1) => {
     loading.value = true;
     try {
         const params = {
-            per_page: 6,
+            per_page: 3,
             page: page,
         };
         if (selectedCategory.value) {
@@ -142,69 +142,91 @@ watch(
 );
 </script>
 <template>
-    <div class="blog-list min-h-screen bg-white pt-10">
+    <div class="blog-list min-h-screen bg-white">
         <!-- Blog List Anchor for Scroll -->
         <div ref="blogListSection"></div>
-        <!-- Header Section -->
-        <div class="bg-white border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-6 py-6">
-                <div class="text-center mb-8">
-                    <h1
-                        class="text-4xl md:text-5xl font-bold text-gray-900 mb-4"
+
+        <!-- ── Hero Section ── -->
+        <div
+            class="hero-section relative overflow-hidden pt-20 pb-10 text-center"
+        >
+            <div class="relative z-10 max-w-3xl mx-auto px-6">
+                <!-- Badge -->
+                <div
+                    class="inline-flex items-center gap-2 bg-lime-500 text-white text-sm font-semibold px-5 py-2 rounded-full mb-6 shadow-sm"
+                >
+                    <svg
+                        class="w-4 h-4"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
                     >
-                        Learn & Grow
-                    </h1>
-                    <p
-                        class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
-                    >
-                        Expert insights and practical tips to master English
-                        faster
-                    </p>
+                        <path
+                            d="M12 2l1.8 5.4H19l-4.5 3.3 1.7 5.3L12 13l-4.2 3 1.7-5.3L5 7.4h5.2z"
+                        />
+                    </svg>
+                    Your Learning Journey
                 </div>
 
-                <!-- Category Filter Carousel -->
-                <div class="relative">
-                    <!-- Tag Filter Indicator -->
-                    <div
-                        v-if="selectedTag"
-                        class="mb-4 flex items-center gap-2"
-                    >
-                        <span class="text-sm text-gray-600"
-                            >Filtering by tag:</span
-                        >
-                        <span
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold"
-                        >
-                            {{ selectedTag }}
-                            <button
-                                @click="clearTagFilter"
-                                class="hover:bg-lime-200 rounded-full p-0.5 transition-colors"
-                            >
-                                <svg
-                                    class="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
-                        </span>
-                    </div>
+                <!-- Heading -->
+                <h1
+                    class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-5 leading-tight"
+                >
+                    Learn &amp; Grow
+                </h1>
 
-                    <!-- Left Scroll Button -->
+                <!-- Subtitle -->
+                <p
+                    class="text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto"
+                >
+                    Expert insights and practical tips to master English faster.
+                    Explore articles crafted by language professionals.
+                </p>
+            </div>
+        </div>
+
+        <!-- ── Category Filter Bar ── -->
+        <div
+            class="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm"
+        >
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <!-- Tag filter indicator -->
+                <div v-if="selectedTag" class="mb-3 flex items-center gap-2">
+                    <span class="text-sm text-gray-500">Filtering by tag:</span>
+                    <span
+                        class="inline-flex items-center gap-2 px-4 py-1.5 bg-lime-100 text-lime-800 rounded-full text-sm font-semibold"
+                    >
+                        {{ selectedTag }}
+                        <button
+                            @click="clearTagFilter"
+                            class="hover:bg-lime-200 rounded-full p-0.5 transition-colors"
+                        >
+                            <svg
+                                class="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                    </span>
+                </div>
+
+                <!-- Carousel wrapper -->
+                <div class="relative flex items-center gap-2">
+                    <!-- Left arrow -->
                     <button
                         v-if="showLeftScroll"
                         @click="scrollCategories('left')"
-                        class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border-2 border-gray-200 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+                        class="flex-shrink-0 w-9 h-9 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
                     >
                         <svg
-                            class="w-5 h-5 text-gray-700"
+                            class="w-4 h-4 text-gray-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -218,26 +240,28 @@ watch(
                         </svg>
                     </button>
 
+                    <!-- Pills -->
                     <div
                         ref="categoryScroll"
                         @scroll="checkScroll"
-                        class="overflow-x-auto scrollbar-hide"
+                        class="overflow-x-auto scrollbar-hide flex-1"
                     >
-                        <div class="flex gap-3 p-2 min-w-max">
+                        <div class="flex gap-2.5 py-1 min-w-max">
                             <button
                                 @click="
                                     selectedCategory = null;
                                     fetchPosts(1);
                                 "
                                 :class="[
-                                    'px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap',
+                                    'px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap border',
                                     !selectedCategory
-                                        ? 'bg-gray-900 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                        ? 'bg-lime-500 text-white border-lime-500 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-lime-400 hover:text-lime-600',
                                 ]"
                             >
                                 All
                             </button>
+
                             <button
                                 v-for="category in categories"
                                 :key="category.id"
@@ -246,10 +270,10 @@ watch(
                                     fetchPosts(1);
                                 "
                                 :class="[
-                                    'px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap',
+                                    'px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 whitespace-nowrap border',
                                     selectedCategory === category.slug
-                                        ? 'bg-gray-900 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                                        ? 'bg-lime-500 text-white border-lime-500 shadow-sm'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-lime-400 hover:text-lime-600',
                                 ]"
                             >
                                 {{ category.name }}
@@ -257,14 +281,14 @@ watch(
                         </div>
                     </div>
 
-                    <!-- Right Scroll Button -->
+                    <!-- Right arrow -->
                     <button
                         v-if="showRightScroll"
                         @click="scrollCategories('right')"
-                        class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-white border-2 border-gray-200 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+                        class="flex-shrink-0 w-9 h-9 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors shadow-sm"
                     >
                         <svg
-                            class="w-5 h-5 text-gray-700"
+                            class="w-4 h-4 text-gray-600"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -281,48 +305,49 @@ watch(
             </div>
         </div>
 
-        <div class="max-w-7xl mx-auto px-6 py-16">
-            <!-- Loading State -->
-            <div v-if="loading" class="flex justify-center py-20">
+        <!-- ── Posts Grid ── -->
+        <div class="max-w-7xl mx-auto px-6 py-14">
+            <!-- Loading -->
+            <div v-if="loading" class="flex justify-center py-24">
                 <div class="text-center">
                     <div
                         class="inline-flex items-center justify-center w-16 h-16 bg-lime-50 rounded-full mb-4"
                     >
                         <div
-                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-600"
+                            class="animate-spin rounded-full h-8 w-8 border-b-2 border-lime-500"
                         ></div>
                     </div>
-                    <p class="text-gray-600 font-medium">Loading articles...</p>
+                    <p class="text-gray-500 font-medium">Loading articles…</p>
                 </div>
             </div>
 
-            <!-- Blog Posts Grid -->
+            <!-- Grid -->
             <div
                 v-else-if="posts.length"
-                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-14"
             >
                 <article
                     v-for="post in posts"
                     :key="post.id"
                     @click="viewPost(post.slug)"
-                    class="group cursor-pointer bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-300"
+                    class="group cursor-pointer bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-gray-300 transition-all duration-300 flex flex-col"
                 >
-                    <!-- Featured Image -->
+                    <!-- Image -->
                     <div
-                        class="relative h-48 mb-6 overflow-hidden rounded-xl bg-gray-100 -mx-6 -mt-6 mb-6"
+                        class="relative h-52 overflow-hidden bg-gray-100 flex-shrink-0"
                     >
                         <img
                             v-if="post.featured_image"
                             :src="post.featured_image"
                             :alt="post.title"
-                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                         <div
                             v-else
-                            class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100"
+                            class="w-full h-full flex items-center justify-center bg-gradient-to-br from-lime-50 to-green-100"
                         >
                             <svg
-                                class="w-12 h-12 text-lime-400"
+                                class="w-14 h-14 text-lime-300"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -335,88 +360,118 @@ watch(
                                 />
                             </svg>
                         </div>
-                        <!-- Category Badge -->
-                        <div class="absolute top-4 left-4">
-                            <span
-                                class="bg-white/90 backdrop-blur-sm text-lime-700 px-3 py-1.5 rounded-full text-xs font-semibold"
-                            >
-                                {{ post.category.name }}
-                            </span>
-                        </div>
+                        <!-- Category badge on image -->
+                        <span
+                            class="absolute top-3 left-3 bg-lime-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow"
+                        >
+                            {{ post.category.name }}
+                        </span>
                     </div>
 
-                    <!-- Content -->
-                    <div>
-                        <!-- Meta Info -->
+                    <!-- Card body -->
+                    <div class="flex flex-col flex-1 p-6">
+                        <!-- Meta row: date + read time -->
                         <div
                             class="flex items-center gap-4 text-xs text-gray-500 mb-3"
                         >
-                            <span>{{ formatDate(post.created_at) }}</span>
+                            <span class="flex items-center gap-1">
+                                <svg
+                                    class="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                    />
+                                </svg>
+                                {{ formatDate(post.created_at) }}
+                            </span>
+                            <span
+                                v-if="post.reading_time"
+                                class="flex items-center gap-1"
+                            >
+                                <svg
+                                    class="w-3.5 h-3.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                </svg>
+                                {{ post.reading_time }} min read
+                            </span>
                         </div>
 
                         <!-- Title -->
                         <h3
-                            class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-lime-600 transition-colors leading-tight"
+                            class="text-lg font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-lime-600 transition-colors leading-snug"
                         >
                             {{ post.title }}
                         </h3>
 
                         <!-- Excerpt -->
                         <p
-                            class="text-gray-600 text-sm line-clamp-3 mb-4 leading-relaxed"
+                            class="text-gray-500 text-sm line-clamp-3 leading-relaxed flex-1 mb-4"
                         >
                             {{
                                 post.excerpt ||
-                                stripHtml(post.content).substring(0, 120) +
-                                    "..."
+                                stripHtml(post.content).substring(0, 130) + "…"
                             }}
                         </p>
 
-                        <!-- Tags -->
+                        <!-- Footer: tags + read more -->
                         <div
-                            v-if="post.tags.length"
-                            class="flex flex-wrap gap-2 mb-4"
+                            class="flex items-center justify-between mt-auto pt-3 border-t border-gray-100"
                         >
+                            <div class="flex flex-wrap gap-1.5">
+                                <span
+                                    v-for="tag in post.tags.slice(0, 2)"
+                                    :key="tag.id"
+                                    class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium"
+                                >
+                                    {{ tag.name }}
+                                </span>
+                            </div>
                             <span
-                                v-for="tag in post.tags.slice(0, 2)"
-                                :key="tag.id"
-                                class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full"
+                                class="inline-flex items-center gap-1 text-lime-600 font-semibold text-sm whitespace-nowrap group-hover:gap-2 transition-all"
                             >
-                                {{ tag.name }}
+                                Read More
+                                <svg
+                                    class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M9 5l7 7-7 7"
+                                    />
+                                </svg>
                             </span>
-                        </div>
-
-                        <!-- Read More -->
-                        <div
-                            class="flex items-center text-lime-600 font-semibold text-sm group-hover:gap-2 transition-all"
-                        >
-                            Read More
-                            <svg
-                                class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 5l7 7-7 7"
-                                />
-                            </svg>
                         </div>
                     </div>
                 </article>
             </div>
 
             <!-- Empty State -->
-            <div v-else class="text-center py-20">
+            <div v-else class="text-center py-24">
                 <div class="max-w-md mx-auto">
                     <div
-                        class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6"
+                        class="w-20 h-20 bg-lime-50 rounded-full flex items-center justify-center mx-auto mb-6"
                     >
                         <svg
-                            class="w-10 h-10 text-gray-400"
+                            class="w-10 h-10 text-lime-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -432,25 +487,25 @@ watch(
                     <h3 class="text-2xl font-bold text-gray-900 mb-2">
                         No articles yet
                     </h3>
-                    <p class="text-gray-600">
+                    <p class="text-gray-500">
                         We're working on creating amazing content for you. Check
                         back soon!
                     </p>
                 </div>
             </div>
 
-            <!-- Responsive Pagination Carousel -->
+            <!-- Pagination -->
             <div
                 v-if="posts.length && totalPages > 1"
-                class="flex flex-wrap justify-center items-center gap-2 py-4"
+                class="flex justify-center items-center gap-2 pt-4"
             >
                 <button
                     @click="fetchPosts(currentPage - 1)"
                     :disabled="currentPage === 1"
-                    class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-gray-300 rounded-full hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                     <svg
-                        class="w-5 h-5 inline mr-1"
+                        class="w-4 h-4 text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -463,22 +518,21 @@ watch(
                         />
                     </svg>
                 </button>
+
                 <button
-                    :class="[
-                        'px-4 py-2 rounded-lg transition-colors font-medium',
-                        'bg-lime-600 text-white',
-                    ]"
+                    class="w-9 h-9 flex items-center justify-center bg-lime-500 text-white rounded-full font-bold text-sm shadow-sm cursor-default select-none"
                     disabled
                 >
                     {{ currentPage }}
                 </button>
+
                 <button
                     @click="fetchPosts(currentPage + 1)"
                     :disabled="currentPage === totalPages"
-                    class="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    class="w-9 h-9 flex items-center justify-center bg-white border border-gray-300 rounded-full hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                     <svg
-                        class="w-5 h-5 inline ml-1"
+                        class="w-4 h-4 text-gray-600"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -497,30 +551,31 @@ watch(
 </template>
 
 <style scoped>
+/* ── Hero blobs ── */
+.hero-section {
+    background-color: white;
+}
+
+/* ── Utilities ── */
 .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-
 .line-clamp-3 {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
-
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
-
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
-
-/* Smooth scrolling */
 .overflow-x-auto {
     scroll-behavior: smooth;
 }

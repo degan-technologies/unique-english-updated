@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
@@ -114,13 +115,45 @@ class AuthController extends Controller
         // Complete login for phone users or verified email users
         $user->save();
 
-        $token = $user->createToken('AuthToken')->accessToken;
-        $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
+        $rememberMe = (bool) $request->input('remember_me', false);
+        $minutesUntilExpiry = $rememberMe ? (60 * 24 * 30) : 60; // 30 days or 60 minutes
+
+        // Capture the full token result so we can expose the expiry time.
+        // The raw token string still goes only into the HttpOnly cookie — never
+        // the response body. But we CAN safely tell the frontend *when* the
+        // Passport token expires so it can schedule a proactive logout timer.
+        $tokenResult  = $user->createToken('AuthToken');
+        $token        = $tokenResult->accessToken;
+        $expiresAt    = $tokenResult->token->expires_at->toIso8601String();
+
+        // Store token ONLY in an HttpOnly cookie — never expose it to JavaScript.
+        // httpOnly: true  → JS cannot read this cookie (XSS-safe)
+        // secure: true    → only sent over HTTPS
+        // sameSite: Strict → sent only on same-site requests (CSRF-safe)
+        // secure: only force HTTPS in production — allows HTTP on localhost/dev.
+        // httpOnly: true always — JS must never read the token.
+        // sameSite: 'Strict' for CSRF protection; relax to 'Lax' if needed for OAuth flows.
+        $isSecure = app()->environment('production');
+
+        $cookie = Cookie::make(
+            'authToken',
+            $token,
+            $minutesUntilExpiry,
+            '/',
+            null,
+            $isSecure, // secure: true in production, false in local/dev
+            true,      // httpOnly: always true — JS cannot read the token
+            false,     // raw
+            'Strict'   // sameSite
+        );
+
         $this->adminActivities('login');
 
+        // Return the expires_at so the frontend can schedule a proactive logout
+        // timer. The actual token is NOT in the body — only in the HttpOnly cookie.
         return response()->json([
-            'message' => 'Login successful',
-            'token' => $token
+            'message'    => 'Login successful',
+            'expires_at' => $expiresAt,
         ])->withCookie($cookie);
     }
 
@@ -131,16 +164,8 @@ class AuthController extends Controller
      */
     public function currentUser(Request $request)
     {
-        // If no Authorization header, set it from the authToken cookie
-        if (!$request->hasHeader('Authorization')) {
-            $token = Cookie::get('authToken');
-            if ($token) {
-                $request->headers->set('Authorization', 'Bearer ' . $token);
-            } else {
-                return response()->json(['message' => 'Unauthorized'], 401);
-            }
-        }
-
+        // InjectBearerTokenFromCookie middleware already handled the cookie → header
+        // injection before this controller runs, so we just check auth normally.
         $user = Auth::guard('api')->user();
 
         if (!$user) {
@@ -155,7 +180,10 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->token()->revoke();
+        // Revoke the Passport access token server-side
+        $request->user('api')?->token()?->revoke();
+
+        // Expire the HttpOnly cookie immediately
         $cookie = Cookie::forget('authToken');
 
         $this->adminActivities('logout');
@@ -188,21 +216,32 @@ class AuthController extends Controller
             ->where('email', $request->email)
             ->first();
 
-        $user->otp = $otp;
-        $user->otp_expires_at = Carbon::now()->addMinutes(10);
-        $user->otp_attempts = 0;
-
-        $user->save();
-
         if (!$user) {
             return response()->json([
                 'message' => $this->langService->getLang('user_not_found')
             ], 404);
         }
 
+        $user->otp = $otp;
+        $user->otp_expires_at = Carbon::now()->addMinutes(10);
+        $user->otp_attempts = 0;
+
+        $user->save();
+
         $supportUrl = url('/support');
 
-        Mail::to($user->email)->send(new PasswordResetOTPMail($otp, $user->first_name, $supportUrl));
+        try {
+            Mail::to($user->email)->send(new PasswordResetOTPMail($otp, $user->first_name, $supportUrl));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send password reset OTP email.', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Unable to send reset email right now. Please try again later.'
+            ], 500);
+        }
 
         return response()->json([
             'message' => $this->langService->getLang('otp_sent')
@@ -214,7 +253,7 @@ class AuthController extends Controller
         $validationRules = [
             'email' => 'required|email|exists:users,email',
             'otp' => 'required|integer',
-            'password' => 'required|min:8',
+            'password' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/'],
             'password_confirmation' => 'required|same:password'
         ];
 

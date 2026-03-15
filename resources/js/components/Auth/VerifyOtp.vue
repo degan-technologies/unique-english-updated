@@ -56,7 +56,9 @@ const handleOtpSubmit = async () => {
         });
 
         otpSuccess.value = response.data.message;
-        appStore.setAuthToken(response.data.token);
+        // Token is in the HttpOnly cookie set by the server —
+        // store the expiry time so the proactive logout timer can fire.
+        appStore.setTokenExpiry(response.data.expires_at);
         appStore.changeLoginStatus(true);
         appStore.clearOtpEmail();
 

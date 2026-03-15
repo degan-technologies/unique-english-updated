@@ -1,10 +1,12 @@
 <script setup>
 import videojs from "video.js";
 import "video.js/dist/video-js.css";
-import { onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 // Required for quality selection
-import "videojs-contrib-quality-levels";
+// Note: videojs-hls-quality-selector already imports videojs-contrib-quality-levels
+// internally, so importing it again here causes a duplicate plugin registration
+// warning. Only import the HLS selector — it brings quality-levels with it.
 import "videojs-hls-quality-selector";
 
 const props = defineProps({
@@ -62,13 +64,13 @@ onMounted(() => {
                     const duration = this.player().duration();
                     this.el().innerHTML = `
                     <span class="vjs-current-time">${formatTime(
-                        currentTime
+                        currentTime,
                     )}</span>
                     <span class="vjs-time-divider"> / </span>
                     <span class="vjs-duration">${formatTime(duration)}</span>
                 `;
                 }
-            }
+            },
         );
     }
 
@@ -119,7 +121,7 @@ onMounted(() => {
             const timeDisplay = player.value.controlBar.addChild(
                 "CombinedTimeDisplay",
                 {},
-                1
+                1,
             );
             timeDisplay.updateContent();
         }
@@ -137,7 +139,7 @@ watch(
             player.value.load();
             player.value.play().catch(() => {});
         }
-    }
+    },
 );
 
 onBeforeUnmount(() => {
@@ -149,10 +151,20 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="w-full h-full aspect-video rounded-lg bg-black relative overflow-hidden">
-        <video ref="videoPlayer" class="video-js vjs-default-skin vjs-big-play-centered" controls playsinline
-            crossorigin="anonymous" preload="auto" width="100%" height="auto" 
-            :poster="posterImage" />
+    <div
+        class="w-full h-full aspect-video rounded-lg bg-black relative overflow-hidden"
+    >
+        <video
+            ref="videoPlayer"
+            class="video-js vjs-default-skin vjs-big-play-centered"
+            controls
+            playsinline
+            crossorigin="anonymous"
+            preload="auto"
+            width="100%"
+            height="auto"
+            :poster="posterImage"
+        />
     </div>
 </template>
 
@@ -182,9 +194,9 @@ onBeforeUnmount(() => {
 :deep(.vjs-combined-time-display .vjs-time-divider) {
     padding: 0 0.2em;
     display: inline-block;
-
-}:deep(.vjs-big-play-button) { 
-    background-color:rgba(173, 24, 63, 0.7)!important;
+}
+:deep(.vjs-big-play-button) {
+    background-color: rgba(173, 24, 63, 0.7) !important;
     border: none !important;
     border-radius: 50% !important;
     width: 2em !important;
@@ -194,7 +206,7 @@ onBeforeUnmount(() => {
     margin-left: -1em !important;
     position: relative;
     z-index: 10;
-    background-color:rgba(173, 24, 63, 0.7)!important;
+    background-color: rgba(173, 24, 63, 0.7) !important;
     animation: pulse-ring 2s infinite;
 }
 
@@ -259,7 +271,7 @@ onBeforeUnmount(() => {
 }
 
 :deep(.vjs-play-progress) {
-    background-color: #AD183F !important;
+    background-color: #ad183f !important;
 }
 :deep(.vjs-poster) {
     position: absolute;

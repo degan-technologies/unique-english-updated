@@ -50,137 +50,141 @@ watch(
 </script>
 
 <template>
-    <section
-        class="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-lime-50 overflow-hidden"
-        id="hero"
-        :style="
-            hero?.background_image
-                ? `background-image: url('${hero.background_image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`
-                : ''
-        "
-    >
-        <div
-            class="relative container mx-auto px-6 py-20 sm:py-24 md:py-28 lg:py-24 z-10"
+    <div>
+        <section
+            class="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-lime-50 overflow-hidden"
+            id="hero"
+            :style="
+                hero?.background_image
+                    ? `background-image: url('${hero.background_image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`
+                    : ''
+            "
         >
             <div
-                class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
+                class="relative container mx-auto px-6 py-20 sm:py-24 md:py-28 lg:py-24 z-10"
             >
-                <!-- Content Section -->
-                <div class="space-y-8 lg:pr-8">
-                    <!-- Main Heading -->
-                    <div class="space-y-6">
-                        <h1
-                            :class="[
-                                'text-3xl md:text-4xl lg:text-5xl font-bold leading-tight',
-                                hero?.background_image
-                                    ? 'text-black'
-                                    : 'text-gray-900',
-                            ]"
-                        >
-                            {{
-                                hero?.title ||
-                                "Learn without limits, Anytime, Anywhere"
-                            }}
-                        </h1>
-
-                        <p
-                            :class="[
-                                'text-lg md:text-xl leading-relaxed max-w-2xl',
-                                hero?.background_image
-                                    ? 'text-gray-800'
-                                    : 'text-gray-600',
-                            ]"
-                        >
-                            {{
-                                hero?.description ||
-                                "Empower Your future with world-class courses, expert instructors, and flexible learning experience tailored to your needs."
-                            }}
-                        </p>
-                    </div>
-
-                    <!-- Call-to-Action Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                        <button
-                            @click="changeTab()"
-                            class="inline-flex items-center justify-center px-8 py-4 bg-lime-700 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                        >
-                            <span class="mr-2">Test Your Level</span>
-                            <svg
-                                class="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                <div
+                    class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
+                >
+                    <!-- Content Section -->
+                    <div class="space-y-8 lg:pr-8">
+                        <!-- Main Heading -->
+                        <div class="space-y-6">
+                            <h1
+                                :class="[
+                                    'text-3xl md:text-4xl lg:text-5xl font-bold leading-tight',
+                                    hero?.background_image
+                                        ? 'text-black'
+                                        : 'text-gray-900',
+                                ]"
                             >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                ></path>
-                            </svg>
-                        </button>
+                                {{
+                                    hero?.title ||
+                                    "Learn without limits, Anytime, Anywhere"
+                                }}
+                            </h1>
 
-                        <button
-                            @click="scrollToSection('courses')"
-                            :class="[
-                                'inline-flex items-center justify-center px-8 py-4 font-semibold rounded-lg border-2 transition-colors duration-200 shadow-lg hover:shadow-xl',
-                                hero?.background_image
-                                    ? 'bg-gray-900 text-white border-gray-300 hover:bg-gray-800'
-                                    : 'bg-gray-900 text-white border-gray-200 hover:bg-gray-800',
-                            ]"
-                        >
-                            <span class="mr-2">Explore Courses</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Image Section -->
-                <div class="relative lg:h-auto">
-                    <div class="relative rounded-3xl overflow-hidden p-8">
-                        <!-- Image Skeleton -->
-                        <div
-                            v-if="!imageLoaded"
-                            class="w-full h-64 md:h-80 lg:h-96 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-2xl flex items-center justify-center"
-                        >
-                            <div class="text-center text-gray-500">
-                                <svg
-                                    class="w-12 h-12 mx-auto mb-4 opacity-50"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        fill-rule="evenodd"
-                                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                        clip-rule="evenodd"
-                                    ></path>
-                                </svg>
-                            </div>
+                            <p
+                                :class="[
+                                    'text-lg md:text-xl leading-relaxed max-w-2xl',
+                                    hero?.background_image
+                                        ? 'text-gray-800'
+                                        : 'text-gray-600',
+                                ]"
+                            >
+                                {{
+                                    hero?.description ||
+                                    "Empower Your future with world-class courses, expert instructors, and flexible learning experience tailored to your needs."
+                                }}
+                            </p>
                         </div>
 
-                        <!-- Actual Image -->
-                        <img
-                            :src="hero?.banner || '/images/default-hero.jpg'"
-                            alt="Learning Platform"
-                            :class="[
-                                'w-full h-auto object-cover rounded-2xl transition-opacity duration-300 shadow-2xl',
-                                imageLoaded
-                                    ? 'opacity-100'
-                                    : 'opacity-0 absolute inset-0',
-                            ]"
-                            @load="handleImageLoad"
-                            @error="imageLoaded = true"
-                        />
+                        <!-- Call-to-Action Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                            <button
+                                @click="changeTab()"
+                                class="inline-flex items-center justify-center px-8 py-4 bg-lime-700 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
+                            >
+                                <span class="mr-2">Test Your Level</span>
+                                <svg
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                                    ></path>
+                                </svg>
+                            </button>
+
+                            <button
+                                @click="scrollToSection('courses')"
+                                :class="[
+                                    'inline-flex items-center justify-center px-8 py-4 font-semibold rounded-lg border-2 transition-colors duration-200 shadow-lg hover:shadow-xl',
+                                    hero?.background_image
+                                        ? 'bg-gray-900 text-white border-gray-300 hover:bg-gray-800'
+                                        : 'bg-gray-900 text-white border-gray-200 hover:bg-gray-800',
+                                ]"
+                            >
+                                <span class="mr-2">Explore Courses</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Image Section -->
+                    <div class="relative lg:h-auto">
+                        <div class="relative rounded-3xl overflow-hidden p-8">
+                            <!-- Image Skeleton -->
+                            <div
+                                v-if="!imageLoaded"
+                                class="w-full h-64 md:h-80 lg:h-96 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-2xl flex items-center justify-center"
+                            >
+                                <div class="text-center text-gray-500">
+                                    <svg
+                                        class="w-12 h-12 mx-auto mb-4 opacity-50"
+                                        fill="currentColor"
+                                        viewBox="0 0 20 20"
+                                    >
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                                            clip-rule="evenodd"
+                                        ></path>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Actual Image -->
+                            <img
+                                :src="
+                                    hero?.banner || '/images/default-hero.jpg'
+                                "
+                                alt="Learning Platform"
+                                :class="[
+                                    'w-full h-auto object-cover rounded-2xl transition-opacity duration-300 shadow-2xl',
+                                    imageLoaded
+                                        ? 'opacity-100'
+                                        : 'opacity-0 absolute inset-0',
+                                ]"
+                                @load="handleImageLoad"
+                                @error="imageLoaded = true"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Tabs Content -->
-    <div v-if="activeTab === 0">
-        <Test />
+        <!-- Tabs Content -->
+        <div v-if="activeTab === 0">
+            <Test />
+        </div>
+        <div v-if="activeTab === 1"></div>
     </div>
-    <div v-if="activeTab === 1"></div>
 </template>
 
 <style scoped>

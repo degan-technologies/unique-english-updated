@@ -22,6 +22,9 @@ const agreeTerms = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
 
+const strongPasswordPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
 const togglePassword = () => {
     showPassword.value = !showPassword.value;
 };
@@ -46,6 +49,13 @@ async function handleRegister() {
         return;
     }
 
+    if (!strongPasswordPattern.test(password.value)) {
+        errorMessage.value =
+            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        setTimeout(() => (errorMessage.value = ""), 3000);
+        return;
+    }
+
     loading.value = true;
     errorMessage.value = "";
     successMessage.value = "";
@@ -60,7 +70,7 @@ async function handleRegister() {
         const response = await Axios.post("/api/register", data);
 
         // Set otp email globally for VerifyOtp component
-        otpEmail.value = email.value;
+        appStore.setOtpEmail(email.value);
         // Close registration form to show VerifyOtp component
         showRegistrationForm.value = false;
         successMessage.value =
@@ -224,6 +234,10 @@ function routeToLogin() {
                                 ></span>
                             </button>
                         </div>
+                        <p class="mt-1 text-xs text-gray-500">
+                            Use at least 8 characters with uppercase, lowercase,
+                            number, and special character.
+                        </p>
                     </div>
 
                     <!-- Terms Checkbox -->

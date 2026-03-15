@@ -109,7 +109,7 @@ class UserController extends Controller
         $validationRules = [
             'email'      => 'required|email|unique:users,email',
             'full_name'  => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/'],
-            'password'   => 'required|min:4',
+            'password'   => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/'],
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('registration'));
@@ -202,13 +202,28 @@ class UserController extends Controller
         $user->otp_expires_at = null;
         $user->save();
 
-        $token = $user->createToken('AuthToken')->accessToken;
+        $tokenResult = $user->createToken('AuthToken');
+        $token       = $tokenResult->accessToken;
+        $expiresAt   = $tokenResult->token->expires_at->toIso8601String();
 
-        $cookie = Cookie::make('authToken', $token, 60 * 24 * 7, '/', null, true, false);
+        // Store token ONLY in HttpOnly cookie — never expose it to JavaScript.
+        $isSecure = app()->environment('production');
+        $cookie = Cookie::make(
+            'authToken',
+            $token,
+            60,         // 60-minute expiry matching Passport config
+            '/',
+            null,
+            $isSecure,  // secure: true in production, false in local/dev (allows HTTP)
+            true,       // httpOnly — JS cannot read this (XSS-safe)
+            false,
+            'Strict'    // sameSite — CSRF-safe
+        );
 
+        // Return expires_at so the frontend can schedule a proactive logout timer.
         return response()->json([
-            'message' => 'Login successful',
-            'token' => $token
+            'message'    => 'Email verified. Login successful.',
+            'expires_at' => $expiresAt,
         ])->withCookie($cookie);
     }
 
@@ -330,7 +345,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users',
             'first_name' => ['required', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
             'middle_name' => ['nullable', 'not_regex:/[\\\\\/\?\%\*\:\|\"<>]/', 'alpha_dash:ascii'],
-            'password' => 'required|min:4',
+            'password' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/'],
             'phone' => 'required',
         ];
 
@@ -430,8 +445,22 @@ class UserController extends Controller
 
         $user = Auth::user();
 
+        if (!$user instanceof User) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        if ($request->filled('email') && $request->email !== $user->email) {
+            return response()->json([
+                'message' => 'Email address cannot be changed from profile settings.',
+                'errors' => [
+                    'email' => ['Email address cannot be changed from profile settings.']
+                ]
+            ], 422);
+        }
+
         $validationRules = [
-            'email' => 'required|email|unique:users,email,' . $user->id,
             'phone' => ['unique:users,phone,' . $user->id],
             'gender' => [Rule::in(GENDER)],
         ];
@@ -447,8 +476,6 @@ class UserController extends Controller
             ], 422);
         }
 
-
-        $user->email = $request->email ?? $user->email;
         $user->phone = $request->phone ?? $user->phone;
         $user->gender = $request->gender ?? $user->gender;
         $user->first_name = $firstName;
@@ -559,7 +586,7 @@ class UserController extends Controller
 
         $validation = [
             'old_password' => ['required'],
-            'new_password' => ['required', 'confirmed', 'min:8'],
+            'new_password' => ['required', 'confirmed', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/'],
             'new_password_confirmation' => ['required'],
         ];
 

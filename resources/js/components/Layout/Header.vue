@@ -227,7 +227,7 @@ function openProfile() {
 }
 
 function signOut() {
-    appStore.setAuthToken("");
+    appStore.logout();
     loggingIn.value = false;
     closeDropdown();
 }

@@ -1,9 +1,9 @@
 <script setup>
 import Axios from "axios";
-import { storeToRefs } from "pinia";
-import { useRoute } from "vue-router";
-import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
+import { storeToRefs } from "pinia";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 
 import { useAppStore } from "@/store/useAppStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
@@ -14,13 +14,13 @@ const appStore = useAppStore();
 const studentStore = UseStudentStore();
 
 const { selectedbookslug } = storeToRefs(studentStore);
-const { authToken } = storeToRefs(appStore);
+// authToken removed — authentication is handled via HttpOnly cookie (credentials: 'include')
 
 const route = useRoute();
 
 GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
+    import.meta.url,
 ).toString();
 
 const canvasRef = ref(null);
@@ -49,26 +49,27 @@ const handleResize = () => {
 };
 
 function getSelectedBook() {
-    Axios.get(`/api/get-book/${selectedbookslug.value}`).then((res) => {
-        selectedBook.value = res.data.data;
-    }).then(()=>{
-        loadPdf();
-    });
-    
+    Axios.get(`/api/get-book/${selectedbookslug.value}`)
+        .then((res) => {
+            selectedBook.value = res.data.data;
+        })
+        .then(() => {
+            loadPdf();
+        });
 }
- 
+
 async function loadPdf() {
     if (!selectedBook.value.file_url) return;
 
     try {
         const response = await fetch(`/api${selectedBook.value.file_url}`, {
-            method: 'POST',
+            method: "POST",
+            credentials: "include", // Send HttpOnly authToken cookie automatically
             headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken.value}`,
+                "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                filename: selectedBook.value.file_url,  
+                filename: selectedBook.value.file_url,
             }),
         });
 
@@ -107,8 +108,9 @@ const renderPage = async (pageNumber) => {
 
     // Set canvas display size
     canvas.style.width = `${containerWidth}px`;
-    canvas.style.height = `${(containerWidth * scaledViewport.height) / scaledViewport.width
-        }px`;
+    canvas.style.height = `${
+        (containerWidth * scaledViewport.height) / scaledViewport.width
+    }px`;
 
     // Set canvas render size (accounting for device pixel ratio)
     canvas.width = scaledViewport.width;
@@ -123,7 +125,7 @@ const renderPage = async (pageNumber) => {
     };
 
     await page.render(renderContext).promise;
-}; 
+};
 
 // Pagination handlers
 const nextPage = () => {
@@ -149,7 +151,7 @@ const goToPage = () => {
     ) {
         currentPage.value = pageNumber;
         renderPage(pageNumber);
-    } else { 
+    } else {
     }
 };
 
@@ -181,7 +183,7 @@ const blockPrtSc = (event) => {
             showOverlay.value = false;
         }, 5000);
     }
-}; 
+};
 
 const hideOnWindowBlur = () => {
     showOverlay.value = true;
@@ -205,7 +207,7 @@ watch(
     () => {
         selectedbookslug.value = route.query.slug;
         getSelectedBook();
-    }
+    },
 );
 
 watch(selectedBook, (newVal) => {
@@ -215,7 +217,7 @@ watch(selectedBook, (newVal) => {
 });
 
 onMounted(() => {
-    getSelectedBook();    
+    getSelectedBook();
     window.addEventListener("resize", handleResize);
     document.addEventListener("contextmenu", preventCopy);
     document.addEventListener("keydown", preventDevTools);
@@ -239,21 +241,35 @@ onBeforeUnmount(() => {
 
 <template>
     <div v-if="!openPdf">
-        <Spinner/>
+        <Spinner />
     </div>
-    <div v-else class="relative flex flex-col mt-24 items-center p-4 min-h-screen">
-        <div ref="containerRef" :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
-            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg">
+    <div
+        v-else
+        class="relative flex flex-col mt-24 items-center p-4 min-h-screen"
+    >
+        <div
+            ref="containerRef"
+            :class="{ 'h-screen overflow-y-scroll': isFullScreen }"
+            class="w-full max-w-3xl bg-white shadow-md p-4 rounded-lg"
+        >
             <div class="overflow-auto">
-                <canvas ref="canvasRef"
+                <canvas
+                    ref="canvasRef"
                     class="w-full max-w-full h-auto object-contain shadow-lg border rounded-lg select-none"
-                    @contextmenu.prevent @dragstart.prevent></canvas>
-            </div> 
-            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center">
+                    @contextmenu.prevent
+                    @dragstart.prevent
+                ></canvas>
+            </div>
+            <div
+                class="mt-4 flex flex-col sm:flex-row justify-between items-center"
+            >
                 <!-- Pagination Buttons -->
                 <div class="flex gap-4 mb-4 sm:mb-0 items-center">
-                    <button @click="prevPage" :disabled="currentPage === 1"
-                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group">
+                    <button
+                        @click="prevPage"
+                        :disabled="currentPage === 1"
+                        class="px-4 py-2 bg-slate-50 text-black rounded disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-left text-balck"></i>
                     </button>
 
@@ -261,21 +277,32 @@ onBeforeUnmount(() => {
                         {{ currentPage }} / {{ totalPages }}
                     </span>
 
-                    <button @click="nextPage" :disabled="currentPage === totalPages"
-                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group">
+                    <button
+                        @click="nextPage"
+                        :disabled="currentPage === totalPages"
+                        class="px-4 py-2 bg-slate-50 text-white rounded disabled:opacity-50 relative group"
+                    >
                         <i class="fas fa-chevron-right text-black"></i>
                     </button>
                 </div>
 
                 <!-- Search Input -->
                 <div class="flex items-center gap-2">
-                    <input type="number" v-model="searchPage" placeholder="Go to page"
-                        class="px-2 py-1 border border-gray-500 rounded w-24" @keyup.enter="goToPage" />
-                    <button @click="goToPage" class="px-3 py-1 bg-slate-50 text-black rounded relative group">
+                    <input
+                        type="number"
+                        v-model="searchPage"
+                        placeholder="Go to page"
+                        class="px-2 py-1 border border-gray-500 rounded w-24"
+                        @keyup.enter="goToPage"
+                    />
+                    <button
+                        @click="goToPage"
+                        class="px-3 py-1 bg-slate-50 text-black rounded relative group"
+                    >
                         <i class="fas fa-search"></i>
-                    </button> 
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-</template> 
+</template>

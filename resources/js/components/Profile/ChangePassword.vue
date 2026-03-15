@@ -1,8 +1,8 @@
 <script setup>
-import Axios from "axios";
-import { ref } from "vue";
-import { storeToRefs } from "pinia";
 import { useAppStore } from "@/store/useAppStore";
+import Axios from "axios";
+import { storeToRefs } from "pinia";
+import { ref } from "vue";
 
 const appStore = useAppStore();
 const { frontLang } = storeToRefs(appStore);
@@ -27,6 +27,9 @@ const showPassword = ref({
     confirm: false,
 });
 
+const strongPasswordPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
 const validateForm = () => {
     let isValid = true;
     errors.value = {
@@ -44,8 +47,9 @@ const validateForm = () => {
     if (!passwords.value.newPassword) {
         errors.value.newPassword = "New password is required";
         isValid = false;
-    } else if (passwords.value.newPassword.length < 8) {
-        errors.value.newPassword = "Password must be at least 8 characters";
+    } else if (!strongPasswordPattern.test(passwords.value.newPassword)) {
+        errors.value.newPassword =
+            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
         isValid = false;
     }
 
@@ -91,7 +95,7 @@ const changePassword = async (e) => {
         if (error.response?.data?.errors) {
             // Handle field-specific errors
             for (const [field, message] of Object.entries(
-                error.response.data.errors
+                error.response.data.errors,
             )) {
                 errors.value[field] = message[0];
             }
@@ -218,7 +222,8 @@ const togglePasswordVisibility = (field) => {
                     {{ errors.newPassword }}
                 </p>
                 <p v-else class="mt-1 text-xs text-gray-500">
-                    Minimum 8 characters
+                    Use at least 8 characters with uppercase, lowercase, number,
+                    and special character
                 </p>
             </div>
 

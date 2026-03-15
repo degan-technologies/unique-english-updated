@@ -1,18 +1,20 @@
-import { createApp } from "vue";
+// ── Axios must be configured BEFORE the Vue app boots ──────────────────────
+import "@/plugins/axiosSetup";
+// ────────────────────────────────────────────────────────────────────────────
+
+import App from "@/app.vue";
+import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
+import appRouter from "@/routes/AppRouter.js";
+import { useThemeStore } from "@/store/theme";
 import { createPinia } from "pinia";
-import PrimeVue from "primevue/config";
-import Editor from "primevue/editor";
-import Toast from "vue-toastification";
-import "vue-toastification/dist/index.css";
 import "primeicons/primeicons.css";
-import "primevue/resources/primevue.min.css"; 
+import Editor from "primevue/editor";
+import "primevue/resources/primevue.min.css";
 import "primevue/resources/themes/saga-blue/theme.css";
 import "quill/dist/quill.snow.css";
-import ThemeSwitcher from "@/components/ThemeSwitcher.vue";
-import { useThemeStore } from "@/store/theme";
-import appRouter from "@/routes/AppRouter.js";
-import App from "@/app.vue";
-
+import { createApp } from "vue";
+import Toast from "vue-toastification";
+import "vue-toastification/dist/index.css";
 
 const originalAddEventListener = EventTarget.prototype.addEventListener;
 EventTarget.prototype.addEventListener = function (type, listener, options) {
@@ -38,6 +40,23 @@ app.use(Toast, {
 
 app.component("theme-switcher", ThemeSwitcher);
 app.component("Editor", Editor);
+
+// Global directive: v-click-outside
+// Usage: v-click-outside="handler" — calls handler when a click occurs outside the element.
+app.directive("click-outside", {
+    mounted(el, binding) {
+        el._clickOutsideHandler = (event) => {
+            if (!el.contains(event.target)) {
+                binding.value(event);
+            }
+        };
+        document.addEventListener("mousedown", el._clickOutsideHandler);
+    },
+    unmounted(el) {
+        document.removeEventListener("mousedown", el._clickOutsideHandler);
+        delete el._clickOutsideHandler;
+    },
+});
 
 app.mount("#app");
 

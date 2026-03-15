@@ -1,9 +1,9 @@
 <script setup>
+import Spinner from "@/components/Layout/Spinner.vue";
+import { useAppStore } from "@/store/useAppStore";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
-import { ref, onMounted } from "vue";
-import { useAppStore } from "@/store/useAppStore";
-import Spinner from "@/components/Layout/Spinner.vue";
+import { onMounted, ref } from "vue";
 
 const appStore = useAppStore();
 const { authUser, frontLang } = storeToRefs(appStore);
@@ -50,7 +50,7 @@ const onFileChange = async (field, event) => {
 
         const response = await Axios.post(
             "/api/profile-image/update",
-            formData
+            formData,
         );
         authUser.value = response.data.data;
         message.value = response.data.message;
@@ -84,7 +84,6 @@ const submitForm = async () => {
     try {
         const response = await Axios.post("/api/update-profile", {
             full_name: form.value.full_name,
-            email: form.value.email,
             phone: form.value.phone,
             gender: form.value.gender,
         });
@@ -311,7 +310,9 @@ onMounted(async () => {
                             <input
                                 v-model="form.email"
                                 type="email"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
+                                readonly
+                                disabled
+                                class="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
                             />
                             <p
                                 v-if="errors.email"

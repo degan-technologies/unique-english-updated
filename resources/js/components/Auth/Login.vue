@@ -26,6 +26,9 @@ const showForgotPassword = ref(false);
 const showOTPForm = ref(false);
 const resetMessage = ref("");
 const resetLoading = ref(false);
+const rememberMe = ref(false); // "Remember me" — extends cookie to 30 days
+const strongPasswordPattern =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const { lang, frontLang } = storeToRefs(appStore);
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
@@ -47,6 +50,8 @@ function tryLogin() {
         formData.append("email", emailInput.value);
     }
     formData.append("password", passwordInput.value);
+    // "remember_me" tells the server to set a longer-lived cookie (30 days vs 60 min)
+    formData.append("remember_me", rememberMe.value ? "1" : "0");
 
     loggingIn.value = true;
     Axios.post("/login", formData, { withCredentials: true })
@@ -57,15 +62,16 @@ function tryLogin() {
                 loginMessage.value = response.data.message;
                 showLoginForm.value = false;
             } else {
-                // For phone login or verified email users, login directly
-                appStore.setAuthToken(response.data.token);
+                // Token is in the HttpOnly cookie — just update client state.
+                // Store the expiry time so the proactive logout timer can fire.
+                appStore.setTokenExpiry(response.data.expires_at);
                 appStore.changeLoginStatus(true);
                 showLoginForm.value = false;
             }
         })
         .catch((error) => {
-            appStore.setAuthToken("");
-            loginMessage.value = error.response.data.message;
+            loginMessage.value =
+                error.response?.data?.message || "Invalid credentials";
             setTimeout(() => (loginMessage.value = ""), 2000);
         })
         .finally(() => (loggingIn.value = false));
@@ -88,7 +94,8 @@ function verifyOTP() {
         otp: otpCode,
     })
         .then((response) => {
-            appStore.setAuthToken(response.data.token);
+            // Token is in the HttpOnly cookie — just update client state.
+            appStore.setTokenExpiry(response.data.expires_at);
             appStore.changeLoginStatus(true);
             showLoginForm.value = false;
             showOTPVerification.value = false;
@@ -121,8 +128,12 @@ function sendOTP() {
             showOTPForm.value = true;
         })
         .catch((error) => {
+            const rawMessage = error.response?.data?.message || "";
             resetMessage.value =
-                error.response?.data?.message || "Failed to send OTP";
+                rawMessage.includes("Failed to authenticate on SMTP server") ||
+                rawMessage.includes("BadCredentials")
+                    ? "Unable to send reset email right now. Please contact support or try again later."
+                    : rawMessage || "Failed to send OTP";
         })
         .finally(() => (resetLoading.value = false));
 }
@@ -132,6 +143,13 @@ function resetPassword() {
     if (newPassword.value !== confirmPassword.value) {
         resetMessage.value = "Passwords do not match";
         setTimeout(() => (resetMessage.value = ""), 2000);
+        return;
+    }
+
+    if (!strongPasswordPattern.test(newPassword.value)) {
+        resetMessage.value =
+            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        setTimeout(() => (resetMessage.value = ""), 3000);
         return;
     }
 
@@ -300,6 +318,10 @@ onMounted(() => {
                                 autocomplete="off"
                                 class="w-full px-3 py-3 sm:px-4 sm:py-3.5 border-2 border-gray-200 rounded-lg sm:rounded-xl focus:border-lime-500 transition-all text-sm sm:text-base focus:outline-none"
                             />
+                            <p class="mt-1 text-xs text-gray-500">
+                                Use at least 8 characters with uppercase,
+                                lowercase, number, and special character.
+                            </p>
                         </div>
 
                         <div>
