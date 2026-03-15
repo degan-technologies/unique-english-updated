@@ -21,6 +21,9 @@ const loading = ref(false);
 const agreeTerms = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
+const passwordFieldError = ref("");
+const passwordHint =
+    "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
 
 const strongPasswordPattern =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
@@ -31,6 +34,8 @@ const togglePassword = () => {
 
 // Handle registration
 async function handleRegister() {
+    passwordFieldError.value = "";
+
     if (!agreeTerms.value) {
         errorMessage.value = "Please agree to the terms and conditions";
         setTimeout(() => (errorMessage.value = ""), 3000);
@@ -50,8 +55,8 @@ async function handleRegister() {
     }
 
     if (!strongPasswordPattern.test(password.value)) {
-        errorMessage.value =
-            "Password must be at least 8 characters and include uppercase, lowercase, number, and special character";
+        passwordFieldError.value = passwordHint;
+        errorMessage.value = passwordHint;
         setTimeout(() => (errorMessage.value = ""), 3000);
         return;
     }
@@ -76,6 +81,17 @@ async function handleRegister() {
         successMessage.value =
             "Please check your email for the OTP verification code.";
     } catch (err) {
+        const backendPasswordError =
+            err.response?.data?.errors?.password?.[0] || "";
+
+        if (
+            backendPasswordError &&
+            (backendPasswordError.includes("format is invalid") ||
+                backendPasswordError.includes("password"))
+        ) {
+            passwordFieldError.value = passwordHint;
+        }
+
         errorMessage.value =
             err.response?.data?.message ||
             "Registration failed. Please try again.";
@@ -234,6 +250,12 @@ function routeToLogin() {
                                 ></span>
                             </button>
                         </div>
+                        <p
+                            v-if="passwordFieldError"
+                            class="mt-1 text-xs text-red-600"
+                        >
+                            {{ passwordFieldError }}
+                        </p>
                         <p class="mt-1 text-xs text-gray-500">
                             Use at least 8 characters with uppercase, lowercase,
                             number, and special character.
