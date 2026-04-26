@@ -3,7 +3,7 @@ import Axios from "axios";
 import Popper from "vue3-popper";
 import { storeToRefs } from "pinia";
 import { onMounted, ref, watch, onBeforeUnmount, computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -12,6 +12,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore"; 
 
 const router = useRouter();
+const route = useRoute();
 
 // Pinia stores
 const sidebarStore = useSidebarStore();
@@ -58,6 +59,7 @@ const showNotificationModal = ref(false);
 const isCartOpen = ref(false);
 const isMenuOpen = ref(false);
 const isMenuVisible = ref(true);
+const activeNav = ref("courses");
 
 // --- Profile dropdown refs ---
 const dropDownOpen = ref(false);
@@ -168,12 +170,14 @@ function handleClickOutside(event) {
 const getInitials = (name) => (name ? name.charAt(0).toUpperCase() : "");
 
 async function navigationToggle(id) {
+    activeNav.value = id;
     await router.push("/");
     selectedComponentId.value = id;
     isMenuOpen.value = false;
 }
 
 function openFreeCourses() {
+    activeNav.value = "free-courses";
     router.push({
         name: "student",
         query: { tab: freeCourses.value },
@@ -182,6 +186,7 @@ function openFreeCourses() {
 }
 
 function openBlog() {
+    activeNav.value = "blog";
     router.push({
         name: "student",
         query: { tab: blogTab.value },
@@ -219,9 +224,58 @@ function removeItem(item) {
         type: item.type,
         slug: item.slug,
         price: item.price,
-        name: item.course_name,
-        image: item.thumbnail_url,
     });
+}
+
+function getCartItemName(item) {
+    return item?.name || item?.course_name || item?.title || "Item";
+}
+
+function getCartItemImage(item) {
+    return item?.image || item?.thumbnail_url || item?.cover_page_url || "/images/course-1.jpg";
+}
+
+function navButtonClass(tabKey) {
+    return [
+        "font-semibold transition-colors",
+        activeNav.value === tabKey
+            ? "text-lime-600"
+            : "text-gray-700 hover:text-lime-500",
+    ];
+}
+
+function mobileNavButtonClass(tabKey) {
+    return [
+        "w-full text-left px-4 py-3 rounded-lg font-semibold transition-colors",
+        activeNav.value === tabKey
+            ? "bg-lime-100 text-lime-700"
+            : "text-gray-700 hover:bg-lime-50 hover:text-lime-600",
+    ];
+}
+
+function syncActiveNavFromRoute() {
+    const queryTab = route.query?.tab;
+
+    if (route.name === "student") {
+        if (queryTab === freeCourses.value) {
+            activeNav.value = "free-courses";
+            return;
+        }
+
+        if (queryTab === blogTab.value) {
+            activeNav.value = "blog";
+            return;
+        }
+
+        if (queryTab === myCourseTab.value) {
+            activeNav.value = "courses";
+            return;
+        }
+    }
+
+    if (selectedComponentId.value) {
+        activeNav.value = selectedComponentId.value;
+    }
 }
 
 function changeTab() {
@@ -311,9 +365,17 @@ const refreshNOtification = () => {
     return;
 };
 
+const refreshNotification = refreshNOtification;
+
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
 });
+
+watch(
+    () => [route.name, route.query?.tab, selectedComponentId.value],
+    syncActiveNavFromRoute,
+    { immediate: true }
+);
 
 watch(
     items,
@@ -346,25 +408,20 @@ watch(
 
                 <!-- Desktop Navigation -->
                 <nav class="hidden md:flex items-center gap-8">
-                    <button @click="navigationToggle('courses')"
-                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                    <button @click="navigationToggle('courses')" :class="navButtonClass('courses')">
                         Courses
                     </button>
-                    <button @click="openFreeCourses"
-                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                    <button @click="openFreeCourses" :class="navButtonClass('free-courses')">
                         Free Courses
                     </button>
                     
-                    <button @click="navigationToggle('books')"
-                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                    <button @click="navigationToggle('books')" :class="navButtonClass('books')">
                         Books
                     </button>
-                    <button @click="navigationToggle('live')"
-                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                    <button @click="navigationToggle('live')" :class="navButtonClass('live')">
                         Live Sessions
                     </button>
-                    <button @click="openBlog"
-                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                    <button @click="openBlog" :class="navButtonClass('blog')">
                         Blog
                     </button>
                 </nav>
@@ -560,17 +617,17 @@ watch(
                                         <!-- Cart Items -->
                                         <div v-else>
                                             <ul class="space-y-3">
-                                                <li v-for="item in items" :key="item.id"
+                                                <li v-for="item in items" :key="`${item.type}-${item.slug}`"
                                                     class="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition">
-                                                    <img :src="item.image" alt="Item Image"
+                                                    <img :src="getCartItemImage(item)" alt="Item Image"
                                                         class="w-14 h-14 rounded-lg object-cover border" />
                                                     <div class="flex-1">
                                                         <p class="font-medium text-sm truncate max-w-[20ch]">
-                                                            {{ item.name }}
+                                                            {{ getCartItemName(item) }}
                                                         </p>
                                                         <p class="text-gray-500 text-sm">
                                                             ${{
-                                                                item.price.toFixed(
+                                                                Number(item.price || 0).toFixed(
                                                                     2
                                                                 )
                                                             }}
@@ -705,31 +762,26 @@ watch(
                 <div class="container mx-auto px-4 py-4">
                     <ul class="flex flex-col gap-2">
                         <li>
-                            <button @click="navigationToggle('courses')"
-                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                            <button @click="navigationToggle('courses')" :class="mobileNavButtonClass('courses')">
                                 Courses
                             </button>
-                            <button  @click="openFreeCourses"
-                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                            <button  @click="openFreeCourses" :class="mobileNavButtonClass('free-courses')">
                                 Free Courses
                             </button>
                         </li>
 
                         <li>
-                            <button @click="navigationToggle('books')"
-                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                            <button @click="navigationToggle('books')" :class="mobileNavButtonClass('books')">
                                 Books
                             </button>
                         </li>
                         <li>
-                            <button @click="navigationToggle('live')"
-                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                            <button @click="navigationToggle('live')" :class="mobileNavButtonClass('live')">
                                 Live Sessions
                             </button>
                         </li>
                         <li>
-                            <button @click="openBlog"
-                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                            <button @click="openBlog" :class="mobileNavButtonClass('blog')">
                                 Blog
                             </button>
                         </li>

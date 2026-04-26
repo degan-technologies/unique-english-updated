@@ -40728,6 +40728,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     var __expose = _ref.expose;
     __expose();
     var router = (0,vue_router__WEBPACK_IMPORTED_MODULE_4__.useRouter)();
+    var route = (0,vue_router__WEBPACK_IMPORTED_MODULE_4__.useRoute)();
 
     // Pinia stores
     var sidebarStore = (0,_store_useSidebarStore__WEBPACK_IMPORTED_MODULE_5__.useSidebarStore)();
@@ -40781,6 +40782,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     var isCartOpen = (0,vue__WEBPACK_IMPORTED_MODULE_3__.ref)(false);
     var isMenuOpen = (0,vue__WEBPACK_IMPORTED_MODULE_3__.ref)(false);
     var isMenuVisible = (0,vue__WEBPACK_IMPORTED_MODULE_3__.ref)(true);
+    var activeNav = (0,vue__WEBPACK_IMPORTED_MODULE_3__.ref)("courses");
 
     // --- Profile dropdown refs ---
     var dropDownOpen = (0,vue__WEBPACK_IMPORTED_MODULE_3__.ref)(false);
@@ -40938,6 +40940,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
         return _regenerator().w(function (_context3) {
           while (1) switch (_context3.n) {
             case 0:
+              activeNav.value = id;
               _context3.n = 1;
               return router.push("/");
             case 1:
@@ -40951,6 +40954,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       return _navigationToggle.apply(this, arguments);
     }
     function openFreeCourses() {
+      activeNav.value = "free-courses";
       router.push({
         name: "student",
         query: {
@@ -40960,6 +40964,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       isMenuOpen.value = false;
     }
     function openBlog() {
+      activeNav.value = "blog";
       router.push({
         name: "student",
         query: {
@@ -41026,10 +41031,41 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       cartStore.removeFromCart({
         type: item.type,
         slug: item.slug,
-        price: item.price,
-        name: item.course_name,
-        image: item.thumbnail_url
+        price: item.price
       });
+    }
+    function getCartItemName(item) {
+      return (item === null || item === void 0 ? void 0 : item.name) || (item === null || item === void 0 ? void 0 : item.course_name) || (item === null || item === void 0 ? void 0 : item.title) || "Item";
+    }
+    function getCartItemImage(item) {
+      return (item === null || item === void 0 ? void 0 : item.image) || (item === null || item === void 0 ? void 0 : item.thumbnail_url) || (item === null || item === void 0 ? void 0 : item.cover_page_url) || "/images/course-1.jpg";
+    }
+    function navButtonClass(tabKey) {
+      return ["font-semibold transition-colors", activeNav.value === tabKey ? "text-lime-600" : "text-gray-700 hover:text-lime-500"];
+    }
+    function mobileNavButtonClass(tabKey) {
+      return ["w-full text-left px-4 py-3 rounded-lg font-semibold transition-colors", activeNav.value === tabKey ? "bg-lime-100 text-lime-700" : "text-gray-700 hover:bg-lime-50 hover:text-lime-600"];
+    }
+    function syncActiveNavFromRoute() {
+      var _route$query;
+      var queryTab = (_route$query = route.query) === null || _route$query === void 0 ? void 0 : _route$query.tab;
+      if (route.name === "student") {
+        if (queryTab === freeCourses.value) {
+          activeNav.value = "free-courses";
+          return;
+        }
+        if (queryTab === blogTab.value) {
+          activeNav.value = "blog";
+          return;
+        }
+        if (queryTab === myCourseTab.value) {
+          activeNav.value = "courses";
+          return;
+        }
+      }
+      if (selectedComponentId.value) {
+        activeNav.value = selectedComponentId.value;
+      }
     }
     function changeTab() {
       router.push({
@@ -41133,8 +41169,15 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       notificationsLoading.value = false;
       return;
     };
+    var refreshNotification = refreshNOtification;
     (0,vue__WEBPACK_IMPORTED_MODULE_3__.onBeforeUnmount)(function () {
       document.removeEventListener("click", handleClickOutside);
+    });
+    (0,vue__WEBPACK_IMPORTED_MODULE_3__.watch)(function () {
+      var _route$query2;
+      return [route.name, (_route$query2 = route.query) === null || _route$query2 === void 0 ? void 0 : _route$query2.tab, selectedComponentId.value];
+    }, syncActiveNavFromRoute, {
+      immediate: true
     });
     (0,vue__WEBPACK_IMPORTED_MODULE_3__.watch)(items, function (newItems) {
       localStorage.setItem("cartItems", JSON.stringify(newItems));
@@ -41143,6 +41186,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     });
     var __returned__ = {
       router: router,
+      route: route,
       sidebarStore: sidebarStore,
       selectedContent: selectedContent,
       appStore: appStore,
@@ -41177,6 +41221,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       isCartOpen: isCartOpen,
       isMenuOpen: isMenuOpen,
       isMenuVisible: isMenuVisible,
+      activeNav: activeNav,
       dropDownOpen: dropDownOpen,
       profileBtnRef: profileBtnRef,
       dropdownRef: dropdownRef,
@@ -41201,12 +41246,18 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       openBlog: openBlog,
       enrollCourse: enrollCourse,
       removeItem: removeItem,
+      getCartItemName: getCartItemName,
+      getCartItemImage: getCartItemImage,
+      navButtonClass: navButtonClass,
+      mobileNavButtonClass: mobileNavButtonClass,
+      syncActiveNavFromRoute: syncActiveNavFromRoute,
       changeTab: changeTab,
       openProfile: openProfile,
       signOut: signOut,
       toggleAuthActions: toggleAuthActions,
       toggleChat: toggleChat,
       refreshNOtification: refreshNOtification,
+      refreshNotification: refreshNotification,
       get Axios() {
         return axios__WEBPACK_IMPORTED_MODULE_0__["default"];
       },
@@ -41221,6 +41272,9 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       watch: vue__WEBPACK_IMPORTED_MODULE_3__.watch,
       onBeforeUnmount: vue__WEBPACK_IMPORTED_MODULE_3__.onBeforeUnmount,
       computed: vue__WEBPACK_IMPORTED_MODULE_3__.computed,
+      get useRoute() {
+        return vue_router__WEBPACK_IMPORTED_MODULE_4__.useRoute;
+      },
       get useRouter() {
         return vue_router__WEBPACK_IMPORTED_MODULE_4__.useRouter;
       },
@@ -59082,24 +59136,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     onClick: _cache[0] || (_cache[0] = function ($event) {
       return $setup.navigationToggle('courses');
     }),
-    "class": "text-gray-700 hover:text-lime-500 font-semibold transition-colors"
-  }, " Courses "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.navButtonClass('courses'))
+  }, " Courses ", 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: $setup.openFreeCourses,
-    "class": "text-gray-700 hover:text-lime-500 font-semibold transition-colors"
-  }, " Free Courses "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.navButtonClass('free-courses'))
+  }, " Free Courses ", 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[1] || (_cache[1] = function ($event) {
       return $setup.navigationToggle('books');
     }),
-    "class": "text-gray-700 hover:text-lime-500 font-semibold transition-colors"
-  }, " Books "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.navButtonClass('books'))
+  }, " Books ", 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: _cache[2] || (_cache[2] = function ($event) {
       return $setup.navigationToggle('live');
     }),
-    "class": "text-gray-700 hover:text-lime-500 font-semibold transition-colors"
-  }, " Live Sessions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.navButtonClass('live'))
+  }, " Live Sessions ", 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
     onClick: $setup.openBlog,
-    "class": "text-gray-700 hover:text-lime-500 font-semibold transition-colors"
-  }, " Blog ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Right Actions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Notification Button "), $setup.isLoggedIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)($setup["Popper"], {
+    "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.navButtonClass('blog'))
+  }, " Blog ", 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Right Actions "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Notification Button "), $setup.isLoggedIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)($setup["Popper"], {
     visible: $setup.notificationOpen,
     "onUpdate:visible": _cache[5] || (_cache[5] = function ($event) {
       return $setup.notificationOpen = $event;
@@ -59113,7 +59167,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         "class": "text-xl font-semibold text-gray-700"
       }, " Notifications ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: _cache[3] || (_cache[3] = function () {
-          return _ctx.refreshNotification && _ctx.refreshNotification.apply(_ctx, arguments);
+          return $setup.refreshNotification && $setup.refreshNotification.apply($setup, arguments);
         }),
         "class": "text-gray-500 hover:text-gray-800",
         disabled: $setup.notificationsLoading
@@ -59196,13 +59250,13 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         key: 1
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Cart Items "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("ul", _hoisted_33, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($setup.items, function (item) {
         return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("li", {
-          key: item.id,
+          key: "".concat(item.type, "-").concat(item.slug),
           "class": "flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition"
         }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("img", {
-          src: item.image,
+          src: $setup.getCartItemImage(item),
           alt: "Item Image",
           "class": "w-14 h-14 rounded-lg object-cover border"
-        }, null, 8 /* PROPS */, _hoisted_34), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.name), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_37, " $" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(item.price.toFixed(2)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+        }, null, 8 /* PROPS */, _hoisted_34), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_35, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_36, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.getCartItemName(item)), 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_37, " $" + (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(Number(item.price || 0).toFixed(2)), 1 /* TEXT */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
           onClick: function onClick($event) {
             return $setup.removeItem(item);
           },
@@ -59310,24 +59364,24 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         onClick: _cache[14] || (_cache[14] = function ($event) {
           return $setup.navigationToggle('courses');
         }),
-        "class": "w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors"
-      }, " Courses "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.mobileNavButtonClass('courses'))
+      }, " Courses ", 2 /* CLASS */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: $setup.openFreeCourses,
-        "class": "w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors"
-      }, " Free Courses ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.mobileNavButtonClass('free-courses'))
+      }, " Free Courses ", 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: _cache[15] || (_cache[15] = function ($event) {
           return $setup.navigationToggle('books');
         }),
-        "class": "w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors"
-      }, " Books ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.mobileNavButtonClass('books'))
+      }, " Books ", 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: _cache[16] || (_cache[16] = function ($event) {
           return $setup.navigationToggle('live');
         }),
-        "class": "w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors"
-      }, " Live Sessions ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.mobileNavButtonClass('live'))
+      }, " Live Sessions ", 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", null, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: $setup.openBlog,
-        "class": "w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors"
-      }, " Blog ")]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile Auth Buttons "), !$setup.isLoggedIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+        "class": (0,vue__WEBPACK_IMPORTED_MODULE_0__.normalizeClass)($setup.mobileNavButtonClass('blog'))
+      }, " Blog ", 2 /* CLASS */)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Mobile Auth Buttons "), !$setup.isLoggedIn ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
         key: 0
       }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("li", _hoisted_49, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
         onClick: _cache[17] || (_cache[17] = function ($event) {
