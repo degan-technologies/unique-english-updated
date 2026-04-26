@@ -64,6 +64,15 @@ function selectBank(selectedBank) {
     }
 }
 
+function selectBankByCode(bankCode) {
+    const selected = banklists.value.find((item) => String(item.id) === String(bankCode));
+    if (selected) {
+        bank.value.bank_name = selected.name;
+        bank.value.bank_code = selected.id;
+        errors.value.bank_name = "";
+    }
+}
+
 function validateBank() {
     if (!bank.value.bank_name) return;
 
@@ -221,33 +230,23 @@ onMounted(() => {
             <!-- Bank Selection -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Bank Name <span class="text-red-500">*</span>
+                    Bank Name - choose from dropdown <span class="text-red-500">*</span>
                 </label>
-                <div class="relative">
-                    <input
-                        v-model="bank.bank_name"
-                        type="text"
-                        placeholder="Search your bank"
-                        @input="filterBanks(bank.bank_name)"
-                        @blur="validateBank"
-                        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500"
-                        :class="{ 'border-red-500': errors.bank_name }"
-                        autocomplete="off"
-                    />
-                    <div
-                        v-if="searchBanks.length"
-                        class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-200 max-h-60 overflow-y-auto"
+                <select
+                    v-model="bank.bank_code"
+                    @change="selectBankByCode(bank.bank_code)"
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-lime-500 focus:border-lime-500 bg-white"
+                    :class="{ 'border-red-500': errors.bank_name }"
+                >
+                    <option value="" disabled>Select your bank</option>
+                    <option
+                        v-for="bankItem in banklists"
+                        :key="bankItem.id"
+                        :value="bankItem.id"
                     >
-                        <div
-                            v-for="bankItem in searchBanks"
-                            :key="bankItem.id"
-                            class="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            @mousedown="selectBank(bankItem.name)"
-                        >
-                            {{ bankItem.name }}
-                        </div>
-                    </div>
-                </div>
+                        {{ bankItem.name }}
+                    </option>
+                </select>
                 <p v-if="errors.bank_name" class="mt-1 text-sm text-red-600">
                     {{ errors.bank_name }}
                 </p>
