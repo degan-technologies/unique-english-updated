@@ -35,5 +35,10 @@ mix
     .version()
     .override((config) => {
         delete config.watchOptions;
+
+    // Work around webpackbar/progress-plugin option schema incompatibility.
+    config.plugins = (config.plugins || []).filter(
+      (plugin) => plugin?.constructor?.name !== 'WebpackBarPlugin'
+    );
     })
     .disableNotifications();
