@@ -22,6 +22,7 @@ const selectedPriceType = ref(null);
 const plans = ref([]);
 const checkoutUrl = ref('');
 const selectedPlanId = ref(null);
+const notFoundMessage = ref('');
 // Stores
 const appStore = useAppStore();
 const authStore = useAuthStore();
@@ -37,9 +38,14 @@ const { showLoginForm } = storeToRefs(authStore);
 const fetchPlans = async () => {
     try {
         const response = await Axios.get("/api/get-plans");
-        plans.value = response.data.data;
+        plans.value = response.data.data || [];
+        notFoundMessage.value = plans.value.length
+            ? ''
+            : 'Live class plans not found.';
     } catch (error) {
         console.error("Error fetching plans:", error);
+        plans.value = [];
+        notFoundMessage.value = 'Live class plans not found.';
     } finally {
         loading.value = false;
     }
@@ -100,16 +106,24 @@ onMounted(fetchPlans);
         </div>
 
         <div v-else>
-            <div class="flex flex-col text-center py-4">
-                <h2 class="text-4xl text-lime-700 font-bold">
-                    Live Class Plan
-                </h2>
-                <h4 class="text-gray-500 mb-6">
-                    Perfect for online learning sessions
-                </h4>
+            <div class="block text-center mb-12">
+                <h1
+                    class="mx-auto text-center text-2xl pt-8 sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl">
+                    <span class="text-gray-900"> Live Class Plan </span><br class="my-4" />
+                    <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent"> Packages</span>
+                </h1>
+                <p class="mx-auto text-center text-gray-600 text-base md:text-lg lg:text-xl py-4 leading-relaxed max-w-2xl">
+                   Select the learning plan that best suits your journey — online or inperson. Choose the option that offers you the greatest advantage.
+                </p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div v-if="notFoundMessage" class="mx-auto max-w-2xl rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-14 text-center">
+                <i class="fa-regular fa-circle-xmark text-4xl text-gray-400 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Not found</h2>
+                <p class="text-gray-600">{{ notFoundMessage }}</p>
+            </div>
+
+            <div v-else class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <div v-for="plan in plans" :key="plan.id" class="flex flex-col items-center justify-center">
                     <div class="bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center">
                         <div class="mb-6">

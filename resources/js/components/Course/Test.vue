@@ -172,25 +172,30 @@ onMounted(fetchQuizzes);
 </script>
 
 <template>
-    <div class="container mx-auto p-6 max-w-4xl mt-10">
-        <h1 class="text-4xl font-bold mb-6 text-center text-orange-500">
-            Test Yourself
+    <div class="container mx-auto pt-20 max-w-4xl mt-10">
+        <h1 class="text-4xl font-bold mb-6 text-center text-orange-500"> 
         </h1>
+
+        <div class="block text-center mb-12">
+            <h1
+                class="mx-auto text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl">
+                <span class="text-gray-900"> Test Yourself </span><br class="my-4" />
+                <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">English
+                    Questions</span>
+            </h1>
+        </div>
 
         <!-- Instructions Section -->
         <div
-            class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md mb-8 border-l-8 border-lime-500"
-        >
+            class="bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md mb-8 border-l-8 border-lime-500">
             <h2 class="text-2xl font-semibold text-lime-800 mb-3">
                 Instructions:
             </h2>
             <ul class="space-y-2 text-gray-700">
                 <li class="flex items-start gap-2">
                     <span class="text-lime-600 mt-1">•</span>
-                    <span
-                        >Read each question carefully before selecting an
-                        answer.</span
-                    >
+                    <span>Read each question carefully before selecting an
+                        answer.</span>
                 </li>
                 <li class="flex items-start gap-2">
                     <span class="text-lime-600 mt-1">•</span>
@@ -198,37 +203,24 @@ onMounted(fetchQuizzes);
                 </li>
                 <li class="flex items-start gap-2">
                     <span class="text-lime-600 mt-1">•</span>
-                    <span
-                        >Use the "Next" and "Previous" buttons to
-                        navigate.</span
-                    >
+                    <span>Use the "Next" and "Previous" buttons to
+                        navigate.</span>
                 </li>
                 <li class="flex items-start gap-2">
                     <span class="text-lime-600 mt-1">•</span>
-                    <span
-                        >Once you reach the last question, click "Finish Test"
-                        to submit.</span
-                    >
+                    <span>Once you reach the last question, click "Finish Test"
+                        to submit.</span>
                 </li>
                 <li class="flex items-start gap-2">
                     <span class="text-lime-600 mt-1">•</span>
-                    <span
-                        >Your results and level assessment will be displayed at
-                        the end.</span
-                    >
+                    <span>Your results and level assessment will be displayed at
+                        the end.</span>
                 </li>
             </ul>
             <!-- Total Questions Display -->
-            <div
-                v-if="quizzes.length > 0"
-                class="mt-4 flex items-center justify-center gap-2"
-            >
-                <span class="text-lg font-medium text-gray-700"
-                    >Total Questions:</span
-                >
-                <span
-                    class="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-lg font-bold"
-                >
+            <div v-if="quizzes.length > 0" class="mt-4 flex items-center justify-center gap-2">
+                <span class="text-lg font-medium text-gray-700">Total Questions:</span>
+                <span class="px-3 py-1 bg-lime-100 text-lime-800 rounded-full text-lg font-bold">
                     {{ quizzes.length }}
                 </span>
             </div>
@@ -241,28 +233,20 @@ onMounted(fetchQuizzes);
 
         <div v-else>
             <!-- Question Display -->
-            <div
-                v-if="
-                    currentQuestion !== null &&
-                    quizzes.length > 0 &&
-                    !testCompleted
-                "
-            >
-                <div
-                    class="bg-white p-8 rounded-2xl shadow-lg mb-6 border-2 border-lime-400"
-                >
+            <div v-if="
+                currentQuestion !== null &&
+                quizzes.length > 0 &&
+                !testCompleted
+            ">
+                <div class="bg-white p-8 rounded-2xl shadow-lg mb-6 border-2 border-lime-400">
                     <div class="flex items-center justify-between mb-6 gap-2">
                         <h1 class="text-lime-800 font-bold">
                             {{ currentQuestion + 1 }} / {{ quizzes.length }}
                         </h1>
                         <div class="flex-grow bg-gray-200 rounded-full h-2.5">
-                            <div
-                                class="bg-lime-600 h-2.5 rounded-full"
-                                :style="`width: ${
-                                    ((currentQuestion + 1) / quizzes.length) *
-                                    100
-                                }%`"
-                            ></div>
+                            <div class="bg-lime-600 h-2.5 rounded-full" :style="`width: ${((currentQuestion + 1) / quizzes.length) *
+                                100
+                                }%`"></div>
                         </div>
                     </div>
 
@@ -272,92 +256,58 @@ onMounted(fetchQuizzes);
 
                     <!-- Choices with Radio Buttons -->
                     <div class="space-y-3">
-                        <div
-                            v-for="(choice, index) in quizzes[currentQuestion]
-                                ?.choices"
-                            :key="index"
+                        <div v-for="(choice, index) in quizzes[currentQuestion]
+                            ?.choices" :key="index"
                             class="p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 flex items-center gap-4"
                             :class="{
                                 'border-lime-500 bg-lime-50 shadow-md scale-[1.01]':
                                     userAnswers[currentQuestion] === choice,
                                 'border-gray-200 hover:border-lime-300 hover:bg-gray-50':
                                     userAnswers[currentQuestion] !== choice,
-                            }"
-                            @click="selectAnswer(choice)"
-                        >
+                            }" @click="selectAnswer(choice)">
                             <div class="flex items-center">
-                                <div
-                                    class="w-6 h-6 rounded-full border-2 flex items-center justify-center"
-                                    :class="{
-                                        'border-lime-600 bg-lime-100':
-                                            userAnswers[currentQuestion] ===
-                                            choice,
-                                        'border-gray-300':
-                                            userAnswers[currentQuestion] !==
-                                            choice,
-                                    }"
-                                >
-                                    <div
-                                        v-if="
-                                            userAnswers[currentQuestion] ===
-                                            choice
-                                        "
-                                        class="w-3 h-3 rounded-full bg-lime-600"
-                                    ></div>
+                                <div class="w-6 h-6 rounded-full border-2 flex items-center justify-center" :class="{
+                                    'border-lime-600 bg-lime-100':
+                                        userAnswers[currentQuestion] ===
+                                        choice,
+                                    'border-gray-300':
+                                        userAnswers[currentQuestion] !==
+                                        choice,
+                                }">
+                                    <div v-if="
+                                        userAnswers[currentQuestion] ===
+                                        choice
+                                    " class="w-3 h-3 rounded-full bg-lime-600"></div>
                                 </div>
                             </div>
                             <span class="text-gray-700 text-lg">{{
                                 choice
-                            }}</span>
+                                }}</span>
                         </div>
                     </div>
 
                     <!-- Navigation Buttons -->
                     <div class="flex justify-between mt-8">
-                        <button
-                            :disabled="currentQuestion === 0"
-                            @click="prevQuestion"
-                            class="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M15 19l-7-7 7-7"
-                                />
+                        <button :disabled="currentQuestion === 0" @click="prevQuestion"
+                            class="px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7" />
                             </svg>
                             Previous
                         </button>
-                        <button
-                            :disabled="!userAnswers[currentQuestion]"
-                            @click="nextQuestion"
-                            class="px-6 py-3 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-                        >
+                        <button :disabled="!userAnswers[currentQuestion]" @click="nextQuestion"
+                            class="px-6 py-3 bg-lime-600 text-white rounded-xl hover:bg-lime-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2">
                             {{
                                 currentQuestion === quizzes.length - 1
                                     ? "Finish"
                                     : "Next"
                             }}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M9 5l7 7-7 7"
-                                />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
                     </div>
@@ -367,63 +317,31 @@ onMounted(fetchQuizzes);
             <!-- Result Section -->
             <div v-if="testCompleted" class="relative">
                 <div
-                    class="bg-gradient-to-br from-white to-gray-50 p-8 rounded-3xl shadow-xl border-2 border-lime-300 backdrop-blur-sm"
-                >
+                    class="bg-gradient-to-br from-white to-gray-50 p-8 rounded-3xl shadow-xl border-2 border-lime-300 backdrop-blur-sm">
                     <!-- Confetti Effect -->
-                    <canvas
-                        v-if="showConfetti"
-                        ref="confettiCanvas"
-                        class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"
-                    ></canvas>
+                    <canvas v-if="showConfetti" ref="confettiCanvas"
+                        class="absolute top-0 left-0 w-full h-full pointer-events-none z-0"></canvas>
 
                     <div class="relative z-10">
                         <!-- Score Circle -->
                         <div class="flex justify-center mb-8">
                             <div class="relative w-48 h-48">
-                                <svg
-                                    class="w-full h-full"
-                                    viewBox="0 0 100 100"
-                                >
+                                <svg class="w-full h-full" viewBox="0 0 100 100">
                                     <!-- Background circle -->
-                                    <circle
-                                        cx="50"
-                                        cy="50"
-                                        :r="45"
-                                        fill="none"
-                                        stroke="#e5e7eb"
-                                        stroke-width="8"
-                                    />
+                                    <circle cx="50" cy="50" :r="45" fill="none" stroke="#e5e7eb" stroke-width="8" />
                                     <!-- Progress circle -->
-                                    <circle
-                                        cx="50"
-                                        cy="50"
-                                        :r="45"
-                                        fill="none"
-                                        :stroke="
-                                            scorePercentage >= 70
-                                                ? '#16a34a'
-                                                : '#f59e0b'
-                                        "
-                                        stroke-width="8"
-                                        stroke-linecap="round"
-                                        :stroke-dasharray="`${
-                                            (correctAnswers / quizzes.length) *
+                                    <circle cx="50" cy="50" :r="45" fill="none" :stroke="scorePercentage >= 70
+                                            ? '#16a34a'
+                                            : '#f59e0b'
+                                        " stroke-width="8" stroke-linecap="round" :stroke-dasharray="`${(correctAnswers / quizzes.length) *
                                             283
-                                        } 283`"
-                                        transform="rotate(-90 50 50)"
-                                    />
+                                            } 283`" transform="rotate(-90 50 50)" />
                                 </svg>
-                                <div
-                                    class="absolute inset-0 flex flex-col items-center justify-center"
-                                >
-                                    <span
-                                        class="text-4xl font-bold"
-                                        :class="
-                                            scorePercentage >= 70
-                                                ? 'text-lime-600'
-                                                : 'text-amber-500'
-                                        "
-                                    >
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-4xl font-bold" :class="scorePercentage >= 70
+                                            ? 'text-lime-600'
+                                            : 'text-amber-500'
+                                        ">
                                         {{ Math.round(scorePercentage * 100) }}%
                                     </span>
                                     <span class="text-gray-600">Score</span>
@@ -434,41 +352,31 @@ onMounted(fetchQuizzes);
                         <!-- Result Content -->
                         <div class="text-center">
                             <div class="mb-6">
-                                <div
-                                    :class="`mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-4 ${resultLevelClass} ${
-                                        scorePercentage >= 70
-                                            ? 'bg-lime-100'
-                                            : 'bg-amber-100'
-                                    }`"
-                                >
+                                <div :class="`mx-auto w-20 h-20 rounded-full flex items-center justify-center text-4xl mb-4 ${resultLevelClass} ${scorePercentage >= 70
+                                        ? 'bg-lime-100'
+                                        : 'bg-amber-100'
+                                    }`">
                                     <i :class="resultIcon"></i>
                                 </div>
-                                <h2
-                                    class="text-3xl font-bold mb-2"
-                                    :class="resultLevelClass"
-                                >
+                                <h2 class="text-3xl font-bold mb-2" :class="resultLevelClass">
                                     {{ resultLevel }}
                                 </h2>
                                 <p class="text-gray-600">
                                     You answered
                                     <span class="font-bold">{{
                                         correctAnswers
-                                    }}</span>
+                                        }}</span>
                                     out of
                                     <span class="font-bold">{{
                                         quizzes.length
-                                    }}</span>
+                                        }}</span>
                                     correctly.
                                 </p>
                             </div>
 
                             <!-- Feedback Suggestion -->
-                            <div
-                                class="mt-6 p-5 bg-white rounded-xl shadow-inner border border-gray-200"
-                            >
-                                <p
-                                    class="text-lg font-semibold text-gray-700 mb-2"
-                                >
+                            <div class="mt-6 p-5 bg-white rounded-xl shadow-inner border border-gray-200">
+                                <p class="text-lg font-semibold text-gray-700 mb-2">
                                     Suggestion:
                                 </p>
                                 <p class="text-gray-600">
@@ -477,13 +385,9 @@ onMounted(fetchQuizzes);
                             </div>
 
                             <!-- Actions -->
-                            <div
-                                class="mt-8 flex flex-col sm:flex-row justify-center gap-4"
-                            >
-                                <button
-                                    @click="retakeTest"
-                                    class="px-6 py-3 bg-lime-500 text-white rounded-xl hover:shadow-lg transition-all transform focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-opacity-50"
-                                >
+                            <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+                                <button @click="retakeTest"
+                                    class="px-6 py-3 bg-lime-500 text-white rounded-xl hover:shadow-lg transition-all transform focus:outline-none focus:ring-2 focus:ring-lime-400 focus:ring-opacity-50">
                                     <i class="fas fa-redo mr-2"></i> Try Again
                                 </button>
                             </div>

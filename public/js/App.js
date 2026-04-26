@@ -46051,6 +46051,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
     var plans = (0,vue__WEBPACK_IMPORTED_MODULE_1__.ref)([]);
     var checkoutUrl = (0,vue__WEBPACK_IMPORTED_MODULE_1__.ref)('');
     var selectedPlanId = (0,vue__WEBPACK_IMPORTED_MODULE_1__.ref)(null);
+    var notFoundMessage = (0,vue__WEBPACK_IMPORTED_MODULE_1__.ref)('');
     // Stores
     var appStore = (0,_store_useAppStore__WEBPACK_IMPORTED_MODULE_5__.useAppStore)();
     var authStore = (0,_store_useAuthStore__WEBPACK_IMPORTED_MODULE_4__.useAuthStore)();
@@ -46078,13 +46079,16 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
               return axios__WEBPACK_IMPORTED_MODULE_0__["default"].get("/api/get-plans");
             case 1:
               response = _context.v;
-              plans.value = response.data.data;
+              plans.value = response.data.data || [];
+              notFoundMessage.value = plans.value.length ? '' : 'Live class plans not found.';
               _context.n = 3;
               break;
             case 2:
               _context.p = 2;
               _t = _context.v;
               console.error("Error fetching plans:", _t);
+              plans.value = [];
+              notFoundMessage.value = 'Live class plans not found.';
             case 3:
               _context.p = 3;
               loading.value = false;
@@ -46185,6 +46189,7 @@ function _asyncToGenerator(n) { return function () { var t = this, e = arguments
       plans: plans,
       checkoutUrl: checkoutUrl,
       selectedPlanId: selectedPlanId,
+      notFoundMessage: notFoundMessage,
       appStore: appStore,
       authStore: authStore,
       studentStore: studentStore,
@@ -56634,7 +56639,7 @@ function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
 var _hoisted_1 = {
-  "class": "container mx-auto p-6 max-w-4xl mt-10"
+  "class": "container mx-auto pt-20 max-w-4xl mt-10"
 };
 var _hoisted_2 = {
   "class": "bg-gradient-to-br from-orange-50 to-orange-100 p-6 rounded-xl shadow-md mb-8 border-l-8 border-lime-500"
@@ -56742,9 +56747,7 @@ var _hoisted_36 = {
 };
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   var _$setup$quizzes$$setu, _$setup$quizzes$$setu2;
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h1", {
-    "class": "text-4xl font-bold mb-6 text-center text-orange-500"
-  }, " Test Yourself ", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Instructions Section "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<h2 class=\"text-2xl font-semibold text-lime-800 mb-3\" data-v-44637a0b> Instructions: </h2><ul class=\"space-y-2 text-gray-700\" data-v-44637a0b><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Read each question carefully before selecting an answer.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Click on an option to select your answer.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Use the &quot;Next&quot; and &quot;Previous&quot; buttons to navigate.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Once you reach the last question, click &quot;Finish Test&quot; to submit.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Your results and level assessment will be displayed at the end.</span></li></ul>", 2)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Total Questions Display "), $setup.quizzes.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_3, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [_cache[11] || (_cache[11] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<h1 class=\"text-4xl font-bold mb-6 text-center text-orange-500\" data-v-44637a0b></h1><div class=\"block text-center mb-12\" data-v-44637a0b><h1 class=\"mx-auto text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl\" data-v-44637a0b><span class=\"text-gray-900\" data-v-44637a0b> Test Yourself </span><br class=\"my-4\" data-v-44637a0b><span class=\"bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent\" data-v-44637a0b>English Questions</span></h1></div>", 2)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Instructions Section "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_2, [_cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<h2 class=\"text-2xl font-semibold text-lime-800 mb-3\" data-v-44637a0b> Instructions: </h2><ul class=\"space-y-2 text-gray-700\" data-v-44637a0b><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Read each question carefully before selecting an answer.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Click on an option to select your answer.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Use the &quot;Next&quot; and &quot;Previous&quot; buttons to navigate.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Once you reach the last question, click &quot;Finish Test&quot; to submit.</span></li><li class=\"flex items-start gap-2\" data-v-44637a0b><span class=\"text-lime-600 mt-1\" data-v-44637a0b>•</span><span data-v-44637a0b>Your results and level assessment will be displayed at the end.</span></li></ul>", 2)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Total Questions Display "), $setup.quizzes.length > 0 ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_3, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", {
     "class": "text-lg font-medium text-gray-700"
   }, "Total Questions:", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_4, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.quizzes.length), 1 /* TEXT */)])) : (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)("v-if", true)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createCommentVNode)(" Loading Spinner "), $setup.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)($setup["Spinner"], {
     "class": "w-16 h-16 mx-auto text-lime-600"
@@ -63735,78 +63738,58 @@ var _hoisted_3 = {
   key: 1
 };
 var _hoisted_4 = {
-  "class": "grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+  key: 0,
+  "class": "mx-auto max-w-2xl rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-14 text-center"
 };
 var _hoisted_5 = {
-  "class": "bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center"
+  "class": "text-gray-600"
 };
 var _hoisted_6 = {
-  "class": "mb-6"
+  key: 1,
+  "class": "grid md:grid-cols-2 lg:grid-cols-3 gap-8"
 };
 var _hoisted_7 = {
-  "class": "text-3xl font-bold text-lime-700"
+  "class": "bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full text-center"
 };
 var _hoisted_8 = {
-  "class": "flex flex-row gap-4 my-4 items-center justify-center w-full"
+  "class": "mb-6"
 };
 var _hoisted_9 = {
-  "class": "w-full"
+  "class": "text-3xl font-bold text-lime-700"
 };
 var _hoisted_10 = {
-  "class": "block text-gray-700 font-medium py-2"
+  "class": "flex flex-row gap-4 my-4 items-center justify-center w-full"
 };
-var _hoisted_11 = ["onClick", "disabled"];
-var _hoisted_12 = {
+var _hoisted_11 = {
   "class": "w-full"
 };
-var _hoisted_13 = {
+var _hoisted_12 = {
   "class": "block text-gray-700 font-medium py-2"
 };
-var _hoisted_14 = ["onClick", "disabled"];
+var _hoisted_13 = ["onClick", "disabled"];
+var _hoisted_14 = {
+  "class": "w-full"
+};
+var _hoisted_15 = {
+  "class": "block text-gray-700 font-medium py-2"
+};
+var _hoisted_16 = ["onClick", "disabled"];
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [$setup.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)($setup["Spinner"])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_3, [_cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", {
-    "class": "flex flex-col text-center py-4"
-  }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
-    "class": "text-4xl text-lime-700 font-bold"
-  }, " Live Class Plan "), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h4", {
-    "class": "text-gray-500 mb-6"
-  }, " Perfect for online learning sessions ")], -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_4, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($setup.plans, function (plan) {
+  return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_1, [$setup.loading ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_2, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createVNode)($setup["Spinner"])])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_3, [_cache[7] || (_cache[7] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<div class=\"block text-center mb-12\"><h1 class=\"mx-auto text-center text-2xl pt-8 sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl\"><span class=\"text-gray-900\"> Live Class Plan </span><br class=\"my-4\"><span class=\"bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent\"> Packages</span></h1><p class=\"mx-auto text-center text-gray-600 text-base md:text-lg lg:text-xl py-4 leading-relaxed max-w-2xl\"> Select the learning plan that best suits your journey — online or inperson. Choose the option that offers you the greatest advantage. </p></div>", 1)), $setup.notFoundMessage ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_4, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("i", {
+    "class": "fa-regular fa-circle-xmark text-4xl text-gray-400 mb-4"
+  }, null, -1 /* CACHED */)), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("h2", {
+    "class": "text-2xl font-bold text-gray-800 mb-2"
+  }, "Not found", -1 /* CACHED */)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("p", _hoisted_5, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)($setup.notFoundMessage), 1 /* TEXT */)])) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", _hoisted_6, [((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(true), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,vue__WEBPACK_IMPORTED_MODULE_0__.renderList)($setup.plans, function (plan) {
     return (0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)("div", {
       key: plan.id,
       "class": "flex flex-col items-center justify-center"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_5, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_6, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_7, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.name), 1 /* TEXT */)]), _cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<ul class=\"text-gray-600 mb-8 space-y-4\"><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">10 Live Classes per Month</span></li><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">Direct Chat with Instructor</span></li><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">Certificate upon Completion</span></li></ul><span class=\"text-gray-500 text-lg font-bold\">Join Our Live</span>", 2)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_9, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_10, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.one_to_one_price) + " ETB ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_7, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_8, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("span", _hoisted_9, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.name), 1 /* TEXT */)]), _cache[6] || (_cache[6] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createStaticVNode)("<ul class=\"text-gray-600 mb-8 space-y-4\"><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">10 Live Classes per Month</span></li><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">Direct Chat with Instructor</span></li><li class=\"flex items-center gap-3\"><i class=\"fa fa-check text-lime-600 text-lg\"></i><span class=\"text-left\">Certificate upon Completion</span></li></ul><span class=\"text-gray-500 text-lg font-bold\">Join Our Live</span>", 2)), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_10, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_11, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_12, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.one_to_one_price) + " ETB ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
       onClick: function onClick($event) {
         return $setup.handleEnrollment(plan, $setup.PRICE_TYPES.INDIVIDUAL);
       },
       disabled: $setup.isLoading || plan.planType == $setup.PRICE_TYPES.INDIVIDUAL,
       "class": "mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
     }, [$setup.isLoading && $setup.selectedPriceType == $setup.PRICE_TYPES.INDIVIDUAL && plan.id == $setup.selectedPlanId ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-      key: 0
-    }, [_cache[0] || (_cache[0] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
-      "class": "animate-spin -ml-1 mr-2 h-4 w-4 text-white",
-      xmlns: "http://www.w3.org/2000/svg",
-      fill: "none",
-      viewBox: "0 0 24 24"
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("circle", {
-      "class": "opacity-25",
-      cx: "12",
-      cy: "12",
-      r: "10",
-      stroke: "currentColor",
-      "stroke-width": "4"
-    }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
-      "class": "opacity-75",
-      fill: "currentColor",
-      d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    })], -1 /* CACHED */)), _cache[1] || (_cache[1] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Processing... ", -1 /* CACHED */))], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
-      key: 1
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.planType == $setup.PRICE_TYPES.INDIVIDUAL ? 'Paid' : 'Individual'), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_11)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_12, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_13, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.group_price) + " ETB ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
-      onClick: function onClick($event) {
-        return $setup.handleEnrollment(plan, $setup.PRICE_TYPES.GROUP);
-      },
-      disabled: $setup.isLoading || plan.planType == $setup.PRICE_TYPES.GROUP,
-      "class": "mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
-    }, [$setup.isLoading && $setup.selectedPriceType == $setup.PRICE_TYPES.GROUP && plan.id == $setup.selectedPlanId ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
       key: 0
     }, [_cache[2] || (_cache[2] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
       "class": "animate-spin -ml-1 mr-2 h-4 w-4 text-white",
@@ -63826,8 +63809,34 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
     })], -1 /* CACHED */)), _cache[3] || (_cache[3] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Processing... ", -1 /* CACHED */))], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
       key: 1
-    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.planType == $setup.PRICE_TYPES.GROUP ? 'Paid' : 'Group'), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_14)])])])]);
-  }), 128 /* KEYED_FRAGMENT */))])]))]);
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.planType == $setup.PRICE_TYPES.INDIVIDUAL ? 'Paid' : 'Individual'), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_13)]), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("div", _hoisted_14, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("label", _hoisted_15, (0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.group_price) + " ETB ", 1 /* TEXT */), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("button", {
+      onClick: function onClick($event) {
+        return $setup.handleEnrollment(plan, $setup.PRICE_TYPES.GROUP);
+      },
+      disabled: $setup.isLoading || plan.planType == $setup.PRICE_TYPES.GROUP,
+      "class": "mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
+    }, [$setup.isLoading && $setup.selectedPriceType == $setup.PRICE_TYPES.GROUP && plan.id == $setup.selectedPlanId ? ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+      key: 0
+    }, [_cache[4] || (_cache[4] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("svg", {
+      "class": "animate-spin -ml-1 mr-2 h-4 w-4 text-white",
+      xmlns: "http://www.w3.org/2000/svg",
+      fill: "none",
+      viewBox: "0 0 24 24"
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("circle", {
+      "class": "opacity-25",
+      cx: "12",
+      cy: "12",
+      r: "10",
+      stroke: "currentColor",
+      "stroke-width": "4"
+    }), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementVNode)("path", {
+      "class": "opacity-75",
+      fill: "currentColor",
+      d: "M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    })], -1 /* CACHED */)), _cache[5] || (_cache[5] = (0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)(" Processing... ", -1 /* CACHED */))], 64 /* STABLE_FRAGMENT */)) : ((0,vue__WEBPACK_IMPORTED_MODULE_0__.openBlock)(), (0,vue__WEBPACK_IMPORTED_MODULE_0__.createElementBlock)(vue__WEBPACK_IMPORTED_MODULE_0__.Fragment, {
+      key: 1
+    }, [(0,vue__WEBPACK_IMPORTED_MODULE_0__.createTextVNode)((0,vue__WEBPACK_IMPORTED_MODULE_0__.toDisplayString)(plan.planType == $setup.PRICE_TYPES.GROUP ? 'Paid' : 'Group'), 1 /* TEXT */)], 64 /* STABLE_FRAGMENT */))], 8 /* PROPS */, _hoisted_16)])])])]);
+  }), 128 /* KEYED_FRAGMENT */))]))]))]);
 }
 
 /***/ },
