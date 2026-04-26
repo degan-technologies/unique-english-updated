@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Bank\BankInfo;
+use App\Models\Blog\BlogPost;
 use App\Models\Book\Book;
 use App\Models\Book\OrderedBook;
 use App\Models\Comment\FeedBack;
@@ -116,6 +117,7 @@ class User extends Authenticatable {
     public function courseModules() { return $this->hasMany(CourseModule::class); }
     public function transaction() { return $this->hasMany(Transaction::class); }
     public function plans() { return $this->hasMany(Plan::class); }
+    public function blogPosts() { return $this->hasMany(BlogPost::class); }
 
     public function quizzes() { return $this->hasMany(Quiz::class);}
     public function quizAnswers() { return $this->hasMany(QuizAnswer::class);}

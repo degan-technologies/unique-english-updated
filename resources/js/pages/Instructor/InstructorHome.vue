@@ -17,6 +17,7 @@ import DashboardFooter from "@/components/Layout/DashboardFooter.vue";
 import DashboardSidebar from "@/components/Layout/DashboardSidebar.vue";
 import CourseManagement from "@/components/Layout/CourseManagement.vue";
 import RevenueManagement from "@/components/Layout/RevenueManagement.vue";
+import BlogManagement from "@/components/Layout/BlogManagement.vue";
 import ScheduleManagement from "@/components/Live/ScheduleManagement.vue";
 import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue"; 
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
@@ -37,6 +38,7 @@ const {
     schedule,
     payments,
     liveSssions,
+    blogs,
     attendance,
     messaging,
 } = storeToRefs(sidebarStore);
@@ -92,7 +94,10 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === attendance">
                             <Attendance />
-                        </div> 
+                        </div>
+                        <div v-else-if="selectedContent === blogs">
+                            <BlogManagement />
+                        </div>
                     </div>
                    <div>
                         <div v-if="selectedContent === profile">

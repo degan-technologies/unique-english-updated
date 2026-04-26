@@ -25,6 +25,7 @@ const {
     exams,
     payments,
     liveSssions,
+    blogs,
     schedule,
     attendance,
     messaging,
@@ -73,6 +74,13 @@ const mainItems = [
         route: liveSssions.value,
         description: "Track, join, schedule live classes.",
         icon: "video",
+        role: true,
+    },
+    {
+        label: "Blog Management",
+        route: blogs.value,
+        description: "Create, edit, publish, and archive blog posts.",
+        icon: "newspaper",
         role: true,
     },
     {

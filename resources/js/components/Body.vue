@@ -26,10 +26,14 @@ const currentComponentName = computed(() => {
             <InstructorHome />
         </div>
         <div v-else-if="authUser?.role === 'student'">
-            <div v-if="currentComponentName === 'InvoicePage'">
-                <RouterView />
-            </div>
-            <div v-else-if="currentComponentName === 'Error'">
+            <div
+                v-if="
+                    currentComponentName === 'InvoicePage' ||
+                    currentComponentName === 'Error' ||
+                    currentComponentName === 'blogList' ||
+                    currentComponentName === 'blogDetail'
+                "
+            >
                 <RouterView />
             </div>
             <div v-else>
@@ -37,7 +41,18 @@ const currentComponentName = computed(() => {
             </div>
         </div>
         <div v-else-if="!isLoggedIn">
-            <StudentHome />
+            <div
+                v-if="
+                    currentComponentName === 'blogList' ||
+                    currentComponentName === 'blogDetail' ||
+                    currentComponentName === 'Error'
+                "
+            >
+                <RouterView />
+            </div>
+            <div v-else>
+                <StudentHome />
+            </div>
         </div>
     </div>
 </template>

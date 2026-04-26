@@ -44,91 +44,83 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen" id="books">
-        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">
-            Popular Books
-        </h1>
+    <div class="px-4 py-8 sm:px-6 lg:px-10 bg-gray-100 min-h-screen" id="books">
+        <div class="max-w-7xl mx-auto"> 
 
-        <!-- Responsive grid layout -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div v-for="book in books" :key="book.id"
-                class="relative bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 cursor-pointer flex flex-col">
-                <div class="relative group">
-                    <img :src="book.cover_page_url" :alt="book.title" class="w-full h-40 object-cover rounded-t-lg" />
-                    <div
-                        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button class="bg-lime-500 rounded-full p-3 shadow-md text-white hover:text-white">
-                            <i class="fas fa-book text-lg"></i>
-                        </button>
-                    </div>
-                </div>
+            <div class="block text-center mb-12">
+                <h1 class="mx-auto text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl">
+                    <span class="text-gray-900"> Books From </span><br class="my-4" />
+                    <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">unique English</span>
+                </h1>
 
-                <div class="p-4 flex flex-col">
-                    <div class="h-20">
-                        <h2 class="text-lg font-bold mb-2  line-clamp-2">{{ book.title }}</h2>
-                        <div class="flex flex-1 justify-between">
-                            <p class="text-sm text-gray-600  line-clamp-2">
-                                By: {{ book.auther }}
-                            </p>
-                            <div class="flex items-center gap-2 font-bold">
-                                <span class="text-yellow-500 text-lg">&#9733;</span>
-                                <span class="ml-1 text-md text-gray-600">{{
-                                    book.averageRating
-                                }}</span>
-                            </div>
+                <p class="mx-auto text-center text-gray-600 text-base md:text-lg lg:text-xl py-4 leading-relaxed max-w-2xl">
+                    Enroll Short, focused books written by our instructors and built around practical classroom breakthroughs.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                <article
+                    v-for="book in books"
+                    :key="book.id"
+                    class="group flex flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                >
+                    <button
+                        class="relative h-64 w-full text-left"
+                        @click="changeTab(book.slug)"
+                    >
+                        <img
+                            :src="book.cover_page_url"
+                            :alt="book.title"
+                            class="h-full w-full object-cover"
+                        />
+
+                        <span
+                            class="absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-lime-100 text-lime-800"
+                        >
+                            {{ book.price === 0 ? "Free" : (book.averageRating >= 4.5 ? "Bestseller" : "New") }}
+                        </span>
+                    </button>
+
+                    <div class="flex flex-col p-4 sm:p-5">
+                        <h2 class="text-[31px] font-serif text-gray-700 leading-tight mb-2 line-clamp-1 min-h-[56px]">
+                            {{ book.title }}
+                        </h2>
+
+                        <p class="mt-2 text-sm text-gray-600 line-clamp-1">
+                            by {{ book.auther || "Mehari Mekonen" }} 
+                        </p> 
+                        <div class="text-[18px] text-gray-600 line-clamp-2 min-h-[44px]"
+                            v-html="book?.description || 'No description available'">
                         </div>
-                    </div>
 
-                    <div class="h-fit bottem-0">
-                        <div class="text-lg font-semibold flex flex-row items-center justify-between">
-                            <p class="self-center">
-                                {{ book.price?.toFixed(2) }} ETB
+                        <div class="mt-auto pt-5 flex items-center justify-between gap-3">
+                            <p class="text-2xl font-semibold text-gray-900">
+                                {{ Number(book.price || 0) > 0 ? `${Number(book.price || 0).toFixed(2)} ETB` : "Free" }}
                             </p>
-                            <button v-if="!book.isMyBook" @click="addItems(book)" class="ml-auto focus:outline-none">
-                                <i
-                                    class="fa-solid fa-cart-plus mb-2 material-icons right-8 text-lime-700 rounded-full p-3 hover:text-lime-700"></i>
+
+                            <button
+                                v-if="!book.isMyBook"
+                                @click="addItems(book)"
+                                class="shrink-0 rounded-full px-2 py-2 text-sm font-semibold border border-lime-700 text-lime-800 hover:bg-lime-800 hover:text-white transition-colors"
+                            >
+                            <i
+                                class="fa-solid fa-cart-plus  material-icons text-lime-700 rounded-full px-1 hover:text-lime-700"></i>
+                                Add now
                             </button>
-                            <button v-else
-                                class="text-lime-700 font-normal h-fit w-fit text-sm px-2 py-1 rounded-md mt-3 border-2 border-yellow-400 hover:border-yellow-600">
+
+                            <button
+                                v-else
+                                class="shrink-0 rounded-full px-4 py-2 text-sm font-semibold border border-emerald-600 text-emerald-700 bg-emerald-50"
+                            >
                                 Paid
                             </button>
                         </div>
-
-                        <button @click="changeTab(book.slug)"
-                            class="mt-4 border border-lime-700 text-lime-800 w-full px-4 py-2 rounded hover:bg-lime-800 hover:text-white focus:outline-none transition-colors font-medium text-lg">
-                            Overview
-                        </button>
                     </div>
-                </div>
+                </article>
             </div>
         </div>
     </div>
 </template>
 
 <style scoped>
-/* Typing text styles */
-.typing-text {
-    display: inline-flex;
-    align-items: center;
-}
-
-.cursor {
-    display: inline-block;
-    width: 2px;
-    background-color: limegreen;
-    animation: blink 0.7s infinite;
-}
-
-/* Cursor blinking animation */
-@keyframes blink {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0;
-    }
-}
 </style>

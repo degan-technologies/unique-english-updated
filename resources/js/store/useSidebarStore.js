@@ -20,6 +20,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
     const messaging = ref("messaging");
     const schedule=ref("schedule");
     const attendance = ref("attendance");
+    const blogs = ref("blogs");
     const selectedContent = ref( authUser?.value?.role === 'systemAdmin' ?  dashboard.value : courses.value);
 
     function loadSidebarState() {
@@ -81,6 +82,7 @@ export const useSidebarStore = defineStore("useSidebarStore", () => {
         liveSssions,
         schedule,
         attendance,
+        blogs,
         messaging,
     };
 });

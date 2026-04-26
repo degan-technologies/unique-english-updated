@@ -10,7 +10,8 @@ import { UseStudentStore } from "@/store/UseStudentStore";
 import Pdf from "@/components/Book/Pdf.vue";
 import Book from "@/components/Book/Book.vue";
 import Hero from "@/components/Layout/Hero.vue";
-import AboutUs from "@/pages/common/AboutUs.vue";
+import AboutUs from "@/pages/common/AboutUs.vue"; 
+import BlogListPage from "@/pages/common/BlogListPage.vue";
 import Header from "@/components/Layout/Header.vue";
 import Footer from "@/components/Layout/Footer.vue";
 import BookDetails from "@/components/Book/BookDetails.vue";
@@ -23,8 +24,8 @@ import MeetingAction from "@/components/Live/MeetingAction.vue";
 import WhatExpect from "@/components/Layout/WhatExpect.vue";
 import Test from "@/components/Course/Test.vue";
 import ProfileForm from "@/components/Profile/ProfileForm.vue";
-import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 import VerifyOtp from "@/components/Auth/VerifyOtp.vue";
+import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 import InstructorProfile from "@/components/Layout/InstructorProfile.vue";
 
 const appStore = useAppStore();
@@ -44,6 +45,8 @@ const {
     TestTab,
     courses,
     profile,
+    freeCourses,
+    blogTab,
     selectedCourseSlug,
 } = storeToRefs(studentStore);
 
@@ -143,6 +146,13 @@ watch(
                 <div v-else-if="currentTab.tab == liveSchedulTab">
                     <LiveStreamingVue />
                 </div>
+                <div v-else-if="currentTab.tab == freeCourses">
+                    <YoutubeEmbed/>
+                </div>
+
+                <div v-else-if="currentTab.tab == blogTab">
+                    <BlogListPage />
+                </div>
                 <div
                     class="md:w-[80%] mx-auto my-24"
                     v-if="profileTab === profile && isLoggedIn"
@@ -162,7 +172,6 @@ watch(
                     <CourseCard />
                     <MeetingAction />
                     <Book />
-                    <YoutubeEmbed />
                     <WhatExpect />
                     <AboutUs />
                 </div>

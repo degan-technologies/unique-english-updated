@@ -1,15 +1,15 @@
 <script setup>
 import Axios from "axios";
-import { storeToRefs } from "pinia";
-import { onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 import Popper from "vue3-popper";
+import { storeToRefs } from "pinia";
+import { onMounted, ref, watch, onBeforeUnmount, computed } from "vue";
+import { useRouter } from "vue-router";
 
+import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
-import { useSidebarStore } from "@/store/useSidebarStore";
-import { UseStudentStore } from "@/store/UseStudentStore";
+import { UseStudentStore } from "@/store/UseStudentStore"; 
 
 const router = useRouter();
 
@@ -27,6 +27,7 @@ const { items, itemCount, totalPrice } = storeToRefs(cartStore);
 
 // Auth refs
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
+ 
 
 // App & user refs
 const {
@@ -38,14 +39,17 @@ const {
     readNotifications,
     authUser,
     exploreCourses,
+    selectedComponentId,
+    otpEmail,
 } = storeToRefs(appStore);
 
 // Student refs
-const { landingPageTab, selectedCourseSlug, myCourseTab } =
+const { landingPageTab, selectedCourseSlug, myCourseTab, freeCourses, blogTab } =
     storeToRefs(studentStore);
 
 // Notification refs
 const notificationOpen = ref(false);
+const notificationsLoading = ref(false);
 const showAllNotifications = ref(false);
 const currentNotification = ref(null);
 const showNotificationModal = ref(false);
@@ -131,7 +135,7 @@ function closeNotificationModal() {
 }
 
 function toggleShowAllNotifications() {
-    if (notifications.length === 0) return;
+    if (notifications.value?.length === 0) return;
     showAllNotifications.value = !showAllNotifications.value;
 }
 
@@ -163,26 +167,35 @@ function handleClickOutside(event) {
 // Get initials for fallback avatar
 const getInitials = (name) => (name ? name.charAt(0).toUpperCase() : "");
 
-// Navigation actions
-function onExploreCourses() {
-    isCartOpen.value = false;
-    router.push("/").then(() => {
-        exploreCourses.value = !exploreCourses.value;
-        // Scroll to courses section after navigation
-        setTimeout(() => {
-            const coursesSection = document.getElementById("courses");
-            if (coursesSection) {
-                coursesSection.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                });
-            }
-        }, 300); // Small delay to ensure the page has loaded
+async function navigationToggle(id) {
+    await router.push("/");
+    selectedComponentId.value = id;
+    isMenuOpen.value = false;
+}
+
+function openFreeCourses() {
+    router.push({
+        name: "student",
+        query: { tab: freeCourses.value },
     });
+    isMenuOpen.value = false;
+}
+
+function openBlog() {
+    router.push({
+        name: "student",
+        query: { tab: blogTab.value },
+    });
+    isMenuOpen.value = false;
 }
 
 // Checkout flow
 async function enrollCourse() {
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+        return;
+    }
+
     if (isLoading.value) return;
     isLoading.value = true;
     try {
@@ -226,13 +239,21 @@ function openProfile() {
     closeDropdown();
 }
 
-function signOut() {
-    appStore.setAuthToken("");
-    loggingIn.value = false;
-    closeDropdown();
+async function signOut() {
+    otpEmail.value = "";
+    try {
+        await Axios.post("/api/log-out");
+        authUser.value = null;
+        appStore.setAuthToken("");
+        isLoggedIn.value = false;
+        closeDropdown();
+    } catch (error) {
+        console.error("Logout failed:", error);
+    }
 }
 
 function toggleAuthActions(actionType) {
+    isMenuOpen.value = false;
     if (actionType === actionTypeLogin.value) {
         showLoginForm.value = true;
         showRegistrationForm.value = false;
@@ -241,6 +262,14 @@ function toggleAuthActions(actionType) {
         showRegistrationForm.value = true;
     }
 }
+
+// Toggle chat visibility
+const toggleChat = () => {
+    if (!isLoggedIn.value) {
+        showLoginForm.value = true;
+        return;
+    }
+};
 
 // Lifecycle
 onMounted(() => {
@@ -260,7 +289,7 @@ onMounted(() => {
     appStore.fetchUnreadNotifications();
     if (window.Echo && authUser.value?.id) {
         window.Echo.private(
-            `App.Models.User.${authUser.value.id}`,
+            `App.Models.User.${authUser.value.id}`
         ).notification(() => {
             appStore.fetchUnreadNotifications();
             if (showAllNotifications.value) {
@@ -268,7 +297,19 @@ onMounted(() => {
             }
         });
     }
+
+    // Initialize chat store
+    if (authUser.value?.id) {
+    }
 });
+
+const refreshNOtification = () => {
+    notificationsLoading.value = true;
+    appStore.fetchUnreadNotifications();
+
+    notificationsLoading.value = false;
+    return;
+};
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
@@ -279,571 +320,452 @@ watch(
     (newItems) => {
         localStorage.setItem("cartItems", JSON.stringify(newItems));
     },
-    { deep: true },
+    { deep: true }
 );
 </script>
 
 <template>
-    <header
-        class="fixed top-0 left-0 w-full z-10 p-2 bg-lime-700 shadow-lg transition-transform duration-300 ease-in-out"
+    <header class="fixed top-0 left-0 w-full z-50 bg-white shadow-sm transition-transform duration-300 ease-in-out"
         :class="{
             'translate-y-0': isMenuVisible,
             '-translate-y-full': !isMenuVisible,
-        }"
-    >
-        <div class="mx-auto flex items-center justify-between h-fit">
-            <router-link to="/" class="flex items-center gap-2">
-                <img
-                    src="/images/logo.jpg"
-                    alt="Logo"
-                    class="h-12 w-12 rounded-full object-cover border-2 border-white"
-                />
-                <span
-                    class="text-xl font-bold text-white drop-shadow-md hidden sm:inline-block"
-                >
-                    Unique English
-                </span>
-            </router-link>
+        }">
+        <div class=" mx-auto px-4 sm:px-6 lg:px-12">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <router-link to="/" class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="absolute inset-0 rounded-xl "></div>
+                        <img src="/images/logo.jpg" alt="Logo" class="relative h-16 w-20 rounded-xl object-contain" />
+                    </div>
+                    <div class="hidden lg:flex flex-col">
+                        <span class="text-xl font-black text-gray-900">Unique<span
+                                class="text-lime-500">English</span></span>
+                    </div>
+                </router-link>
 
-            <div class="flex items-center gap-4 pr-4">
-                <!-- Notification Button - Only show if logged in -->
-                <div v-if="isLoggedIn" class="relative flex justify-center">
-                    <Popper
-                        v-model:visible="notificationOpen"
-                        :offset-distance="'0'"
-                        placement="bottom"
-                    >
-                        <!-- Notification Icon with Count -->
-                        <div
-                            class="relative flex justify-center items-center text-2xl cursor-pointer"
-                            @click="toggleNotifications"
-                        >
-                            <div class="relative">
-                                <i
-                                    class="fa-solid fa-bell text-2xl text-white"
-                                ></i>
-                                <span
-                                    v-if="unreadNotifications > 0"
-                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow"
-                                >
-                                    {{ unreadNotifications }}
-                                </span>
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <button @click="navigationToggle('courses')"
+                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                        Courses
+                    </button>
+                    <button @click="openFreeCourses"
+                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                        Free Courses
+                    </button>
+                    
+                    <button @click="navigationToggle('books')"
+                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                        Books
+                    </button>
+                    <button @click="navigationToggle('live')"
+                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                        Live Sessions
+                    </button>
+                    <button @click="openBlog"
+                        class="text-gray-700 hover:text-lime-500 font-semibold transition-colors">
+                        Blog
+                    </button>
+                </nav>
+
+                <!-- Right Actions -->
+                <div class="flex items-center gap-4">
+                    <!-- Notification Button -->
+                    <div v-if="isLoggedIn" class="relative flex justify-center">
+                        <Popper v-model:visible="notificationOpen" :offset-distance="'0'" placement="bottom">
+                            <!-- Notification Icon with Count -->
+                            <div class="relative flex justify-center items-center cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                @click="toggleNotifications">
+                                <div class="relative">
+                                    <i class="fa-solid fa-bell text-xl text-gray-700"></i>
+                                    <span v-if="unreadNotifications > 0"
+                                        class="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-lime-500 rounded-full border-2 border-white shadow">
+                                        {{ unreadNotifications }}
+                                    </span>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Dropdown -->
-                        <template #content>
-                            <div
-                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4"
-                            >
+                            <!-- Dropdown -->
+                            <template #content>
                                 <div
-                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300"
-                                >
-                                    <!-- Header -->
+                                    class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4">
                                     <div
-                                        class="border-b pb-3 mb-3 flex justify-between items-center"
-                                    >
-                                        <h3
-                                            class="text-xl font-semibold text-gray-700"
-                                        >
-                                            Notifications
-                                        </h3>
-                                        <button
-                                            @click.stop="
-                                                toggleShowAllNotifications
-                                            "
-                                            class="text-xs text-lime-600 hover:text-lime-800"
-                                        >
-                                            {{
-                                                showAllNotifications
-                                                    ? "Show Unread Only"
-                                                    : "Show All"
-                                            }}
-                                        </button>
-                                    </div>
+                                        class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+                                        <!-- Header -->
+                                        <div class="border-b pb-3 mb-3 flex justify-between items-center">
+                                            <h3 class="text-xl font-semibold text-gray-700">
+                                                Notifications
+                                            </h3>
+                                            <div class="flex flex-row gap-4">
+                                                <button @click="refreshNotification"
+                                                    class="text-gray-500 hover:text-gray-800"
+                                                    :disabled="notificationsLoading">
+                                                    <i class="fas fa-sync-alt transition-transform" :class="{
+                                                        'animate-spin':
+                                                            notificationsLoading,
+                                                    }" />
+                                                </button>
 
-                                    <!-- No notifications -->
-                                    <div
-                                        v-if="
+                                                <button @click="
+                                                    toggleShowAllNotifications
+                                                " class="text-xs text-lime-500 hover:text-lime-600">
+                                                    {{
+                                                        showAllNotifications
+                                                            ? "Show Unread Only"
+                                                            : "Show All"
+                                                    }}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- No notifications -->
+                                        <div v-if="
                                             notifications.length === 0 &&
                                             (!showAllNotifications ||
-                                                readNotifications.length === 0)
+                                                readNotifications?.length === 0)
                                         "
-                                        class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40"
-                                    >
-                                        <i
-                                            class="fa-regular fa-bell-slash text-4xl text-gray-400 mb-3"
-                                        ></i>
-                                        <p>No new notifications</p>
-                                    </div>
+                                            class="p-4 text-gray-500 text-sm flex flex-col items-center justify-center h-40">
+                                            <i class="fa-regular fa-bell-slash text-4xl text-gray-400 mb-3"></i>
+                                            <p>No new notifications</p>
+                                        </div>
 
-                                    <!-- Unread Notifications -->
-                                    <ul
-                                        v-if="notifications.length > 0"
-                                        class="space-y-2"
-                                    >
-                                        <li
-                                            v-for="notification in notifications"
-                                            :key="notification.id"
-                                            :class="{
+                                        <!-- Unread Notifications -->
+                                        <ul v-if="notifications.length > 0" class="space-y-2">
+                                            <li v-for="notification in notifications" :key="notification.id" :class="{
                                                 hidden:
                                                     showAllNotifications &&
                                                     notification.data.read_at,
-                                            }"
-                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
-                                            @click="
-                                                showNotificationDetails(
-                                                    notification,
-                                                )
-                                            "
-                                        >
-                                            <div class="flex items-start gap-3">
-                                                <div>
-                                                    <p
-                                                        class="font-medium text-sm"
-                                                    >
-                                                        {{
-                                                            notification.data
-                                                                .message
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-gray-500 mt-1"
-                                                    >
-                                                        {{
-                                                            formatTime(
-                                                                notification.created_at,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                </div>
-                                                <span
-                                                    v-if="
+                                            }" class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                                                @click="
+                                                    showNotificationDetails(
+                                                        notification
+                                                    )
+                                                    ">
+                                                <div class="flex items-start gap-3">
+                                                    <div>
+                                                        <p class="font-medium text-sm">
+                                                            {{
+                                                                notification.data
+                                                                    .message
+                                                            }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-500 mt-1">
+                                                            {{
+                                                                formatTime(
+                                                                    notification.created_at
+                                                                )
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                    <span v-if="
                                                         currentNotification?.id ==
-                                                        notification?.id
+                                                            notification?.id
                                                             ? false
                                                             : !notification.read_at
                                                     "
-                                                    class="w-2 h-2 bg-lime-500 rounded-full mt-2 flex-shrink-0"
-                                                ></span>
-                                            </div>
-                                        </li>
-                                    </ul>
-
-                                    <!-- Read Notifications (when showAll is true) -->
-                                    <ul
-                                        v-if="
-                                            showAllNotifications &&
-                                            readNotifications.length > 0
-                                        "
-                                        class="space-y-2"
-                                    >
-                                        <li
-                                            v-for="notification in readNotifications"
-                                            :key="notification.id"
-                                            class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
-                                            @click="
-                                                showNotificationDetails(
-                                                    notification,
-                                                )
-                                            "
-                                        >
-                                            <div class="flex items-start gap-3">
-                                                <span
-                                                    class="w-2 h-2 bg-gray-400 rounded-full mt-2 flex-shrink-0"
-                                                ></span>
-                                                <div class="flex-1">
-                                                    <p
-                                                        class="text-gray-600 text-sm"
-                                                    >
-                                                        {{
-                                                            notification.data
-                                                                .message
-                                                        }}
-                                                    </p>
-                                                    <p
-                                                        class="text-xs text-gray-400 mt-1"
-                                                    >
-                                                        {{
-                                                            formatTime(
-                                                                notification.created_at,
-                                                            )
-                                                        }}
-                                                    </p>
+                                                        class="w-2 h-2 bg-lime-400 rounded-full mt-2 flex-shrink-0"></span>
                                                 </div>
-                                                <button
-                                                    @click.stop="
-                                                        markAsUnread(
-                                                            notification.id,
-                                                        )
-                                                    "
-                                                    class="text-xs text-gray-400 hover:text-gray-600 ml-2"
-                                                    title="Mark as unread"
-                                                >
-                                                    <i
-                                                        class="fa-solid fa-envelope"
-                                                    ></i>
-                                                </button>
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </template>
-                    </Popper>
-                </div>
-
-                <!-- Cart Dropdown -->
-                <div class="relative flex justify-center">
-                    <Popper
-                        v-model:visible="isCartOpen"
-                        :offset-distance="'0'"
-                        placement="bottom"
-                    >
-                        <!-- Cart Icon with Count -->
-                        <div
-                            class="relative flex justify-center items-center text-2xl cursor-pointer"
-                            @click="isCartOpen = !isCartOpen"
-                        >
-                            <div class="relative">
-                                <i
-                                    class="fa-solid fa-cart-plus text-white text-2xl"
-                                ></i>
-                                <span
-                                    v-if="itemCount > 0"
-                                    class="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-red-500 rounded-full border border-white shadow"
-                                >
-                                    {{ itemCount }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Dropdown -->
-                        <template #content>
-                            <div
-                                class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4"
-                            >
-                                <div
-                                    class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300"
-                                >
-                                    <!-- Header -->
-                                    <div class="text-center border-b pb-3 mb-3">
-                                        <h3
-                                            class="text-xl font-semibold text-gray-700"
-                                        >
-                                            Your Cart
-                                        </h3>
-                                    </div>
-
-                                    <!-- Empty Cart -->
-                                    <div
-                                        v-if="!itemCount"
-                                        class="flex flex-col items-center justify-center h-40 space-y-3 text-gray-500"
-                                    >
-                                        <i
-                                            class="fa-solid fa-cart-shopping fa-fade text-4xl text-gray-400"
-                                        ></i>
-                                        <h1 class="text-center text-base">
-                                            No items in cart
-                                        </h1>
-                                        <button
-                                            @click="onExploreCourses"
-                                            class="bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-medium text-sm transition"
-                                        >
-                                            <i
-                                                class="fa-solid fa-book-open-reader mr-2"
-                                            ></i
-                                            >Explore Courses
-                                        </button>
-                                    </div>
-
-                                    <!-- Cart Items -->
-                                    <div v-else>
-                                        <ul class="space-y-3">
-                                            <li
-                                                v-for="item in items"
-                                                :key="item.id"
-                                                class="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition"
-                                            >
-                                                <img
-                                                    :src="item.image"
-                                                    alt="Item Image"
-                                                    class="w-14 h-14 rounded-lg object-cover border"
-                                                />
-                                                <div class="flex-1">
-                                                    <p
-                                                        class="font-medium text-sm truncate"
-                                                    >
-                                                        {{ item.name }}
-                                                    </p>
-                                                    <p
-                                                        class="text-gray-500 text-sm"
-                                                    >
-                                                        ${{
-                                                            item.price.toFixed(
-                                                                2,
-                                                            )
-                                                        }}
-                                                    </p>
-                                                </div>
-                                                <i
-                                                    @click="removeItem(item)"
-                                                    class="fa-solid fa-minus text-red-500 hover:text-red-700 cursor-pointer"
-                                                ></i>
                                             </li>
                                         </ul>
 
-                                        <!-- Footer -->
-                                        <div class="mt-5 border-t pt-3">
-                                            <div
-                                                class="flex justify-between text-base font-semibold"
-                                            >
-                                                <span>Total:</span>
-                                                <span
-                                                    >${{
-                                                        totalPrice.toFixed(2)
-                                                    }}</span
-                                                >
-                                            </div>
+                                        <!-- Read Notifications (when showAll is true) -->
+                                        <ul v-if="
+                                            showAllNotifications &&
+                                            readNotifications?.length > 0
+                                        " class="space-y-2">
+                                            <li v-for="notification in readNotifications" :key="notification.id"
+                                                class="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition bg-gray-50"
+                                                @click="
+                                                    showNotificationDetails(
+                                                        notification
+                                                    )
+                                                    ">
+                                                <div class="flex items-start gap-3">
+                                                    <span
+                                                        class="w-2 h-2 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                                    <div class="flex-1">
+                                                        <p class="text-gray-600 text-sm">
+                                                            {{
+                                                                notification.data
+                                                                    .message
+                                                            }}
+                                                        </p>
+                                                        <p class="text-xs text-gray-400 mt-1">
+                                                            {{
+                                                                formatTime(
+                                                                    notification.created_at
+                                                                )
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                    <button @click.stop="
+                                                        markAsUnread(
+                                                            notification.id
+                                                        )
+                                                        " class="text-xs text-gray-400 hover:text-gray-600 ml-2"
+                                                        title="Mark as unread">
+                                                        <i class="fa-solid fa-envelope"></i>
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </template>
+                        </Popper>
+                    </div>
 
-                                            <button
-                                                @click="enrollCourse"
-                                                :disabled="isLoading"
-                                                class="mt-4 w-full bg-lime-600 hover:bg-lime-700 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed"
-                                            >
-                                                <template v-if="!isLoading">
-                                                    Proceed to Checkout
-                                                </template>
-                                                <template v-else>
-                                                    <svg
-                                                        class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <circle
-                                                            class="opacity-25"
-                                                            cx="12"
-                                                            cy="12"
-                                                            r="10"
-                                                            stroke="currentColor"
-                                                            stroke-width="4"
-                                                        ></circle>
-                                                        <path
-                                                            class="opacity-75"
-                                                            fill="currentColor"
-                                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                        ></path>
-                                                    </svg>
-                                                    Processing...
-                                                </template>
+                    <!-- Cart Dropdown -->
+                    <div class="relative flex justify-center">
+                        <Popper v-model:visible="isCartOpen" :offset-distance="'0'" placement="bottom">
+                            <!-- Cart Icon with Count -->
+                            <div class="relative flex justify-center items-center cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                @click="isCartOpen = !isCartOpen">
+                                <div class="relative">
+                                    <i class="fa-solid fa-cart-shopping text-xl text-gray-700"></i>
+                                    <span v-if="itemCount > 0"
+                                        class="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs font-bold text-white bg-lime-500 rounded-full border-2 border-white shadow">
+                                        {{ itemCount }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Dropdown -->
+                            <template #content>
+                                <div
+                                    class="z-50 w-screen max-w-screen px-4 sm:px-0 sm:w-[450px] sm:max-w-lg sm:shadow-2xl mt-4">
+                                    <div
+                                        class="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+                                        <!-- Header -->
+                                        <div class="text-center border-b pb-3 mb-3">
+                                            <h3 class="text-xl font-semibold text-gray-700">
+                                                Your Cart
+                                            </h3>
+                                        </div>
+
+                                        <!-- Empty Cart -->
+                                        <div v-if="!itemCount"
+                                            class="flex flex-col items-center justify-center h-40 space-y-3 text-gray-500">
+                                            <i class="fa-solid fa-cart-shopping fa-fade text-4xl text-gray-400"></i>
+                                            <h1 class="text-center text-base">
+                                                No items in cart
+                                            </h1>
+                                            <button @click="navigationToggle('courses')"
+                                                class="bg-lime-500 hover:bg-lime-600 text-white py-2 px-4 rounded-lg font-medium text-sm transition">
+                                                <i class="fa-solid fa-book-open-reader mr-2"></i>Explore Courses
                                             </button>
+                                        </div>
+
+                                        <!-- Cart Items -->
+                                        <div v-else>
+                                            <ul class="space-y-3">
+                                                <li v-for="item in items" :key="item.id"
+                                                    class="flex items-center justify-between gap-3 p-2 rounded hover:bg-gray-50 transition">
+                                                    <img :src="item.image" alt="Item Image"
+                                                        class="w-14 h-14 rounded-lg object-cover border" />
+                                                    <div class="flex-1">
+                                                        <p class="font-medium text-sm truncate max-w-[20ch]">
+                                                            {{ item.name }}
+                                                        </p>
+                                                        <p class="text-gray-500 text-sm">
+                                                            ${{
+                                                                item.price.toFixed(
+                                                                    2
+                                                                )
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                    <i @click="removeItem(item)"
+                                                        class="fa-solid fa-minus text-red-500 hover:text-red-700 cursor-pointer"></i>
+                                                </li>
+                                            </ul>
+
+                                            <!-- Footer -->
+                                            <div class="mt-5 border-t pt-3">
+                                                <div class="flex justify-between text-base font-semibold">
+                                                    <span>Total:</span>
+                                                    <span>${{
+                                                        totalPrice.toFixed(2)
+                                                        }}</span>
+                                                </div>
+
+                                                <button @click="enrollCourse" :disabled="isLoading"
+                                                    class="mt-4 w-full bg-lime-500 hover:bg-lime-600 text-white py-2 px-4 rounded-lg font-semibold transition flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed">
+                                                    <template v-if="!isLoading">
+                                                        Proceed to Checkout
+                                                    </template>
+                                                    <template v-else>
+                                                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                                            xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                            viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10"
+                                                                stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor"
+                                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                                            </path>
+                                                        </svg>
+                                                        Processing...
+                                                    </template>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </template>
-                    </Popper>
-                </div>
-
-                <!-- Auth/Profile -->
-                <div v-if="isLoggedIn" class="relative flex justify-center">
-                    <!-- Profile Image or Initials -->
-                    <img
-                        v-if="authUser?.profile"
-                        :src="authUser.profile"
-                        alt="Profile"
-                        ref="profileBtnRef"
-                        @click="toggleDropdown"
-                        title="Profile"
-                        class="w-8 h-8 rounded-full shadow-lg cursor-pointer"
-                    />
-                    <div
-                        v-else
-                        ref="profileBtnRef"
-                        @click="toggleDropdown"
-                        class="flex items-center justify-center w-12 h-12 rounded-full bg-gray-300 text-lg font-bold text-gray-700 cursor-pointer"
-                    >
-                        {{ getInitials(authUser?.first_name) }}
+                            </template>
+                        </Popper>
                     </div>
 
-                    <!-- Dropdown Menu -->
-                    <div
-                        v-if="dropDownOpen"
-                        ref="dropdownRef"
-                        class="absolute top-12 left-1/2 transform -translate-x-1/2 w-56 p-2 bg-white text-black rounded-lg shadow-xl z-50"
-                    >
-                        <ul>
-                            <li>
-                                <button
-                                    @click="
+                    <!-- Auth/Profile -->
+                    <div v-if="isLoggedIn" class="relative flex justify-center">
+                        <!-- Profile Image or Initials -->
+                        <img v-if="authUser?.profile" :src="authUser.profile" alt="Profile" ref="profileBtnRef"
+                            @click="toggleDropdown" title="Profile"
+                            class="w-10 h-10 rounded-full shadow-sm cursor-pointer border-2 border-gray-200 hover:border-lime-500 transition-colors" />
+                        <div v-else ref="profileBtnRef" @click="toggleDropdown"
+                            class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-lime-400 to-lime-600 text-base font-bold text-white cursor-pointer shadow-sm hover:shadow-md transition-all">
+                            {{ getInitials(authUser?.first_name) }}
+                        </div>
+
+                        <!-- Dropdown Menu -->
+                        <div v-if="dropDownOpen" ref="dropdownRef"
+                            class="absolute top-14 right-0 w-56 p-2 bg-white text-black rounded-xl shadow-xl border border-gray-100 z-50">
+                            <ul>
+                                <li>
+                                    <button @click="
                                         () => {
                                             changeTab();
                                             closeDropdown();
                                         }
                                     "
-                                    class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded flex items-center gap-2"
-                                >
-                                    <i class="fas fa-book text-gray-500"></i>
-                                    My Courses
-                                </button>
-                            </li>
-                        </ul>
+                                        class="w-full px-4 py-2 text-sm text-left hover:bg-gray-100 rounded flex items-center gap-2">
+                                        <i class="fas fa-book text-gray-500"></i>
+                                        My Courses
+                                    </button>
+                                </li>
+                            </ul>
 
-                        <div
-                            @click="
+                            <div @click="
                                 () => {
                                     openProfile();
                                     closeDropdown();
                                 }
-                            "
-                            class="block px-4 py-2 hover:bg-gray-200 rounded cursor-pointer"
-                            title="Account"
-                        >
-                            <i class="fa-solid fa-user text-gray-500"></i>
+                            " class="block px-4 py-2 hover:bg-gray-200 rounded cursor-pointer" title="Account">
+                                <i class="fa-solid fa-user text-gray-500"></i>
 
-                            Account
-                        </div>
+                                Account
+                            </div>
 
-                        <hr class="my-2 border-gray-300" />
+                            <hr class="my-2 border-gray-300" />
 
-                        <ul>
-                            <li>
-                                <button
-                                    @click.prevent="
+                            <ul>
+                                <li>
+                                    <button @click.prevent="
                                         () => {
                                             signOut();
                                             closeDropdown();
                                         }
                                     "
-                                    class="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 rounded flex items-center gap-2"
-                                >
-                                    <i class="fas fa-right-from-bracket"></i>
-                                    Sign Out
-                                </button>
-                            </li>
-                        </ul>
+                                        class="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-100 rounded flex items-center gap-2">
+                                        <i class="fas fa-right-from-bracket"></i>
+                                        Sign Out
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Login/Register -->
-                <div v-else class="hidden md:flex gap-4">
-                    <button
-                        @click="toggleAuthActions(actionTypeLogin)"
-                        class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm"
-                    >
-                        Login
-                    </button>
-                    <button
-                        @click="toggleAuthActions(actionTypeRegister)"
-                        class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
-                    >
-                        Register
-                    </button>
-                </div>
+                    <!-- Login/Register -->
+                    <div v-else class="hidden md:flex gap-3">
+                        <button @click="toggleAuthActions(actionTypeLogin)"
+                            class="px-5 py-2.5 font-semibold text-gray-700 rounded-lg border-2 border-gray-200 hover:border-lime-500 hover:text-lime-500 transition-all">
+                            Sign In
+                        </button>
+                        <button @click="toggleAuthActions(actionTypeRegister)"
+                            class="px-5 py-2.5 font-semibold text-white rounded-lg bg-gradient-to-r from-lime-500 to-lime-600 hover:shadow-lg hover:scale-105 transition-all">
+                            Get Started
+                        </button>
+                    </div>
 
-                <!-- Mobile Menu Toggle -->
-                <button
-                    @click="toggleMenu"
-                    class="block md:hidden text-2xl text-white focus:outline-none"
-                >
-                    <i
-                        :class="
-                            isMenuOpen
+                    <!-- Mobile Menu Toggle -->
+                    <button @click="toggleMenu"
+                        class="md:hidden text-2xl text-gray-700 focus:outline-none p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <i :class="isMenuOpen
                                 ? 'fa-solid fa-xmark'
                                 : 'fa-solid fa-bars'
-                        "
-                    ></i>
-                </button>
+                            "></i>
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Mobile Menu -->
         <transition name="mobile-menu">
-            <div
-                v-if="isMenuOpen"
-                class="p-4 text-white border-t bottom-3 w-full mt-3 md:hidden"
-            >
-                <ul class="flex flex-col items-center gap-4">
-                    <li>
-                        <a
-                            href="/"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
-                            Home
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="#about"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
-                            About
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="#courses"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200"
-                        >
-                            Courses
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            href="/"
-                            @click="toggleMenu"
-                            class="text-white hover:text-lime-200 mt-5"
-                        >
-                            Books
-                        </a>
-                    </li>
+            <div v-if="isMenuOpen" class="md:hidden bg-white border-t border-gray-100 shadow-lg">
+                <div class="container mx-auto px-4 py-4">
+                    <ul class="flex flex-col gap-2">
+                        <li>
+                            <button @click="navigationToggle('courses')"
+                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                                Courses
+                            </button>
+                            <button  @click="openFreeCourses"
+                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                                Free Courses
+                            </button>
+                        </li>
 
-                    <!-- Simplified auth section -->
-                    <template v-if="!isLoggedIn">
-                        <div class="flex gap-4">
-                            <button
-                                @click="toggleAuthActions(actionTypeLogin)"
-                                class="px-2 py-1 font-semibold text-white rounded-md bg-white/20 border border-white/30 hover:bg-white/30 transform transition duration-200 ease-in-out shadow-sm"
-                            >
-                                Login
+                        <li>
+                            <button @click="navigationToggle('books')"
+                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                                Books
                             </button>
-                            <button
-                                @click="toggleAuthActions(actionTypeRegister)"
-                                class="px-2 py-1 font-semibold text-white rounded-md bg-gradient-to-br from-lime-400 to-lime-700 hover:brightness-110 transform transition duration-200 ease-in-out shadow-sm"
-                            >
-                                Register
+                        </li>
+                        <li>
+                            <button @click="navigationToggle('live')"
+                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                                Live Sessions
                             </button>
-                        </div>
-                    </template>
-                </ul>
+                        </li>
+                        <li>
+                            <button @click="openBlog"
+                                class="w-full text-left px-4 py-3 text-gray-700 hover:bg-lime-50 hover:text-lime-600 rounded-lg font-semibold transition-colors">
+                                Blog
+                            </button>
+                        </li>
+
+                        <!-- Mobile Auth Buttons -->
+                        <template v-if="!isLoggedIn">
+                            <li class="pt-4 border-t border-gray-100 mt-2">
+                                <button @click="toggleAuthActions(actionTypeLogin)"
+                                    class="w-full px-4 py-3 font-semibold text-gray-700 rounded-lg border-2 border-gray-200 hover:border-lime-500 hover:text-lime-500 transition-all">
+                                    Sign In
+                                </button>
+                            </li>
+                            <li>
+                                <button @click="toggleAuthActions(actionTypeRegister)"
+                                    class="w-full px-4 py-3 font-semibold text-white rounded-lg bg-gradient-to-r from-lime-500 to-lime-600 hover:shadow-lg transition-all">
+                                    Get Started
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
             </div>
         </transition>
     </header>
 
     <!-- Notification Details Modal -->
-    <div
-        v-if="showNotificationModal && currentNotification"
+    <div v-if="showNotificationModal && currentNotification"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-        @click.self="closeNotificationModal"
-    >
-        <div
-            class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
-        >
+        @click.self="closeNotificationModal">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
             <!-- Modal Header -->
-            <div
-                class="flex items-center justify-between p-4 border-b border-gray-200"
-            >
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
                 <h3 class="text-lg font-semibold text-gray-800">
                     Notification Details
                 </h3>
-                <button
-                    @click="closeNotificationModal"
-                    class="text-gray-500 hover:text-gray-700"
-                >
+                <button @click="closeNotificationModal" class="text-gray-500 hover:text-gray-700">
                     <i class="fa-solid fa-times"></i>
                 </button>
             </div>
@@ -860,38 +782,32 @@ watch(
                     <i class="fa-regular fa-clock mr-2"></i>
                     <span>{{
                         formatTime(currentNotification.created_at)
-                    }}</span>
+                        }}</span>
                 </div>
 
                 <!-- Additional details based on notification type -->
-                <div
-                    v-if="currentNotification.data.additional_data"
-                    class="bg-gray-50 p-3 rounded-lg mb-4"
-                >
+                <div v-if="currentNotification.data.additional_data" class="bg-gray-50 p-3 rounded-lg mb-4">
                     <h4 class="font-medium text-gray-700 mb-2">Details:</h4>
                     <pre class="text-sm text-gray-600 whitespace-pre-wrap">{{
                         JSON.stringify(
                             currentNotification.data.additional_data,
                             null,
-                            2,
+                            2
                         )
                     }}</pre>
                 </div>
             </div>
 
             <!-- Modal Footer -->
-            <div
-                class="flex justify-end p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg"
-            >
-                <button
-                    @click="closeNotificationModal"
-                    class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition"
-                >
+            <div class="flex justify-end p-4 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                <button @click="closeNotificationModal"
+                    class="ml-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition">
                     Close
                 </button>
             </div>
         </div>
     </div>
+ 
 </template>
 
 <style>
@@ -902,7 +818,7 @@ watch(
 .notification-dot {
     width: 8px;
     height: 8px;
-    background-color: #28a745;
+    background-color: #e58b3b;
     border-radius: 50%;
     display: inline-block;
     margin-left: 5px;

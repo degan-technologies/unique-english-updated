@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\SocialController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Bank\BankInfoController;
+use App\Http\Controllers\Blog\BlogPostController;
 use App\Http\Controllers\Book\BookController;
 use App\Http\Controllers\Book\BookVideoController;
 use App\Http\Controllers\Book\orderdController;
@@ -37,6 +38,8 @@ use App\Http\Middleware\EnsureSignature;
 
 Route::get('/all-couses', [CourseController::class, 'allCourses']);
 Route::get('/all-books', [BookController::class, 'allBooks']);
+Route::get('/blogs', [BlogPostController::class, 'index']);
+Route::get('/blogs/{slug}', [BlogPostController::class, 'show'])->where('slug', '^(?!manage$).+');
 Route::resource('test', TestController::class);
 
 // Add registration route
@@ -264,3 +267,16 @@ Route::middleware('auth:api')
         Route::get('/instructors/export', [UserController::class, 'exportInstructors']);
         Route::get('/students/export', [UserController::class, 'exportStudents']);
     });
+
+Route::middleware('auth:api')
+    ->prefix('blogs')
+    ->group(function () {
+        Route::get('/manage', [BlogPostController::class, 'manageIndex']);
+        Route::post('/', [BlogPostController::class, 'store']);
+        Route::post('/{id}', [BlogPostController::class, 'update']);
+        Route::put('/{id}', [BlogPostController::class, 'update']);
+        Route::delete('/{id}', [BlogPostController::class, 'destroy']);
+        Route::post('/{id}/status', [BlogPostController::class, 'changeStatus']);
+    });
+
+Route::middleware('auth:api')->get('/blogs-manage', [BlogPostController::class, 'manageIndex']);

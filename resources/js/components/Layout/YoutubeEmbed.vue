@@ -1,6 +1,6 @@
 <script setup>
 import Spinner from "@/components/Layout/Spinner.vue";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 const CHANNEL_ID = "UCIKi8o9soQ30AH2xTmAZzjg";
 const videos = ref([]);
@@ -9,6 +9,27 @@ const currentPage = ref(1);
 const videosPerPage = 8;
 const videoPlayer = ref(null);
 const activeVideo = ref({});
+const activeCategory = ref("All");
+
+const categories = [
+    "All",
+    "Daily English",
+    "Grammar",
+    "Speaking",
+    "Pronunciation",
+];
+
+function detectCategory(video) {
+    const title = String(video?.snippet?.title || "").toLowerCase();
+    if (title.includes("grammar")) return "Grammar";
+    if (title.includes("speak") || title.includes("conversation")) {
+        return "Speaking";
+    }
+    if (title.includes("pronunciation") || title.includes("pronounce")) {
+        return "Pronunciation";
+    }
+    return "Daily English";
+}
 
 // Format date
 function formatDate(dateString) {
@@ -67,13 +88,48 @@ async function fetchAllVideos() {
     }
 }
 
+const filteredVideos = computed(() => {
+    if (activeCategory.value === "All") {
+        return videos.value;
+    }
+
+    return videos.value.filter(
+        (video) => detectCategory(video) === activeCategory.value
+    );
+});
+
 const totalPages = computed(() =>
-    Math.ceil(videos.value.length / videosPerPage)
+    Math.max(1, Math.ceil(filteredVideos.value.length / videosPerPage))
 );
-const endIndex = computed(() => currentPage.value * videosPerPage);
 const paginated = computed(() => {
     const start = (currentPage.value - 1) * videosPerPage;
-    return videos.value.slice(start, start + videosPerPage);
+    return filteredVideos.value.slice(start, start + videosPerPage);
+});
+
+const paginationPages = computed(() => {
+    const maxVisible = 5;
+    const total = totalPages.value;
+    const current = currentPage.value;
+
+    if (total <= maxVisible) {
+        return Array.from({ length: total }, (_, index) => index + 1);
+    }
+
+    const half = Math.floor(maxVisible / 2);
+    let start = current - half;
+    let end = current + half;
+
+    if (start < 1) {
+        start = 1;
+        end = maxVisible;
+    }
+
+    if (end > total) {
+        end = total;
+        start = total - maxVisible + 1;
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
 });
 
 const activeSrc = computed(() => {
@@ -82,12 +138,22 @@ const activeSrc = computed(() => {
 });
 
 // Controls
+function goToPage(page) {
+    if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return;
+    }
+
+    currentPage.value = page;
+}
+
 function nextPage() {
-    if (endIndex.value < videos.value.length) currentPage.value++;
+    goToPage(currentPage.value + 1);
 }
+
 function prevPage() {
-    if (currentPage.value > 1) currentPage.value--;
+    goToPage(currentPage.value - 1);
 }
+
 function shuffleVideos() {
     videos.value = [...videos.value].sort(() => Math.random() - 0.5);
     currentPage.value = 1;
@@ -104,15 +170,47 @@ function setActive(video) {
     }
 }
 
+watch(activeCategory, () => {
+    currentPage.value = 1;
+
+    const hasActiveInCategory = filteredVideos.value.some(
+        (video) => video.id.videoId === activeVideo.value?.id?.videoId
+    );
+
+    if (!hasActiveInCategory) {
+        activeVideo.value = filteredVideos.value[0] || {};
+    }
+});
+
 onMounted(fetchAllVideos);
 </script>
 
 <template>
-    <div class="p-4 md:p-8 max-w-7xl mx-auto">
-        <div class="flex items-center justify-between my-8">
-            <h1 class="text-2xl md:text-3xl font-bold text-lime-600">
-                Free Tutorials
-            </h1>
+    <div class="p-4 mt-20 md:p-8 max-w-7xl mx-auto bg-white rounded-2xl border border-stone-200">
+        <div class="text-center my-8">
+            <h1 class="text-4xl md:text-5xl font-black leading-tight text-slate-900 font-serif">
+                Free Unique English
+                <span class="text-lime-500 block">Video Lessons</span>
+            </h1>  
+        </div>
+
+        <div class="flex flex-wrap gap-3 justify-center mb-8">
+            <button
+                v-for="category in categories"
+                :key="category"
+                @click="activeCategory = category"
+                class="px-5 py-2 rounded-full border text-sm font-medium transition-all"
+                :class="
+                    activeCategory === category
+                        ? 'bg-lime-500 text-white border-lime-500'
+                        : 'bg-white text-slate-700 border-stone-300 hover:border-lime-400'
+                "
+            >
+                {{ category }}
+            </button>
+        </div>
+
+        <div class="flex items-center justify-end my-4">
             <button
                 @click="shuffleVideos"
                 class="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-lime-600 text-lime-600 font-medium hover:bg-lime-50 transition-all"
@@ -135,13 +233,13 @@ onMounted(fetchAllVideos);
             <Spinner />
         </div>
 
-        <div v-else class="space-y-6">
+        <div v-else-if="filteredVideos.length" class="space-y-6">
             <!-- Main Active Video with ref for scrolling -->
             <div
                 ref="videoPlayer"
                 class="w-full rounded-xl overflow-hidden transition-all"
             >
-                <div class="mx-auto" style="max-width: 800px">
+                <div class="mx-auto" style="max-width: 1024px">
                     <div
                         class="relative rounded-xl overflow-hidden shadow-lg border-2 border-lime-600/20 bg-black"
                     >
@@ -228,50 +326,49 @@ onMounted(fetchAllVideos);
                 </div>
 
                 <!-- Pagination -->
-                <div class="flex items-center justify-between pt-2">
-                    <button
-                        @click="prevPage"
-                        :disabled="currentPage === 1"
-                        class="flex items-center gap-1 px-4 py-2 rounded-full bg-lime-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-lime-700 transition-all"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
+                <div class="mt-2 flex flex-col items-center gap-4 md:flex-row md:justify-between">
+                    <p class="text-sm text-neutral-600">
+                        Showing page {{ currentPage }} of {{ totalPages }} ({{ filteredVideos.length }} videos)
+                    </p>
+
+                    <nav class="flex items-center gap-2" aria-label="Video pagination">
+                        <button
+                            type="button"
+                            class="px-3 py-2 rounded-lg border border-stone-300 text-sm text-neutral-700 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            :disabled="currentPage === 1"
+                            @click="prevPage"
                         >
-                            <path
-                                fill-rule="evenodd"
-                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
-                        Prev
-                    </button>
-                    <span class="text-sm text-gray-600">
-                        Page {{ currentPage }} of {{ totalPages }}
-                    </span>
-                    <button
-                        @click="nextPage"
-                        :disabled="endIndex >= videos.length"
-                        class="flex items-center gap-1 px-4 py-2 rounded-full bg-lime-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-lime-700 transition-all"
-                    >
-                        Next
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
+                            Previous
+                        </button>
+
+                        <button
+                            v-for="page in paginationPages"
+                            :key="page"
+                            type="button"
+                            class="min-w-10 h-10 px-3 rounded-lg border text-sm transition-colors"
+                            :class="page === currentPage
+                                ? 'border-lime-500 bg-lime-500 text-white'
+                                : 'border-stone-300 text-neutral-700 hover:bg-stone-100'"
+                            @click="goToPage(page)"
                         >
-                            <path
-                                fill-rule="evenodd"
-                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
-                    </button>
+                            {{ page }}
+                        </button>
+
+                        <button
+                            type="button"
+                            class="px-3 py-2 rounded-lg border border-stone-300 text-sm text-neutral-700 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            :disabled="currentPage === totalPages"
+                            @click="nextPage"
+                        >
+                            Next
+                        </button>
+                    </nav>
                 </div>
             </div>
+        </div>
+
+        <div v-else class="rounded-xl border border-stone-200 bg-stone-50 text-center p-8 text-gray-600">
+            No videos found for {{ activeCategory }} yet.
         </div>
     </div>
 </template>

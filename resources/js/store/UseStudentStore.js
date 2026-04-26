@@ -12,6 +12,8 @@ export const UseStudentStore = defineStore("UseStudentStore", () => {
     const myCourseTab = ref("myCourse");
     const TestTab = ref("testTab");
     const profile = ref("profile");
+    const freeCourses = ref("freeCourses");
+    const blogTab = ref("blog");
 
     const courses = ref(null);
     const selectedCourseSlug = ref(null);
@@ -41,6 +43,8 @@ export const UseStudentStore = defineStore("UseStudentStore", () => {
         liveSchedulTab,
         myCourseTab,
         profile,
+        freeCourses,
+        blogTab,
 
         courses,
         fetchCourses,

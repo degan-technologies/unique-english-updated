@@ -2,15 +2,16 @@
     <section class="bg-white text-gray-800 py-10 my-8 px-4 sm:px-10 lg:px-20">
         <div class="max-w-7xl mx-auto">
             <!-- Welcome -->
-            <div class="text-center mb-10">
-                <h1 class="text-3xl sm:text-4xl font-bold text-lime-700">
-                    What to expect from Unique English courses
+             <div class="block text-center mb-12">
+                <h1 class="mx-auto text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl">
+                    <span class="text-gray-900"> What to expect from </span><br class="my-4" />
+                    <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">unique English</span>
                 </h1>
-                <p class="my-4 text-lg text-gray-600">
-                    Learn English through our interactive courses, practical
-                    books, and live sessions guided by expert instructors.
+
+                <p class="mx-auto text-center text-gray-600 text-base md:text-lg lg:text-xl py-4 leading-relaxed max-w-2xl">
+                    Learn English through our interactive courses, practical books, and live sessions guided by expert instructors.
                 </p>
-            </div>
+            </div> 
 
             <!-- Highlights -->
             <div class="grid mb-8 grid-cols-1 md:grid-cols-3 gap-8 text-center">

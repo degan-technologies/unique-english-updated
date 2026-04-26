@@ -15,47 +15,6 @@ const { items, itemCount, image } = storeToRefs(cartStore);
 
 const router = useRouter();
 
-const words = [
-    "Vocabulary",
-    "Grammar",
-    "Speaking",
-    "Writing",
-    "Listening",
-    "Reading",
-];
-const displayedText = ref("");
-const typingSpeed = 150;
-const erasingSpeed = 100;
-const delayBetweenWords = 2000;
-let wordIndex = 0;
-let charIndex = 0;
-let isErasing = false;
-
-function type() {
-    if (!isErasing) {
-        if (charIndex < words[wordIndex].length) {
-            displayedText.value += words[wordIndex][charIndex];
-            charIndex++;
-            setTimeout(type, typingSpeed);
-        } else {
-            setTimeout(() => {
-                isErasing = true;
-                type();
-            }, delayBetweenWords);
-        }
-    } else {
-        if (charIndex > 0) {
-            displayedText.value = displayedText.value.slice(0, -1);
-            charIndex--;
-            setTimeout(type, erasingSpeed);
-        } else {
-            isErasing = false;
-            wordIndex = (wordIndex + 1) % words.length;
-            setTimeout(type, typingSpeed);
-        }
-    }
-}
-
 function addItems(item) {
     let selectedItem = {
         type: "course",
@@ -79,8 +38,7 @@ function changeTab(slug) {
     selectedCourseSlug.value = slug;
 }
 
-onMounted(() => {
-    type();
+onMounted(() => { 
     studentStore.fetchCourses();
 });
 </script>
@@ -89,106 +47,66 @@ onMounted(() => {
     <div
         class="p-4 sm:p-6 lg:p-8 bg-gray-100 min-h-screen relative scroll-mt-20"
         id="courses"
-    >
-        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">
-            Popular Courses
-        </h1>
-        <div class="text-center mb-4">
-            <h1
-                class="typing-text text-xl sm:text-2xl font-semibold text-lime-700"
-            >
-                {{ displayedText }}
-                <span class="cursor">|</span>
+    > 
+        <div class="block text-center mb-12">
+            <h1 class="mx-auto text-center text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black font-serif leading-[1.1] tracking-tight max-w-4xl">
+                <span class="text-gray-900">  Our English Courses </span><br class="my-4" />
+                <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">Self-Learning</span>
             </h1>
+
+            <p class="mx-auto text-center text-gray-600 text-base md:text-lg lg:text-xl py-4 leading-relaxed max-w-2xl">
+                Pick up exactly where you left off. Every course is self-paced
+            with instructor feedback on speaking and writing tasks.
+            </p>
         </div>
         <div
-            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative"
+            class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
             <div
                 v-for="course in courses"
                 :key="course.id"
-                class="relative bg-white rounded-lg shadow hover:shadow-lg transform transition-transform duration-300 cursor-pointer group"
+                class="group flex flex-col overflow-hidden rounded-2xl bg-white border border-gray-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
-                <div class="relative group">
+                <div class="relative"> 
                     <img
                         :src="course?.thumbnail_url"
                         :alt="course.course_name"
-                        class="w-full h-40 object-cover rounded-t-lg"
+                        class="w-full h-36 object-cover"
                     />
-                    <div
-                        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-t-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                    >
-                        <button
-                            class="bg-lime-500 rounded-full p-3 shadow-md text-white hover:text-white"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke-width="1.5"
-                                stroke="currentColor"
-                                class="w-6 h-6"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M5.25 5.25l13.5 6.75-13.5 6.75V5.25z"
-                                />
-                            </svg>
-                        </button>
-                    </div>
                 </div>
 
-                <!-- Course Info -->
-                <div class="p-4 flex flex-col">
-                    <div class="h-20">
-                        <h2 class="text-lg font-bold mb-2 line-clamp-1">
-                            {{ course.course_name }}
-                        </h2>
-                        <div class="flex flex-1 justify-between">
-                            <p class="text-sm mt-1 text-gray-600">
-                                By: {{ course.user.first_name }}
-                                {{ course.user.middle_name }}
-                            </p>
-                            <div class="flex items-center gap-2 font-bold">
-                                <span class="text-yellow-500 text-lg"
-                                    >&#9733;</span
-                                >
-                                <span class="ml-1 text-md text-gray-600">{{
-                                    course.averageRating
-                                }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="h-fit bottem-0">
-                        <div
-                            class="text-lg font-semibold flex flex-row items-center justify-between"
-                        >
-                            <p class="self-center my-auto">
-                                {{ course.price?.toFixed(2) }} ETB
-                            </p>
-                            <button
-                                v-if="!course.isMyCourse"
-                                @click="addItems(course)"
-                                class="ml-auto focus:outline-none"
-                            >
-                                <i
-                                    class="fa-solid fa-cart-plus right-8 text-lime-700 p-3 hover:text-lime-700"
-                                ></i>
-                            </button>
-                            <button
-                                v-else
-                                class="text-lime-700 font-normal h-fit w-fit text-sm px-2 py-1 rounded-md mt-3 border-2 border-yellow-400 hover:border-yellow-600"
-                            >
-                                Paid
-                            </button>
-                        </div>
+                <div class="p-4 flex flex-col min-h-[285px]">
+                    <h2
+                        class="text-[31px] font-serif text-gray-700 leading-tight mb-2 line-clamp-2 min-h-[56px]"
+                    >
+                        {{ course.course_name }}
+                    </h2>
 
+                    <div class="text-[18px] text-gray-600 line-clamp-2 min-h-[44px]"
+                         v-html="course.overview  || 'No description available'">
+                    </div>  
+
+                    <div class="mt-auto pt-4">
+                        <div
+                            class="text-lg font-semibold flex items-center justify-between mb-3"
+                            v-if="!course.isMyCourse"
+                        >
+                            <p class="text-gray-700">{{ course.price?.toFixed(2) }} ETB</p>
+                            <button
+                                @click="addItems(course)"
+                                disabled="course.isMyCourse"
+                                class="focus:outline-none text-lime-500 hover:text-lime-700"
+                                title="Add to cart"
+                            >
+                                <span v-if="course?.isMyCourse">paid</span>
+                                <i v-else class="fa-solid fa-cart-plus p-1"></i>
+                            </button>
+                        </div>
                         <button
                             @click="changeTab(course.slug)"
-                            class="mt-4 border border-lime-700 text-lime-800 w-full px-4 py-2 rounded hover:bg-lime-800 hover:text-white focus:outline-none transition-colors font-medium text-lg"
+                            class="w-full rounded-full bg-lime-500 text-white py-2.5 px-4 font-semibold hover:bg-lime-700 transition-colors"
                         >
-                            Get Started
+                            {{ course.isMyCourse ? "Continue" : "Get Started" }}
                         </button>
                     </div>
                 </div>
@@ -198,8 +116,23 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Add smooth scroll margin to account for fixed header */
+/* Keep scroll position aligned with sticky header */
 #courses {
     scroll-margin-top: 80px;
+}
+
+.typing-text {
+    min-height: 1.5rem;
+}
+
+.cursor {
+    display: inline-block;
+    animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+    to {
+        visibility: hidden;
+    }
 }
 </style>

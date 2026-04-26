@@ -1,21 +1,37 @@
 <script setup>
+import { ref, watch, computed, onMounted } from "vue";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
 import { useRouter } from "vue-router";
-import Test from "../Course/Test.vue";
 
 import { useAppStore } from "@/store/useAppStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
 const studentStore = UseStudentStore();
-const { TestTab } = storeToRefs(studentStore);
+const { TestTab, liveSchedulTab } = storeToRefs(studentStore);
 
 const appStore = useAppStore();
-const { hero, exploreCourses, selectedComponentId } = storeToRefs(appStore);
+const { hero, selectedComponentId } = storeToRefs(appStore);
+
+const router = useRouter();
+const displayedText = ref("");
 
 const activeTab = ref(null);
-const router = useRouter();
-const imageLoaded = ref(false);
+const showDemoModal = ref(false);
+
+const typingSpeed = 150;
+const erasingSpeed = 100;
+const delayBetweenWords = 2000;
+let wordIndex = 0;
+let charIndex = 0;
+let isErasing = false;
+const words = [
+    "Vocabulary",
+    "Grammar",
+    "Speaking",
+    "Writing",
+    "Listening",
+    "Reading",
+]; 
 
 function changeTab() {
     router.push({
@@ -24,210 +40,112 @@ function changeTab() {
             tab: TestTab.value,
         },
     });
-
-    selectedCourseSlug.value = slug;
 }
 
 const scrollToSection = (id) => {
     const el = document.getElementById(id);
-    if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-    }
+    if (el) el.scrollIntoView({ behavior: "smooth" });
 };
 
-const handleImageLoad = () => {
-    imageLoaded.value = true;
-};
+function type() {
+    if (!isErasing) {
+        if (charIndex < words[wordIndex].length) {
+            displayedText.value += words[wordIndex][charIndex];
+            charIndex++;
+            setTimeout(type, typingSpeed);
+        } else {
+            setTimeout(() => {
+                isErasing = true;
+                type();
+            }, delayBetweenWords);
+        }
+    } else {
+        if (charIndex > 0) {
+            displayedText.value = displayedText.value.slice(0, -1);
+            charIndex--;
+            setTimeout(type, erasingSpeed);
+        } else {
+            isErasing = false;
+            wordIndex = (wordIndex + 1) % words.length;
+            setTimeout(type, typingSpeed);
+        }
+    }
+}
 
 watch(
     () => selectedComponentId.value,
     () => {
-        scrollToSection(selectedComponentId.value);
-        selectedComponentId.value = null;
+        if (selectedComponentId.value) {
+            scrollToSection(selectedComponentId.value);
+            selectedComponentId.value = null;
+        }
     },
-    { immediate: true },
-);
+    { immediate: true }
+); 
+
+onMounted(() => {
+    type(); 
+});
 </script>
 
 <template>
-    <section
-        class="relative min-h-screen bg-gradient-to-br from-gray-50 via-white to-lime-50 overflow-hidden"
-        id="hero"
-        :style="
-            hero?.background_image
-                ? `background-image: url('${hero.background_image}'); background-size: cover; background-position: center; background-repeat: no-repeat;`
-                : ''
-        "
-    >
-        <div
-            class="relative container mx-auto px-6 py-20 sm:py-24 md:py-28 lg:py-24 z-10"
-        >
-            <div
-                class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center"
-            >
-                <!-- Content Section -->
-                <div class="space-y-8 lg:pr-8">
-                    <!-- Main Heading -->
-                    <div class="space-y-6">
-                        <h1
-                            :class="[
-                                'text-3xl md:text-4xl lg:text-5xl font-bold leading-tight',
-                                hero?.background_image
-                                    ? 'text-black'
-                                    : 'text-gray-900',
-                            ]"
-                        >
-                            {{
-                                hero?.title ||
-                                "Learn without limits, Anytime, Anywhere"
-                            }}
-                        </h1>
+    <section id="hero"
+        class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center py-20 lg:py-24 font-['Inter',sans-serif] overflow-hidden">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-12">
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-20">
+                <div class="lg:w-1/2 text-center lg:text-left space-y-6 order-2 lg:order-1">
+                    <h1
+                        class="text-2xl sm:text-3xl lg:text-4xl pt-8 xl:text-5xl font-black font-serif leading-[1.1] tracking-tight">
+                        <span class="text-gray-900">
+                            {{ hero?.title || "Master English with" }}
+                        </span>
+                        <br />
+                        <span class="bg-gradient-to-r from-lime-500 to-lime-600 bg-clip-text text-transparent">
+                           With Unique
+                        </span>
+                    </h1>
 
-                        <p
-                            :class="[
-                                'text-lg md:text-xl leading-relaxed max-w-2xl',
-                                hero?.background_image
-                                    ? 'text-gray-800'
-                                    : 'text-gray-600',
-                            ]"
-                        >
-                            {{
-                                hero?.description ||
-                                "Empower Your future with world-class courses, expert instructors, and flexible learning experience tailored to your needs."
-                            }}
-                        </p>
-                    </div>
+                    <p class="text-gray-600 text-base md:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                        {{
+                            hero?.description ||
+                            "Join thousands of learners worldwide. Access premium courses, interactive books, and live sessions with certified instructors."
+                        }}
+                    </p>
+                    <p class="text-base md:text-lg lg:text-xl leading-relaxed max-w-2xl mx-auto lg:mx-0 text-lime-500">
+                        {{ displayedText }}<span class="cursor">|</span>
+                    </p>
 
-                    <!-- Call-to-Action Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
-                        <button
-                            @click="changeTab()"
-                            class="inline-flex items-center justify-center px-8 py-4 bg-lime-700 text-white font-semibold rounded-lg hover:bg-lime-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                        >
-                            <span class="mr-2">Test Your Level</span>
-                            <svg
-                                class="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                                ></path>
-                            </svg>
-                        </button>
-
-                        <button
-                            @click="scrollToSection('courses')"
-                            :class="[
-                                'inline-flex items-center justify-center px-8 py-4 font-semibold rounded-lg border-2 transition-colors duration-200 shadow-lg hover:shadow-xl',
-                                hero?.background_image
-                                    ? 'bg-gray-900 text-white border-gray-300 hover:bg-gray-800'
-                                    : 'bg-gray-900 text-white border-gray-200 hover:bg-gray-800',
-                            ]"
-                        >
-                            <span class="mr-2">Explore Courses</span>
-                        </button>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2">
+                        <button @click="changeTab"
+                            class="bg-gradient-to-r from-lime-500 to-lime-600 text-white font-bold px-8 py-3.5 rounded-lg hover:shadow-xl hover:scale-105 transition-all inline-flex items-center gap-2">
+                           Test your English Skills
+                            <i class="fa-solid fa-arrow-right text-sm"></i>
+                        </button> 
                     </div>
                 </div>
 
-                <!-- Image Section -->
-                <div class="relative lg:h-auto">
-                    <div class="relative rounded-3xl overflow-hidden p-8">
-                        <!-- Image Skeleton -->
-                        <div
-                            v-if="!imageLoaded"
-                            class="w-full h-64 md:h-80 lg:h-96 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-2xl flex items-center justify-center"
-                        >
-                            <div class="text-center text-gray-500">
-                                <svg
-                                    class="w-12 h-12 mx-auto mb-4 opacity-50"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                >
-                                    <path
-                                        fill-rule="evenodd"
-                                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                                        clip-rule="evenodd"
-                                    ></path>
-                                </svg>
-                            </div>
-                        </div>
-
-                        <!-- Actual Image -->
-                        <img
-                            :src="hero?.banner || '/images/default-hero.jpg'"
-                            alt="Learning Platform"
-                            :class="[
-                                'w-full h-auto object-cover rounded-2xl transition-opacity duration-300 shadow-2xl',
-                                imageLoaded
-                                    ? 'opacity-100'
-                                    : 'opacity-0 absolute inset-0',
-                            ]"
-                            @load="handleImageLoad"
-                            @error="imageLoaded = true"
-                        />
+                <!-- RIGHT IMAGE -->
+                <div class="lg:w-1/2 order-1 lg:order-2">
+                    <div class="rounded-3xl shadow-2xl overflow-hidden bg-white border border-gray-100">
+                        <img :src="hero?.banner" alt="Hero Banner" class="w-full h-auto object-cover rounded-2xl" />
                     </div>
                 </div>
             </div>
         </div>
     </section>
-
-    <!-- Tabs Content -->
-    <div v-if="activeTab === 0">
-        <Test />
-    </div>
-    <div v-if="activeTab === 1"></div>
+ 
 </template>
 
 <style scoped>
-/* Simple transitions only */
-* {
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.3s;
 }
 
-/* Button hover effects */
-button {
-    position: relative;
-    overflow: hidden;
-}
-
-button::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.15),
-        transparent
-    );
-    transition: left 0.6s ease-in-out;
-}
-
-button:hover::before {
-    left: 100%;
-}
-
-/* Skeleton animation */
-@keyframes shimmer {
-    0% {
-        background-position: -200% 0;
-    }
-    100% {
-        background-position: 200% 0;
-    }
-}
-
-.animate-pulse {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>
