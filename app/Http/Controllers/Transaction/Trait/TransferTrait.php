@@ -13,6 +13,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 trait TransferTrait
 {
@@ -70,21 +71,14 @@ trait TransferTrait
         ]);
     }
 
-    public function getBalance()
-    {
-
-        $balance = Transfer::query()
-            ->where('user_id', Auth::id())
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('deposits')
-            - Transfer::query()
-            ->where('user_id', Auth::id())
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('withdrawals');
+    public function getBalance() { 
+        $balance = $this->chapaService->getBalance();
+        $availableBalance = $balance['data'][0]['available_balance'] ?? 0;
 
         return response()->json([
             'status' => 'success',
-            'data' => $balance
+            'data' => $availableBalance,
+            'currency' => $balance['data'][0]['currency'] ?? 'ETB',
         ]);
     }
 
@@ -92,42 +86,64 @@ trait TransferTrait
     {
         $user = User::query()
             ->where('id', Auth::id())
+            ->where(function ($q) {
+                $q->whereHas('instructor')
+                    ->orWhereHas('systemAdmin');
+            })
             ->first();
-        if (!$user) return;
 
-        $platformComission = PlatformComission::first()->fees;
-
-        $balance = Transfer::query()
-            ->where('user_id', $user->id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('deposits')
-            - Transfer::query()
-            ->where('user_id', $user->id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('withdrawals');
-
-        $transfer = Transfer::create([
-            'withdrawals' => $amount,
-            'user_id' => $user->id,
-            'balance' => $balance,
-            'reference' => $trf,
-        ]);
-
-        
-        if ($platformComission) {
-            $commission = $amount * $platformComission;
-            
-            $getComission = Transfer::create([
-                'withdrawals' => $commission,
-                'user_id' => $user->id,
-                'balance' => $balance - $commission,
-                'reference' => 'commision-' . uniqid(),
-            ]);
+        if (!$user) {
+            return [
+                'status' => 'failed',
+                'message' => 'Unauthorized',
+            ];
         }
 
+
+        $platformComission = PlatformComission::first()->fees;
+        $commission = 0;
+
+        if ($platformComission && $platformComission > 0 && $user->instructor) {
+            $commission = $amount * $platformComission;
+        }
+
+        $balance = $this->chapaService->getBalance();
+        $availableBalance = $balance['data'][0]['available_balance'] ?? 0;
+
+        if ($availableBalance < $amount || $availableBalance < 5) {
+            return [
+                'status' => 'failed',
+                'message' => 'Insufficient balance to make a withdrawal. Minimum balance required is 5 ETB.',
+            ];
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::create([
+                'amount' => $amount,
+                'commission' => $commission,
+                'transaction_type' => WITHDRAWAL,
+                'status' => TRANSACTION_PENDING,
+                'payment_method' => TRANSFER,
+                'product_type' => null,
+                'tx_ref' => $trf,
+                'user_id' => $user->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return [
+                'status' => 'failed',
+                'message' => 'An error occurred while processing the withdrawal.',
+                'error' => $e->getMessage(),
+            ];
+        }
+
+        DB::commit();
+
         return [
-            'transfer' => $transfer,
-            'commission' => $getComission,
+            'status' => 'success', 
+            'transaction' => $transaction,
         ];
     }
 
@@ -192,7 +208,8 @@ trait TransferTrait
         ]);
     }
 
-    public function getTopSeller() {
+    public function getTopSeller()
+    {
 
         $topUsers = Transaction::query()
             ->where('status', TRANSACTION_SUCCESS)
@@ -202,7 +219,7 @@ trait TransferTrait
             ->orderByDesc('transaction_count')
             ->limit(10)
             ->get();
- 
+
         $users = User::query()
             ->whereIn('id', $topUsers->pluck('user_id'))
             ->with(['transactions' => function ($query) {
@@ -211,7 +228,7 @@ trait TransferTrait
             }])
             ->get()
             ->map(function ($user) use ($topUsers) {
-                return [ 
+                return [
                     'first_name' => $user->first_name,
                     'middle_name' => $user->middle_name,
                     'email' => $user->email,
@@ -220,21 +237,22 @@ trait TransferTrait
                 ];
             });
 
-        if(!$users) {
+        if (!$users) {
             return response()->json([
-                'data' => [] ,
+                'data' => [],
             ]);
         }
 
         return response()->json([
             'data' => $users,
-        ]); 
+        ]);
     }
-    public function topSoldCourses() { 
+    public function topSoldCourses()
+    {
         $topCourses = Transaction::query()
             ->where('status', TRANSACTION_SUCCESS)
             ->where('product_type', COURSE)
-            ->with(['course:id,course_name,thumbnail_url,price'])  
+            ->with(['course:id,course_name,thumbnail_url,price'])
             ->select('course_id')
             ->selectRaw('COUNT(*) as transaction_count')
             ->selectRaw('SUM(amount) as total_revenue')
@@ -254,39 +272,40 @@ trait TransferTrait
                 ];
             });
 
-            // Get monthly sales data for chart
-            $monthlySales = Transaction::query()
-                ->where('status', TRANSACTION_SUCCESS)
-                ->where('product_type', COURSE)
-                ->selectRaw('YEAR(created_at) as year')
-                ->selectRaw('MONTH(created_at) as month')
-                ->selectRaw('COUNT(*) as count')
-                ->selectRaw('SUM(amount) as revenue')
-                ->groupBy('year', 'month')
-                ->orderBy('year')
-                ->orderBy('month')
-                ->get();
+        // Get monthly sales data for chart
+        $monthlySales = Transaction::query()
+            ->where('status', TRANSACTION_SUCCESS)
+            ->where('product_type', COURSE)
+            ->selectRaw('YEAR(created_at) as year')
+            ->selectRaw('MONTH(created_at) as month')
+            ->selectRaw('COUNT(*) as count')
+            ->selectRaw('SUM(amount) as revenue')
+            ->groupBy('year', 'month')
+            ->orderBy('year')
+            ->orderBy('month')
+            ->get();
 
-            if(!$topCourses) {
-                return response()->json([
-                    'data' => [],
-                ]);
-            }
-
+        if (!$topCourses) {
             return response()->json([
-                'success' => true,
-                'data' => [
-                    'top_courses' => $topCourses,
-                    'monthly_sales' => $monthlySales,
-                ],
+                'data' => [],
             ]);
         }
 
-    public function topSoldBooks() { 
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'top_courses' => $topCourses,
+                'monthly_sales' => $monthlySales,
+            ],
+        ]);
+    }
+
+    public function topSoldBooks()
+    {
         $topBooks = Transaction::query()
             ->where('status', TRANSACTION_SUCCESS)
             ->where('product_type', BOOK)
-            ->with(['book:id,title,cover_page_url,price'])  
+            ->with(['book:id,title,cover_page_url,price'])
             ->select('book_id')
             ->selectRaw('COUNT(*) as transaction_count')
             ->selectRaw('SUM(amount) as total_revenue')
@@ -319,7 +338,7 @@ trait TransferTrait
             ->orderBy('month')
             ->get();
 
-        if(!$topBooks) {
+        if (!$topBooks) {
             return response()->json([
                 'data' => [],
             ]);
@@ -333,5 +352,4 @@ trait TransferTrait
             ],
         ]);
     }
-
 }

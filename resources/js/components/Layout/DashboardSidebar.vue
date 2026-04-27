@@ -67,7 +67,7 @@ const mainItems = [
         route: payments.value,
         description: "Transactions, earnings, payouts.",
         icon: "dollar-sign",
-        role: true,
+        role: "systemAdmin",
     },
     {
         label: "Live Management",

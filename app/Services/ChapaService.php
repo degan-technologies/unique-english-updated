@@ -75,8 +75,6 @@ public function transfer(array $data)
             $errorResponse['raw_response'] = $response->body();
             return $errorResponse;
         }
-
-
     }  
 
 
@@ -104,6 +102,22 @@ public function transfer(array $data)
     $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
 
     return hash_equals($expectedSignature, $incomingSignature);
+}
+
+public function getBalance() {
+        try {
+            $response = Http::withToken($this->secretKey)
+                ->acceptJson()
+                ->get($this->baseUrl . '/balances/etb')
+                ->json();
+
+            return $response;
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve balance', 
+                'message' => $e->getMessage()], 500
+            );
+        }
 }
 
 

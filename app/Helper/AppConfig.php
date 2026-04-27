@@ -132,9 +132,10 @@ define('TRANSACTION_STATUS', [
 define('WITHDRAWAL', 'withdrawal');
 define('DEPOSIT', 'deposit');
 define('TRANSFER', 'transfer');
+define('COMMISSION', 'commission');
 
 define('TRANSACTION_CATEGORY', [
-    WITHDRAWAL, DEPOSIT, TRANSFER
+    WITHDRAWAL, DEPOSIT, TRANSFER, COMMISSION
 ]);
 
 define('LIKED', 'liked');

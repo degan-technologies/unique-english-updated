@@ -98,6 +98,9 @@ watch(
                         <div v-else-if="selectedContent === blogs">
                             <BlogManagement />
                         </div>
+                        <div v-else-if="selectedContent === payments">
+                            <RevenueManagement />
+                        </div>
                     </div>
                    <div>
                         <div v-if="selectedContent === profile">
@@ -105,10 +108,7 @@ watch(
                         </div>
                         <div v-else-if="selectedContent === courses ">
                             <CourseManagement />
-                        </div>
-                        <div v-else-if="selectedContent === payments">
-                            <RevenueManagement />
-                        </div>
+                        </div> 
                         <div v-else-if="selectedContent === liveSssions">
                             <LiveSessionManagement />
                         </div>

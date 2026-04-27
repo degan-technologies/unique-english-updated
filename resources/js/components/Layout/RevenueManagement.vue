@@ -1,6 +1,6 @@
 <script setup>
 import Axios from "axios";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import Popper from "vue3-popper";
 
 import TransactionHistory from "@/components/Transaction/TransactionHistory.vue";
@@ -23,9 +23,12 @@ const transactionStatus = ref({
 
 const filters = ref({
     status: "",
+    type: "",
     startDate: "",
     endDate: "",
 });
+
+const transactionTypes = ["withdrawal", "deposit", "transfer", "commission"];
 
 const revenue = ref({
     courseSales: 0.0,
@@ -47,6 +50,10 @@ function fetchTransactions(page = 1) {
         params: {
             summryLength: summryLength.value,
             rowsPerPageOptions: rowsPerPage.value,
+            status: filters.value.status,
+            type: filters.value.type,
+            startDate: filters.value.startDate,
+            endDate: filters.value.endDate,
         },
     }).then((res) => {
         transactions.value = res.data.data;
@@ -66,6 +73,7 @@ const filteredTransactions = computed(() => {
         let match = true;
         if (filters.value.status && item.status !== filters.value.status)
             match = false;
+        if (filters.value.type && item.type !== filters.value.type) match = false;
         if (filters.value.startDate && item.date < filters.value.startDate)
             match = false;
         if (filters.value.endDate && item.date > filters.value.endDate)
@@ -95,6 +103,14 @@ onMounted(() => {
     fetchTransactions();
 });
 
+watch(
+    filters,
+    () => {
+        fetchTransactions(1);
+    },
+    { deep: true }
+);
+
 // Add export functionality
 const isExporting = ref(false);
 
@@ -121,6 +137,7 @@ async function exportTransactions() {
             url: "/api/transaction/export",
             params: {
                 status: filters.value.status,
+                type: filters.value.type,
                 startDate: filters.value.startDate,
                 endDate: filters.value.endDate,
             },
@@ -288,7 +305,9 @@ async function exportTransactions() {
                                 <div
                                     class="block sm:flex justify-between items-center mb-4"
                                 >
-                                    <div class="w-full my-2 sm:w-fit sm:my-0">
+                                    <div
+                                        class="w-full my-2 sm:w-fit sm:my-0 grid grid-cols-1 sm:grid-cols-2 gap-2"
+                                    >
                                         <select
                                             v-model="filters.status"
                                             class="border rounded px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -317,6 +336,21 @@ async function exportTransactions() {
                                                 "
                                             >
                                                 {{ transactionStatus.failed }}
+                                            </option>
+                                        </select>
+
+                                        <select
+                                            v-model="filters.type"
+                                            class="border rounded px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">All Types</option>
+                                            <option
+                                                v-for="type in transactionTypes"
+                                                :key="type"
+                                                :value="type"
+                                                class="capitalize"
+                                            >
+                                                {{ type }}
                                             </option>
                                         </select>
                                     </div>
@@ -375,6 +409,11 @@ async function exportTransactions() {
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
                                                 >
                                                     Amount ETB
+                                                </th>
+                                                <th
+                                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                                                >
+                                                    Commission ETB
                                                 </th>
                                                 <th
                                                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
@@ -438,6 +477,11 @@ async function exportTransactions() {
                                                     class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                                                 >
                                                     {{ transaction.amount }}
+                                                </td>
+                                                 <td
+                                                    class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                >
+                                                    {{ transaction.commission }}
                                                 </td>
                                                 <td
                                                     class="px-6 py-4 whitespace-nowrap text-sm"

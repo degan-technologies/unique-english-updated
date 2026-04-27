@@ -211,7 +211,7 @@ onMounted(() => {
         <div class="bg-white p-6 col-span-1 rounded-lg shadow flex justify-between items-center">
             <div>
                 <h3 class="text-sm text-gray-500">Current Balance</h3>
-                <p class="text-2xl font-bold mt-1">ETB {{ CurrentBalance ?? '--' }}</p>
+                <p class="text-2xl font-bold mt-1">ETB {{ CurrentBalance ?? 0 }}</p>
                 <p class="text-sm text-gray-400 mt-2">Earnings update on product purchases</p>
             </div>
             <button @click="openWithdrawModal"

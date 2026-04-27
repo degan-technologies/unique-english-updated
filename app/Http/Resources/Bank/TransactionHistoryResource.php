@@ -23,7 +23,7 @@ class TransactionHistoryResource extends JsonResource
             'date' => $this->created_at->format('Y-m-d'),
             'amount' => $this->amount,
             'payment_method' => $this->payment_method,
-            'type' => $this->product_type,
+            'type' => $this->transaction_type,
             'ref_key' => $this->tx_ref,
             'course_id' => $this->course_id,
             'book_id' => $this->book_id,
@@ -33,7 +33,8 @@ class TransactionHistoryResource extends JsonResource
             'course_name' => $this->course?->course_name,
             'book_name' => $this->book?->title,
             'course_owner' => $this->course?->user?->full_name,
-            'book_owner' => $this->book?->user?->full_name,            
+            'book_owner' => $this->book?->user?->full_name,  
+            'commission' => $this->commission,        
 
             'customer' => new CustomerInfoResource($this->customer),
             'color' => $this->getColor(),

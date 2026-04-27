@@ -191,6 +191,8 @@ class TransactionController extends Controller
             $baseQuery->where('user_id', $user->id);
         }
 
+        $this->applyTransactionFilters($baseQuery, $request);
+
         $transactions = (clone $baseQuery)->paginate($request->rowsPerPageOptions);
 
         $allRows = (clone $baseQuery)->get();
@@ -237,9 +239,10 @@ class TransactionController extends Controller
         }
 
         $bankInfo = $user->bankInfos()->firstOrFail();
-        $balance = $this->getUserBalance($user);
+        $balance = $this->getUserBalance();
+        $availableBalance = $balance['data'][0]['available_balance'] ?? 0;
 
-        if ($balance < $request->amount) {
+        if ($availableBalance < $request->amount && $availableBalance > 5) {
             return response()->json([
                 'message' => $this->langService->getLang('insufficient_balance')
             ], 400);
@@ -260,6 +263,15 @@ class TransactionController extends Controller
 
         try {
             $transfer = $this->createWithdraw($request->amount, $txRef);
+
+            if ($transfer['status'] !== 'success') {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $transfer['message'],
+                    'status' => $transfer['status'],
+                    'error' => $transfer['error'] ?? null
+                ], 400);
+            }
 
             $response = $this->chapaService->transfer($data);
 
@@ -285,13 +297,8 @@ class TransactionController extends Controller
                     'gateway_response' => $response
                 ], 400);
             }
-
-            $transfer['transfer']->update([
-                'chapa_reference' => $chapaReference,
-                'status' => $response['status'],
-            ]);
-
-            $transfer['commission']->update([
+ 
+            $transfer['transaction']->update([
                 'status' => $response['status'],
             ]);
 
@@ -361,6 +368,7 @@ class TransactionController extends Controller
             $existingTransaction->update([
                 'tx_ref' => $txRef,
                 'amount' => $price,
+                'transaction_type' => DEPOSIT,
                 'enrolled_at' => now()
             ]);
 
@@ -373,6 +381,7 @@ class TransactionController extends Controller
                 'amount' => $price,
                 'customer_id' => $user->id,
                 'status' => TRANSACTION_PENDING,
+                'transaction_type' => DEPOSIT,
                 'product_type' => $item['type'],
                 'live_price_type' => $item['live_price_type'] ?? 'notLive',
                 'enrolled_at' => now()
@@ -428,14 +437,10 @@ class TransactionController extends Controller
         ];
     }
 
-    private function getUserBalance(User $user): float
-    {
-        return Transfer::where('user_id', $user->id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('deposits')
-            - Transfer::where('user_id', $user->id)
-            ->where('status', TRANSACTION_SUCCESS)
-            ->sum('withdrawals');
+    private function getUserBalance() {
+       $balance = $this->chapaService->getBalance();
+
+        return $balance;
     }
 
     /**
@@ -460,20 +465,30 @@ class TransactionController extends Controller
             $baseQuery->where('user_id', $user->id);
         }
 
-        // Apply filters if provided
-        if ($request->filled('status')) {
-            $baseQuery->where('status', $request->status);
-        }
-        if ($request->filled('startDate')) {
-            $baseQuery->whereDate('created_at', '>=', $request->startDate);
-        }
-        if ($request->filled('endDate')) {
-            $baseQuery->whereDate('created_at', '<=', $request->endDate);
-        }
+        $this->applyTransactionFilters($baseQuery, $request);
 
         $transactions = $baseQuery->get();
 
         return $this->exportTransactionsToCSV($transactions);
+    }
+
+    private function applyTransactionFilters($query, Request $request): void
+    {
+        if ($request->filled('status') && in_array($request->status, TRANSACTION_STATUS, true)) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('type') && in_array($request->type, TRANSACTION_CATEGORY, true)) {
+            $query->where('transaction_type', $request->type);
+        }
+
+        if ($request->filled('startDate')) {
+            $query->whereDate('created_at', '>=', $request->startDate);
+        }
+
+        if ($request->filled('endDate')) {
+            $query->whereDate('created_at', '<=', $request->endDate);
+        }
     }
 
     /**
