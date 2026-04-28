@@ -4,6 +4,7 @@ namespace App\Http\Resources\Blog;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class BlogPostResource extends JsonResource
 {
@@ -14,19 +15,16 @@ class BlogPostResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $image = $this->cover_image;
-
-        if ($image && !str_starts_with($image, 'http://') && !str_starts_with($image, 'https://')) {
-            $image = asset('storage/' . ltrim($image, '/'));
-        }
 
         return [
             'id' => $this->id,
             'slug' => $this->slug,
             'title' => $this->title,
             'excerpt' => $this->excerpt,
-            'content' => $this->content,
-            'cover_image' => $image,
+            'content' => $this->content, 
+            'cover_image' => $this->cover_image
+                ? Storage::disk('public')->url($this->cover_image)
+                : 'images/no-profile.png',
             'tags' => $this->tags ?? [],
             'status' => $this->status,
             'published_at' => $this->published_at,
