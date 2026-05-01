@@ -17,7 +17,7 @@ class BookVideoController extends Controller
     public function stream(Request $request, $filename)
     {
         $disk = Storage::disk('public');
-        $path = "books/video/optimized/$filename";
+        $path = "books/video/original/$filename";
         $filePath = $disk->path($path);
 
         if (!$disk->exists($path)) {

@@ -31,6 +31,7 @@ mix.alias({
 mix
     .js('resources/js/app.js', 'public/js/App.js')
     .css('resources/js/assets/App.css', 'public/css/App.css')
+    .copy('node_modules/pdfjs-dist/build/pdf.worker.min.mjs', 'public/js/pdf.worker.min.mjs')
     .vue()
     .version()
     .override((config) => {

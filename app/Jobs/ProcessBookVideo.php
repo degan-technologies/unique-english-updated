@@ -11,6 +11,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use FFMpeg\Format\Video\X264;
+use Illuminate\Support\Facades\Storage;
 
 class ProcessBookVideo implements ShouldQueue
 {
@@ -40,6 +41,14 @@ class ProcessBookVideo implements ShouldQueue
         Log::info("Processing started for Book ID: {$this->bookId}");
         Log::info("Original video path: {$this->videoPath}");
 
+        if (empty($this->videoPath) || $this->videoPath === 'undefined') {
+            Log::error("Invalid video path received", [
+                'videoPath' => $this->videoPath,
+                'bookId' => $this->bookId,
+            ]);
+            return;
+        }
+
         $book = Book::find($this->bookId);
         if (!$book) {
             Log::error(" Book not found for ID: {$this->bookId}");
@@ -47,14 +56,19 @@ class ProcessBookVideo implements ShouldQueue
         }
 
         $filename = pathinfo($this->videoPath, PATHINFO_FILENAME);
-        $fullPath = storage_path('app/public/' . $this->videoPath);
 
-        if (!$filename || !file_exists($fullPath)) {
-            log::error("Video file does not exist: {$fullPath}");
+        if (!$filename || !Storage::disk('public')->exists($this->videoPath)) {
+            Log::error("Video file does not exist on disk: {$this->videoPath}");
             return;
         }
 
-        $optimizedPath = "books/video/optimized/{$filename}_streamable.mp4";
+        // Prevent processing very small (broken) files
+        if (Storage::disk('public')->size($this->videoPath) < 100000) {
+            Log::error("File too small / corrupted: {$this->videoPath}");
+            return;
+        }
+
+        $optimizedPath = "books/video/optimized/{$filename}_{$this->bookId}_streamable.mp4";
         // $thumbnailPath = "course/video/thumbnails/{$filename}.jpg";
 
         try {
@@ -82,6 +96,11 @@ class ProcessBookVideo implements ShouldQueue
             //     ->save($thumbnailPath);
 
 
+            if (!Storage::disk('public')->exists($optimizedPath)) {
+                Log::error("Optimized file not found after processing");
+                throw new \RuntimeException('Optimized file missing after processing');
+            }
+
             $book->update([
                 'intro_vedio' => $optimizedPath,
                 'video_optimized' => true,
@@ -94,6 +113,7 @@ class ProcessBookVideo implements ShouldQueue
             Log::error("Video processing failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+            throw $e;
         }
     }
 }

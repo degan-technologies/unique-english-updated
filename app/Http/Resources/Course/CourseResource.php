@@ -48,7 +48,9 @@ class CourseResource extends JsonResource
             'thumbnail_url' => $this->thumbnail_url
                 ? Storage::disk('public')->url($this->thumbnail_url)
                 : 'no-thumbnail_url.png',
-            'courseModules' => CourseModuleResource::collection($this->courseModules->sortBy('sequence')),
+            'courseModules' => $this->whenLoaded('courseModules', function () {
+                return CourseModuleResource::collection($this->courseModules->sortBy('sequence'));
+            }),
 
             'isMyCourse' => Course::checkEligibility($this->id),
         ];
@@ -73,6 +75,10 @@ class CourseResource extends JsonResource
     public function totalEnroll($id)
     {
 
+        if (isset($this->total_enroll)) {
+            return $this->total_enroll === 0 ? 'not selled' : $this->total_enroll;
+        }
+
         $countTotalEnroll = Transaction::query()
             ->where('course_id', $id)
             ->where('status', 'success')
@@ -83,6 +89,10 @@ class CourseResource extends JsonResource
 
     public function totalRevenue($id)
     {
+        if (isset($this->total_revenue)) {
+            return $this->total_revenue === 0 ? 'not selled' : $this->total_revenue;
+        }
+
         $countRevenue = Transaction::query()
             ->where('course_id', $id)
             ->where('status', 'success')

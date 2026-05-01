@@ -38,7 +38,13 @@ class BookController extends Controller
          * @var mixed $resources
          */
 
-        $resources = Book::with(['user'])
+        $resources = Book::with(['user', 'feedBacks:id,book_id,rate'])
+            ->withCount([
+                'transactions as total_enroll' => fn($q) => $q->where('status', 'success'),
+            ])
+            ->withSum([
+                'transactions as total_revenue' => fn($q) => $q->where('status', 'success'),
+            ], 'amount')
             ->where('user_id', Auth::id())
             ->when($request->searchQuery, fn($q) => $q->where('title', 'like', "%{$request->searchQuery}%"))
             ->when($request->language, fn($q) => $q->where('language', $request->language))
@@ -70,7 +76,13 @@ class BookController extends Controller
          * @var mixed $resources
          */
 
-        $resources = Book::with(['user'])
+        $resources = Book::with(['user', 'feedBacks:id,book_id,rate'])
+            ->withCount([
+                'transactions as total_enroll' => fn($q) => $q->where('status', 'success'),
+            ])
+            ->withSum([
+                'transactions as total_revenue' => fn($q) => $q->where('status', 'success'),
+            ], 'amount')
             ->paginate(10);
 
         $pagination = $resources->toArray();
@@ -155,14 +167,10 @@ class BookController extends Controller
             'file_url' => $request->file_url,
             'cover_page_url' => $request->cover_page_url,
             'intro_vedio' => $request->intro_video,
-            'video_optimized' => false,
+            'video_optimized' => true,
             'isDownloadable' => false,
         ]);
-
-        if ($request->intro_video !== null) {
-            ProcessBookVideo::dispatch($request->intro_video, $book->id);
-        }
-
+  
         return response()->json([
             'message' => $this->langService->getLang('book_created_successfully'),
             'data' => new BookResource($book),
@@ -237,12 +245,9 @@ class BookController extends Controller
 
         if ($request->cover_page_url !== null) {
             $data['cover_page_url'] = $request->cover_page_url;
-        }
+        } 
 
-        if ($request->intro_vedio !== null) {
-            $data['intro_vedio'] = $request->intro_vedio;
-            ProcessBookVideo::dispatch($request->intro_vedio, $book->id);
-        }
+        $data['video_optimized'] = true;
 
         $book->update($data);
 
@@ -382,7 +387,7 @@ class BookController extends Controller
         }
 
         $validationRules = [
-            'intro_video' => 'required|file|mimes:mp4,mov,avi|max:204800', // 200MB max
+            'intro_video' => 'required|file|mimes:mp4,mov,avi', // 200MB max
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('books'));

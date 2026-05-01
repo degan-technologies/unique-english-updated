@@ -5,12 +5,13 @@ namespace App\Jobs;
 use App\Models\Course\Course;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
-use FFMpeg\Format\Video\X264; 
+use FFMpeg\Format\Video\X264;
 
 class ProcessCourseVideo implements ShouldQueue
 {
@@ -18,9 +19,9 @@ class ProcessCourseVideo implements ShouldQueue
 
     protected $videoPath;
     protected $courseId;
-    public $tries = 1;
-    public $timeout = 900;
 
+    public $tries = 2;
+    public $timeout = 1200;
 
     public function __construct($videoPath, $courseId)
     {
@@ -33,60 +34,100 @@ class ProcessCourseVideo implements ShouldQueue
         Log::info("Processing started for course ID: {$this->courseId}");
         Log::info("Original video path: {$this->videoPath}");
 
+        if (empty($this->videoPath) || $this->videoPath === 'undefined') {
+            Log::error("Invalid video path received", [
+                'videoPath' => $this->videoPath,
+                'courseId' => $this->courseId,
+            ]);
+            return;
+        }
+
         $course = Course::find($this->courseId);
         if (!$course) {
-            Log::error(" Course not found for ID: {$this->courseId}");
+            Log::error("Course not found: {$this->courseId}");
+            return;
+        }
+
+        if (!Storage::disk('public')->exists($this->videoPath)) {
+            Log::error("File not found: {$this->videoPath}");
+            return;
+        }
+
+        // Prevent processing very small (broken) files
+        if (Storage::disk('public')->size($this->videoPath) < 100000) {
+            Log::error("File too small / corrupted: {$this->videoPath}");
             return;
         }
 
         $filename = pathinfo($this->videoPath, PATHINFO_FILENAME);
-        $fullPath = storage_path('app/public/' . $this->videoPath);
+        $optimizedPath = "course/video/optimized/{$filename}_{$this->courseId}_streamable.mp4";
 
-        if (!$filename || !file_exists($fullPath)) {
-            log::error("Video file does not exist: {$fullPath}");
-            return;
-        }
+        try {
 
-        $optimizedPath = "course/video/optimized/{$filename}_streamable.mp4";
-        // $thumbnailPath = "course/video/thumbnails/{$filename}.jpg";
+            // ✅ SAFE FORMAT (NO CRAZY FLAGS)
+            $format = new X264('aac', 'libx264');
+            $format->setKiloBitrate(null); // use CRF instead
+            $format->setAudioKiloBitrate(128);
 
-        try { 
             FFMpeg::fromDisk('public')
                 ->open($this->videoPath)
                 ->export()
+
+                // ✅ Handle broken frames safely
+                ->addFilter('-fflags', '+genpts+discardcorrupt')
+                ->addFilter('-err_detect', 'ignore_err')
+
+                // ✅ Optimize streaming
                 ->addFilter('-movflags', '+faststart')
-                ->addFilter('-preset', 'veryfast')  
-                ->addFilter('-threads', '2') 
+
+                // ✅ Performance
+                ->addFilter('-preset', 'veryfast')
+
+                // ✅ Quality-based encoding (BETTER than bitrate)
+                ->addFilter('-crf', '23')
+
                 ->toDisk('public')
-                ->inFormat(
-                    (new X264('libmp3lame'))
-                        ->setKiloBitrate(500)
-                        ->setAudioKiloBitrate(128)
-                )
+                ->inFormat($format)
                 ->save($optimizedPath);
 
-            Log::info("Optimized video saved: $optimizedPath");
- 
-            // FFMpeg::fromDisk('public')
-            //     ->open($this->videoPath)
-            //     ->getFrameFromSeconds(2)
-            //     ->export()
-            //     ->toDisk('public')
-            //     ->save($thumbnailPath);
+            Log::info("Video encoded successfully");
+        } catch (\Throwable $e) {
 
+            Log::warning("Main encoding failed, trying fallback (no audio)...");
 
+            try {
+                // 🔁 FALLBACK: remove audio if it's broken
+                FFMpeg::fromDisk('public')
+                    ->open($this->videoPath)
+                    ->export()
+                    ->addFilter('-an') // remove audio
+                    ->addFilter('-movflags', '+faststart')
+                    ->addFilter('-preset', 'veryfast')
+                    ->addFilter('-crf', '23')
+                    ->toDisk('public')
+                    ->inFormat(new X264)
+                    ->save($optimizedPath);
+
+                Log::info("Fallback encoding (no audio) succeeded");
+            } catch (\Throwable $e2) {
+                Log::error("Fallback encoding failed", [
+                    'error' => $e2->getMessage()
+                ]);
+                throw $e2;
+            }
+        }
+
+        // ✅ Update DB only if file exists
+        if (Storage::disk('public')->exists($optimizedPath)) {
             $course->update([
                 'intro_video' => $optimizedPath,
                 'video_optimized' => true,
-
-                // 'thumbnail_url' => $thumbnailPath,
             ]);
 
-            Log::info("Course DB updated successfully: {$this->courseId}");
-        } catch (\Throwable $e) {
-            Log::error("Video processing failed: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::info("Course updated successfully: {$this->courseId}");
+        } else {
+            Log::error("Optimized file not found after processing");
+            throw new \RuntimeException('Optimized file missing after processing');
         }
     }
 }

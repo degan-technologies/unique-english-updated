@@ -66,6 +66,10 @@ class BookResource extends JsonResource
     public function totalEnroll($id)
     {
 
+        if (isset($this->total_enroll)) {
+            return $this->total_enroll === 0 ? 'not selled' : $this->total_enroll;
+        }
+
         $countTotalEnroll = Transaction::query()
             ->where('book_id', $id)
             ->where('status', 'success')
@@ -76,6 +80,10 @@ class BookResource extends JsonResource
 
     public function totalRevenue($id)
     {
+        if (isset($this->total_revenue)) {
+            return $this->total_revenue === 0 ? 'not selled' : $this->total_revenue;
+        }
+
         $countRevenue = Transaction::query()
             ->where('book_id', $id)
             ->where('status', 'success')

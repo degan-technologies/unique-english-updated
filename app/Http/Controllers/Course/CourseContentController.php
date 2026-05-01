@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Course;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Course\CourseContentResource;
 use App\Jobs\ProcessLessonVideo;
-use App\Jobs\ProcessLessonVideo;
-use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use App\Models\Course\CourseModule;
 use App\Models\Transaction\Transaction;
@@ -16,9 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
-use getID3;
 use Illuminate\Support\Facades\Storage;
 
 class CourseContentController extends Controller
@@ -64,8 +60,6 @@ class CourseContentController extends Controller
         $moduleId = $request->course_module_id ?? null;
         $contentType = (int) ($request->content_type ?? 0);
 
-        $contentType = (int) ($request->content_type ?? 0);
-
         $courseModule = CourseModule::query()
             ->where('user_id', $user->id)
             ->find($moduleId);
@@ -96,7 +90,6 @@ class CourseContentController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-
         // Create the course content record
         $courseContent = $user->courseContents()->create([
             'course_module_id' => $moduleId,
@@ -107,11 +100,12 @@ class CourseContentController extends Controller
             'content_type' => $contentType,
             'content_url' => $request->content_url,
             'thumbnail_url' => Str::uuid(),
-            'hour' => $request->duration,
-            'hour' => $request->duration,
+            'hour' => $request->duration
+                ? gmdate('H:i:s', (int) $request->duration)
+                : null,
             'sequence' => $sequence,
             'isDownloadable' => false,
-            'video_optimized' => false,
+            'video_optimized' => true,
             'created_at' => Carbon::now(),
         ]);
 
@@ -144,7 +138,6 @@ class CourseContentController extends Controller
 
         if (!$user) return;
 
-        $contentType = (int) ($request->content_type ?? 0);
         $contentType = (int) ($request->content_type ?? 0);
 
         $courseContent = CourseContent::findOrFail($id);
@@ -179,14 +172,15 @@ class CourseContentController extends Controller
 
                 $filePath = $request->content_url;
                 ProcessLessonVideo::dispatch($filePath, $courseContent->id);
-                $courseContent->video_optimized = false;
+                $courseContent->video_optimized = true;
             }
 
             $courseContent->content_type = $contentType;
             $courseContent->content_url = $request->content_url;
-            $courseContent->hour = $request->durarion ?? null;
-        }
-
+            $courseContent->hour = $request->duration
+                ? gmdate('H:i:s', (int) $request->duration)
+                : null;
+            }
 
         $courseContent->title = $request->title;
         $courseContent->updated_at = Carbon::now();

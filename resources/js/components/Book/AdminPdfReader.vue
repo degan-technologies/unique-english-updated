@@ -9,10 +9,7 @@ import { useAppStore } from '@/store/useAppStore';
 const appStore = useAppStore();
 const { authToken } = storeToRefs(appStore);
 
-GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-).toString();
+GlobalWorkerOptions.workerSrc = '/js/pdf.worker.min.mjs';
 
 const props = defineProps({
     selectedBook: {

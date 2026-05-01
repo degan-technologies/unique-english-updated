@@ -37,6 +37,14 @@ class ProcessLessonVideo implements ShouldQueue
         Log::info("Processing started for lesson ID: {$this->lessonId}");
         Log::info("Original video path: {$this->videoPath}");
 
+        if (empty($this->videoPath) || $this->videoPath === 'undefined') {
+            Log::error("Invalid video path received", [
+                'videoPath' => $this->videoPath,
+                'lessonId' => $this->lessonId,
+            ]);
+            return;
+        }
+
         $lesson = CourseContent::find($this->lessonId);
 
         if (!$lesson) {
@@ -51,25 +59,31 @@ class ProcessLessonVideo implements ShouldQueue
             return;
         }
 
-        $optimizedPath = "lesson/video/optimized/{$filename}_streamable.mp4";
-        $thumbnailPath = "lesson/video/thumbnails/{$filename}.jpg";
+        // Prevent processing very small (broken) files
+        if (Storage::disk('private')->size($this->videoPath) < 100000) {
+            Log::error("File too small / corrupted: {$this->videoPath}");
+            return;
+        }
+
+        // $optimizedPath = "lesson/video/optimized/{$filename}_{$this->lessonId}_streamable.mp4";
+        $thumbnailPath = "lesson/video/thumbnails/{$filename}_{$this->lessonId}.jpg";
 
         try {
-            FFMpeg::fromDisk('private')
-                ->open($this->videoPath)
-                ->export()
-                ->addFilter('-movflags', '+faststart')
-                ->addFilter('-preset', 'veryfast')
-                ->addFilter('-threads', '2')
-                ->toDisk('private')
-                ->inFormat(
-                    (new X264('libmp3lame'))
-                        ->setKiloBitrate(500)
-                        ->setAudioKiloBitrate(128)
-                )
-                ->save($optimizedPath);
+            // FFMpeg::fromDisk('private')
+            //     ->open($this->videoPath)
+            //     ->export()
+            //     ->addFilter('-movflags', '+faststart')
+            //     ->addFilter('-preset', 'veryfast')
+            //     ->addFilter('-threads', '2')
+            //     ->toDisk('private')
+            //     ->inFormat(
+            //         (new X264('libmp3lame'))
+            //             ->setKiloBitrate(500)
+            //             ->setAudioKiloBitrate(128)
+            //     )
+            //     ->save($optimizedPath);
 
-            Log::info("Optimized video saved: $optimizedPath");
+            // Log::info("Optimized video saved: $optimizedPath");
 
             FFMpeg::fromDisk('private')
                 ->open($this->videoPath)
@@ -80,9 +94,19 @@ class ProcessLessonVideo implements ShouldQueue
 
             Log::info("Thumbnail created: $thumbnailPath");
 
+            // if (!Storage::disk('private')->exists($optimizedPath)) {
+            //     Log::error("Optimized file not found after processing");
+            //     throw new \RuntimeException('Optimized file missing after processing');
+            // }
+
+            if (!Storage::disk('private')->exists($thumbnailPath)) {
+                Log::error("Thumbnail not found after processing");
+                throw new \RuntimeException('Thumbnail missing after processing');
+            }
+
             $lesson->update([
-                'content_url' => $optimizedPath,
-                'video_optimized' => true,
+                // 'content_url' => $optimizedPath,
+                // 'video_optimized' => true,
                 'thumbnail_url' => $thumbnailPath,
             ]);
 
@@ -91,6 +115,7 @@ class ProcessLessonVideo implements ShouldQueue
             Log::error("Video processing failed: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
+            throw $e;
         }
     }
 }

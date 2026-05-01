@@ -5,10 +5,7 @@ import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
 import Spinner from "@/components/Layout/Spinner.vue";
 
-GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-).toString();
+GlobalWorkerOptions.workerSrc = "/js/pdf.worker.min.mjs";
 
 import { useAppStore } from '@/store/useAppStore';
 const appStore = useAppStore();

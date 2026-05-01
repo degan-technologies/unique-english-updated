@@ -61,8 +61,8 @@ class CourseContentVideoController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $path = "lesson/video/optimized/$filename";
-        $path = "lesson/video/optimized/$filename";
+        $path = "lesson/video/original/$filename";
+        $path = "lesson/video/original/$filename";
 
         $courseContent = CourseContent::query()
             ->where('content_url', $path)

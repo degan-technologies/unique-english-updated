@@ -18,10 +18,7 @@ const { authToken } = storeToRefs(appStore);
 
 const route = useRoute();
 
-GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
-    import.meta.url
-).toString();
+GlobalWorkerOptions.workerSrc = "/js/pdf.worker.min.mjs";
 
 const canvasRef = ref(null);
 const containerRef = ref(null);

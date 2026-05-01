@@ -106,12 +106,12 @@ class CourseController extends Controller
             'intro_video' => $request->intro_video,
             'language' => $request->language,
             'status' => DRAFT,
-            'video_optimized' => false,
+            'video_optimized' => true,
         ]);
 
-        if ($request->intro_video !== null) {
-            ProcessCourseVideo::dispatch($request->intro_video, $course->id);
-        }
+        // if ($request->intro_video !== null) {
+        //     ProcessCourseVideo::dispatch($request->intro_video, $course->id);
+        // }
 
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_added'),
@@ -173,7 +173,7 @@ class CourseController extends Controller
             'skill_level' => [Rule::in(SKILL_LEVEL)],
             'price' => 'numeric',
             'thumbnail_url' => 'nullable',
-            'intro_video' => 'nullable',
+            'intro_video' => 'nullable'
         ];
 
         $validator = Validator::make($request->all(), $validationRules, $this->langService->getLang('courses'));
@@ -190,6 +190,7 @@ class CourseController extends Controller
         $data = $validator->validated();
 
         if ($request->thumbnail_url !== null) {
+
             if ($course->thumbnail_url) {
                 Storage::disk('public')->delete($course->thumbnail_url);
             }
@@ -203,10 +204,10 @@ class CourseController extends Controller
 
             $uploadedPath = $request->intro_video;
 
-            ProcessCourseVideo::dispatch($uploadedPath, $course->id);
+            // ProcessCourseVideo::dispatch($uploadedPath, $course->id);
 
             $data['intro_video'] = $request->intro_video;
-            $data['video_optimized'] = false;
+            $data['video_optimized'] = true;
         }
 
         $course->update($data);
@@ -273,7 +274,7 @@ class CourseController extends Controller
                 ->exists();
         })->count();
 
-        if ($countExams && $countResult === $countExams) {
+        if ($countExams && $countCompletedLesson === $countExams) {
             $allQuizzesCompleted = true;
         }
 
@@ -339,9 +340,15 @@ class CourseController extends Controller
     public function search(Request $request)
     {
         $courses = Course::where('user_id', Auth::id())
+            ->withCount([
+                'transactions as total_enroll' => fn($q) => $q->where('status', 'success'),
+            ])
+            ->withSum([
+                'transactions as total_revenue' => fn($q) => $q->where('status', 'success'),
+            ], 'amount')
             ->when($request->searchQuery, fn($q) => $q->where('course_name', 'like', "%{$request->searchQuery}%"))
             ->when($request->skillLevel, fn($q) => $q->where('skill_level', $request->skillLevel))
-            ->paginate($request->rowsPerPageOptions);
+            ->paginate($request->rowsPerPageOptions ?? 10);
 
         $stats = Course::query()
             ->where('user_id', Auth::id())
