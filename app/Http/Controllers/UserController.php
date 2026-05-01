@@ -85,7 +85,9 @@ class UserController extends Controller
             ->where('created_at', '>=', Carbon::now()->subMonth())
             ->count();
         $activeUsers = (clone $baseQuery)
-            ->where('last_login_at', '>=', Carbon::now()->subMonth())
+            ->whereHas('activityFeeds', function ($query) {
+                $query->where('created_at', '>=', Carbon::now()->subMonth());
+            })
             ->count();
 
         return response()->json([

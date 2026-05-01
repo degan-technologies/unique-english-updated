@@ -153,6 +153,7 @@ class User extends Authenticatable {
     public function insAttendances() { return $this->hasMany(InsAttendance::class, 'instructor_id');}
     public function classVisiter() { return $this->hasMany(InsAttendance::class, 'visiter_id');}
     public function stdAttendances() { return $this->hasMany(StdAttendance::class, 'student_id');}
+    public function activityFeeds() { return $this->hasMany(AdminActivityLog::class); }
 
     public function scopeWhereSystemAdminOrInstructor(Builder $query, $userId = null) {
         if($userId == null){
