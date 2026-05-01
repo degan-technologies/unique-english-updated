@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ref, computed, onMounted, watch } from "vue";
 
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useInstructorStore } from "@/store/useInstructorStore";
 
 import AddBook from "@/components/Book/AddBook.vue";
@@ -17,10 +18,12 @@ const route = useRoute();
 const router = useRouter();
 
 const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const InstructorStore = useInstructorStore();
 const { analytics, selectedCourse, courseEditTab, courseModuleTab, readlessonPdfTab , selectedLesson} =
     storeToRefs(InstructorStore);
-const { authUser, frontLang } = storeToRefs(appStore);
+const { frontLang } = storeToRefs(appStore);
+const { authUser } = storeToRefs(sessionStore);
 
 const bookTab = ref("Books");
 const courseTab = ref("Courses");

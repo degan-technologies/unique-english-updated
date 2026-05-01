@@ -42,9 +42,9 @@ export const useCartStore = defineStore("useCartStore", () => {
 
     // In your useCartStore.js
     function clearCart() {
-        this.items = [];
-        this.itemCount = 0;
-        this.totalPrice = 0;
+        items.value = [];
+        itemCount.value = 0;
+        totalPrice.value = 0;
         localStorage.removeItem("cartItems"); // Directly remove from localStorage
     }
 

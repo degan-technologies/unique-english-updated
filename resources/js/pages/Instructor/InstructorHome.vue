@@ -3,7 +3,7 @@ import { ref, computed, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
 
-import { useAppStore } from '@/store/useAppStore'
+import { useSessionStore } from "@/store/useSessionStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
 // Import Components
@@ -23,8 +23,8 @@ import SettingsAndSecurity from "@/components/Layout/SettingsAndSecurity.vue";
 import LiveSessionManagement from "@/components/Layout/LiveSessionManagement.vue";
 import NotificationManagement from "@/components/Layout/NotificationManagement.vue";
 
-const appStore = useAppStore();
-const { authUser } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser } = storeToRefs(sessionStore);
  
 const sidebarStore = useSidebarStore();
 const { 

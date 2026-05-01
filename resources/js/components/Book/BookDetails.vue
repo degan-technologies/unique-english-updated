@@ -4,7 +4,7 @@ import videojs from "video.js";
 import "video.js/dist/video-js.css";
 import { storeToRefs } from "pinia";
 import { useRoute, useRouter } from "vue-router";
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 import { onMounted, ref, watch, nextTick, onBeforeUnmount } from "vue";
@@ -14,9 +14,9 @@ import ReviewList from "@/components/Course/ReviewList.vue";
 import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 
 const AuthStore = useAuthStore();
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 
-const { isLoggedIn } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(sessionStore);
 const { showLoginForm } = storeToRefs(AuthStore);
 
 const studentStore = UseStudentStore();

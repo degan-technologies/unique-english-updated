@@ -3,10 +3,10 @@ import { ref, onMounted, computed, nextTick } from 'vue';
 import QrcodeVue from 'qrcode.vue';
 import { storeToRefs } from 'pinia';
 import html2canvas from 'html2canvas';
-import { useAppStore } from '@/store/useAppStore';
+import { useSessionStore } from "@/store/useSessionStore";
 
-const appStore = useAppStore();
-const { authUser } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser } = storeToRefs(sessionStore);
 const isLoading = ref(false);
 
 const props = defineProps({

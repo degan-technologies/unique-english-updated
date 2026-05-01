@@ -5,7 +5,7 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 
 import { useAuthStore } from "@/store/useAuthStore";
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 import Spinner from "@/components/Layout/Spinner.vue";
 
@@ -24,14 +24,14 @@ const checkoutUrl = ref('');
 const selectedPlanId = ref(null);
 const notFoundMessage = ref('');
 // Stores
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const authStore = useAuthStore();
 const studentStore = UseStudentStore();
 const router = useRouter();
 
 // Store refs
 const { liveSchedulTab, selectedCourseSlug } = storeToRefs(studentStore);
-const { isLoggedIn } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(sessionStore);
 const { showLoginForm } = storeToRefs(authStore);
 
 // Methods

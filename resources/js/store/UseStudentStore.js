@@ -22,16 +22,22 @@ export const UseStudentStore = defineStore("UseStudentStore", () => {
     const selectedbookslug = ref(null);
     const completedLessons = ref(new Set());
 
-    async function fetchCourses() {
-        await Axios.get("/api/all-couses").then(
-            (res) => (courses.value = res.data.data)
-        );
+    async function fetchCourses(force = false) {
+        if (courses.value && !force) {
+            return;
+        }
+
+        const response = await Axios.get("/api/all-couses");
+        courses.value = response.data.data;
     }
 
-    async function fetchBooks() {
-        await Axios.get("/api/all-books").then(
-            (res) => (books.value = res.data.data)
-        );
+    async function fetchBooks(force = false) {
+        if (books.value && !force) {
+            return;
+        }
+
+        const response = await Axios.get("/api/all-books");
+        books.value = response.data.data;
     }
 
     return {

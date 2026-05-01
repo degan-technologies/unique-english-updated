@@ -1,14 +1,14 @@
 import { defineStore, storeToRefs } from "pinia";
 import { ref, computed, onMounted } from "vue";
 
-import { useAppStore } from '@/store/useAppStore'
+import { useSessionStore } from "@/store/useSessionStore";
 
 export const useSidebarStore = defineStore("useSidebarStore", () => {
     const sideBarOpen = ref(false);
     const sidebarCollapsed = ref(false); 
     
-    const appStore = useAppStore();
-    const { authUser } = storeToRefs(appStore);
+    const sessionStore = useSessionStore();
+    const { authUser } = storeToRefs(sessionStore);
 
     const profile = ref("profile");
     const dashboard = ref("dashboard");

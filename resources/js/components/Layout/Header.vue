@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useCartStore } from "@/store/useCartStore";
 import { UseStudentStore } from "@/store/UseStudentStore"; 
@@ -19,6 +20,7 @@ const sidebarStore = useSidebarStore();
 const { selectedContent } = storeToRefs(sidebarStore);
 
 const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const AuthStore = useAuthStore();
 const cartStore = useCartStore();
 const studentStore = UseStudentStore();
@@ -31,18 +33,15 @@ const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
  
 
 // App & user refs
+const { logoImage, exploreCourses, selectedComponentId } = storeToRefs(appStore);
 const {
     isLoggedIn,
-    loggingIn,
-    logoImage,
-    unreadNotifications,
-    notifications,
-    readNotifications,
     authUser,
-    exploreCourses,
-    selectedComponentId,
     otpEmail,
-} = storeToRefs(appStore);
+    notifications,
+    unreadNotifications,
+    readNotifications,
+} = storeToRefs(sessionStore);
 
 // Student refs
 const { landingPageTab, selectedCourseSlug, myCourseTab, freeCourses, blogTab } =
@@ -91,20 +90,14 @@ const toggleNotifications = () => {
     notificationOpen.value = !notificationOpen.value;
     dropDownOpen.value = false;
     if (notificationOpen.value) {
-        appStore.fetchUnreadNotifications();
-        if (showAllNotifications.value) {
-            appStore.fetchReadNotifications();
-        }
+        sessionStore.fetchUnreadNotifications();
     }
 };
 
 async function markAsRead(notificationId) {
     try {
-        await appStore.markNotificationAsRead(notificationId);
-        await appStore.fetchUnreadNotifications();
-        if (showAllNotifications.value) {
-            await appStore.fetchReadNotifications();
-        }
+        await sessionStore.markNotificationAsRead(notificationId);
+        await sessionStore.fetchUnreadNotifications();
     } catch (e) {
         console.error("Error marking notification as read:", e);
     }
@@ -112,11 +105,8 @@ async function markAsRead(notificationId) {
 
 async function markAsUnread(notificationId) {
     try {
-        await appStore.markNotificationAsUnread(notificationId);
-        await appStore.fetchUnreadNotifications();
-        if (showAllNotifications.value) {
-            await appStore.fetchReadNotifications();
-        }
+        await sessionStore.markNotificationAsUnread(notificationId);
+        await sessionStore.fetchUnreadNotifications();
     } catch (e) {
         console.error("Error marking notification as unread:", e);
     }
@@ -128,7 +118,7 @@ function showNotificationDetails(notification) {
     notificationOpen.value = false;
 
     if (notification.data.read_at == null) {
-        appStore.markNotificationAsRead(notification.id);
+        sessionStore.markNotificationAsRead(notification.id);
     }
 }
 
@@ -294,12 +284,10 @@ function openProfile() {
 }
 
 async function signOut() {
-    otpEmail.value = "";
+    sessionStore.clearOtpEmail();
     try {
         await Axios.post("/api/log-out");
-        authUser.value = null;
-        appStore.setAuthToken("");
-        isLoggedIn.value = false;
+        sessionStore.logout();
         closeDropdown();
     } catch (error) {
         console.error("Logout failed:", error);
@@ -340,15 +328,12 @@ onMounted(() => {
     }
 
     // notifications
-    appStore.fetchUnreadNotifications();
+    sessionStore.fetchUnreadNotifications();
     if (window.Echo && authUser.value?.id) {
         window.Echo.private(
             `App.Models.User.${authUser.value.id}`
         ).notification(() => {
-            appStore.fetchUnreadNotifications();
-            if (showAllNotifications.value) {
-                appStore.fetchReadNotifications();
-            }
+            sessionStore.fetchUnreadNotifications();
         });
     }
 
@@ -359,7 +344,7 @@ onMounted(() => {
 
 const refreshNOtification = () => {
     notificationsLoading.value = true;
-    appStore.fetchUnreadNotifications();
+    sessionStore.fetchUnreadNotifications();
 
     notificationsLoading.value = false;
     return;

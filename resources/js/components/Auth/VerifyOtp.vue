@@ -1,11 +1,11 @@
 <script setup>
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
-const appStore = useAppStore();
-const { otpEmail, isEmailVerification } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { otpEmail, isEmailVerification } = storeToRefs(sessionStore);
 
 const otp = ref(["", "", "", "", "", ""]);
 const otpLoading = ref(false);
@@ -19,7 +19,7 @@ let interval = null;
 // Add function to close OTP modal
 const closeOTPModal = () => {
     // Clear the OTP email to hide this component
-    appStore.clearOtpEmail();
+    sessionStore.clearOtpEmail();
     // Clear any timers
     if (interval) {
         clearInterval(interval);
@@ -56,9 +56,9 @@ const handleOtpSubmit = async () => {
         });
 
         otpSuccess.value = response.data.message;
-        appStore.setAuthToken(response.data.token);
-        appStore.changeLoginStatus(true);
-        appStore.clearOtpEmail();
+        sessionStore.setAuthToken(response.data.token);
+        sessionStore.changeLoginStatus(true);
+        sessionStore.clearOtpEmail();
 
         setTimeout(() => {
             otpSuccess.value = "";

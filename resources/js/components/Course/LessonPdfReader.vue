@@ -7,9 +7,9 @@ import Spinner from "@/components/Layout/Spinner.vue";
 
 GlobalWorkerOptions.workerSrc = "/js/pdf.worker.min.mjs";
 
-import { useAppStore } from '@/store/useAppStore';
-const appStore = useAppStore();
-const { authToken } = storeToRefs(appStore);
+import { useSessionStore } from "@/store/useSessionStore";
+const sessionStore = useSessionStore();
+const { authToken } = storeToRefs(sessionStore);
 
 const props = defineProps({
     selectedLesson: {

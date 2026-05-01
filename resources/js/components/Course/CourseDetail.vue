@@ -7,18 +7,18 @@ import { onMounted, ref, watch, onBeforeUnmount, nextTick } from "vue";
 
 import { useAuthStore } from "@/store/useAuthStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 
 import Spinner from "@/components/Layout/Spinner.vue";
 import ReviewList from "@/components/Course/ReviewList.vue";
 import VueVideoPlayer from "@/components/Course/VueVideoPlayer.vue";
 
 
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const AuthStore = useAuthStore();
 const studentStore = UseStudentStore();
 
-const { isLoggedIn } = storeToRefs(appStore);
+const { isLoggedIn } = storeToRefs(sessionStore);
 const { showLoginForm } = storeToRefs(AuthStore);
 const { videoPlayerTab, courses, selectedCourseSlug } = storeToRefs(studentStore);
 const route = useRoute();

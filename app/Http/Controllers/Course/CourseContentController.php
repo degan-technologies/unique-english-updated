@@ -38,6 +38,7 @@ class CourseContentController extends Controller
          */
         $courseContent = CourseContent::query()
             ->where('course_module_id', $moduleId)
+            ->with('courseContentProgress')
             ->when($request->contentType, fn($q) => $q->where('content_type', 'like', "%{$request->contentType}%"))
             ->paginate($request->rowsPerPageOption);
 

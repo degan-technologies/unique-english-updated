@@ -6,8 +6,12 @@ import { ref, onMounted, watch } from "vue";
 
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
+
 const appStore = useAppStore();
-const { profileUpdated, authUser } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { profileUpdated } = storeToRefs(appStore);
+const { authUser } = storeToRefs(sessionStore);
 
 const router = useRouter();
 const emit = defineEmits(["selectContent"]);

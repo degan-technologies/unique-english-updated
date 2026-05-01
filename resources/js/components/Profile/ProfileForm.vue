@@ -7,10 +7,10 @@ import ProfileSettings from './profileSetting.vue';
 import ChangePassword from './ChangePassword.vue';
 import BankAccount from './Bank/BankAccount.vue';
 
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 
-const appStore = useAppStore();
-const { authUser } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser } = storeToRefs(sessionStore);
 const route = useRoute();
 const router = useRouter();
 

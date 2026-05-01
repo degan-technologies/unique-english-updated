@@ -5,9 +5,9 @@ import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 
 import Spinner from "@/components/Layout/Spinner.vue";
 
-import { useAppStore } from '@/store/useAppStore';
-const appStore = useAppStore();
-const { authToken } = storeToRefs(appStore);
+import { useSessionStore } from "@/store/useSessionStore";
+const sessionStore = useSessionStore();
+const { authToken } = storeToRefs(sessionStore);
 
 GlobalWorkerOptions.workerSrc = '/js/pdf.worker.min.mjs';
 

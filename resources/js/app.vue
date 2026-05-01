@@ -7,18 +7,21 @@
     import RegisterForm from "@/components/Auth/RegisterForm.vue"; 
 
     import { useAppStore } from '@/store/useAppStore';
+    import { useSessionStore } from '@/store/useSessionStore';
     import { useAuthStore } from '@/store/useAuthStore';
 
     const appStore = useAppStore();
     const AuthStore = useAuthStore();
+    const sessionStore = useSessionStore();
 
-    const { authUser } = storeToRefs(appStore);
     const { showLoginForm, showRegistrationForm, } = storeToRefs(AuthStore);
 
-    onMounted(() => { 
-        appStore.fetchUserInfo();
-        appStore.fetchFrontLanguages();
-        appStore.getHeroSection();
+    onMounted(async () => { 
+        await Promise.all([
+            appStore.fetchFrontLanguages(),
+            appStore.getHeroSection(),
+            sessionStore.initializeSession(),
+        ]);
     })
 
 </script>

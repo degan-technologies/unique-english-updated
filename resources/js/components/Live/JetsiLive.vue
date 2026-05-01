@@ -3,11 +3,11 @@ import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { ref, onMounted, onBeforeUnmount, computed, onUnmounted } from "vue";
 
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import Spinner from "@/components/Layout/Spinner.vue";
 
-const appStore = useAppStore();
-const { authUser, isLoggedIn } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser, isLoggedIn } = storeToRefs(sessionStore);
 
 const jitsiAPI = ref(null);
 const loading = ref(true);

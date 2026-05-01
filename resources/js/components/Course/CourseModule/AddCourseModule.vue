@@ -42,16 +42,22 @@ async function handleSubmit() {
 
         if (props.actionType === 'STORE') {
             const response = await Axios.post("/api/courses/module", data);
-            selectedCourse.value.courseModules = [
-                response.data.data,
-                ...selectedCourse.value.courseModules
-            ]
+            const existingModules = selectedCourse.value?.courseModules ?? [];
+            if (selectedCourse.value) {
+                selectedCourse.value.courseModules = [
+                    response.data.data,
+                    ...existingModules,
+                ];
+            }
             resetForm();
         } else {
             const response = await Axios.patch(`/api/courses/module/${editCourseModule.value?.id}`, data);
-            selectedCourse.value.courseModules = selectedCourse.value.courseModules.map(
-                item => item.id === response.data.data.id ? response.data.data : item
-            );
+            const existingModules = selectedCourse.value?.courseModules ?? [];
+            if (selectedCourse.value) {
+                selectedCourse.value.courseModules = existingModules.map(
+                    item => item.id === response.data.data.id ? response.data.data : item
+                );
+            }
 
             editCourseModule.value = null;
         }

@@ -3,10 +3,13 @@ import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { ref, onMounted } from "vue";
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import Spinner from "@/components/Layout/Spinner.vue";
 
 const appStore = useAppStore();
-const { authUser, frontLang } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser } = storeToRefs(sessionStore);
+const { frontLang } = storeToRefs(appStore);
 
 const form = ref({
     first_name: "",
@@ -104,7 +107,7 @@ const submitForm = async () => {
 onMounted(async () => {
     try {
         await appStore.fetchFrontLanguages();
-        await appStore.fetchUserInfo();
+        await sessionStore.fetchUserInfo();
 
         if (authUser.value) {
             form.value = {

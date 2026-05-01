@@ -3,7 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
@@ -28,11 +28,11 @@ import VerifyOtp from "@/components/Auth/VerifyOtp.vue";
 import YoutubeEmbed from "@/components/Layout/YoutubeEmbed.vue";
 import InstructorProfile from "@/components/Layout/InstructorProfile.vue";
 
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const AuthStore = useAuthStore();
 const studentStore = UseStudentStore();
 
-const { isLoggedIn, otpEmail, authUser } = storeToRefs(appStore);
+const { isLoggedIn, otpEmail, authUser } = storeToRefs(sessionStore);
 const { showLoginForm } = storeToRefs(AuthStore);
 const {
     liveSchedulTab,

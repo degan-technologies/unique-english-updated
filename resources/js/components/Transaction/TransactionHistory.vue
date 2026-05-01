@@ -2,12 +2,15 @@
 import Axios from 'axios';
 import { ref, onMounted } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useAppStore } from '@/store/useAppStore';
+import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import ChangeComission from '@/components/Transaction/ChangeComission.vue';
 import Popper from 'vue3-popper';
 
 const appStore = useAppStore();
-const { commission, authUser } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { commission } = storeToRefs(appStore);
+const { authUser } = storeToRefs(sessionStore);
 
 const CurrentBalance = ref(null);
 const payouts = ref([]);

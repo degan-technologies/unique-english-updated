@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use App\Models\Course\CourseContent;
 use App\Models\Quiz\QMetaData;
 use App\Models\Course\CourseContentProgress;
+use App\Models\Quiz\Result;
 
 
 class CourseController extends Controller
@@ -46,6 +47,10 @@ class CourseController extends Controller
          */
 
         $courses = Course::query()
+            ->with([
+                'user',
+                'feedBacks:id,course_id,rate',
+            ])
             ->where('status', PUBLISHED)
             ->paginate(10);
 
@@ -249,34 +254,37 @@ class CourseController extends Controller
     public function certificateStatus(Request $request, $course_id)
     {
         $user = Auth::user();
-        $allContentsCompleted = false;
-        $allQuizzesCompleted = false;
+        $courseContentsCount = CourseContent::query()
+            ->where('course_id', $course_id)
+            ->count();
 
-        $courseContents = CourseContent::where('course_id', $course_id)->get();
-        $countLessons = $courseContents->count();
-        $countCompletedLesson = $courseContents->filter(function ($content) use ($user) {
-            return $content->courseContentProgress()
-                ->where('user_id', $user->id)
-                ->where('progress', 'completed')
-                ->exists();
-        })->count();
+        $completedContentsCount = CourseContentProgress::query()
+            ->where('user_id', $user->id)
+            ->where('progress', 'completed')
+            ->whereIn('course_content_id', function ($query) use ($course_id) {
+                $query->select('id')
+                    ->from('course_contents')
+                    ->where('course_id', $course_id);
+            })
+            ->count();
 
-        if ($countLessons && $countCompletedLesson === $countLessons) {
-            $allContentsCompleted = true;
-        }
+        $allContentsCompleted = $courseContentsCount > 0
+            && $completedContentsCount === $courseContentsCount;
 
-        $qMetaDataRecords = QMetaData::where('course_id', $course_id)->get();
-        $countExams = $qMetaDataRecords->count();
-        $countResult = $qMetaDataRecords->filter(function ($exam) use ($user) {
-            return $exam->results()
-                ->where('user_id', $user->id)
-                ->where('result', '>=', 0)
-                ->exists();
-        })->count();
+        $examCount = QMetaData::query()
+            ->where('course_id', $course_id)
+            ->count();
 
-        if ($countExams && $countCompletedLesson === $countExams) {
-            $allQuizzesCompleted = true;
-        }
+        $completedExamCount = Result::query()
+            ->where('user_id', $user->id)
+            ->where('result', '>=', 0)
+            ->whereHas('qMetaData', function ($query) use ($course_id) {
+                $query->where('course_id', $course_id);
+            })
+            ->count();
+
+        $allQuizzesCompleted = $examCount > 0
+            && $completedExamCount === $examCount;
 
         return response()->json([
             'certificate_active' => $allContentsCompleted && $allQuizzesCompleted,

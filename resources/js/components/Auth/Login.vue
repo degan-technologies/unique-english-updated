@@ -1,11 +1,13 @@
 <script setup>
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
 import { onMounted, ref } from "vue";
 
 const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const AuthStore = useAuthStore();
 
 const emailInput = ref("");
@@ -53,18 +55,18 @@ function tryLogin() {
         .then((response) => {
             if (response.data.requires_verification) {
                 // Email is not verified, show OTP verification for email verification
-                appStore.setOtpEmail(response.data.email, true); // Set isEmailVerification to true
+                sessionStore.setOtpEmail(response.data.email, true); // Set isEmailVerification to true
                 loginMessage.value = response.data.message;
                 showLoginForm.value = false;
             } else {
                 // For phone login or verified email users, login directly
-                appStore.setAuthToken(response.data.token);
-                appStore.changeLoginStatus(true);
+                sessionStore.setAuthToken(response.data.token);
+                sessionStore.changeLoginStatus(true);
                 showLoginForm.value = false;
             }
         })
         .catch((error) => {
-            appStore.setAuthToken("");
+            sessionStore.setAuthToken("");
             loginMessage.value = error.response.data.message;
             setTimeout(() => (loginMessage.value = ""), 2000);
         })
@@ -88,8 +90,8 @@ function verifyOTP() {
         otp: otpCode,
     })
         .then((response) => {
-            appStore.setAuthToken(response.data.token);
-            appStore.changeLoginStatus(true);
+            sessionStore.setAuthToken(response.data.token);
+            sessionStore.changeLoginStatus(true);
             showLoginForm.value = false;
             showOTPVerification.value = false;
         })

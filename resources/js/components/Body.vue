@@ -1,14 +1,14 @@
 <script setup>
 import { onMounted, computed } from "vue";
 import { storeToRefs } from "pinia";
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useRoute } from "vue-router";
 
 import StudentHome from "@/pages/Student/StudentHome.vue";
 import InstructorHome from "@/pages/Instructor/InstructorHome.vue";
 
-const appStore = useAppStore();
-const { authUser, isLoggedIn } = storeToRefs(appStore);
+const sessionStore = useSessionStore();
+const { authUser, isLoggedIn } = storeToRefs(sessionStore);
 
 const route = useRoute();
 

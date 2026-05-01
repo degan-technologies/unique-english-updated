@@ -1,5 +1,6 @@
 <script setup>
 import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import Axios from "axios";
 import { storeToRefs } from "pinia";
@@ -7,11 +8,12 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const AuthStore = useAuthStore();
 const router = useRouter();
 
 const { showLoginForm, showRegistrationForm } = storeToRefs(AuthStore);
-const { frontLang, otpEmail } = storeToRefs(appStore);
+const { frontLang } = storeToRefs(appStore);
 
 const name = ref("");
 const email = ref("");
@@ -60,7 +62,7 @@ async function handleRegister() {
         const response = await Axios.post("/api/register", data);
 
         // Set otp email globally for VerifyOtp component
-        otpEmail.value = email.value;
+        sessionStore.setOtpEmail(email.value, false);
         // Close registration form to show VerifyOtp component
         showRegistrationForm.value = false;
         successMessage.value =

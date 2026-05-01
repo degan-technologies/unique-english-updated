@@ -21,7 +21,8 @@ class CourseModuleResource extends JsonResource {
             'description' => $this->description,
             'slug' => $this->slug,
             'course_id' => $this->course_id,   
-            'lessons' => $this->courseContents->count(),    
+            'lessons' => $this->course_contents_count
+                ?? $this->courseContents()->count(),
         ];
     } 
 }

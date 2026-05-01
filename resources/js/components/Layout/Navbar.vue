@@ -5,14 +5,20 @@ import { storeToRefs } from "pinia";
 import { useRouter } from "vue-router";
 import { ref, onMounted, onUnmounted } from "vue";
 
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
 const router = useRouter();
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const sidebarStore = useSidebarStore();
-const { authUser, unreadNotifications, notifications, readNotifications, isLoggedIn, otpEmail } =
-    storeToRefs(appStore);
+const {
+    authUser,
+    unreadNotifications,
+    notifications,
+    readNotifications,
+    isLoggedIn,
+    otpEmail,
+} = storeToRefs(sessionStore);
 const { sideBarOpen, selectedContent } = storeToRefs(sidebarStore);
 
 const searchOpen = ref(false);
@@ -61,12 +67,10 @@ function openProfile() {
 }
 
 async function signOut() {
-    otpEmail.value = '';
+    sessionStore.clearOtpEmail();
     try {
         await Axios.post("/api/log-out");
-        authUser.value = null;
-        appStore.setAuthToken("");
-        isLoggedIn.value = false;
+        sessionStore.logout();
     } catch (error) {
         console.error("Logout failed:", error);
     }
@@ -78,7 +82,7 @@ function showNotificationDetails(notification) {
     notificationOpen.value = false;
 
     if (notification.data.read_at == null) {
-        appStore.markNotificationAsRead(notification.id);
+        sessionStore.markNotificationAsRead(notification.id);
     }
 }
 
@@ -94,13 +98,13 @@ function toggleShowAllNotifications() {
 
 const refreshNotification = () => {
     notificationsLoading.value = true;
-    appStore.fetchUnreadNotifications();
+    sessionStore.fetchUnreadNotifications();
     notificationsLoading.value = false;
     return;
 }
 
 onMounted(() => {
-    appStore.fetchUnreadNotifications();
+    sessionStore.fetchUnreadNotifications();
 }); 
 </script>
 

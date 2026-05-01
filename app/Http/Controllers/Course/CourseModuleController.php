@@ -29,7 +29,8 @@ class CourseModuleController extends Controller {
      */
     public function index()
     {
-        $courseModules = CourseModule::with('CourseContents')
+        $courseModules = CourseModule::query()
+            ->withCount('courseContents')
             ->get();
 
         return response()->json([
@@ -55,6 +56,7 @@ class CourseModuleController extends Controller {
 
         $courseModules = CourseModule::query()
             ->where('course_id', $courseId)
+            ->withCount('courseContents')
             ->get();
 
         $exams = QMetaData::where('course_id', $courseId)
@@ -172,7 +174,8 @@ class CourseModuleController extends Controller {
      * Display the specified course module.
      */
     public function show($id) {
-        $courseModule = CourseModule::with('CourseContents')
+        $courseModule = CourseModule::query()
+            ->withCount('courseContents')
             ->where('id', $id)
             ->first();
     

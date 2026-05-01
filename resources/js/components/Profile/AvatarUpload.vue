@@ -11,6 +11,7 @@
         import PrivacyPolicy from "../../pages/common/Privacy Policy Page.vue";
 
         import { useAppStore } from "@/store/useAppStore";
+        import { useSessionStore } from "@/store/useSessionStore";
         import Axios from "axios";
         import appRouter from "../../routes/AppRouter";
 
@@ -27,16 +28,17 @@
             PrivacyPolicy,
         },
         setup() {
-            const appStore = useAppStore(); // Use Pinia store inside setup
-            const { authUser, frontLang } = storeToRefs(appStore); // Destructure reactive properties, including frontLang
+            const appStore = useAppStore();
+            const sessionStore = useSessionStore();
+            const { authUser, authToken } = storeToRefs(sessionStore);
+            const { frontLang } = storeToRefs(appStore);
 
             const logout = async () => {
             try {
-                const token = localStorage.getItem('authToken');
+                const token = authToken.value;
                 if (!token) {
                 console.error("No auth token found. Logging out locally.");
-                appStore.logout();
-                localStorage.removeItem('authToken');
+                sessionStore.logout();
                 appRouter.navigate('/login');
                 return;
                 }
@@ -48,8 +50,7 @@
                 });
 
                 console.log("Logout successful.");
-                appStore.logout(); // Clear app state
-                localStorage.removeItem('authToken');
+                sessionStore.logout();
                 this.$router.push('/login');
             } catch (error) {
                 console.error("Logout failed:", error);
@@ -60,8 +61,7 @@
                 }
 
                 // Clear local storage and app state regardless
-                appStore.logout();
-                localStorage.removeItem('authToken');
+                sessionStore.logout();
                 this.$appRouter.push('/login');
             }
             };

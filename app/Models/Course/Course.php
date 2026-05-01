@@ -106,24 +106,26 @@ class Course extends Model
             ->orderBy('id', 'desc')
             ->first();
 
-        $totalSeconds = $course->courseContents()->where('content_type', VIDEO)->get()->reduce(function ($carry, $content) {
-            $timeParts = explode(':', $content->hour);
-            $seconds = ($timeParts[0] * 3600) + ($timeParts[1] * 60) + $timeParts[2];
-            return $carry + $seconds;
-        }, 0);
+        $contentStats = $course->courseContents()
+            ->where('content_type', VIDEO)
+            ->selectRaw('COUNT(*) as total_lessons, COALESCE(SUM(TIME_TO_SEC(hour)), 0) as total_seconds')
+            ->first();
+
+        $totalLessons = (int) ($contentStats->total_lessons ?? 0);
+        $totalSeconds = (int) ($contentStats->total_seconds ?? 0);
 
         $courseHours = floor($totalSeconds / 3600);
         $courseMinutes = floor(($totalSeconds % 3600) / 60);
         $courseSeconds = $totalSeconds % 60;
 
         $overAllCreditHour = sprintf('%02d:%02d:%02d', $courseHours, $courseMinutes, $courseSeconds);
-        $totalLessons = $course->courseContents()->where('content_type', VIDEO)->get()->count();
 
-        if ($progress) {
-            $learnedLessons = $progress->where('course_id', $course->id)->get()->count();
+        $learnedLessons = CourseContentProgress::query()
+            ->where('user_id', $user->id)
+            ->where('course_id', $course->id)
+            ->count();
 
-            $overAllPogress = [$learnedLessons, $totalLessons];
-        }
+        $overAllPogress = [$learnedLessons, $totalLessons];
 
 
 

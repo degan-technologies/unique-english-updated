@@ -35,6 +35,13 @@ class FeedBackResource extends JsonResource
 
 
     public function getInteraction(){
+        if (isset($this->liked_count) || isset($this->disliked_count)) {
+            return [
+                'like' => (int) ($this->liked_count ?? 0),
+                'dislike' => (int) ($this->disliked_count ?? 0),
+            ];
+        }
+
         $reaction = FeedbackUserInteraction::query()
             ->where('feed_back_id', $this->id)
             ->get();

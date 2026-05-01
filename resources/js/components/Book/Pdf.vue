@@ -5,16 +5,16 @@ import { useRoute } from "vue-router";
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 
-import { useAppStore } from "@/store/useAppStore";
+import { useSessionStore } from "@/store/useSessionStore";
 import { UseStudentStore } from "@/store/UseStudentStore";
 
 import Spinner from "@/components/Layout/Spinner.vue";
 
-const appStore = useAppStore();
+const sessionStore = useSessionStore();
 const studentStore = UseStudentStore();
 
 const { selectedbookslug } = storeToRefs(studentStore);
-const { authToken } = storeToRefs(appStore);
+const { authToken } = storeToRefs(sessionStore);
 
 const route = useRoute();
 

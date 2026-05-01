@@ -77,13 +77,16 @@ class UserController extends Controller
             ->has('systemAdmin')
             ->findOrFail(Auth::id());
 
-        $allUser = User::query()
-            ->doesntHave('systemAdmin')
-            ->get();
+        $baseQuery = User::query()
+            ->doesntHave('systemAdmin');
 
-        $userCount = $allUser->count();
-        $newRegistrations = $allUser->where('created_at', '>=', Carbon::now()->subMonth())->count();
-        $activeUsers = $allUser->where('last_login_at', '>=', Carbon::now()->subMonth())->count();
+        $userCount = (clone $baseQuery)->count();
+        $newRegistrations = (clone $baseQuery)
+            ->where('created_at', '>=', Carbon::now()->subMonth())
+            ->count();
+        $activeUsers = (clone $baseQuery)
+            ->where('last_login_at', '>=', Carbon::now()->subMonth())
+            ->count();
 
         return response()->json([
             'totalUsers' => $userCount,

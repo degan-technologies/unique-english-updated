@@ -34,8 +34,35 @@ class FeedBackController extends Controller
 
         $feedbacks = FeedBack::query()
             ->where('instractor_id', $user->id)
+            ->with('user')
+            ->withCount([
+                'feedbackUserInteractions as liked_count' => fn($query) => $query->where('favorite', 'liked'),
+                'feedbackUserInteractions as disliked_count' => fn($query) => $query->where('favorite', 'disliked'),
+            ])
             ->get();
-        $review = FeedBack::reviewRate($feedbacks);
+
+        $ratingStats = FeedBack::query()
+            ->where('instractor_id', $user->id)
+            ->selectRaw(
+                'AVG(rate) as average_rating,
+                SUM(CASE WHEN ROUND(rate) = 5 THEN 1 ELSE 0 END) as star_5,
+                SUM(CASE WHEN ROUND(rate) = 4 THEN 1 ELSE 0 END) as star_4,
+                SUM(CASE WHEN ROUND(rate) = 3 THEN 1 ELSE 0 END) as star_3,
+                SUM(CASE WHEN ROUND(rate) = 2 THEN 1 ELSE 0 END) as star_2,
+                SUM(CASE WHEN ROUND(rate) = 1 THEN 1 ELSE 0 END) as star_1'
+            )
+            ->first();
+
+        $review = [
+            'averageRating' => round($ratingStats->average_rating ?? 0, 1),
+            'starDistribution' => [
+                (int) ($ratingStats->star_5 ?? 0),
+                (int) ($ratingStats->star_4 ?? 0),
+                (int) ($ratingStats->star_3 ?? 0),
+                (int) ($ratingStats->star_2 ?? 0),
+                (int) ($ratingStats->star_1 ?? 0),
+            ],
+        ];
 
         return response()->json([
             'data'             => FeedBackResource::collection($feedbacks),
@@ -71,12 +98,13 @@ class FeedBackController extends Controller
             ], 404);
         }
 
-        $allFeedbacks = FeedBack::query()
-            ->where($foreignID, $currentModelClass->id)
-            ->get();
-
         $feedbacks = FeedBack::query()
             ->where($foreignID, $currentModelClass->id)
+            ->with('user')
+            ->withCount([
+                'feedbackUserInteractions as liked_count' => fn($query) => $query->where('favorite', 'liked'),
+                'feedbackUserInteractions as disliked_count' => fn($query) => $query->where('favorite', 'disliked'),
+            ])
             ->paginate(2);
 
         if ($feedbacks->isEmpty()) {
@@ -88,7 +116,28 @@ class FeedBackController extends Controller
         $pagination = $feedbacks->toArray();
         unset($pagination['data']);
 
-        $review = FeedBack::reviewRate($allFeedbacks);
+        $ratingStats = FeedBack::query()
+            ->where($foreignID, $currentModelClass->id)
+            ->selectRaw(
+                'AVG(rate) as average_rating,
+                SUM(CASE WHEN ROUND(rate) = 5 THEN 1 ELSE 0 END) as star_5,
+                SUM(CASE WHEN ROUND(rate) = 4 THEN 1 ELSE 0 END) as star_4,
+                SUM(CASE WHEN ROUND(rate) = 3 THEN 1 ELSE 0 END) as star_3,
+                SUM(CASE WHEN ROUND(rate) = 2 THEN 1 ELSE 0 END) as star_2,
+                SUM(CASE WHEN ROUND(rate) = 1 THEN 1 ELSE 0 END) as star_1'
+            )
+            ->first();
+
+        $review = [
+            'averageRating' => round($ratingStats->average_rating ?? 0, 1),
+            'starDistribution' => [
+                (int) ($ratingStats->star_5 ?? 0),
+                (int) ($ratingStats->star_4 ?? 0),
+                (int) ($ratingStats->star_3 ?? 0),
+                (int) ($ratingStats->star_2 ?? 0),
+                (int) ($ratingStats->star_1 ?? 0),
+            ],
+        ];
 
         return response()->json([
             'pagination'       => $pagination,
