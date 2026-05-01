@@ -130,22 +130,40 @@ function showToast(message, type = "info") {
     console.log(`${type.toUpperCase()}: ${message}`);
 }
 
-function getshowCourse() {
-    if (!selectedCourse.value) {
-        Axios.get(`/api/show-course/${route.query.slug}`)
-            .then((res) => {
-                selectedCourse.value = res.data.data;
-            })
-            .catch((error) => {
-                showToast("Failed to load course details", "error");
-            });
+function getshowCourse(force = false) {
+    const slug = route.query.slug;
+    if (!slug) {
+        return;
     }
+
+    if (!force && selectedCourse.value?.slug === slug) {
+        return;
+    }
+
+    isLoading.value = true;
+    Axios.get(`/api/show-course/${slug}`)
+        .then((res) => {
+            selectedCourse.value = res.data.data;
+        })
+        .catch(() => {
+            showToast("Failed to load course details", "error");
+        })
+        .finally(() => {
+            isLoading.value = false;
+        });
 }
 
 onMounted(() => {
-    getshowCourse();
     document.addEventListener("click", handleClickOutside);
 });
+
+watch(
+    () => [route.query.slug, route.query.reload],
+    () => {
+        getshowCourse(true);
+    },
+    { immediate: true }
+);
 
 onBeforeUnmount(() => {
     document.removeEventListener("click", handleClickOutside);
@@ -177,30 +195,7 @@ onBeforeUnmount(() => {
                     <p class="font-medium">Error</p>
                     <p>{{ errorMessage }}</p>
                 </div>
-            </div>
-
-            <!-- Loading Indicator -->
-            <div
-                v-if="isLoading"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            >
-                <div
-                    class="bg-white p-6 rounded-xl shadow-xl flex items-center space-x-4 animate-pulse"
-                >
-                    <div
-                        class="animate-spin rounded-full h-10 w-10 border-4 border-lime-500 border-t-transparent"
-                    ></div>
-                    <div>
-                        <p class="font-medium text-gray-700">
-                            Processing your request...
-                        </p>
-                        <p class="text-sm text-gray-500">
-                            Please wait a moment
-                        </p>
-                    </div>
-                </div>
-            </div>
-
+            </div> 
             <!-- Course Header Section -->
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-6">
