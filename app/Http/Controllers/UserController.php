@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -495,13 +496,13 @@ class UserController extends Controller
 
         if ($request->hasFile('profile')) {
             $file = $request->file('profile');
-            $profilePath = $file->store('/user', 'public');
+            $profilePath = Storage::disk('s3')->putFile('/user', $file);
             $user->profile = $profilePath;
         }
 
         if ($request->hasFile('bg_image')) {
             $file = $request->file('bg_image');
-            $bgPath = $file->store('/user', 'public');
+            $bgPath = Storage::disk('s3')->putFile('/user', $file);
             $user->bg_image = $bgPath;
         }
 

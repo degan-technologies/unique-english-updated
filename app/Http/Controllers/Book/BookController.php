@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Book;
 use App\Http\Controllers\Book\Trait\PdfReaderTrait;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Book\BookResource;
+use App\Jobs\ProcessBookVideo;  
 use App\Http\Resources\StudentResources\StdBook\StdBookResource;
-use App\Jobs\ProcessBookVideo;
 use App\Models\Book\Book;
 use App\Models\User;
 use App\Services\LangService;
@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Validator;
 use Smalot\PdfParser\Parser;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class BookController extends Controller
 {
@@ -170,6 +171,10 @@ class BookController extends Controller
             'video_optimized' => true,
             'isDownloadable' => false,
         ]);
+
+        if ($request->intro_video !== null) {
+            ProcessBookVideo::dispatch($request->intro_video, $book->id);
+        }
   
         return response()->json([
             'message' => $this->langService->getLang('book_created_successfully'),
@@ -251,6 +256,19 @@ class BookController extends Controller
 
         $book->update($data);
 
+        if ($request->intro_video !== null) {
+            if ($book->intro_video) {
+                Storage::disk('s3')->delete($book->intro_video);
+            }
+
+            $uploadedPath = $request->intro_video;
+
+            ProcessBookVideo::dispatch($uploadedPath, $book->id);
+
+            $data['intro_video'] = $request->intro_video;
+            $data['video_optimized'] = true;
+        }
+
         return response()->json([
             'message' => $this->langService->getLang('book_updated_successfully'),
             'data' => BookResource::make($book),
@@ -322,7 +340,8 @@ class BookController extends Controller
                 ], 422);
             }
 
-            $path = $request->file('file_url')->store('books/pdfFiles', 'private');
+            $file = $request->file('file_url');
+            $path = Storage::disk('s3')->putFile('books/pdfFiles', $file);
 
             try {
                 $parser = new Parser();
@@ -366,7 +385,8 @@ class BookController extends Controller
             ], 422);
         }
 
-        $path = $request->file('cover_page_url')->store('books/images', 'public');
+        $file = $request->file('cover_page_url');
+        $path = Storage::disk('s3')->putFile('books/images', $file);
 
         return response()->json([
             'message' => $this->langService->getLang('cover_image_uploaded_successfully'),
@@ -399,7 +419,9 @@ class BookController extends Controller
             ], 422);
         }
 
-        $path = $request->file('intro_video')->store('books/video/original', 'public');
+        $file =  $request->file('intro_video');
+
+        $path = Storage::disk('s3')->putFile('books/video/original', $file);
 
         return response()->json([
             'message' => $this->langService->getLang('intro_video_uploaded_successfully'),

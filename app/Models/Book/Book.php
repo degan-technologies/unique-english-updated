@@ -35,6 +35,8 @@ class Book extends Model
         'user_id',
         'intro_vedio',
         'video_optimized',
+        'hls_path',
+        'hls_status'
     ];
 
     protected $casts = [

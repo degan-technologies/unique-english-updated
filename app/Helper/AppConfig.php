@@ -152,3 +152,10 @@ define('INCORRECT', 'incorrect');
 define('TODAY', 'today');
 define('THIS_MONTH', 'month');
 define('ALL_TIME', 'allTime');
+
+define('FILESYSTEM_DISK', 's3');
+define('AWS_ACCESS_KEY_ID', 'AKIARLBQPJJM4TA42ADU');
+define('AWS_SECRET_ACCESS_KEY', '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');
+define('AWS_DEFAULT_REGION', 'eu-north-1');
+define('AWS_BUCKET', 'uniqueenglish');
+define('AWS_USE_PATH_STYLE_ENDPOINT', false);

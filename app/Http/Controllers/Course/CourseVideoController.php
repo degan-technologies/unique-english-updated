@@ -21,7 +21,7 @@ class CourseVideoController extends Controller
             ]);
         }
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('s3');
         $relativePath = "course/video/original/$filename";
 
         if (!$disk->exists($relativePath)) {

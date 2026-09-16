@@ -2,11 +2,8 @@
 
 namespace App\Http\Controllers\Book;
 
-use App\Http\Controllers\Controller;
-use App\Models\Course\Course;
-use App\Models\Course\CourseContent;
+use App\Http\Controllers\Controller; 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -16,7 +13,7 @@ class BookVideoController extends Controller
 {
     public function stream(Request $request, $filename)
     {
-        $disk = Storage::disk('public');
+        $disk = Storage::disk('s3');
         $path = "books/video/original/$filename";
         $filePath = $disk->path($path);
 
@@ -90,7 +87,7 @@ class BookVideoController extends Controller
 
     public function contentPdfStream(Request $request, $filename)
     {
-        $disk = Storage::disk('private');
+        $disk = Storage::disk('s3');
         $path = "course/$filename";
 
         if (!$disk->exists($path)) {
@@ -148,7 +145,7 @@ class BookVideoController extends Controller
 
     public function bookPdfStream(Request $request, $filename)
     {
-        $disk = Storage::disk('private');
+        $disk = Storage::disk('s3');
         $path = "books/pdfFiles/$filename";
 
         if (!$disk->exists($path)) {

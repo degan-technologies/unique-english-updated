@@ -26,7 +26,9 @@ class Course extends Model
         'language',
         'intro_video',
         'status',
-        'video_optimized'
+        'video_optimized',
+        'hls_path',
+        'hls_status'
     ];
 
     protected $casts = [

@@ -40,14 +40,18 @@ class StdCourseResource extends JsonResource {
             'user' => new userResource($this->user),
 
             'intro_video_url' => $this->intro_video
-                ? '/api/courses/stream/video/' . basename($this->intro_video)
+                ? Storage::disk('s3')->temporaryUrl($this->intro_video, now()->addMinutes(60))
+                : 'no-intro_video.png',
+
+            'intro_video_hls_url' => $this->hls_path
+                ? Storage::disk('s3')->temporaryUrl($this->hls_path, now()->addMinutes(60))
                 : 'no-intro_video.png',
  
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
 
             'thumbnail_url' => $this->thumbnail_url
-                ? Storage::disk('public')->url($this->thumbnail_url)
+                ? Storage::disk('s3')->temporaryUrl($this->thumbnail_url,  now()->addMinutes(30))
                 : 'no-thumbnail_url.png',
             'courseModules' => $this->whenLoaded('courseModules', function () {
                 return StdCourseModuleResource::collection($this->courseModules->sortBy('sequence'));

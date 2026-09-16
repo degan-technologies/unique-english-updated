@@ -42,11 +42,15 @@ class StdBookResource extends JsonResource {
             'file_url' => $this->getFileUrl(),
 
             'intro_video_url' => $this->intro_vedio
-                ? url('/api/books/stream/video/' . basename($this->intro_vedio))
+                ? Storage::disk('s3')->temporaryUrl($this->intro_vedio,  now()->addMinutes(30))
+                : 'no-intro_video.png',
+
+            'intro_video_hls_url' => $this->hls_path
+                ? Storage::disk('s3')->temporaryUrl($this->hls_path,  now()->addMinutes(30))
                 : 'no-intro_video.png',
 
             'cover_page_url' => $this->cover_page_url
-            ? Storage::disk('public')->url($this->cover_page_url)
+            ? Storage::disk('s3')->temporaryUrl($this->cover_page_url, now()->addMinutes(30))
             : 'no-cover_page_url.png',
 
             'isMyBook' => Book::checkEligibility($this->id),

@@ -165,10 +165,6 @@ class CourseContentController extends Controller
         }
 
         if ($request->content_url !== null && $request->content_type !== null) {
-            // if ($courseContent->content_url) {
-            //     Storage::disk('private')->delete($courseContent->content_url);
-            // }
-
             if (($request->content_url !== null &&  $contentType === VIDEO)) {
 
                 $filePath = $request->content_url;
@@ -267,7 +263,7 @@ class CourseContentController extends Controller
         if ($request->hasFile('uploaded_file')) {
             $file = $request->file('uploaded_file');
             $fileExtension = $file->getClientOriginalExtension();
-            $filePath = $file->store('/course', 'public');
+            $filePath = Storage::disk('s3')->putFile('/course', $file);
 
             switch ($fileExtension) {
                 case in_array($fileExtension, VIDEO_EXTENTION):

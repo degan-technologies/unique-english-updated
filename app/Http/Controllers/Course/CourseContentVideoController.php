@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
-use App\Models\Course\Course;
 use App\Models\Course\CourseContent;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -81,7 +79,7 @@ class CourseContentVideoController extends Controller
         //     return response()->json(['error' => 'You are not eligible to view this video'], 403);
         // }
 
-        $disk = Storage::disk('private');
+        $disk = Storage::disk('s3');
 
         if (!$disk->exists($path)) {
             Log::error("Video not found: $filename");

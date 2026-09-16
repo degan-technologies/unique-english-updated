@@ -11,7 +11,8 @@ class CourseContent extends Model
     protected $fillable = [
         'slug', 'course_id', 'sequence', 'title', 'description',
         'content_type', 'content_url', 'thumbnail_url', 'hour', 'status',
-        'isDownloadable', 'user_id', 'course_module_id', 'video_optimized'
+        'isDownloadable', 'user_id', 'course_module_id', 'video_optimized',
+        'hls_path', 'hls_status'
     ];
 
     protected $casts = [

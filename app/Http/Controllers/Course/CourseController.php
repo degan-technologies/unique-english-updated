@@ -44,8 +44,7 @@ class CourseController extends Controller
     {
         /**
          * @var mixed Course $course
-         */
-
+         */ 
         $courses = Course::query()
             ->with([
                 'user',
@@ -114,9 +113,9 @@ class CourseController extends Controller
             'video_optimized' => true,
         ]);
 
-        // if ($request->intro_video !== null) {
-        //     ProcessCourseVideo::dispatch($request->intro_video, $course->id);
-        // }
+        if ($request->intro_video !== null) {
+            ProcessCourseVideo::dispatch($course->intro_video, $course->id)->onQueue('video-processing');
+        }
 
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_added'),
@@ -197,25 +196,26 @@ class CourseController extends Controller
         if ($request->thumbnail_url !== null) {
 
             if ($course->thumbnail_url) {
-                Storage::disk('public')->delete($course->thumbnail_url);
+                Storage::disk('s3')->delete($course->thumbnail_url);
             }
             $data['thumbnail_url'] = $request->thumbnail_url;
         }
 
         if ($request->intro_video !== null) {
-            if ($course->intro_video) {
-                Storage::disk('public')->delete($course->intro_video);
-            }
-
-            $uploadedPath = $request->intro_video;
-
-            // ProcessCourseVideo::dispatch($uploadedPath, $course->id);
+            if ($course->intro_video && $course->intro_video !== $request->intro_video) {
+                Storage::disk('s3')->delete($course->intro_video);
+            } 
 
             $data['intro_video'] = $request->intro_video;
             $data['video_optimized'] = true;
         }
 
         $course->update($data);
+        // $course->refresh();
+
+        if ($request->intro_video !== null) { 
+            ProcessCourseVideo::dispatch($course->intro_video, $course->id)->onQueue('video-processing');
+        }
 
         return response()->json([
             'message' => $this->langService->getLang('course_successfully_updated'),
@@ -414,7 +414,8 @@ class CourseController extends Controller
             'intro_video' => 'required|file|mimetypes:video/mp4,video/avi,video/mpeg,video/quicktime,video/3gpp,video/mov,video/x-msvideo,video/x-ms-wmv,video/webm,video/ogg,video/x-flv'
         ]);
 
-        $path = $request->file('intro_video')->store('course/video/original', 'public');
+        $file = $request->file('intro_video');
+        $path = Storage::disk('s3')->putFile('course/video/original', $file);
 
         return response()->json([
             'message' => 'Video uploaded successfully',
@@ -436,7 +437,8 @@ class CourseController extends Controller
             'thumbnail_url' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $path = $request->file('thumbnail_url')->store('course/images', 'public');
+        $file = $request->file('thumbnail_url');
+        $path = Storage::disk('s3')->putFile('course/images', $file);
 
         return response()->json([
             'message' => 'Thumbnail uploaded successfully',

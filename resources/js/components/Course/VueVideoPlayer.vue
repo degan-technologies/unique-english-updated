@@ -32,7 +32,7 @@ function formatTime(seconds) {
 
 const getSourceObj = (url) => ({
     src: url,
-    type: url?.includes(".m3u8") ? "application/x-mpegURL" : "video/mp4",
+    type: "application/x-mpegURL"
 });
 
 onMounted(() => {

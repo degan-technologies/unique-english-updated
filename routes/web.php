@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\SocialController; 
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 // Home and Login views
 Route::get('/', fn() => view('welcome'))->name('home');
@@ -41,4 +42,8 @@ Route::get('/not-found', function () {
 // Fallback route for unknown paths
 Route::fallback(function () {
     return redirect()->route('notFound');
+});
+
+Route::get('/s3-test', function () {
+    return Storage::disk('s3')->put('test.txt', 'hello world');
 });

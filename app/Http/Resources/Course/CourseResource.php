@@ -1,19 +1,13 @@
 <?php
 
-namespace App\Http\Resources\Course;
+namespace App\Http\Resources\Course; 
 
-use App\Http\Resources\Comment\FeedBackResource;
-use App\Http\Resources\userResource;
-use App\Models\Comment\FeedBack;
 use App\Models\Course\Course;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
-use App\Models\Transaction\Transaction;
-use Illuminate\Support\Facades\Auth;
-
-
-class CourseResource extends JsonResource
+use App\Models\Transaction\Transaction; 
+ class CourseResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -40,13 +34,17 @@ class CourseResource extends JsonResource
             'total_enroll' => $this->totalEnroll($this->id),
             'revenue' => $this->totalRevenue($this->id),
             'video_optimized' => $this->video_optimized ? true : false,
-
+ 
             'intro_video_url' => $this->intro_video
-                ? url('/api/courses/stream/video/' . basename($this->intro_video))
+                ? Storage::disk('s3')->temporaryUrl($this->intro_video, now()->addMinutes(60))
+                : 'no-intro_video.png',
+
+            'intro_video_hls_url' => $this->hls_path
+                ? Storage::disk('s3')->temporaryUrl($this->hls_path, now()->addMinutes(60))
                 : 'no-intro_video.png',
 
             'thumbnail_url' => $this->thumbnail_url
-                ? Storage::disk('public')->url($this->thumbnail_url)
+                ? Storage::disk('s3')->temporaryUrl($this->thumbnail_url,  now()->addMinutes(30))
                 : 'no-thumbnail_url.png',
             'courseModules' => $this->whenLoaded('courseModules', function () {
                 return CourseModuleResource::collection($this->courseModules->sortBy('sequence'));

@@ -119,9 +119,9 @@ watch(() => route.query.slug, (newSlug) => {
 
                 <!-- Video Player Section -->
                 <div class="w-full aspect-video rounded-lg mt-3 bg-black relative overflow-hidden">
-                    <template v-if="selectedCourse?.intro_video_url">
+                    <template v-if="selectedCourse?.intro_video_hls_url">
                         <VueVideoPlayer 
-                            :videoSource="selectedCourse?.intro_video_url" 
+                            :videoSource="selectedCourse?.intro_video_hls_url" 
                             :posterImage="selectedCourse?.thumbnail_url"/>
                     </template> 
                 </div>

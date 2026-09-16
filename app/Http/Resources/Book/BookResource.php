@@ -35,10 +35,8 @@ class BookResource extends JsonResource
             'revenue' => $this->totalRevenue($this->id),
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
-            'video_optimized' => $this->video_optimized,
-
-            'file_url' => TokenGenerator::generateSecurePdfUrl('book.pdf', basename($this->file_url), Auth::id()),
-
+            'video_optimized' => $this->video_optimized, 
+            
             'eddition' => $this->eddition,
             'discount' => $this->discount,
             'created_at' => $this->created_at,
@@ -49,13 +47,18 @@ class BookResource extends JsonResource
             'file_format' => $this->file_format,
             'publish_date' => $this->publish_date,
             'intro_vedio' => $this->intro_vedio
-                ? Storage::disk('public')->url($this->intro_vedio)
+                ? Storage::disk('s3')->temporaryUrl($this->intro_vedio,  now()->addMinutes(30))
                 : 'no-video.mp4',
+                
             'intro_video_url' => $this->intro_vedio
-                ? url('/api/books/stream/video/' . basename($this->intro_vedio))
+                ? Storage::disk('s3')->temporaryUrl($this->intro_vedio,  now()->addMinutes(30))
+                : 'no-intro_video.png',
+            
+            'intro_video_hls_url' => $this->hls_path
+                ? Storage::disk('s3')->temporaryUrl($this->hls_path,  now()->addMinutes(30))
                 : 'no-intro_video.png',
             'cover_page_url' => $this->cover_page_url
-                ? Storage::disk('public')->url($this->cover_page_url)
+                ? Storage::disk('s3')->temporaryUrl($this->cover_page_url,  now()->addMinutes(30))
                 : 'no-cover_page_url.png',
             'isDownloadable' => $this->isDownloadable,
             'download_status' => $this->download_status,

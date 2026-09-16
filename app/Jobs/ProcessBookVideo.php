@@ -5,115 +5,256 @@ namespace App\Jobs;
 use App\Models\Book\Book;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
-use FFMpeg\Format\Video\X264;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Symfony\Component\Process\Process;
 
 class ProcessBookVideo implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
+    public $timeout = 14400;
+    public $tries = 3;
 
-    protected $videoPath;
-    protected $bookId;
-    public $tries = 1;
-    public $timeout = 900;
+    public function __construct(
+        protected string $videoPath,
+        protected int $bookId
+    ) {}
 
-
-    public function __construct($videoPath, $bookId)
-    {
-        $this->videoPath = $videoPath;
-        $this->bookId = $bookId;
-    }
-
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
-        Log::info("Processing started for Book ID: {$this->bookId}");
-        Log::info("Original video path: {$this->videoPath}");
-
-        if (empty($this->videoPath) || $this->videoPath === 'undefined') {
-            Log::error("Invalid video path received", [
-                'videoPath' => $this->videoPath,
-                'bookId' => $this->bookId,
-            ]);
-            return;
-        }
-
         $book = Book::find($this->bookId);
+
         if (!$book) {
-            Log::error(" Book not found for ID: {$this->bookId}");
+            Log::error("Book not found", ['id' => $this->bookId]);
             return;
         }
 
-        $filename = pathinfo($this->videoPath, PATHINFO_FILENAME);
+        $book->update(['hls_status' => 'processing']);
 
-        if (!$filename || !Storage::disk('public')->exists($this->videoPath)) {
-            Log::error("Video file does not exist on disk: {$this->videoPath}");
-            return;
-        }
+        $jobId = uniqid('hls_', true);
+        $baseDir = storage_path("app/temp/{$jobId}");
 
-        // Prevent processing very small (broken) files
-        if (Storage::disk('public')->size($this->videoPath) < 100000) {
-            Log::error("File too small / corrupted: {$this->videoPath}");
-            return;
-        }
+        $inputFile = "{$baseDir}/input.mp4";
+        $outputDir = "{$baseDir}/output";
 
-        $optimizedPath = "books/video/optimized/{$filename}_{$this->bookId}_streamable.mp4";
-        // $thumbnailPath = "course/video/thumbnails/{$filename}.jpg";
+        $this->makeDir($baseDir);
+        $this->makeDir($outputDir);
 
         try {
-            FFMpeg::fromDisk('public')
-                ->open($this->videoPath)
-                ->export()
-                ->addFilter('-movflags', '+faststart')
-                ->addFilter('-preset', 'veryfast')
-                ->addFilter('-threads', '2')
-                ->toDisk('public')
-                ->inFormat(
-                    (new X264('libmp3lame'))
-                        ->setKiloBitrate(500)
-                        ->setAudioKiloBitrate(128)
-                )
-                ->save($optimizedPath);
 
-            Log::info("Optimized video saved: $optimizedPath");
+            /*
+            |------------------------------------------
+            | 1. STREAM SAFE S3 DOWNLOAD
+            |------------------------------------------
+            */
+            Log::info("Downloading video", ['book_id' => $book->id]);
 
-            // FFMpeg::fromDisk('public')
-            //     ->open($this->videoPath)
-            //     ->getFrameFromSeconds(2)
-            //     ->export()
-            //     ->toDisk('public')
-            //     ->save($thumbnailPath);
+            $stream = Storage::disk('s3')->readStream($this->videoPath);
 
-
-            if (!Storage::disk('public')->exists($optimizedPath)) {
-                Log::error("Optimized file not found after processing");
-                throw new \RuntimeException('Optimized file missing after processing');
+            if (!$stream) {
+                throw new \Exception("Cannot read S3 file: {$this->videoPath}");
             }
 
+            $out = fopen($inputFile, 'w');
+
+            while (!feof($stream)) {
+                fwrite($out, fread($stream, 1024 * 1024));
+            }
+
+            fclose($stream);
+            fclose($out);
+
+            /*
+            |------------------------------------------
+            | 2. NETFLIX ABR LADDER
+            |------------------------------------------
+            */
+            $renditions = [
+                ['name' => '360p',  'scale' => '640:360',   'bitrate' => '800k'],
+                ['name' => '480p',  'scale' => '854:480',   'bitrate' => '1400k'],
+                ['name' => '720p',  'scale' => '1280:720',  'bitrate' => '2800k'],
+                ['name' => '1080p', 'scale' => '1920:1080', 'bitrate' => '5000k'],
+            ];
+
+            $variants = [];
+
+            /*
+            |------------------------------------------
+            | 3. ENCODE EACH RENDITION (SAFE FFmpeg)
+            |------------------------------------------
+            */
+            foreach ($renditions as $r) {
+
+                $variantDir = "{$outputDir}/{$r['name']}";
+                $this->makeDir($variantDir);
+
+                $segmentPattern = str_replace(
+                    '\\',
+                    '/',
+                    "{$variantDir}/segment_%03d.ts"
+                );
+
+                $playlistFile = str_replace(
+                    '\\',
+                    '/',
+                    "{$variantDir}/index.m3u8"
+                );
+
+                Log::info("Encoding {$r['name']}");
+
+                $process = new Process([
+                    'ffmpeg',
+                    '-y',
+                    '-i',
+                    $inputFile,
+                    '-vf',
+                    "scale={$r['scale']}",
+                    '-c:v',
+                    'libx264',
+                    '-b:v',
+                    $r['bitrate'],
+                    '-preset',
+                    'veryfast',
+                    '-c:a',
+                    'aac',
+                    '-ac',
+                    '2',
+                    '-ar',
+                    '44100',
+                    '-hls_time',
+                    '10',
+                    '-hls_playlist_type',
+                    'vod',
+                    '-hls_segment_filename',
+                    $segmentPattern,
+                    $playlistFile
+                ]);
+
+                $process->setTimeout(14400);
+
+                try {
+                    $process->mustRun();
+                } catch (\Throwable $e) {
+                    Log::error("FFmpeg failed", [
+                        'quality' => $r['name'],
+                        'error' => $process->getErrorOutput()
+                    ]);
+
+                    throw new \Exception(
+                        "FFmpeg failed ({$r['name']}): " . $process->getErrorOutput()
+                    );
+                }
+
+                $variants[] = [
+                    'name' => $r['name'],
+                    'bandwidth' => $this->getBandwidth($r['bitrate']),
+                    'resolution' => $r['scale'],
+                ];
+            }
+
+            /*
+            |------------------------------------------
+            | 4. MASTER PLAYLIST (NETFLIX STYLE)
+            |------------------------------------------
+            */
+            $master = "#EXTM3U\n#EXT-X-VERSION:3\n";
+
+            foreach ($variants as $v) {
+                $master .= "#EXT-X-STREAM-INF:"
+                    . "BANDWIDTH={$v['bandwidth']},"
+                    . "RESOLUTION={$v['resolution']}\n";
+
+                $master .= $v['name'] . "/index.m3u8\n";
+            }
+
+            file_put_contents("{$outputDir}/master.m3u8", $master);
+
+            /*
+            |------------------------------------------
+            | 5. UPLOAD TO S3 (CDN READY)
+            |------------------------------------------
+            */
+            $this->uploadFolder(
+                $outputDir,
+                "videos/books/{$book->id}/hls"
+            );
+
+            /*
+            |------------------------------------------
+            | 6. SAVE FINAL OUTPUT
+            |------------------------------------------
+            */
             $book->update([
-                'intro_vedio' => $optimizedPath,
-                'video_optimized' => true,
-
-                // 'thumbnail_url' => $thumbnailPath,
+                'hls_path' => "videos/books/{$book->id}/hls/master.m3u8",
+                'hls_status' => 'ready',
             ]);
 
-            Log::info("Course DB updated successfully: {$this->bookId}");
+            Log::info("HLS completed successfully", [
+                'book_id' => $book->id
+            ]);
         } catch (\Throwable $e) {
-            Log::error("Video processing failed: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
+
+            Log::error("HLS pipeline failed", [
+                'book_id' => $book->id,
+                'error' => $e->getMessage()
             ]);
+
+            $book->update(['hls_status' => 'failed']);
+
             throw $e;
+        } finally {
+            $this->deleteDir($baseDir);
         }
+    }
+
+    private function makeDir($path)
+    {
+        if (!is_dir($path)) {
+            mkdir($path, 0755, true);
+        }
+    }
+
+    private function uploadFolder($dir, $s3Path)
+    {
+        foreach (scandir($dir) as $file) {
+            if ($file === '.' || $file === '..') continue;
+
+            $full = $dir . '/' . $file;
+
+            if (is_dir($full)) {
+                $this->uploadFolder($full, $s3Path . '/' . $file);
+            } else {
+                Storage::disk('s3')->put(
+                    $s3Path . '/' . $file,
+                    fopen($full, 'r')
+                );
+            }
+        }
+    }
+
+    private function deleteDir($dir)
+    {
+        if (!is_dir($dir)) return;
+
+        foreach (scandir($dir) as $file) {
+            if ($file === '.' || $file === '..') continue;
+
+            $full = $dir . '/' . $file;
+
+            is_dir($full)
+                ? $this->deleteDir($full)
+                : unlink($full);
+        }
+
+        rmdir($dir);
+    }
+
+    private function getBandwidth($bitrate)
+    {
+        return (int) str_replace('k', '', $bitrate) * 1000;
     }
 }

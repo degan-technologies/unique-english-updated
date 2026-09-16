@@ -35,7 +35,13 @@ class CourseContentResource extends JsonResource
             'hour' => $this->formatHour($this->hour),
             'duration' => $duration,
             'status' => $this->status,
-            'course_content_url' => $this->getContentUrl($this->content_type, $this->content_url),
+            'course_content_url' => $this->course_content_url
+                ? Storage::disk('s3')->temporaryUrl($this->course_content_url, now()->addMinutes(30))
+                : self::DEFAULT_CONTENT,
+
+            'thumbnail_url' => $this->thumbnail_url
+                ? Storage::disk('s3')->temporaryUrl($this->thumbnail_url,  now()->addMinutes(30))
+                : self::DEFAULT_THUMBNAIL,
             'courseContentProgress' => new CourseContentProgressResource($this->courseContentProgress, $duration),
         ];
     }
@@ -45,39 +51,5 @@ class CourseContentResource extends JsonResource
         return $hour && str_starts_with($hour, '00:')
             ? substr($hour, 3)
             : $hour;
-    }
-
-    protected function getThumbnailUrl(): string
-    {
-        return $this->thumbnail_url
-            ? Storage::disk('public')->url($this->thumbnail_url)
-            : self::DEFAULT_THUMBNAIL;
-    }
-
-    protected function getContentUrl(?string $contentType, ?string $content): string
-    {
-        if (empty($contentType) || empty($content)) {
-            return self::DEFAULT_CONTENT;
-        }
-
-        try {
-            $filename = basename($content);
-            $userId = Auth::id();
-
-            switch ($contentType) {
-                case VIDEO:
-                    return TokenGenerator::generateSecureUrl('stream.video', $filename);
-
-                case PDF:
-                    return TokenGenerator::generateSecurePdfUrl('stream.pdf', $filename, $userId);
-                case IMAGE:
-                    return Storage::disk('public')->url($content);
-                default:
-                    return self::DEFAULT_CONTENT;
-            }
-        } catch (\Exception $e) {
-            report($e);
-            return self::DEFAULT_CONTENT;
-        }
-    }
+    } 
 }

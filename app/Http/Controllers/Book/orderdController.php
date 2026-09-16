@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\Book\OrderdBookResource;
+use App\Http\Resources\Book\OrderedBookResource;
 use App\Models\Book\OrderedBook;
 use App\Services\LangService;
 use Illuminate\Support\Str;
@@ -36,7 +36,7 @@ class orderdController extends Controller
 
         return response()->json([
             'pagination' => $pagination,
-            'data' => OrderdBookResource::collection($orderedBooks),
+            'data' => OrderedBookResource::collection($orderedBooks),
         ]);
     }
     public function store(Request $request)
@@ -66,7 +66,7 @@ class orderdController extends Controller
 
         return response()->json([
             'message' => $this->langService->getLang('ordered_created_successfully'),
-            'data' => new OrderdBookResource($orderedboks),
+            'data' => new OrderedBookResource($orderedboks),
         ]);
     }
 
@@ -79,7 +79,7 @@ class orderdController extends Controller
         $orderedBook = OrderedBook::with(['book'])->where('user_id', $user->id)
             ->findOrFail($id);
 
-        return response()->json(new OrderdBookResource($orderedBook));
+        return response()->json(new OrderedBookResource($orderedBook));
     }
 
 

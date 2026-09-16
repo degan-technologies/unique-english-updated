@@ -25,11 +25,13 @@ class CurrentUserResource extends JsonResource
             'full_name' => $this->full_name,
             'is_verified' => $this->email_verified_at ? true : false,
             'profile' => $this->profile
-                ? Storage::disk('public')->url($this->profile)
+                ? Storage::disk('s3')->temporaryUrl($this->profile,
+                now()->addMinutes(30))
                 : 'images/no-profile.png',
 
             'bg_image' => $this->bg_image
-                ? Storage::disk('public')->url($this->bg_image)
+                ? Storage::disk('s3')->temporaryUrl($this->bg_image,
+                now()->addMinutes(30))
                 : 'images/background_gugut.jpg',
 
             'role'=>$this->getRole(),

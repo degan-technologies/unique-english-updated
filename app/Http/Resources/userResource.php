@@ -36,7 +36,7 @@ class UserResource extends JsonResource {
             'otp_attempts' => $this->otp_attempts ?? 0,
             
             'profile' => $this->profile
-                ? Storage::disk('public')->url($this->profile)
+                ? Storage::disk('s3')->temporaryUrl($this->profile,  now()->addMinutes(30))
                 : 'images/no-profile.png',
         ];
     }
