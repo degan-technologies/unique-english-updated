@@ -5,7 +5,7 @@ namespace App\Http\Resources\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 class CurrentUserResource extends JsonResource
 {
     /**
@@ -25,13 +25,11 @@ class CurrentUserResource extends JsonResource
             'full_name' => $this->full_name,
             'is_verified' => $this->email_verified_at ? true : false,
             'profile' => $this->profile
-                ? Storage::disk('s3')->temporaryUrl($this->profile,
-                now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->profile, now()->addMinutes(60))
                 : 'images/no-profile.png',
 
             'bg_image' => $this->bg_image
-                ? Storage::disk('s3')->temporaryUrl($this->bg_image,
-                now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->bg_image, now()->addMinutes(60))
                 : 'images/background_gugut.jpg',
 
             'role'=>$this->getRole(),

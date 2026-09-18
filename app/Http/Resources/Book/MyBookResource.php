@@ -4,7 +4,7 @@ namespace App\Http\Resources\Book;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class MyBookResource extends JsonResource
 {
@@ -25,15 +25,16 @@ class MyBookResource extends JsonResource
             'description' => $this->description,
 
             'intro_video_url' => $this->intro_vedio
-                ? Storage::disk('s3')->temporaryUrl($this->intro_vedio,  now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->intro_vedio, now()->addMinutes(60))
                 : 'no-intro_video.png',
 
+            // HLS master playlist — plain CloudFront URL; cookies sent separately
             'intro_video_hls_url' => $this->hls_path
-                ? Storage::disk('s3')->temporaryUrl($this->hls_path,  now()->addMinutes(30))
+                ? CloudFrontService::hlsUrl($this->hls_path)
                 : 'no-intro_video.png',
 
             'cover_page_url' => $this->cover_page_url
-                ? Storage::disk('s3')->temporaryUrl($this->cover_page_url,  now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->cover_page_url, now()->addMinutes(120))
                 : 'no-cover_page_url.png',
 
             'isDownloadable' => $this->isDownloadable,

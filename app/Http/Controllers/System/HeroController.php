@@ -31,10 +31,10 @@ class HeroController extends Controller
 
         if (!$hero) {
             $hero = (object)[
-                'title' => '',
-                'description' => '',
-                'logo' => null,
-                'banner' => null,
+                'title'            => '',
+                'description'      => '',
+                'logo'             => null,
+                'banner'           => null,
                 'background_image' => null,
             ];
         }
@@ -53,7 +53,6 @@ class HeroController extends Controller
     {
         /**
          * Check if the user is authenticated and has admin privileges
-         * You may need to adjust this based on your user roles system
          */
         $user = Auth::user();
 
@@ -63,15 +62,7 @@ class HeroController extends Controller
             ], 401);
         }
 
-        // Check if user has admin privileges (adjust this condition based on your role system)
-        // Option 1: Check for systemAdmin relationship
         $hasSystemAdmin = $user->systemAdmin()->exists();
-
-        // Option 2: Check for admin role (uncomment if you use role-based system)
-        // $isAdmin = $user->role === 'admin' || $user->is_admin === true;
-
-        // Option 3: Check user type (uncomment if you use user_type field)
-        // $isAdmin = $user->user_type === 'admin' || $user->user_type === 'system_admin';
 
         if (!$hasSystemAdmin) {
             return response()->json([
@@ -80,10 +71,10 @@ class HeroController extends Controller
         }
 
         $validationRules = [
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'title'            => 'nullable|string|max:255',
+            'description'      => 'nullable|string|max:1000',
+            'logo'             => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'banner'           => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'background_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
 
@@ -92,7 +83,7 @@ class HeroController extends Controller
         if (!$validator->passes()) {
             return response()->json([
                 'message' => $validator->errors()->first(),
-                'errors' => $validator->errors()
+                'errors'  => $validator->errors()
             ], 422);
         }
 
@@ -100,36 +91,31 @@ class HeroController extends Controller
         $hero = Hero::first();
 
         if (!$hero) {
-            $hero = new Hero();
+            $hero          = new Hero();
             $hero->user_id = $user->id;
         }
 
-        // Handle file uploads
+        // Handle file uploads — all go to S3
         if ($request->hasFile('logo')) {
-            if ($hero->logo && Storage::disk('public')->exists($hero->logo)) {
-                Storage::disk('public')->delete($hero->logo);
+            // Delete old logo from S3
+            if ($hero->logo) {
+                Storage::disk('s3')->delete($hero->logo);
             }
-            $logo = $request->file('logo');
-            $logoPath = $logo->store('SystemImages', 'public');
-            $hero->logo = $logoPath;
+            $hero->logo = Storage::disk('s3')->putFile('system/images', $request->file('logo'));
         }
 
         if ($request->hasFile('banner')) {
-            if ($hero->banner && Storage::disk('public')->exists($hero->banner)) {
-                Storage::disk('public')->delete($hero->banner);
+            if ($hero->banner) {
+                Storage::disk('s3')->delete($hero->banner);
             }
-            $banner = $request->file('banner');
-            $bannerPath = $banner->store('SystemImages', 'public');
-            $hero->banner = $bannerPath;
+            $hero->banner = Storage::disk('s3')->putFile('system/images', $request->file('banner'));
         }
 
         if ($request->hasFile('background_image')) {
-            if ($hero->background_image && Storage::disk('public')->exists($hero->background_image)) {
-                Storage::disk('public')->delete($hero->background_image);
+            if ($hero->background_image) {
+                Storage::disk('s3')->delete($hero->background_image);
             }
-            $backgroundImage = $request->file('background_image');
-            $backgroundPath = $backgroundImage->store('SystemImages', 'public');
-            $hero->background_image = $backgroundPath;
+            $hero->background_image = Storage::disk('s3')->putFile('system/images', $request->file('background_image'));
         }
 
         // Update text fields
@@ -145,7 +131,7 @@ class HeroController extends Controller
 
         return response()->json([
             'message' => 'Hero section updated successfully!',
-            'data' => new HeroResource($hero)
+            'data'    => new HeroResource($hero)
         ], 200);
     }
 
@@ -154,9 +140,6 @@ class HeroController extends Controller
      */
     public function deleteImage(Request $request, $imageType)
     {
-        /**
-         * Check if the user is authenticated and has admin privileges
-         */
         $user = Auth::user();
 
         if (!$user) {
@@ -165,7 +148,6 @@ class HeroController extends Controller
             ], 401);
         }
 
-        // Check if user has admin privileges
         $hasSystemAdmin = $user->systemAdmin()->exists();
 
         if (!$hasSystemAdmin) {
@@ -182,7 +164,6 @@ class HeroController extends Controller
             ], 400);
         }
 
-        // Get the first hero record
         $hero = Hero::first();
 
         if (!$hero) {
@@ -191,14 +172,13 @@ class HeroController extends Controller
             ], 404);
         }
 
-        // Map the image type to the correct database column
         $columnMap = [
-            'logo' => 'logo',
-            'banner' => 'banner',
+            'logo'       => 'logo',
+            'banner'     => 'banner',
             'background' => 'background_image'
         ];
 
-        $column = $columnMap[$imageType];
+        $column    = $columnMap[$imageType];
         $imagePath = $hero->{$column};
 
         if (!$imagePath) {
@@ -207,10 +187,8 @@ class HeroController extends Controller
             ], 404);
         }
 
-        // Delete the file from storage
-        if (Storage::disk('public')->exists($imagePath)) {
-            Storage::disk('public')->delete($imagePath);
-        }
+        // Delete the file from S3
+        Storage::disk('s3')->delete($imagePath);
 
         // Update the database record
         $hero->{$column} = null;
@@ -218,7 +196,7 @@ class HeroController extends Controller
 
         return response()->json([
             'message' => ucfirst($imageType === 'background' ? 'background image' : $imageType) . ' deleted successfully',
-            'data' => new HeroResource($hero)
+            'data'    => new HeroResource($hero)
         ], 200);
     }
 }

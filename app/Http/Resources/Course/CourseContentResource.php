@@ -6,7 +6,7 @@ use App\Helper\TokenGenerator;
 use App\Models\Course\CourseContent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 use Illuminate\Support\Facades\Auth;
 
 class CourseContentResource extends JsonResource
@@ -35,12 +35,14 @@ class CourseContentResource extends JsonResource
             'hour' => $this->formatHour($this->hour),
             'duration' => $duration,
             'status' => $this->status,
-            'course_content_url' => $this->course_content_url
-                ? Storage::disk('s3')->temporaryUrl($this->course_content_url, now()->addMinutes(30))
+            // Lesson video URL — signed URL for MP4 fallback; HLS handled via cookies
+            'course_content_url' => $this->content_url
+                ? CloudFrontService::signedUrl($this->content_url, now()->addMinutes(60))
                 : self::DEFAULT_CONTENT,
 
+            // Lesson thumbnail — signed URL
             'thumbnail_url' => $this->thumbnail_url
-                ? Storage::disk('s3')->temporaryUrl($this->thumbnail_url,  now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->thumbnail_url, now()->addMinutes(120))
                 : self::DEFAULT_THUMBNAIL,
             'courseContentProgress' => new CourseContentProgressResource($this->courseContentProgress, $duration),
         ];

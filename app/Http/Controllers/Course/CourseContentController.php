@@ -255,39 +255,56 @@ class CourseContentController extends Controller
             ], 422);
         }
 
-        $fileExtension = null;
         $filePath = null;
-        $durarion = null;
+        $duration = null;
         $fileType = null;
 
         if ($request->hasFile('uploaded_file')) {
             $file = $request->file('uploaded_file');
-            $fileExtension = $file->getClientOriginalExtension();
-            $filePath = Storage::disk('s3')->putFile('/course', $file);
+            $fileExtension = strtolower($file->getClientOriginalExtension());
 
-            switch ($fileExtension) {
-                case in_array($fileExtension, VIDEO_EXTENTION):
-                    $fileType = VIDEO;
+            if (in_array($fileExtension, VIDEO_EXTENTION)) {
+                /*
+                |----------------------------------------------
+                | Video: Upload original to S3, then dispatch HLS job
+                |----------------------------------------------
+                */
+                $fileType = VIDEO;
+                $filePath = Storage::disk('s3')->putFile('lesson/video/original', $file);
+
+                // Extract video duration using getID3
+                try {
                     $getID3 = new \getID3();
                     $fileInfo = $getID3->analyze($file->getPathname());
                     if (isset($fileInfo['playtime_seconds'])) {
-                        $durarion = gmdate("H:i:s", $fileInfo['playtime_seconds']);
+                        $duration = $fileInfo['playtime_seconds'];
                     }
+                } catch (\Throwable $e) {
+                    // Duration extraction is non-critical; continue
+                }
 
-                    $filePath = $request->file('uploaded_file')->store('lesson/video/original', 'private');
-                    break;
-                case in_array($fileExtension, PDF_EXTENTION):
-                    $fileType = PDF;
-                    $filePath = $file->store('/course', 'private');
-                    break;
-                case in_array($fileExtension, IMAGE_EXTENTION):
-                    $fileType = IMAGE;
-                    break;
-                default:
-                    dd($fileExtension);
-                    return response()->json([
-                        'message' => $this->langService->getLang('invalid_file_type'),
-                    ], 422);
+            } elseif (in_array($fileExtension, PDF_EXTENTION)) {
+                /*
+                |----------------------------------------------
+                | PDF: Upload to S3
+                |----------------------------------------------
+                */
+                $fileType = PDF;
+                $filePath = Storage::disk('s3')->putFile('course/pdf', $file);
+
+            } elseif (in_array($fileExtension, IMAGE_EXTENTION)) {
+                /*
+                |----------------------------------------------
+                | Image: Upload to S3
+                |----------------------------------------------
+                */
+                $fileType = IMAGE;
+                $filePath = Storage::disk('s3')->putFile('course/images', $file);
+
+            } else {
+                return response()->json([
+                    'message' => $this->langService->getLang('invalid_file_type'),
+                ], 422);
             }
         }
 
@@ -296,7 +313,7 @@ class CourseContentController extends Controller
             'data' => [
                 'content_url' => $filePath,
                 'content_type' => $fileType,
-                'duration' => $durarion,
+                'duration' => $duration,
             ]
         ]);
     }

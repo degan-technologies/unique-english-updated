@@ -366,17 +366,12 @@ class BlogPostController extends Controller
     private function resolveCoverImage(Request $request): ?string
     {
         if ($request->hasFile('cover_image_file')) {
-            return $request->file('cover_image_file')->store('blog', 'public');
+            // Upload to S3
+            return Storage::disk('s3')->putFile('blog/images', $request->file('cover_image_file'));
         }
 
         if ($request->has('cover_image')) {
             $coverImage = $request->input('cover_image');
-
-             if ($coverImage && str_contains($coverImage, '/storage/')) {
-                $parts = explode('/storage/', $coverImage, 2);
-                $coverImage = $parts[1] ?? $coverImage;
-            }
-
             return $coverImage !== null && $coverImage !== '' ? $coverImage : null;
         }
 
@@ -385,14 +380,12 @@ class BlogPostController extends Controller
 
     private function deleteStoredCoverImage(string $coverImage): void
     {
+        // Skip external URLs (e.g. from old public disk or CDN)
         if (str_starts_with($coverImage, 'http://') || str_starts_with($coverImage, 'https://')) {
             return;
         }
 
-        $normalizedPath = ltrim(str_replace('storage/', '', $coverImage), '/');
-
-        if (Storage::disk('public')->exists($normalizedPath)) {
-            Storage::disk('public')->delete($normalizedPath);
-        }
+        // Delete from S3
+        Storage::disk('s3')->delete($coverImage);
     }
 }

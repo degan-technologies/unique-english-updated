@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 trait TransferTrait
 {
@@ -266,7 +267,7 @@ trait TransferTrait
                 return [
                     'course_id' => $transaction->course_id,
                     'course_name' => $transaction->course->course_name ?? 'Deleted Course',
-                    'thumbnail_url' => $thumbnailUrl ? Storage::disk('public')->url($thumbnailUrl) : 'images/no-profile.png',
+                    'thumbnail_url' => $thumbnailUrl ? CloudFrontService::signedUrl($thumbnailUrl, now()->addMinutes(30)) : 'images/no-profile.png',
                     'price' => $transaction->course->price ?? 0,
                     'transaction_count' => $transaction->transaction_count,
                     'total_revenue' => $transaction->total_revenue,
@@ -320,7 +321,7 @@ trait TransferTrait
                 return [
                     'book_id' => $transaction->book_id,
                     'title' => $transaction->book->title ?? 'Deleted Book',
-                    'cover_page_url' => $coverPageUrl ? Storage::disk('public')->url($coverPageUrl) : 'images/no-profile.png',
+                    'cover_page_url' => $coverPageUrl ? CloudFrontService::signedUrl($coverPageUrl, now()->addMinutes(30)) : 'images/no-profile.png',
                     'price' => $transaction->book->price ?? 0,
                     'transaction_count' => $transaction->transaction_count,
                     'total_revenue' => $transaction->total_revenue,

@@ -4,7 +4,7 @@ namespace App\Http\Resources\Live;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class PrivateLiveParticipantResource extends JsonResource
 {
@@ -23,7 +23,7 @@ class PrivateLiveParticipantResource extends JsonResource
             'middle_name'       => $this->middle_name,
             'phone'       => $this->phone,
             'profile' => $this->profile
-                ? Storage::disk('public')->url($this->profile)
+                ? CloudFrontService::signedUrl($this->profile, now()->addMinutes(30))
                 : 'images/no-profile.png',     
                 
             'instructor_name' => $this->privateRoom?->instructor ? 

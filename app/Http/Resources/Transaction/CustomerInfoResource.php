@@ -5,7 +5,7 @@ namespace App\Http\Resources\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Models\User;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class CustomerInfoResource extends JsonResource
 {
@@ -26,7 +26,7 @@ class CustomerInfoResource extends JsonResource
             'status' => $this->user_banned_at ? 'Blocked' : 'Active',
             'phone'       => $this->phone,
             'profile' => $this->profile
-                ? Storage::disk('public')->url($this->profile)
+                ? CloudFrontService::signedUrl($this->profile, now()->addMinutes(30))
                 : 'images/no-profile.png',
 
             'role'=>$this->getRole(),

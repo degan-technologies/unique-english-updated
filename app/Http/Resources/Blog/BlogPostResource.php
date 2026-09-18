@@ -5,6 +5,7 @@ namespace App\Http\Resources\Blog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class BlogPostResource extends JsonResource
 {
@@ -23,7 +24,7 @@ class BlogPostResource extends JsonResource
             'excerpt' => $this->excerpt,
             'content' => $this->content, 
             'cover_image' => $this->cover_image
-                ? Storage::disk('public')->url($this->cover_image)
+                ? CloudFrontService::signedUrl($this->cover_image, now()->addMinutes(120))
                 : 'images/no-profile.png',
             'tags' => $this->tags ?? [],
             'status' => $this->status,

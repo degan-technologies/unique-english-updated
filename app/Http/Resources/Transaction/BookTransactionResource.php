@@ -5,7 +5,7 @@ namespace App\Http\Resources\Transaction;
 use App\Http\Resources\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class BookTransactionResource extends JsonResource
 {
@@ -23,7 +23,7 @@ class BookTransactionResource extends JsonResource
             'discount' => $this->discount,
 
             'cover_page_url' => $this->cover_page_url
-            ? Storage::disk('public')->url($this->cover_page_url)
+            ? CloudFrontService::signedUrl($this->cover_page_url, now()->addMinutes(30))
             : 'no-cover_page_url.png',
         ];
     }

@@ -2,202 +2,114 @@
 
 namespace App\Http\Controllers\Book;
 
-use App\Http\Controllers\Controller; 
+use App\Http\Controllers\Controller;
+use App\Models\Book\Book;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Services\CloudFrontService;
 
 
 class BookVideoController extends Controller
 {
+    /**
+     * Stream (redirect via pre-signed URL) the book intro video.
+     *
+     * If HLS optimization is complete, redirect to the master.m3u8 playlist.
+     * Otherwise, redirect to a pre-signed URL for the original video.
+     * S3/CloudFront natively handles byte-range (HTTP 206) requests, so seeking works.
+     */
     public function stream(Request $request, $filename)
     {
         $disk = Storage::disk('s3');
-        $path = "books/video/original/$filename";
-        $filePath = $disk->path($path);
+        $path = "books/video/original/{$filename}";
 
+        /*
+        |------------------------------------------------------------------
+        | Check if this book has HLS ready and prefer it
+        |------------------------------------------------------------------
+        */
+        $book = Book::where('intro_vedio', $path)
+            ->orWhere('intro_vedio', '/' . $path)
+            ->orWhere('intro_vedio', 'like', '%' . $filename)
+            ->first();
+
+        if ($book && $book->hls_status === 'ready' && $book->hls_path) {
+            if ($disk->exists($book->hls_path)) {
+                Log::info('Redirecting book video to HLS via CDN', [
+                    'book_id'  => $book->id,
+                    'hls_path' => $book->hls_path,
+                ]);
+
+                if (CloudFrontService::isConfigured()) {
+                    $redirect = redirect()->away(CloudFrontService::hlsUrl($book->hls_path));
+                    return CloudFrontService::attachCookies($redirect, CloudFrontService::hlsCookiePrefix($book->hls_path));
+                }
+
+                $signedUrl = CloudFrontService::signedUrl($book->hls_path, now()->addMinutes(60));
+                return redirect()->away($signedUrl);
+            }
+        }
+
+        /*
+        |------------------------------------------------------------------
+        | Fallback: pre-signed URL for the original video
+        |------------------------------------------------------------------
+        */
         if (!$disk->exists($path)) {
-            Log::error("Video not found: $filename");
+            Log::error("Book video not found on S3: {$filename}");
             return response()->json(['error' => 'Video not found'], 404);
         }
 
-        $fileSize = filesize($filePath);
-        $start = 0;
-        $end = $fileSize - 1;
+        $signedUrl = CloudFrontService::signedUrl($path, now()->addMinutes(60));
 
-        // Base headers including no-cache
-        $headers = [
-            'Content-Type' => 'video/mp4',
-            'Accept-Ranges' => 'bytes',
-            'Access-Control-Allow-Origin' => '*',
-            'Cache-Control' => 'no-cache, must-revalidate',
-        ];
+        Log::info("Redirecting book video to CDN signed URL", ['path' => $path]);
 
-        // Check for Range header
-        if ($request->headers->has('Range')) {
-            if (!preg_match('/bytes=(\d+)-(\d*)/', $request->header('Range'), $matches)) {
-                return response()->json(['error' => 'Invalid range request'], 416);
-            }
-
-            $start = intval($matches[1]);
-            $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $fileSize - 1;
-            if ($end >= $fileSize) {
-                $end = $fileSize - 1;
-            }
-
-            $headers['Content-Range'] = "bytes $start-$end/$fileSize";
-            $headers['Content-Length'] = ($end - $start) + 1;
-
-            Log::debug("Range Request: start=$start, end=$end, fileSize=$fileSize");
-
-            if (ob_get_level()) {
-                ob_end_clean();
-            }
-
-            $handle = fopen($filePath, 'rb');
-            if (!$handle) {
-                Log::error("Failed to open file: $filePath");
-                return response()->json(['error' => 'Failed to open file'], 500);
-            }
-            fseek($handle, $start);
-
-            return response()->stream(function () use ($handle, $end) {
-                $bufferSize = 1024 * 8; // 8KB chunks
-                while (!feof($handle) && ftell($handle) <= $end) {
-                    $currentPos = ftell($handle);
-                    $readSize = $bufferSize;
-                    if ($currentPos + $readSize > $end) {
-                        $readSize = $end - $currentPos + 1;
-                    }
-                    echo fread($handle, $readSize);
-                    flush();
-                }
-                fclose($handle);
-            }, 206, $headers);
-        }
-
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-        return new StreamedResponse(function () use ($filePath) {
-            readfile($filePath);
-        }, 200, $headers);
+        return redirect()->away($signedUrl);
     }
 
+    /**
+     * Stream (redirect via pre-signed URL) a course lesson PDF.
+     */
     public function contentPdfStream(Request $request, $filename)
     {
         $disk = Storage::disk('s3');
-        $path = "course/$filename";
+        $path = "course/pdf/{$filename}";
+
+        // Also check old path for backwards compatibility
+        if (!$disk->exists($path)) {
+            $path = "course/{$filename}";
+        }
 
         if (!$disk->exists($path)) {
-            Log::error("PDF not found: $filename");
+            Log::error("PDF not found on S3: {$filename}");
             return response()->json(['error' => 'PDF not found'], 404);
         }
 
-        $filePath = $disk->path($path);
-        $fileSize = filesize($filePath);
-        $start = 0;
-        $end = $fileSize - 1;
+        $signedUrl = CloudFrontService::signedUrl($path, now()->addMinutes(30));
 
-        $headers = [
-            'Content-Type' => 'application/pdf',
-            'Accept-Ranges' => 'bytes',
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Access-Control-Allow-Origin' => '*',
-        ];
+        Log::info("Redirecting course PDF to CDN signed URL", ['path' => $path]);
 
-        if ($request->headers->has('Range')) {
-            if (!preg_match('/bytes=(\d+)-(\d*)/', $request->header('Range'), $matches)) {
-                return response()->json(['error' => 'Invalid range'], 416);
-            }
-
-            $start = intval($matches[1]);
-            $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $end;
-            $end = min($end, $fileSize - 1);
-
-            $headers['Content-Range'] = "bytes $start-$end/$fileSize";
-            $headers['Content-Length'] = ($end - $start) + 1;
-
-            $handle = fopen($filePath, 'rb');
-            if (!$handle) {
-                Log::error("Failed to open PDF: $filename");
-                return response()->json(['error' => 'Failed to open file'], 500);
-            }
-
-            fseek($handle, $start);
-
-            return response()->stream(function () use ($handle, $end) {
-                $bufferSize = 8192;
-                while (!feof($handle) && ftell($handle) <= $end) {
-                    $readSize = min($bufferSize, $end - ftell($handle) + 1);
-                    echo fread($handle, $readSize);
-                    flush();
-                }
-                fclose($handle);
-            }, 206, $headers);
-        }
-
-        return new StreamedResponse(function () use ($filePath) {
-            readfile($filePath);
-        }, 200, $headers);
+        return redirect()->away($signedUrl);
     }
 
+    /**
+     * Stream (redirect via pre-signed URL) a book PDF file.
+     */
     public function bookPdfStream(Request $request, $filename)
     {
         $disk = Storage::disk('s3');
-        $path = "books/pdfFiles/$filename";
+        $path = "books/pdfFiles/{$filename}";
 
         if (!$disk->exists($path)) {
-            Log::error("PDF not found: $filename");
+            Log::error("Book PDF not found on S3: {$filename}");
             return response()->json(['error' => 'PDF not found'], 404);
         }
 
-        $filePath = $disk->path($path);
-        $fileSize = filesize($filePath);
-        $start = 0;
-        $end = $fileSize - 1;
+        $signedUrl = CloudFrontService::signedUrl($path, now()->addMinutes(30));
 
-        $headers = [
-            'Content-Type' => 'application/pdf',
-            'Accept-Ranges' => 'bytes',
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
-            'Access-Control-Allow-Origin' => '*',
-        ];
+        Log::info("Redirecting book PDF to CDN signed URL", ['path' => $path]);
 
-        if ($request->headers->has('Range')) {
-            if (!preg_match('/bytes=(\d+)-(\d*)/', $request->header('Range'), $matches)) {
-                return response()->json(['error' => 'Invalid range'], 416);
-            }
-
-            $start = intval($matches[1]);
-            $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : $end;
-            $end = min($end, $fileSize - 1);
-
-            $headers['Content-Range'] = "bytes $start-$end/$fileSize";
-            $headers['Content-Length'] = ($end - $start) + 1;
-
-            $handle = fopen($filePath, 'rb');
-            if (!$handle) {
-                Log::error("Failed to open PDF: $filename");
-                return response()->json(['error' => 'Failed to open file'], 500);
-            }
-
-            fseek($handle, $start);
-
-            return response()->stream(function () use ($handle, $end) {
-                $bufferSize = 8192;
-                while (!feof($handle) && ftell($handle) <= $end) {
-                    $readSize = min($bufferSize, $end - ftell($handle) + 1);
-                    echo fread($handle, $readSize);
-                    flush();
-                }
-                fclose($handle);
-            }, 206, $headers);
-        }
-
-        return new StreamedResponse(function () use ($filePath) {
-            readfile($filePath);
-        }, 200, $headers);
+        return redirect()->away($signedUrl);
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class UserDataResource extends JsonResource
 {
@@ -19,7 +19,7 @@ class UserDataResource extends JsonResource
             'slug'        => $this->slug,
             'full_name'   => $this->first_name . ' ' . $this->middle_name,
             'profile' => $this->profile
-                ? Storage::disk('public')->url($this->profile)
+                ? CloudFrontService::signedUrl($this->profile, now()->addMinutes(60))
                 : 'images/no-profile.png',
         ];;
     }

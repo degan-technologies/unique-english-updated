@@ -4,7 +4,7 @@ namespace App\Http\Resources\System;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class HeroResource extends JsonResource
 {
@@ -15,24 +15,25 @@ class HeroResource extends JsonResource
      */
     public function toArray(Request $request): array {
         return [
-            'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description, 
-            'app_name' => $this->app_name, 
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'deleted_at' => $this->deleted_at, 
+            'id'               => $this->id,
+            'title'            => $this->title,
+            'description'      => $this->description, 
+            'app_name'         => $this->app_name, 
+            'created_at'       => $this->created_at,
+            'updated_at'       => $this->updated_at,
+            'deleted_at'       => $this->deleted_at, 
 
+            // Hero images are public — plain CloudFront URL for maximum CDN cache efficiency
             'logo' => $this->logo
-                ? Storage::disk('public')->url($this->logo)
+                ? CloudFrontService::publicUrl($this->logo)
                 : 'images/logo.png',
 
             'banner' => $this->banner
-                ? Storage::disk('public')->url($this->banner)
+                ? CloudFrontService::publicUrl($this->banner)
                 : 'images/Learning.jpg',
 
             'background_image' => $this->background_image
-                ? Storage::disk('public')->url($this->background_image)
+                ? CloudFrontService::publicUrl($this->background_image)
                 : 'images/here-back.jpg',
         ];
     }

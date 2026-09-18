@@ -90,4 +90,10 @@ return [
         'timeout' => env('AUTH_API_TIMEOUT', 5), 
     ],
 
+    'cloudfront' => [
+        'url'              => env('CLOUDFRONT_URL'),
+        'key_pair_id'      => env('CLOUDFRONT_KEY_PAIR_ID'),
+        'private_key_path' => env('CLOUDFRONT_PRIVATE_KEY_PATH'),
+    ],
+
 ];

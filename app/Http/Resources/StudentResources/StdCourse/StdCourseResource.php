@@ -10,7 +10,7 @@ use App\Models\Transaction\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 
 
@@ -40,18 +40,19 @@ class StdCourseResource extends JsonResource {
             'user' => new userResource($this->user),
 
             'intro_video_url' => $this->intro_video
-                ? Storage::disk('s3')->temporaryUrl($this->intro_video, now()->addMinutes(60))
+                ? CloudFrontService::signedUrl($this->intro_video, now()->addMinutes(60))
                 : 'no-intro_video.png',
 
+            // HLS master playlist — plain CloudFront URL; cookies sent separately
             'intro_video_hls_url' => $this->hls_path
-                ? Storage::disk('s3')->temporaryUrl($this->hls_path, now()->addMinutes(60))
+                ? CloudFrontService::hlsUrl($this->hls_path)
                 : 'no-intro_video.png',
  
             'averageRating' => $review['averageRating'],
             'starDistribution' => $review['starDistribution'],
 
             'thumbnail_url' => $this->thumbnail_url
-                ? Storage::disk('s3')->temporaryUrl($this->thumbnail_url,  now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->thumbnail_url, now()->addMinutes(120))
                 : 'no-thumbnail_url.png',
             'courseModules' => $this->whenLoaded('courseModules', function () {
                 return StdCourseModuleResource::collection($this->courseModules->sortBy('sequence'));

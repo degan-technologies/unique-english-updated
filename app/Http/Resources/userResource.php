@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 
 class UserResource extends JsonResource {
     /**
@@ -36,7 +36,7 @@ class UserResource extends JsonResource {
             'otp_attempts' => $this->otp_attempts ?? 0,
             
             'profile' => $this->profile
-                ? Storage::disk('s3')->temporaryUrl($this->profile,  now()->addMinutes(30))
+                ? CloudFrontService::signedUrl($this->profile, now()->addMinutes(60))
                 : 'images/no-profile.png',
         ];
     }

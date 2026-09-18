@@ -3,7 +3,7 @@
 namespace App\Http\Resources\Logo;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
+use App\Services\CloudFrontService;
 use App\Models\Logo\Logo;
 
 class LogoResource extends JsonResource
@@ -13,8 +13,8 @@ class LogoResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'file_url' =>$this->file_path
-                ? Storage::disk('public')->url($this->file_path)
+            'file_url' => $this->file_path
+                ? CloudFrontService::publicUrl($this->file_path)
                 : 'no-thumbnail_url.png',
             'created_at' => $this->created_at,
         ];

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Course;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course\Course;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Services\CloudFrontService;
 
 class CourseVideoController extends Controller
 {
@@ -14,80 +15,62 @@ class CourseVideoController extends Controller
     {
         if ($request->isMethod('OPTIONS')) {
             return response('', 204)->withHeaders([
-                'Access-Control-Allow-Origin' => $request->header('Origin') ?? '*',
+                'Access-Control-Allow-Origin'  => $request->header('Origin') ?? '*',
                 'Access-Control-Allow-Methods' => 'GET, OPTIONS',
                 'Access-Control-Allow-Headers' => 'Range, Content-Type, Origin, Accept',
-                'Access-Control-Max-Age' => '86400',
+                'Access-Control-Max-Age'       => '86400',
             ]);
         }
 
         $disk = Storage::disk('s3');
-        $relativePath = "course/video/original/$filename";
+        $relativePath = "course/video/original/{$filename}";
 
+        /*
+        |------------------------------------------------------------------
+        | Check if we can find a course with HLS ready for this video path
+        | and redirect to the HLS master playlist if available.
+        |------------------------------------------------------------------
+        */
+        $course = Course::where('intro_video', $relativePath)
+            ->orWhere('intro_video', '/' . $relativePath)
+            ->orWhere('intro_video', 'like', '%' . $filename)
+            ->first();
+
+        if ($course && $course->hls_status === 'ready' && $course->hls_path) {
+            if ($disk->exists($course->hls_path)) {
+                Log::info('Redirecting course video to HLS', [
+                    'course_id' => $course->id,
+                    'hls_path'  => $course->hls_path,
+                ]);
+
+                if (CloudFrontService::isConfigured()) {
+                    $redirect = redirect()->away(CloudFrontService::hlsUrl($course->hls_path));
+                    return CloudFrontService::attachCookies($redirect, CloudFrontService::hlsCookiePrefix($course->hls_path));
+                }
+
+                $signedUrl = CloudFrontService::signedUrl($course->hls_path, now()->addMinutes(60));
+                return redirect()->away($signedUrl);
+            }
+        }
+
+        /*
+        |------------------------------------------------------------------
+        | Fallback: redirect to a pre-signed URL for the original video.
+        | S3/CloudFront natively supports byte-range requests (HTTP 206), so seeking
+        | and adaptive playback work correctly without proxying the file.
+        |------------------------------------------------------------------
+        */
         if (!$disk->exists($relativePath)) {
-            Log::error("Video not found: $filename");
+            Log::error("Course video not found on S3: {$relativePath}");
             return response()->json(['error' => 'Video not found'], 404);
         }
 
-        $filePath = $disk->path($relativePath);
-        $fileSize = filesize($filePath);
+        $signedUrl = CloudFrontService::signedUrl($relativePath, now()->addMinutes(60));
 
-        $start = 0;
-        $defaultChunkSize = 2 * 1024 * 1024; // 2MB
-        $end = $fileSize - 1;
+        Log::info("Redirecting course intro video to CDN signed URL", [
+            'path' => $relativePath,
+        ]);
 
-        $headers = [
-            'Content-Type' => 'video/mp4',
-            'Accept-Ranges' => 'bytes',
-            'Access-Control-Allow-Origin' => $request->header('Origin') ?? '*',
-            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-            'Access-Control-Allow-Headers' => 'Range, Content-Type, Origin, Accept',
-            'Cache-Control' => 'no-cache, must-revalidate',
-        ];
-
-        $status = 200;
-
-        if ($request->headers->has('Range')) {
-            if (preg_match('/bytes=(\d+)-(\d*)/', $request->header('Range'), $matches)) {
-                $start = intval($matches[1]);
-                $end = isset($matches[2]) && $matches[2] !== '' ? intval($matches[2]) : min($fileSize - 1, $start + $defaultChunkSize - 1);
-                $status = 206;
-            }
-        }
-
-        $end = min($fileSize - 1, $end);
-        $length = ($end - $start) + 1;
-
-        $headers['Content-Range'] = "bytes $start-$end/$fileSize";
-        $headers['Content-Length'] = $length;
-
-        Log::info("Streaming video range: $start-$end / $fileSize");
-
-        if (ob_get_level()) {
-            ob_end_clean();
-        }
-
-        $handle = fopen($filePath, 'rb');
-
-        if (!$handle) {
-            Log::error("Failed to open file: $filePath");
-            return response()->json(['error' => 'Failed to open file'], 500);
-        }
-
-        fseek($handle, $start);
-
-        return response()->stream(function () use ($handle, $start, $end) {
-            $bufferSize = 1024 * 16; // 16KB
-            $position = ftell($handle);
-
-            while (!feof($handle) && $position <= $end) {
-                $bytesToRead = min($bufferSize, $end - $position + 1);
-                echo fread($handle, $bytesToRead);
-                flush();
-                $position = ftell($handle);
-            }
-
-            fclose($handle);
-        }, $status, $headers);
+        return redirect()->away($signedUrl);
     }
 }
